@@ -1,0 +1,63 @@
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/state/AuthContext'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useToast } from '@/hooks/use-toast'
+
+const schema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Mínimo 6 caracteres'),
+})
+
+type FormValues = z.infer<typeof schema>
+
+export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { toast } = useToast()
+  const from = (location.state as any)?.from?.pathname || '/dashboard'
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  const onSubmit = async (values: FormValues) => {
+    try {
+      await login(values.email, values.password)
+      toast({ title: 'Bienvenido', description: 'Ingreso exitoso' })
+      navigate(from, { replace: true })
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' })
+    }
+  }
+
+  return (
+    <main className="min-h-screen grid place-items-center">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Ingresar</CardTitle>
+          <CardDescription>Backoffice Te devuelvo</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" aria-label="Formulario de acceso">
+            <div>
+              <label className="text-sm" htmlFor="email">Email</label>
+              <Input id="email" type="email" autoComplete="email" {...register('email')} aria-invalid={!!errors.email} />
+              {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
+            </div>
+            <div>
+              <label className="text-sm" htmlFor="password">Contraseña</label>
+              <Input id="password" type="password" autoComplete="current-password" {...register('password')} aria-invalid={!!errors.password} />
+              {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
+            </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting} variant="hero">Entrar</Button>
+            <p className="text-xs text-muted-foreground">Usuarios demo: admin@tedevuelvo.cl, ops@tedevuelvo.cl, alianzas@tedevuelvo.cl, readonly@tedevuelvo.cl — clave 123456</p>
+          </form>
+        </CardContent>
+      </Card>
+    </main>
+  )
+}
