@@ -1,43 +1,74 @@
-import { db } from "./db"
-import { uid } from "./storage"
-import { Alianza, Comision } from "@/types/domain"
+import { alianzasMock } from "../mocks/alianzas_v2"
+import type { Alianza } from "../types/alianzas"
+import { alianzaSchema } from "../schemas/alianzaSchema"
 
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
+let data: Alianza[] = [...alianzasMock]
+
+const delay = (ms = 250) => new Promise((res) => setTimeout(res, ms))
+const idGen = () => "AL-" + Math.random().toString(36).slice(2, 8).toUpperCase()
 
 export const alianzasService = {
-  async list(): Promise<Alianza[]> {
-    await delay(200)
-    return db.getAlianzas()
+  async list(query?: {
+    search?: string
+    page?: number
+    pageSize?: number
+    sortBy?: "nombre" | "comision"
+    sortDir?: "asc" | "desc"
+  }) {
+    await delay()
+    let rows = [...data]
+    if (query?.search) {
+      const s = query.search.toLowerCase()
+      rows = rows.filter(
+        (a) =>
+          a.nombre.toLowerCase().includes(s) ||
+          a.contacto.email?.toLowerCase().includes(s) ||
+          a.contacto.fono?.toLowerCase().includes(s)
+      )
+    }
+    if (query?.sortBy) {
+      rows.sort((a, b) => {
+        const dir = query.sortDir === "desc" ? -1 : 1
+        const va = query.sortBy === "nombre" ? a.nombre : a.comision
+        const vb = query.sortBy === "nombre" ? b.nombre : b.comision
+        return (va > vb ? 1 : va < vb ? -1 : 0) * dir
+      })
+    }
+    const page = query?.page ?? 1
+    const pageSize = query?.pageSize ?? 10
+    const total = rows.length
+    const start = (page - 1) * pageSize
+    const items = rows.slice(start, start + pageSize)
+    return { items, total, page, pageSize }
   },
-  async get(id: string): Promise<Alianza | undefined> {
-    await delay(150)
-    return db.getAlianzas().find((a) => a.id === id)
-  },
-  async create(input: Omit<Alianza, "id" | "createdAt" | "updatedAt">): Promise<Alianza> {
-    await delay(250)
+
+  async create(input: unknown) {
+    await delay()
+    const parsed = alianzaSchema.parse(input)
+    if (data.some((a) => a.nombre.toLowerCase() === parsed.nombre.toLowerCase())) {
+      throw new Error("Ya existe una alianza con ese nombre")
+    }
     const now = new Date().toISOString()
-    const nuevo: Alianza = { ...input, id: uid("al-"), createdAt: now, updatedAt: now }
-    const arr = db.getAlianzas()
-    arr.unshift(nuevo)
-    db.setAlianzas(arr)
+    const nuevo: Alianza = {
+      id: idGen(),
+      nombre: parsed.nombre,
+      contacto: parsed.contacto,
+      direccion: parsed.direccion,
+      comision: parsed.comision,
+      activo: parsed.activo ?? true,
+      createdAt: now,
+      updatedAt: now,
+    }
+    data.unshift(nuevo)
     return nuevo
   },
-  async update(id: string, patch: Partial<Alianza>): Promise<Alianza> {
-    await delay(250)
-    const arr = db.getAlianzas()
-    const idx = arr.findIndex((a) => a.id === id)
-    if (idx === -1) throw new Error("Alianza no encontrada")
-    const updated: Alianza = { ...arr[idx], ...patch, updatedAt: new Date().toISOString() }
-    arr[idx] = updated
-    db.setAlianzas(arr)
-    return updated
-  },
+
   async remove(id: string) {
-    await delay(200)
-    db.setAlianzas(db.getAlianzas().filter((a) => a.id !== id))
-  },
-  async comisionesByAlianza(alianzaId: string): Promise<Comision[]> {
-    await delay(150)
-    return db.getComisiones().filter((c) => c.alianzaId === alianzaId)
+    await delay()
+    const idx = data.findIndex((a) => a.id === id)
+    if (idx === -1) throw new Error("Alianza no encontrada")
+    const [removed] = data.splice(idx, 1)
+    return removed
   },
 }
+

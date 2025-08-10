@@ -13,7 +13,7 @@ import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
 import SolicitudesList from "@/pages/Solicitudes/List";
 import SolicitudDetail from "@/pages/Solicitudes/Detail";
-
+import AlianzasList from "@/pages/Alianzas/List";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -45,7 +45,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/solicitudes" element={<SolicitudesList />} />
                 <Route path="/solicitudes/:id" element={<SolicitudDetail />} />
-                <Route path="/alianzas" element={<div className="p-4">Alianzas (en construcción)</div>} />
+                <Route path="/alianzas" element={<AlianzasList />} />
                 <Route path="/alianzas/:id" element={<div className="p-4">Detalle de Alianza (en construcción)</div>} />
                 <Route path="/certificados" element={<div className="p-4">Certificados (en construcción)</div>} />
                 <Route path="/usuarios" element={<div className="p-4">Usuarios (en construcción)</div>} />
