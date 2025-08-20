@@ -15,6 +15,7 @@ import SolicitudesList from "@/pages/Solicitudes/List";
 import SolicitudDetail from "@/pages/Solicitudes/Detail";
 import AlianzasList from "@/pages/Alianzas/List";
 import Reportes from "@/pages/Reportes";
+import UsuariosPage from "@/pages/Usuarios";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -49,8 +50,8 @@ const App = () => (
                 <Route path="/alianzas" element={<AlianzasList />} />
                 <Route path="/alianzas/:id" element={<div className="p-4">Detalle de Alianza (en construcción)</div>} />
                 <Route path="/certificados" element={<div className="p-4">Certificados (en construcción)</div>} />
-                <Route path="/usuarios" element={<div className="p-4">Usuarios (en construcción)</div>} />
                 <Route path="/reportes" element={<Reportes />} />
+                <Route path="/usuarios" element={<UsuariosPage />} />
                 <Route path="/ajustes" element={<div className="p-4">Ajustes (en construcción)</div>} />
               </Route>
             </Route>
