@@ -16,7 +16,7 @@ import { UserFilters } from './components/UserFilters';
 import { useUsers, useBulkAction } from './hooks/useUsers';
 import type { User, UserListParams } from './types/userTypes';
 
-export default function UsuariosPage() {
+function UsuariosPage() {
   const [params, setParams] = useState<UserListParams>({
     page: 1,
     pageSize: 10
@@ -277,3 +277,5 @@ export default function UsuariosPage() {
     </div>
   );
 }
+
+export default UsuariosPage;
