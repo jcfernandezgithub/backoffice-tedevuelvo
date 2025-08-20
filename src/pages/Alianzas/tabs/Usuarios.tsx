@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AllianceUsersTable } from '../../components/AllianceUsersTable';
+import { AllianceUsersTable } from '../components/AllianceUsersTable';
 import { 
   useAllianceUsers,
   useCreateAllianceUser,
@@ -11,10 +11,14 @@ import {
   useResendAllianceInvitation,
   useRevokeAlliancePortalSessions,
   useDeleteAllianceUser
-} from '../../hooks/useAllianceUsers';
-import type { AllianceUserListParams } from '../../types/allianceUserTypes';
+} from '../hooks/useAllianceUsers';
+import type { AllianceUserListParams } from '../types/allianceUserTypes';
 
-export function UsuariosTab() {
+interface UsuariosTabProps {
+  alianceName: string;
+}
+
+export function UsuariosTab({ alianceName }: UsuariosTabProps) {
   const { id: alianzaId } = useParams<{ id: string }>();
   const [params, setParams] = useState<AllianceUserListParams>({
     page: 1,
@@ -74,7 +78,7 @@ export function UsuariosTab() {
       onDeleteUser={deleteMutation.mutate}
       onExport={handleExport}
       loading={isLoading}
-      alianceName="Alianza" // This would come from alliance data
+      alianceName={alianceName}
     />
   );
 }

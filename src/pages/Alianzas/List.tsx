@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router-dom'
 import { alianzasService } from '@/services/alianzasService'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,13 +9,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal } from 'lucide-react'
 import type { Alianza } from '@/types/alianzas'
+import { useAllianceUserCount } from './hooks/useAllianceUsers'
 
 function useDebounce<T>(value: T, delay = 300) {
   const [v, setV] = useState(value)
@@ -26,6 +29,26 @@ function useDebounce<T>(value: T, delay = 300) {
 }
 
 const fmtPct = (n: number) => `${n.toFixed(2)}%`
+
+function AllianceUserCountPill({ alianzaId }: { alianzaId: string }) {
+  const { data: count = 0 } = useAllianceUserCount(alianzaId);
+  const navigate = useNavigate();
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-6 px-2 text-xs"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigate(`/alianzas/${alianzaId}#usuarios`);
+      }}
+    >
+      <Users className="h-3 w-3 mr-1" />
+      Usuarios ({count})
+    </Button>
+  );
+}
 
 export default function AlianzasList() {
   const [search, setSearch] = useState('')
@@ -146,15 +169,42 @@ export default function AlianzasList() {
                       <TableCell>{a.direccion ?? '—'}</TableCell>
                       <TableCell>{fmtPct(a.comision)}</TableCell>
                       <TableCell>
-                        <Badge variant={a.activo ? 'default' : 'secondary'}>{a.activo ? 'Activo' : 'Inactivo'}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={a.activo ? 'default' : 'secondary'}>{a.activo ? 'Activo' : 'Inactivo'}</Badge>
+                          <AllianceUserCountPill alianzaId={a.id} />
+                        </div>
                       </TableCell>
                       <TableCell>{new Date(a.createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
-                          <Button variant="outline" size="icon" aria-label="Editar alianza" title="Editar (próximamente)" disabled>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <DeleteAlianzaButton id={a.id} nombre={a.nombre} onConfirm={() => removeMutation.mutate(a.id)} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="icon" aria-label="Acciones">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem disabled>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar alianza
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem asChild>
+                                <Link to={`/alianzas/${a.id}#usuarios`} className="flex items-center">
+                                  <Users className="mr-2 h-4 w-4" />
+                                  Gestionar usuarios
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => removeMutation.mutate(a.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Eliminar alianza
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -308,50 +358,6 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             </DialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function DeleteAlianzaButton({ id, nombre, onConfirm }: { id: string; nombre: string; onConfirm: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [input, setInput] = useState('')
-  const canDelete = input.trim() === nombre
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button
-        variant="destructive"
-        size="icon"
-        aria-label={`Eliminar alianza ${nombre}`}
-        title={`Eliminar ${nombre}`}
-        onClick={() => setOpen(true)}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Eliminar alianza</DialogTitle>
-          <DialogDescription>Escribe el nombre de la alianza para confirmar eliminación.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-2">
-          <label htmlFor={`confirm-${id}`} className="text-sm">Nombre exacto</label>
-          <Input id={`confirm-${id}`} value={input} onChange={(e) => setInput(e.target.value)} />
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              onConfirm()
-              setOpen(false)
-              setInput('')
-            }}
-            disabled={!canDelete}
-          >
-            Eliminar
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

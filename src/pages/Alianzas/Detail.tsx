@@ -1,14 +1,24 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Users, FileText } from 'lucide-react';
-import { UsuariosTab } from './[id]/tabs/Usuarios';
+import { UsuariosTab } from './tabs/Usuarios';
 import { useAllianceUserCount } from './hooks/useAllianceUsers';
 
 export default function AlianzaDetail() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { data: userCount = 0 } = useAllianceUserCount(id!);
+  const [activeTab, setActiveTab] = useState('resumen');
+
+  // Handle URL hash for tab selection
+  useEffect(() => {
+    if (location.hash === '#usuarios') {
+      setActiveTab('usuarios');
+    }
+  }, [location.hash]);
 
   // Mock alliance data - in real app this would come from API
   const alianza = {
@@ -34,7 +44,7 @@ export default function AlianzaDetail() {
         </Badge>
       </div>
 
-      <Tabs defaultValue="resumen" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="resumen" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
@@ -78,7 +88,7 @@ export default function AlianzaDetail() {
         </TabsContent>
 
         <TabsContent value="usuarios">
-          <UsuariosTab />
+          <UsuariosTab alianceName={alianza.nombre} />
         </TabsContent>
       </Tabs>
     </div>
