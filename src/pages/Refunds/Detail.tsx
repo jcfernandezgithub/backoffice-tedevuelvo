@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Download, Edit, FileText } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 
@@ -57,6 +57,7 @@ export default function RefundDetail() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const queryClient = useQueryClient()
+  const [copied, setCopied] = useState(false)
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
@@ -65,6 +66,18 @@ export default function RefundDetail() {
     by: user?.email || '',
     force: false,
   })
+
+  const handleCopyId = () => {
+    if (refund?.publicId) {
+      navigator.clipboard.writeText(refund.publicId)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      toast({
+        title: 'ID copiado',
+        description: 'El ID público se copió al portapapeles',
+      })
+    }
+  }
 
   const { data: refund, isLoading } = useQuery({
     queryKey: ['refund', id],
@@ -163,9 +176,25 @@ export default function RefundDetail() {
       </div>
 
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{refund.publicId}</h1>
-          <p className="text-muted-foreground">{refund.fullName}</p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">{refund.fullName}</h1>
+          <div className="flex items-center gap-2">
+            <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+              {refund.publicId}
+            </code>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCopyId}
+              className="h-7 px-2"
+            >
+              {copied ? (
+                <Check className="h-3 w-3 text-green-600" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
         </div>
         <div className="flex gap-2 items-center">
           <Badge variant={statusVariants[refund.status]} className="text-base px-3 py-1">
