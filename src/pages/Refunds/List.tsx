@@ -39,17 +39,31 @@ const statusLabels: Record<RefundStatus, string> = {
   CANCELED: 'Cancelado',
 }
 
-const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  REQUESTED: 'secondary',
-  QUALIFYING: 'secondary',
-  DOCS_PENDING: 'outline',
-  DOCS_RECEIVED: 'outline',
-  SUBMITTED: 'default',
-  APPROVED: 'default',
-  REJECTED: 'destructive',
-  PAYMENT_SCHEDULED: 'default',
-  PAID: 'default',
-  CANCELED: 'destructive',
+const getStatusColors = (status: RefundStatus): string => {
+  switch (status) {
+    case 'REQUESTED':
+      return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+    case 'QUALIFYING':
+      return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
+    case 'DOCS_PENDING':
+      return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
+    case 'DOCS_RECEIVED':
+      return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
+    case 'SUBMITTED':
+      return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
+    case 'APPROVED':
+      return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
+    case 'PAYMENT_SCHEDULED':
+      return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
+    case 'PAID':
+      return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+    case 'REJECTED':
+      return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+    case 'CANCELED':
+      return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
+    default:
+      return 'bg-primary hover:bg-primary/90 text-white border-primary'
+  }
 }
 
 export default function RefundsList() {
@@ -329,7 +343,7 @@ export default function RefundsList() {
                       <TableCell>{refund.rut}</TableCell>
                       <TableCell className="text-sm">{refund.email}</TableCell>
                       <TableCell>
-                        <Badge variant={statusVariants[refund.status]}>
+                        <Badge className={getStatusColors(refund.status)}>
                           {statusLabels[refund.status]}
                         </Badge>
                       </TableCell>
