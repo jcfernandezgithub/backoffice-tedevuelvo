@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Download, Edit } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 
@@ -103,6 +103,38 @@ export default function RefundDetail() {
     updateMutation.mutate(updateForm)
   }
 
+  const handleViewMandate = async () => {
+    if (!refund?.publicId) return
+    
+    try {
+      const response = await fetch(
+        `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${refund.publicId}/experian/status`
+      )
+      
+      if (!response.ok) {
+        throw new Error('Error al obtener el mandato')
+      }
+      
+      const data = await response.json()
+      
+      if (data.signedPdfUrl) {
+        window.open(data.signedPdfUrl, '_blank')
+      } else {
+        toast({
+          title: 'Mandato no disponible',
+          description: 'El mandato firmado aún no está disponible',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo obtener el mandato firmado',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -138,6 +170,10 @@ export default function RefundDetail() {
           <Badge variant={statusVariants[refund.status]} className="text-base px-3 py-1">
             {statusLabels[refund.status]}
           </Badge>
+          <Button variant="outline" onClick={handleViewMandate}>
+            <FileText className="h-4 w-4 mr-2" />
+            Ver Mandato
+          </Button>
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
