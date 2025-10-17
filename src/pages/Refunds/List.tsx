@@ -165,9 +165,31 @@ export default function RefundsList() {
     return { total: 0, page: 1, pageSize: 20, items: [] }
   })()
 
-  const totalPages = normalizedData.total > 0 
-    ? Math.ceil(normalizedData.total / normalizedData.pageSize)
+  const searchTerm = (filters.search || '').toLowerCase().trim()
+  const filteredItems = searchTerm
+    ? normalizedData.items.filter((r: any) => {
+        const haystack = [
+          r.publicId,
+          r.id,
+          r.email,
+          r.rut,
+          r.fullName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        return haystack.includes(searchTerm)
+      })
+    : normalizedData.items
+
+  const totalFiltered = filteredItems.length
+  const totalPages = totalFiltered > 0 
+    ? Math.ceil(totalFiltered / normalizedData.pageSize)
     : 0
+
+  const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
+  const startIndex = (currentPage - 1) * normalizedData.pageSize
+  const paginatedItems = filteredItems.slice(startIndex, startIndex + normalizedData.pageSize)
 
   return (
     <div className="p-6 space-y-6">
@@ -267,8 +289,8 @@ export default function RefundsList() {
         <CardHeader>
           <CardTitle>
             Listado de Solicitudes
-            {normalizedData.total > 0 && (
-              <span className="text-muted-foreground ml-2">({normalizedData.total} total)</span>
+            {totalFiltered > 0 && (
+              <span className="text-muted-foreground ml-2">({totalFiltered} total)</span>
             )}
           </CardTitle>
         </CardHeader>
@@ -279,7 +301,7 @@ export default function RefundsList() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : normalizedData.items.length === 0 ? (
+          ) : paginatedItems.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No se encontraron solicitudes
             </div>
@@ -300,7 +322,7 @@ export default function RefundsList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {normalizedData.items.map((refund) => (
+                  {paginatedItems.map((refund) => (
                     <TableRow key={refund.id}>
                       <TableCell className="font-mono text-sm">{refund.publicId}</TableCell>
                       <TableCell>{refund.fullName}</TableCell>
@@ -335,22 +357,22 @@ export default function RefundsList() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Página {normalizedData.page} de {totalPages}
+                    Página {currentPage} de {totalPages}
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={normalizedData.page === 1}
-                      onClick={() => handlePageChange(normalizedData.page - 1)}
+                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
                     >
                       Anterior
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={normalizedData.page === totalPages}
-                      onClick={() => handlePageChange(normalizedData.page + 1)}
+                      disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
                     >
                       Siguiente
                     </Button>
