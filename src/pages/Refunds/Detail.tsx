@@ -339,28 +339,86 @@ export default function RefundDetail() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {refund.statusHistory.map((entry, idx) => (
-                  <div key={idx} className="flex gap-4 border-l-2 border-primary pl-4 pb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        {entry.from && (
-                          <Badge variant="outline" className="text-xs">
-                            {statusLabels[entry.from]}
+                {refund.statusHistory.map((entry, idx) => {
+                  // Determinar color del indicador según el estado final
+                  const getStatusColor = (status: RefundStatus) => {
+                    switch (status) {
+                      case 'REQUESTED':
+                        return 'bg-blue-500 border-blue-200'
+                      case 'QUALIFYING':
+                        return 'bg-yellow-500 border-yellow-200'
+                      case 'DOCS_PENDING':
+                        return 'bg-orange-500 border-orange-200'
+                      case 'DOCS_RECEIVED':
+                        return 'bg-cyan-500 border-cyan-200'
+                      case 'SUBMITTED':
+                        return 'bg-indigo-500 border-indigo-200'
+                      case 'APPROVED':
+                        return 'bg-green-500 border-green-200'
+                      case 'PAYMENT_SCHEDULED':
+                        return 'bg-emerald-500 border-emerald-200'
+                      case 'PAID':
+                        return 'bg-green-600 border-green-300'
+                      case 'REJECTED':
+                        return 'bg-red-500 border-red-200'
+                      case 'CANCELED':
+                        return 'bg-gray-500 border-gray-200'
+                      default:
+                        return 'bg-primary border-primary/20'
+                    }
+                  }
+
+                  const getBorderColor = (status: RefundStatus) => {
+                    switch (status) {
+                      case 'REQUESTED':
+                        return 'border-blue-300'
+                      case 'QUALIFYING':
+                        return 'border-yellow-300'
+                      case 'DOCS_PENDING':
+                        return 'border-orange-300'
+                      case 'DOCS_RECEIVED':
+                        return 'border-cyan-300'
+                      case 'SUBMITTED':
+                        return 'border-indigo-300'
+                      case 'APPROVED':
+                        return 'border-green-300'
+                      case 'PAYMENT_SCHEDULED':
+                        return 'border-emerald-300'
+                      case 'PAID':
+                        return 'border-green-400'
+                      case 'REJECTED':
+                        return 'border-red-300'
+                      case 'CANCELED':
+                        return 'border-gray-300'
+                      default:
+                        return 'border-primary'
+                    }
+                  }
+
+                  return (
+                    <div key={idx} className={`flex gap-4 border-l-2 ${getBorderColor(entry.to)} pl-4 pb-4 relative`}>
+                      <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 ${getStatusColor(entry.to)}`} />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          {entry.from && (
+                            <Badge variant="outline" className="text-xs">
+                              {statusLabels[entry.from]}
+                            </Badge>
+                          )}
+                          <span className="text-muted-foreground">→</span>
+                          <Badge variant={statusVariants[entry.to]} className="text-xs">
+                            {statusLabels[entry.to]}
                           </Badge>
-                        )}
-                        <span className="text-muted-foreground">→</span>
-                        <Badge variant={statusVariants[entry.to]} className="text-xs">
-                          {statusLabels[entry.to]}
-                        </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {new Date(entry.at).toLocaleString('es-CL')}
+                          {entry.by && ` • por ${entry.by}`}
+                        </p>
+                        {entry.note && <p className="text-sm mt-2">{entry.note}</p>}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {new Date(entry.at).toLocaleString('es-CL')}
-                        {entry.by && ` • por ${entry.by}`}
-                      </p>
-                      {entry.note && <p className="text-sm mt-2">{entry.note}</p>}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>
