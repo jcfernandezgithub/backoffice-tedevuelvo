@@ -111,7 +111,14 @@ export default function RefundsList() {
     }
   }
 
-  const totalPages = data ? Math.ceil(data.total / data.pageSize) : 0
+  const totalPages = data && typeof data === 'object' && 'total' in data && 'pageSize' in data
+    ? Math.ceil(data.total / data.pageSize)
+    : 0
+
+  // Normalizar respuesta de la API
+  const normalizedData = data && typeof data === 'object' && 'items' in data
+    ? data
+    : { total: 0, page: 1, pageSize: 20, items: [] }
 
   return (
     <div className="p-6 space-y-6">
@@ -200,7 +207,9 @@ export default function RefundsList() {
         <CardHeader>
           <CardTitle>
             Listado de Refunds
-            {data && <span className="text-muted-foreground ml-2">({data.total} total)</span>}
+            {normalizedData.total > 0 && (
+              <span className="text-muted-foreground ml-2">({normalizedData.total} total)</span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -210,7 +219,7 @@ export default function RefundsList() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : !data || data.items.length === 0 ? (
+          ) : normalizedData.items.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No se encontraron refunds
             </div>
@@ -231,7 +240,7 @@ export default function RefundsList() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.items.map((refund) => (
+                  {normalizedData.items.map((refund) => (
                     <TableRow key={refund.id}>
                       <TableCell className="font-mono text-sm">{refund.publicId}</TableCell>
                       <TableCell>{refund.fullName}</TableCell>
@@ -266,22 +275,22 @@ export default function RefundsList() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Página {data.page} de {totalPages}
+                    Página {normalizedData.page} de {totalPages}
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={data.page === 1}
-                      onClick={() => handlePageChange(data.page - 1)}
+                      disabled={normalizedData.page === 1}
+                      onClick={() => handlePageChange(normalizedData.page - 1)}
                     >
                       Anterior
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={data.page === totalPages}
-                      onClick={() => handlePageChange(data.page + 1)}
+                      disabled={normalizedData.page === totalPages}
+                      onClick={() => handlePageChange(normalizedData.page + 1)}
                     >
                       Siguiente
                     </Button>
