@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge'
 
 const items = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'dev' as const, adminOnly: false },
-  { title: 'Solicitudes', url: '/solicitudes', icon: FileText, status: 'live' as const, adminOnly: false },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'dev' as const, adminOnly: false },
   { title: 'Certificados', url: '/certificados', icon: FileCheck2, status: 'dev' as const, adminOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false },
