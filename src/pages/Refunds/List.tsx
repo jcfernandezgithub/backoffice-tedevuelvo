@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, Filter, RotateCw, X, Copy, Check } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -83,6 +83,8 @@ export default function RefundsList() {
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<string>('createdAt')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
   // Debounce para la búsqueda
   useEffect(() => {
@@ -148,6 +150,26 @@ export default function RefundsList() {
     })
   }
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-30" />
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    )
+  }
+
   if (error) {
     const errorMessage = (error as Error).message
     if (errorMessage === 'UNAUTHORIZED') {
@@ -207,14 +229,36 @@ export default function RefundsList() {
       })
     : normalizedData.items
 
-  const totalFiltered = filteredItems.length
+  // Aplicar ordenamiento
+  const sortedItems = [...filteredItems].sort((a: any, b: any) => {
+    let aValue = a[sortField]
+    let bValue = b[sortField]
+
+    // Manejo especial para diferentes tipos de datos
+    if (sortField === 'createdAt') {
+      aValue = new Date(aValue).getTime()
+      bValue = new Date(bValue).getTime()
+    } else if (sortField === 'estimatedAmountCLP') {
+      aValue = Number(aValue)
+      bValue = Number(bValue)
+    } else if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase()
+      bValue = bValue.toLowerCase()
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const totalFiltered = sortedItems.length
   const totalPages = totalFiltered > 0 
     ? Math.ceil(totalFiltered / normalizedData.pageSize)
     : 0
 
   const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * normalizedData.pageSize
-  const paginatedItems = filteredItems.slice(startIndex, startIndex + normalizedData.pageSize)
+  const paginatedItems = sortedItems.slice(startIndex, startIndex + normalizedData.pageSize)
 
   return (
     <div className="p-6 space-y-6">
@@ -335,14 +379,78 @@ export default function RefundsList() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID Público</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>RUT</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Monto estimado</TableHead>
-                    <TableHead>Institución</TableHead>
-                    <TableHead>Creación</TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('publicId')}
+                    >
+                      <div className="flex items-center">
+                        ID Público
+                        <SortIcon field="publicId" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('fullName')}
+                    >
+                      <div className="flex items-center">
+                        Nombre
+                        <SortIcon field="fullName" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('rut')}
+                    >
+                      <div className="flex items-center">
+                        RUT
+                        <SortIcon field="rut" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('email')}
+                    >
+                      <div className="flex items-center">
+                        Email
+                        <SortIcon field="email" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('status')}
+                    >
+                      <div className="flex items-center">
+                        Estado
+                        <SortIcon field="status" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('estimatedAmountCLP')}
+                    >
+                      <div className="flex items-center justify-end">
+                        Monto estimado
+                        <SortIcon field="estimatedAmountCLP" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('institutionId')}
+                    >
+                      <div className="flex items-center">
+                        Institución
+                        <SortIcon field="institutionId" />
+                      </div>
+                    </TableHead>
+                    <TableHead 
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleSort('createdAt')}
+                    >
+                      <div className="flex items-center">
+                        Creación
+                        <SortIcon field="createdAt" />
+                      </div>
+                    </TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
