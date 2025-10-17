@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, Filter, RotateCw, X } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -82,6 +82,7 @@ export default function RefundsList() {
 
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
 
   // Debounce para la búsqueda
   useEffect(() => {
@@ -135,6 +136,16 @@ export default function RefundsList() {
     setFilters(clearedFilters)
     setSearchInput('')
     setSearchParams(new URLSearchParams())
+  }
+
+  const handleCopy = (text: string, fieldId: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(fieldId)
+    setTimeout(() => setCopiedField(null), 2000)
+    toast({
+      title: 'Copiado',
+      description: 'Campo copiado al portapapeles',
+    })
   }
 
   if (error) {
@@ -338,10 +349,58 @@ export default function RefundsList() {
                 <TableBody>
                   {paginatedItems.map((refund) => (
                     <TableRow key={refund.id}>
-                      <TableCell className="font-mono text-sm">{refund.publicId}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        <div className="flex items-center gap-1">
+                          <span>{refund.publicId}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(refund.publicId, `publicId-${refund.id}`)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {copiedField === `publicId-${refund.id}` ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell>{refund.fullName}</TableCell>
-                      <TableCell>{refund.rut}</TableCell>
-                      <TableCell className="text-sm">{refund.email}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span>{refund.rut}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(refund.rut, `rut-${refund.id}`)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {copiedField === `rut-${refund.id}` ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1">
+                          <span>{refund.email}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopy(refund.email, `email-${refund.id}`)}
+                            className="h-6 w-6 p-0"
+                          >
+                            {copiedField === `email-${refund.id}` ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge className={getStatusColors(refund.status)}>
                           {statusLabels[refund.status]}
