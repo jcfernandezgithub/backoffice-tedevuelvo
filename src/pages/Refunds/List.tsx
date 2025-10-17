@@ -143,7 +143,7 @@ export default function RefundsList() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Refunds</h1>
+        <h1 className="text-3xl font-bold">Solicitudes</h1>
         <Button onClick={() => refetch()} variant="outline" size="sm">
           <RotateCw className="h-4 w-4 mr-2" />
           Actualizar
@@ -226,7 +226,7 @@ export default function RefundsList() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Listado de Refunds
+            Listado de Solicitudes
             {normalizedData.total > 0 && (
               <span className="text-muted-foreground ml-2">({normalizedData.total} total)</span>
             )}
@@ -241,7 +241,7 @@ export default function RefundsList() {
             </div>
           ) : normalizedData.items.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No se encontraron refunds
+              No se encontraron solicitudes
             </div>
           ) : (
             <>
