@@ -58,6 +58,7 @@ export default function RefundDetail() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [copied, setCopied] = useState(false)
+  const [snapshotView, setSnapshotView] = useState<'parsed' | 'raw'>('parsed')
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
@@ -322,10 +323,100 @@ export default function RefundDetail() {
               </div>
               {refund.calculationSnapshot && (
                 <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground mb-2">Snapshot de cálculo</p>
-                  <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
-                    {JSON.stringify(refund.calculationSnapshot, null, 2)}
-                  </pre>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">Snapshot de cálculo</p>
+                    <div className="flex gap-1">
+                      <Button
+                        variant={snapshotView === 'parsed' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSnapshotView('parsed')}
+                      >
+                        Parseado
+                      </Button>
+                      <Button
+                        variant={snapshotView === 'raw' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setSnapshotView('raw')}
+                      >
+                        JSON
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {snapshotView === 'parsed' ? (
+                    <div className="grid grid-cols-2 gap-3 bg-muted p-4 rounded">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tipo de crédito</p>
+                        <p className="font-medium capitalize">{refund.calculationSnapshot.creditType || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Seguro evaluado</p>
+                        <p className="font-medium capitalize">{refund.calculationSnapshot.insuranceToEvaluate || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Monto total crédito</p>
+                        <p className="font-medium">
+                          ${(refund.calculationSnapshot.totalAmount || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Saldo asegurado promedio</p>
+                        <p className="font-medium">
+                          ${(refund.calculationSnapshot.averageInsuredBalance || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Cuotas originales</p>
+                        <p className="font-medium">{refund.calculationSnapshot.originalInstallments || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Cuotas restantes</p>
+                        <p className="font-medium">{refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Prima mensual actual</p>
+                        <p className="font-medium">
+                          ${(refund.calculationSnapshot.currentMonthlyPremium || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Nueva prima mensual</p>
+                        <p className="font-medium text-green-600">
+                          ${(refund.calculationSnapshot.newMonthlyPremium || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Ahorro mensual</p>
+                        <p className="font-medium text-green-600">
+                          ${(refund.calculationSnapshot.monthlySaving || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Ahorro total</p>
+                        <p className="font-semibold text-lg text-green-600">
+                          ${(refund.calculationSnapshot.totalSaving || 0).toLocaleString('es-CL')} CLP
+                        </p>
+                      </div>
+                      {refund.calculationSnapshot.rateSet && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Versión tarifas</p>
+                          <p className="font-medium">{refund.calculationSnapshot.rateSet}</p>
+                        </div>
+                      )}
+                      {refund.calculationSnapshot.createdAt && (
+                        <div>
+                          <p className="text-xs text-muted-foreground">Creado</p>
+                          <p className="font-medium">
+                            {new Date(refund.calculationSnapshot.createdAt).toLocaleString('es-CL')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
+                      {JSON.stringify(refund.calculationSnapshot, null, 2)}
+                    </pre>
+                  )}
                 </div>
               )}
             </CardContent>
