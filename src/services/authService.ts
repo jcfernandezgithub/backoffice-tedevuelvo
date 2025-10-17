@@ -33,6 +33,9 @@ export const authService = {
   getAccessToken(): string | null {
     return load<string | null>(ACCESS_TOKEN_KEY, null)
   },
+  getRefreshToken(): string | null {
+    return load<string | null>(REFRESH_TOKEN_KEY, null)
+  },
   async login(email: string, password: string): Promise<LoginResult> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -64,6 +67,48 @@ export const authService = {
 
     save(AUTH_KEY, user)
     return { user }
+  },
+  async refresh(): Promise<LoginResult> {
+    const user = load<Usuario | null>(AUTH_KEY, null)
+    const refreshToken = load<string | null>(REFRESH_TOKEN_KEY, null)
+
+    if (!user || !refreshToken) {
+      throw new Error('No hay sesión para renovar')
+    }
+
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user.id, refreshToken }),
+    })
+
+    if (!response.ok) {
+      // Si falla el refresh, limpiar todo
+      save(AUTH_KEY, null)
+      save(ACCESS_TOKEN_KEY, null)
+      save(REFRESH_TOKEN_KEY, null)
+      throw new Error('Sesión expirada')
+    }
+
+    const data: LoginResponse = await response.json()
+
+    // Actualizar tokens
+    save(ACCESS_TOKEN_KEY, data.accessToken)
+    save(REFRESH_TOKEN_KEY, data.refreshToken)
+
+    // Actualizar usuario
+    const updatedUser: Usuario = {
+      id: data.user.id,
+      nombre: data.user.fullName,
+      email: data.user.email,
+      rol: mapRoleToFrontend(data.user.roles),
+      activo: true,
+    }
+
+    save(AUTH_KEY, updatedUser)
+    return { user: updatedUser }
   },
   async logout() {
     save(AUTH_KEY, null)

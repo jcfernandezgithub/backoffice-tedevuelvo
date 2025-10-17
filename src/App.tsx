@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/app/AppSidebar";
 import { TopBar } from "@/components/app/TopBar";
 import { AuthProvider } from "@/state/AuthContext";
 import ProtectedRoute from "@/routes/ProtectedRoute";
+import AdminRoute from "@/routes/AdminRoute";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
 import SolicitudesList from "@/pages/Solicitudes/List";
@@ -17,6 +18,8 @@ import AlianzasList from "@/pages/Alianzas/List";
 import AlianzaDetail from "@/pages/Alianzas/Detail";
 import Reportes from "@/pages/Reportes";
 import UsuariosPage from "@/pages/Usuarios";
+import RefundsList from "@/pages/Refunds/List";
+import RefundDetail from "@/pages/Refunds/Detail";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -54,6 +57,12 @@ const App = () => (
                 <Route path="/reportes" element={<Reportes />} />
                 <Route path="/usuarios" element={<UsuariosPage />} />
                 <Route path="/ajustes" element={<div className="p-4">Ajustes (en construcción)</div>} />
+              </Route>
+            </Route>
+            <Route element={<AdminRoute />}>
+              <Route element={<Shell />}>
+                <Route path="/refunds" element={<RefundsList />} />
+                <Route path="/refunds/:id" element={<RefundDetail />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />

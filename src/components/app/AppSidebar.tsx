@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { BarChart3, Briefcase, FileText, Home, Settings, Shield, Users, FileCheck2 } from 'lucide-react'
+import { BarChart3, Briefcase, FileText, Home, Settings, Shield, Users, FileCheck2, Repeat } from 'lucide-react'
+import { useAuth } from '@/state/AuthContext'
 import {
   Sidebar,
   SidebarContent,
@@ -14,24 +15,28 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 const items = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'dev' as const },
-  { title: 'Solicitudes', url: '/solicitudes', icon: FileText, status: 'live' as const },
-  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'dev' as const },
-  { title: 'Certificados', url: '/certificados', icon: FileCheck2, status: 'dev' as const },
-  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const },
-  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'dev' as const },
-  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const },
+  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'dev' as const, adminOnly: false },
+  { title: 'Solicitudes', url: '/solicitudes', icon: FileText, status: 'live' as const, adminOnly: false },
+  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'dev' as const, adminOnly: false },
+  { title: 'Certificados', url: '/certificados', icon: FileCheck2, status: 'dev' as const, adminOnly: false },
+  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false },
+  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'dev' as const, adminOnly: false },
+  { title: 'Refunds', url: '/refunds', icon: Repeat, status: 'live' as const, adminOnly: true },
+  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false },
 ]
 
 export function AppSidebar() {
   const { state } = useSidebar()
+  const { user } = useAuth()
   const collapsed = state === 'collapsed'
   const location = useLocation()
   const currentPath = location.pathname
-  const isActive = (path: string) => currentPath === path
+  const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/')
   const isExpanded = items.some((i) => isActive(i.url))
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
+
+  const visibleItems = items.filter(item => !item.adminOnly || user?.rol === 'ADMIN')
 
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
@@ -40,7 +45,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls}>
