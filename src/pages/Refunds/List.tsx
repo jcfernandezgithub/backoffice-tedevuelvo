@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, Filter, RotateCw } from 'lucide-react'
+import { Search, Filter, RotateCw, X } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -66,6 +66,20 @@ export default function RefundsList() {
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
   })
 
+  // Estado local para el input de búsqueda (para debounce)
+  const [searchInput, setSearchInput] = useState(filters.search)
+
+  // Debounce para la búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        handleFilterChange('search', searchInput)
+      }
+    }, 500) // Espera 500ms después de que el usuario deje de escribir
+
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['refunds', filters],
     queryFn: () => refundAdminApi.list(filters),
@@ -92,6 +106,21 @@ export default function RefundsList() {
       if (v) params.set(k, String(v))
     })
     setSearchParams(params)
+  }
+
+  const handleClearFilters = () => {
+    const clearedFilters: AdminQueryParams = {
+      search: '',
+      status: undefined,
+      from: '',
+      to: '',
+      page: 1,
+      pageSize: 20,
+      sort: 'createdAt:desc',
+    }
+    setFilters(clearedFilters)
+    setSearchInput('')
+    setSearchParams(new URLSearchParams())
   }
 
   if (error) {
@@ -152,10 +181,21 @@ export default function RefundsList() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtros
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Limpiar filtros
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -163,8 +203,8 @@ export default function RefundsList() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar (ID, email, RUT, nombre)"
-                value={filters.search || ''}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-9"
               />
             </div>
