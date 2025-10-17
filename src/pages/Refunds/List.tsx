@@ -111,14 +111,34 @@ export default function RefundsList() {
     }
   }
 
-  const totalPages = data && typeof data === 'object' && 'total' in data && 'pageSize' in data
-    ? Math.ceil(data.total / data.pageSize)
-    : 0
+  // Normalizar respuesta de la API - puede ser array o objeto
+  const normalizedData = (() => {
+    if (!data) {
+      return { total: 0, page: 1, pageSize: 20, items: [] }
+    }
+    
+    // Si es un array directo, crear el objeto esperado
+    if (Array.isArray(data)) {
+      return {
+        total: data.length,
+        page: filters.page || 1,
+        pageSize: filters.pageSize || 20,
+        items: data
+      }
+    }
+    
+    // Si es un objeto con items
+    if (typeof data === 'object' && 'items' in data) {
+      return data
+    }
+    
+    // Fallback
+    return { total: 0, page: 1, pageSize: 20, items: [] }
+  })()
 
-  // Normalizar respuesta de la API
-  const normalizedData = data && typeof data === 'object' && 'items' in data
-    ? data
-    : { total: 0, page: 1, pageSize: 20, items: [] }
+  const totalPages = normalizedData.total > 0 
+    ? Math.ceil(normalizedData.total / normalizedData.pageSize)
+    : 0
 
   return (
     <div className="p-6 space-y-6">
