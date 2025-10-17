@@ -118,7 +118,8 @@ export default function RefundDetail() {
       const data = await response.json()
       
       if (data.signedPdfUrl) {
-        window.open(data.signedPdfUrl, '_blank')
+        const decodedUrl = decodeURIComponent(data.signedPdfUrl)
+        window.open(decodedUrl, '_blank')
       } else {
         toast({
           title: 'Mandato no disponible',
