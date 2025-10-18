@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DocumentsSection } from './components/DocumentsSection'
 import {
   Table,
   TableBody,
@@ -278,7 +279,7 @@ export default function RefundDetail() {
         <TabsList>
           <TabsTrigger value="info">Información</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="documents">Documentos públicos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-4">
@@ -516,48 +517,7 @@ export default function RefundDetail() {
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!documents || documents.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No hay documentos</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Tamaño</TableHead>
-                      <TableHead>Formato</TableHead>
-                      <TableHead>Creación</TableHead>
-                      <TableHead>Acción</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {documents.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell className="font-medium">{doc.kind}</TableCell>
-                        <TableCell>{(doc.size / 1024).toFixed(2)} KB</TableCell>
-                        <TableCell>{doc.contentType}</TableCell>
-                        <TableCell>{new Date(doc.createdAt).toLocaleDateString('es-CL')}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => refundAdminApi.downloadDoc(refund.publicId, doc.id)}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Descargar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <DocumentsSection publicId={refund.publicId} clientToken={refund.clientTokenHash} />
         </TabsContent>
       </Tabs>
     </div>

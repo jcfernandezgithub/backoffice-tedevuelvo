@@ -35,6 +35,7 @@ export interface RefundRequest {
   updatedAt: string
   signatureUrl?: string
   signedAt?: string
+  clientTokenHash?: string
 }
 
 export interface RefundDocument {
