@@ -54,7 +54,6 @@ export default function Login() {
               {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting} variant="hero">Entrar</Button>
-            <p className="text-xs text-muted-foreground">Usuarios demo: admin@tedevuelvo.cl, ops@tedevuelvo.cl, alianzas@tedevuelvo.cl, readonly@tedevuelvo.cl — clave 123456</p>
           </form>
         </CardContent>
       </Card>
