@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -260,6 +260,31 @@ export default function RefundsList() {
   const startIndex = (currentPage - 1) * normalizedData.pageSize
   const paginatedItems = sortedItems.slice(startIndex, startIndex + normalizedData.pageSize)
 
+  // Query para obtener estados de mandatos de los items paginados
+  const visiblePublicIds = paginatedItems.map((r: any) => r.publicId)
+  const { data: mandateStatuses } = useQuery({
+    queryKey: ['mandate-statuses', visiblePublicIds],
+    queryFn: async () => {
+      const statuses: Record<string, any> = {}
+      await Promise.all(
+        visiblePublicIds.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            )
+            if (response.ok) {
+              statuses[publicId] = await response.json()
+            }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return statuses
+    },
+    enabled: visiblePublicIds.length > 0,
+  })
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -424,6 +449,7 @@ export default function RefundsList() {
                         <SortIcon field="status" />
                       </div>
                     </TableHead>
+                    <TableHead>Mandato</TableHead>
                     <TableHead 
                       className="text-right cursor-pointer hover:bg-muted/50 select-none"
                       onClick={() => handleSort('estimatedAmountCLP')}
@@ -513,6 +539,23 @@ export default function RefundsList() {
                         <Badge className={getStatusColors(refund.status)}>
                           {statusLabels[refund.status]}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {mandateStatuses?.[refund.publicId] ? (
+                          mandateStatuses[refund.publicId].hasSignedPdf ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle className="h-4 w-4" />
+                              <span className="text-xs">Firmado</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs">Pendiente</span>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         ${refund.estimatedAmountCLP.toLocaleString('es-CL')}
