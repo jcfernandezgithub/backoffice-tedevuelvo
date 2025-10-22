@@ -17,12 +17,16 @@ interface CorteFormData {
   policyNumber: string
   bankName: string
   companyName: string
-  accountNumber: string
-  accountBank: string
-  accountHolder: string
-  accountHolderRut: string
-  contactEmail: string
-  contactPhone: string
+}
+
+// Datos fijos para cuenta bancaria y contacto
+const FIXED_ACCOUNT_DATA = {
+  accountNumber: '12345678',
+  accountBank: 'Banco Estado',
+  accountHolder: 'TDV Servicios SpA',
+  accountHolderRut: '77.954.590-6',
+  contactEmail: 'contacto@tedevuelvo.cl',
+  contactPhone: '+56 9 8765 4321',
 }
 
 export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
@@ -33,12 +37,6 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
     policyNumber: '',
     bankName: refund.institutionId || '',
     companyName: '',
-    accountNumber: '',
-    accountBank: '',
-    accountHolder: refund.fullName,
-    accountHolderRut: refund.rut,
-    contactEmail: refund.email,
-    contactPhone: refund.phone || '',
   })
 
   const handleInputChange = (field: keyof CorteFormData, value: string) => {
@@ -46,7 +44,7 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
   }
 
   const validateForm = () => {
-    const required = ['creditNumber', 'policyNumber', 'companyName', 'accountNumber', 'accountBank']
+    const required = ['creditNumber', 'policyNumber', 'companyName']
     const missing = required.filter(field => !formData[field as keyof CorteFormData])
     
     if (missing.length > 0) {
@@ -145,10 +143,10 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
               Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión 
               para el Mercado Financiero (CMF), solicito (solicitamos) la devolución de la prima 
               pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
-              N° <strong>${formData.accountNumber}</strong> del Banco <strong>${formData.accountBank}</strong> 
-              cuyo titular es <strong>${formData.accountHolder}</strong>, RUT 
-              <strong>${formData.accountHolderRut}</strong>, correo electrónico 
-              <strong>${formData.contactEmail}</strong>. Se hace presente que el monto a restituir 
+              N° <strong>${FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>${FIXED_ACCOUNT_DATA.accountBank}</strong> 
+              cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, RUT 
+              <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico 
+              <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir 
               deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, 
               conforme a la normativa vigente.
             </p>
@@ -158,8 +156,8 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
               para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre 
               del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicito 
               (solicitamos) que se me (nos) informe el resultado de esta gestión al correo electrónico 
-              <strong>${formData.contactEmail}</strong> y al número telefónico 
-              <strong>${formData.contactPhone}</strong>.
+              <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número telefónico 
+              <strong>${FIXED_ACCOUNT_DATA.contactPhone}</strong>.
             </p>
 
             <p>
@@ -261,77 +259,6 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
               />
             </div>
 
-            <div className="border-t pt-4 mt-4">
-              <h4 className="font-semibold mb-3">Datos de cuenta para devolución</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accountNumber">Nº Cuenta Corriente *</Label>
-                  <Input
-                    id="accountNumber"
-                    value={formData.accountNumber}
-                    onChange={(e) => handleInputChange('accountNumber', e.target.value)}
-                    placeholder="Número de cuenta"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="accountBank">Banco (Cuenta) *</Label>
-                  <Input
-                    id="accountBank"
-                    value={formData.accountBank}
-                    onChange={(e) => handleInputChange('accountBank', e.target.value)}
-                    placeholder="Banco de la cuenta"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="accountHolder">Titular de la cuenta</Label>
-                  <Input
-                    id="accountHolder"
-                    value={formData.accountHolder}
-                    onChange={(e) => handleInputChange('accountHolder', e.target.value)}
-                    placeholder="Nombre del titular"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="accountHolderRut">RUT del titular</Label>
-                  <Input
-                    id="accountHolderRut"
-                    value={formData.accountHolderRut}
-                    onChange={(e) => handleInputChange('accountHolderRut', e.target.value)}
-                    placeholder="RUT del titular"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <h4 className="font-semibold mb-3">Datos de contacto</h4>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Correo electrónico</Label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                    placeholder="email@ejemplo.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Teléfono</Label>
-                  <Input
-                    id="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                    placeholder="+56 9 1234 5678"
-                  />
-                </div>
-              </div>
-            </div>
 
             <div className="flex gap-2 pt-4">
               <Button onClick={handleGenerate} className="flex-1">
@@ -370,16 +297,16 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
                 <p>
                   Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión para el Mercado Financiero (CMF), 
                   solicito (solicitamos) la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
-                  N° <strong>{formData.accountNumber}</strong> del Banco <strong>{formData.accountBank}</strong> cuyo titular es <strong>{formData.accountHolder}</strong>, 
-                  RUT <strong>{formData.accountHolderRut}</strong>, correo electrónico <strong>{formData.contactEmail}</strong>. Se hace presente que 
+                  N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>, 
+                  RUT <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que 
                   el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.
                 </p>
 
                 <p>
                   Finalmente, se adjunta a la presente carta una copia del mandato que me(nos) faculta para solicitar y tramitar la renuncia del seguro 
                   antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicito (solicitamos) 
-                  que se me (nos) informe el resultado de esta gestión al correo electrónico <strong>{formData.contactEmail}</strong> y al número 
-                  telefónico <strong>{formData.contactPhone}</strong>.
+                  que se me (nos) informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número 
+                  telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
                 </p>
 
                 <p>Sin otro particular, se despide(n) atentamente,</p>
