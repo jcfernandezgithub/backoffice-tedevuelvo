@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Download, Edit, FileText, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
@@ -91,6 +91,18 @@ export default function RefundDetail() {
   const { data: documents } = useQuery({
     queryKey: ['refund-docs', refund?.publicId],
     queryFn: () => refundAdminApi.listDocs(refund!.publicId),
+    enabled: !!refund?.publicId,
+  })
+
+  const { data: experianStatus } = useQuery({
+    queryKey: ['experian-status', refund?.publicId],
+    queryFn: async () => {
+      const response = await fetch(
+        `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${refund!.publicId}/experian/status`
+      )
+      if (!response.ok) throw new Error('Error al obtener estado de mandato')
+      return response.json()
+    },
     enabled: !!refund?.publicId,
   })
 
@@ -203,6 +215,24 @@ export default function RefundDetail() {
           <Badge variant={statusVariants[refund.status]} className="text-base px-3 py-1">
             {statusLabels[refund.status]}
           </Badge>
+          {experianStatus && (
+            <Badge 
+              variant={experianStatus.hasSignedPdf ? "default" : "destructive"}
+              className="text-sm px-3 py-1"
+            >
+              {experianStatus.hasSignedPdf ? (
+                <>
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Mandato firmado
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Mandato pendiente
+                </>
+              )}
+            </Badge>
+          )}
           <Button variant="outline" onClick={handleViewMandate}>
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
