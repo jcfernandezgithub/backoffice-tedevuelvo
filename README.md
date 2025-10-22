@@ -1,5 +1,24 @@
 # Welcome to your Lovable project
 
+## Versión 1.0.0
+
+## Changelog
+
+### Versión 1.0.0 - 2025-10-22
+
+#### Nuevas Funcionalidades
+- **Filtro de Mandato**: Agregado filtro para visualizar solicitudes con mandato firmado o pendiente en la lista de solicitudes.
+- **Indicadores Visuales de Estado**: 
+  - El estado "REQUESTED" ahora se muestra como "Simulado" para mejor comprensión del usuario.
+  - Badges de estado con códigos de color diferenciados para cada estado del proceso.
+
+#### Mejoras de UX
+- Optimización de la visualización de estados en la lista de solicitudes.
+- Mejora en la presentación de información de mandatos firmados.
+- Sistema de filtros ampliado para mejor gestión de solicitudes.
+
+---
+
 ## Project info
 
 **URL**: https://lovable.dev/projects/e346b405-766c-446c-a745-3449be733fde

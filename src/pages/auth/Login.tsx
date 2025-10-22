@@ -35,7 +35,7 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center">
+    <main className="min-h-screen grid place-items-center bg-gradient-to-br from-background to-muted/20">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Ingresar</CardTitle>
@@ -55,6 +55,9 @@ export default function Login() {
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting} variant="hero">Entrar</Button>
           </form>
+          <div className="mt-6 pt-4 border-t text-center">
+            <p className="text-xs text-muted-foreground">Versión 1.0.0</p>
+          </div>
         </CardContent>
       </Card>
     </main>
