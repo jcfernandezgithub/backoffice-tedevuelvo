@@ -27,7 +27,7 @@ import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDo
 import { toast } from '@/hooks/use-toast'
 
 const statusLabels: Record<RefundStatus, string> = {
-  REQUESTED: 'Solicitado',
+  REQUESTED: 'Simulado',
   QUALIFYING: 'En calificación',
   DOCS_PENDING: 'Docs pendientes',
   DOCS_RECEIVED: 'Docs recibidos',
@@ -536,9 +536,22 @@ export default function RefundsList() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColors(refund.status)}>
-                          {statusLabels[refund.status]}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getStatusColors(refund.status)}>
+                            {statusLabels[refund.status]}
+                          </Badge>
+                          {refund.status === 'REQUESTED' && (
+                            refund.fullName && refund.email ? (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                                Datos completos
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                                Datos pendientes
+                              </Badge>
+                            )
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {mandateStatuses?.[refund.publicId] ? (

@@ -29,7 +29,7 @@ import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
-  REQUESTED: 'Solicitado',
+  REQUESTED: 'Simulado',
   QUALIFYING: 'En calificación',
   DOCS_PENDING: 'Docs pendientes',
   DOCS_RECEIVED: 'Docs recibidos',
