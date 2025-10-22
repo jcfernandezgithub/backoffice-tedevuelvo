@@ -536,22 +536,14 @@ export default function RefundsList() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge className={getStatusColors(refund.status)}>
-                            {statusLabels[refund.status]}
-                          </Badge>
+                        <Badge className={getStatusColors(refund.status)}>
+                          {statusLabels[refund.status]}
                           {refund.status === 'REQUESTED' && (
-                            refund.fullName && refund.email ? (
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                                Datos completos
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
-                                Datos pendientes
-                              </Badge>
-                            )
+                            <span className="ml-1.5 text-xs opacity-70">
+                              {refund.fullName && refund.email ? '✓' : '⋯'}
+                            </span>
                           )}
-                        </div>
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {mandateStatuses?.[refund.publicId] ? (
