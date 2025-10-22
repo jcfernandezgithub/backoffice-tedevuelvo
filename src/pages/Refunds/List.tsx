@@ -519,7 +519,10 @@ export default function RefundsList() {
                       </TableCell>
                       <TableCell className="text-sm">{refund.institutionId}</TableCell>
                       <TableCell className="text-sm">
-                        {new Date(refund.createdAt).toLocaleDateString('es-CL')}
+                        {new Date(refund.createdAt).toLocaleString('es-CL', {
+                          dateStyle: 'short',
+                          timeStyle: 'short'
+                        })}
                       </TableCell>
                       <TableCell>
                         <Button
