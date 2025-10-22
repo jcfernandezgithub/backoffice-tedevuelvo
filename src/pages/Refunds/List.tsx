@@ -243,7 +243,32 @@ export default function RefundsList() {
       })
     : normalizedData.items
   
-  // Aplicar filtro de mandato (depende de mandateStatuses)
+  // Query para obtener estados de mandatos de TODOS los items filtrados por texto
+  const allPublicIds = textFilteredItems.map((r: any) => r.publicId)
+  const { data: mandateStatuses } = useQuery({
+    queryKey: ['mandate-statuses', allPublicIds],
+    queryFn: async () => {
+      const statuses: Record<string, any> = {}
+      await Promise.all(
+        allPublicIds.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            )
+            if (response.ok) {
+              statuses[publicId] = await response.json()
+            }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return statuses
+    },
+    enabled: allPublicIds.length > 0,
+  })
+  
+  // Aplicar filtro de mandato (ahora mandateStatuses ya está disponible)
   const filteredItems = mandateFilter === 'all' 
     ? textFilteredItems
     : textFilteredItems.filter((r: any) => {
@@ -282,31 +307,6 @@ export default function RefundsList() {
   const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * normalizedData.pageSize
   const paginatedItems = sortedItems.slice(startIndex, startIndex + normalizedData.pageSize)
-
-  // Query para obtener estados de mandatos de los items paginados
-  const visiblePublicIds = paginatedItems.map((r: any) => r.publicId)
-  const { data: mandateStatuses } = useQuery({
-    queryKey: ['mandate-statuses', visiblePublicIds],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {}
-      await Promise.all(
-        visiblePublicIds.map(async (publicId: string) => {
-          try {
-            const response = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            )
-            if (response.ok) {
-              statuses[publicId] = await response.json()
-            }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
-        })
-      )
-      return statuses
-    },
-    enabled: visiblePublicIds.length > 0,
-  })
 
   return (
     <div className="p-6 space-y-6">
