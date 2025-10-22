@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch'
 import { ArrowLeft, Download, Edit, FileText, Copy, Check } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
+import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
   REQUESTED: 'Solicitado',
@@ -206,6 +207,7 @@ export default function RefundDetail() {
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
+          <GenerateCorteDialog refund={refund} />
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
