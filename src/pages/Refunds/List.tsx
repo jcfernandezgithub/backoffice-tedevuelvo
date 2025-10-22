@@ -79,6 +79,8 @@ export default function RefundsList() {
     pageSize: Number(searchParams.get('pageSize')) || 20,
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
   })
+  
+  const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
 
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -137,7 +139,19 @@ export default function RefundsList() {
     }
     setFilters(clearedFilters)
     setSearchInput('')
+    setMandateFilter('all')
     setSearchParams(new URLSearchParams())
+  }
+  
+  const handleMandateFilterChange = (value: string) => {
+    setMandateFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('mandate')
+    } else {
+      params.set('mandate', value)
+    }
+    setSearchParams(params)
   }
 
   const handleCopy = (text: string, fieldId: string) => {
@@ -213,7 +227,7 @@ export default function RefundsList() {
   })()
 
   const searchTerm = (filters.search || '').toLowerCase().trim()
-  const filteredItems = searchTerm
+  const textFilteredItems = searchTerm
     ? normalizedData.items.filter((r: any) => {
         const haystack = [
           r.publicId,
@@ -228,6 +242,15 @@ export default function RefundsList() {
         return haystack.includes(searchTerm)
       })
     : normalizedData.items
+  
+  // Aplicar filtro de mandato (depende de mandateStatuses)
+  const filteredItems = mandateFilter === 'all' 
+    ? textFilteredItems
+    : textFilteredItems.filter((r: any) => {
+        const status = mandateStatuses?.[r.publicId]
+        const hasSigned = status?.hasSignedPdf === true
+        return mandateFilter === 'signed' ? hasSigned : !hasSigned
+      })
 
   // Aplicar ordenamiento
   const sortedItems = [...filteredItems].sort((a: any, b: any) => {
@@ -342,6 +365,22 @@ export default function RefundsList() {
               </SelectContent>
             </Select>
 
+            <Select
+              value={mandateFilter}
+              onValueChange={handleMandateFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Mandato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los mandatos</SelectItem>
+                <SelectItem value="signed">Con mandato firmado</SelectItem>
+                <SelectItem value="pending">Mandato pendiente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <Select
               value={filters.sort || 'createdAt:desc'}
               onValueChange={(v) => handleFilterChange('sort', v)}
