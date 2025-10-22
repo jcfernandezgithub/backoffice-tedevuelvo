@@ -538,11 +538,6 @@ export default function RefundsList() {
                       <TableCell>
                         <Badge className={getStatusColors(refund.status)}>
                           {statusLabels[refund.status]}
-                          {refund.status === 'REQUESTED' && (
-                            <span className="ml-1.5 text-xs opacity-70">
-                              {refund.fullName && refund.email ? '✓' : '⋯'}
-                            </span>
-                          )}
                         </Badge>
                       </TableCell>
                       <TableCell>
