@@ -21,12 +21,12 @@ interface CorteFormData {
 
 // Datos fijos para cuenta bancaria y contacto
 const FIXED_ACCOUNT_DATA = {
-  accountNumber: '12345678',
-  accountBank: 'Banco Estado',
-  accountHolder: 'TDV Servicios SpA',
-  accountHolderRut: '77.954.590-6',
+  accountNumber: '992866721',
+  accountBank: 'Banco Scotiabank',
+  accountHolder: 'TDV SERVICIOS SPA',
+  accountHolderRut: '78.168.126-1',
   contactEmail: 'contacto@tedevuelvo.cl',
-  contactPhone: '+56 9 8765 4321',
+  contactPhone: '+569 84295935',
 }
 
 export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
@@ -128,23 +128,23 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
 
           <div class="content">
             <p>
-              Por medio de la presente Carta de Renuncia <strong>TDV SERVICIOS SPA</strong>, 
-              RUT <strong>77.954.590-6</strong>, actuando en representación y por cuenta de 
+              Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> 
+              RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, actuando en representación y por cuenta de 
               don (doña) <strong>${refund.fullName}</strong>, cédula de identidad 
-              <strong>${refund.rut}</strong>, comunico (comunicamos) formalmente a esa Compañía 
-              Aseguradora la renuncia al seguro y su(s) cobertura(s) que fuera contratado junto 
+              <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
+              Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
               con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
-              que corresponde a la operación de crédito N° <strong>${formData.creditNumber}</strong> 
+              que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> 
               asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme 
               a lo dispuesto en el artículo 537 del Código de Comercio.
             </p>
 
             <p>
               Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión 
-              para el Mercado Financiero (CMF), solicito (solicitamos) la devolución de la prima 
+              para el Mercado Financiero (CMF), solicitamos la devolución de la prima 
               pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
               N° <strong>${FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>${FIXED_ACCOUNT_DATA.accountBank}</strong> 
-              cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, RUT 
+              cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, RUT: 
               <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico 
               <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir 
               deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, 
@@ -152,24 +152,23 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
             </p>
 
             <p>
-              Finalmente, se adjunta a la presente carta una copia del mandato que me(nos) faculta 
+              Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta 
               para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre 
-              del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicito 
-              (solicitamos) que se me (nos) informe el resultado de esta gestión al correo electrónico 
+              del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos 
+              que se nos informe el resultado de esta gestión al correo electrónico 
               <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número telefónico 
               <strong>${FIXED_ACCOUNT_DATA.contactPhone}</strong>.
             </p>
 
             <p>
-              Sin otro particular, se despide(n) atentamente,
+              Sin otro particular, se despiden atentamente,
             </p>
           </div>
 
           <div class="signature">
-            <div class="signature-line"></div>
+            <p style="margin-top: 60px;">Cristian Andrés Nieto Gavilán</p>
             <p style="margin: 5px 0;">
-              p.p. TDV SERVICIOS SpA<br>
-              RUT 77.954.590-6
+              p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}
             </p>
           </div>
         </body>
@@ -286,36 +285,35 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
 
               <div className="space-y-4 text-justify">
                 <p>
-                  Por medio de la presente Carta de Renuncia <strong>TDV SERVICIOS SPA</strong>, RUT <strong>77.954.590-6</strong>, 
+                  Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, 
                   actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>, 
-                  comunico (comunicamos) formalmente a esa Compañía Aseguradora la renuncia al seguro y su(s) cobertura(s) que fuera contratado junto 
+                  comunicamos formalmente a esa Compañía Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
                   con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>, que corresponde a la operación de crédito 
-                  N° <strong>{formData.creditNumber}</strong> asociada a la Póliza N° <strong>{formData.policyNumber}</strong>, todo ello conforme 
+                  N°<strong>{formData.creditNumber}</strong> asociada a la Póliza N° <strong>{formData.policyNumber}</strong>, todo ello conforme 
                   a lo dispuesto en el artículo 537 del Código de Comercio.
                 </p>
 
                 <p>
                   Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión para el Mercado Financiero (CMF), 
-                  solicito (solicitamos) la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
+                  solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
                   N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>, 
-                  RUT <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que 
+                  RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que 
                   el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.
                 </p>
 
                 <p>
-                  Finalmente, se adjunta a la presente carta una copia del mandato que me(nos) faculta para solicitar y tramitar la renuncia del seguro 
-                  antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicito (solicitamos) 
-                  que se me (nos) informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número 
+                  Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro 
+                  antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos 
+                  que se nos informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número 
                   telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
                 </p>
 
-                <p>Sin otro particular, se despide(n) atentamente,</p>
+                <p>Sin otro particular, se despiden atentamente,</p>
               </div>
 
               <div className="text-center mt-16">
-                <div className="border-t border-black w-64 mx-auto mb-2"></div>
-                <p>p.p. TDV SERVICIOS SpA</p>
-                <p>RUT 77.954.590-6</p>
+                <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
+                <p className="mt-1">p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
               </div>
             </div>
 
