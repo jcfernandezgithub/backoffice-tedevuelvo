@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
+import firmaImg from '@/assets/firma-cng.jpeg'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
@@ -169,7 +170,8 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
           </div>
 
           <div class="signature">
-            <p style="margin-top: 60px;">Cristian Andrés Nieto Gavilán</p>
+            <img src="${firmaImg}" alt="Firma" style="width: 180px; height: auto; margin: 20px auto 10px; display: block;">
+            <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán</p>
             <p style="margin: 5px 0;">
               p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}
             </p>
@@ -315,6 +317,7 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
               </div>
 
               <div className="text-center mt-16">
+                <img src={firmaImg} alt="Firma" className="w-48 h-auto mx-auto mb-2" />
                 <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
                 <p className="mt-1">p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
               </div>
