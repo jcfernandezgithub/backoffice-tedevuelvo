@@ -74,39 +74,42 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
         <head>
           <meta charset="UTF-8">
           <style>
-            @page { margin: 2.5cm; }
+            @page { 
+              margin: 1.5cm 2cm; 
+              size: letter;
+            }
             body {
               font-family: Arial, sans-serif;
-              font-size: 11pt;
-              line-height: 1.6;
+              font-size: 10pt;
+              line-height: 1.4;
               color: #000;
             }
             .header {
               text-align: left;
-              margin-bottom: 30px;
+              margin-bottom: 15px;
             }
             .title {
               text-align: center;
               font-weight: bold;
-              font-size: 12pt;
-              margin: 20px 0;
+              font-size: 11pt;
+              margin: 12px 0;
             }
             .content {
               text-align: justify;
-              margin: 20px 0;
+              margin: 10px 0;
+            }
+            .content p {
+              margin: 8px 0;
             }
             .signature {
-              margin-top: 60px;
+              margin-top: 30px;
               text-align: center;
+              page-break-inside: avoid;
             }
             .signature-line {
               border-top: 1px solid #000;
               width: 250px;
-              margin: 40px auto 10px;
-            }
-            .footer {
-              margin-top: 40px;
-              text-align: left;
+              margin: 20px auto 10px;
             }
           </style>
         </head>
