@@ -24,8 +24,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(currentUser)
 
     if (currentUser) {
-      // Iniciar el refresh automático
-      startRefreshTimer()
+      // Verificar si el token está por expirar y refrescarlo de inmediato
+      if (authService.isTokenExpiringSoon()) {
+        authService.refresh()
+          .then(({ user: refreshedUser }) => {
+            setUser(refreshedUser)
+            startRefreshTimer()
+          })
+          .catch(() => {
+            // Si falla, cerrar sesión
+            authService.logout()
+            setUser(null)
+            window.location.href = '/login'
+          })
+      } else {
+        // Iniciar el refresh automático
+        startRefreshTimer()
+      }
     }
 
     return () => {

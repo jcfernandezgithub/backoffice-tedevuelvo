@@ -36,6 +36,20 @@ export const authService = {
   getRefreshToken(): string | null {
     return load<string | null>(REFRESH_TOKEN_KEY, null)
   },
+  isTokenExpiringSoon(): boolean {
+    const token = this.getAccessToken()
+    if (!token) return true
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const expiresAt = payload.exp * 1000
+      const now = Date.now()
+      // Considerar que expira pronto si quedan menos de 2 minutos
+      return (expiresAt - now) < 2 * 60 * 1000
+    } catch {
+      return true
+    }
+  },
   async login(email: string, password: string): Promise<LoginResult> {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
