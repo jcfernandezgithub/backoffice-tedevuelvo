@@ -16,32 +16,38 @@ const REFRESH_INTERVAL = 4 * 60 * 1000
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Configurar auto-refresh del token
   useEffect(() => {
-    const currentUser = authService.getCurrent()
-    setUser(currentUser)
-
-    if (currentUser) {
-      // Verificar si el token está por expirar y refrescarlo de inmediato
-      if (authService.isTokenExpiringSoon()) {
-        authService.refresh()
-          .then(({ user: refreshedUser }) => {
+    const initAuth = async () => {
+      const currentUser = authService.getCurrent()
+      
+      if (currentUser) {
+        // Verificar si el token está por expirar y refrescarlo de inmediato
+        if (authService.isTokenExpiringSoon()) {
+          try {
+            const { user: refreshedUser } = await authService.refresh()
             setUser(refreshedUser)
             startRefreshTimer()
-          })
-          .catch(() => {
+          } catch {
             // Si falla, cerrar sesión
-            authService.logout()
+            await authService.logout()
             setUser(null)
-            window.location.href = '/login'
-          })
+          }
+        } else {
+          setUser(currentUser)
+          startRefreshTimer()
+        }
       } else {
-        // Iniciar el refresh automático
-        startRefreshTimer()
+        setUser(null)
       }
+      
+      setIsInitialized(true)
     }
+
+    initAuth()
 
     return () => {
       if (refreshTimerRef.current) {
@@ -91,6 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     hasRole: (...roles: Rol[]) => (user ? roles.includes(user.rol) : false),
   }), [user])
+
+  if (!isInitialized) {
+    return null
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
