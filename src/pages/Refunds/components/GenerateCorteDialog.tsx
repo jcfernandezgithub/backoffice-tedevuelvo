@@ -11,6 +11,7 @@ import firmaImg from '@/assets/firma-cng.jpeg'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
+  hasPolicyNumber: boolean
 }
 
 interface CorteFormData {
@@ -30,7 +31,7 @@ const FIXED_ACCOUNT_DATA = {
   contactPhone: '+569 84295935',
 }
 
-export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
+export function GenerateCorteDialog({ refund, hasPolicyNumber }: GenerateCorteDialogProps) {
   const [open, setOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [formData, setFormData] = useState<CorteFormData>({
@@ -45,7 +46,10 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
   }
 
   const validateForm = () => {
-    const required = ['creditNumber', 'policyNumber', 'companyName']
+    const required = hasPolicyNumber 
+      ? ['creditNumber', 'policyNumber', 'companyName']
+      : ['creditNumber', 'companyName']
+    
     const missing = required.filter(field => !formData[field as keyof CorteFormData])
     
     if (missing.length > 0) {
@@ -69,6 +73,11 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
     const day = today.getDate()
     const month = today.toLocaleDateString('es-CL', { month: 'long' })
     const year = today.getFullYear()
+
+    // Texto adaptado según si tiene o no número de póliza
+    const creditText = hasPolicyNumber 
+      ? `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
+      : `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
 
     const content = `
       <html>
@@ -138,9 +147,7 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
               <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
               Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
               con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
-              que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> 
-              asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme 
-              a lo dispuesto en el artículo 537 del Código de Comercio.
+              ${creditText}
             </p>
 
             <p>
@@ -242,15 +249,17 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
                   placeholder="Número de operación de crédito"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="policyNumber">Póliza Nº *</Label>
-                <Input
-                  id="policyNumber"
-                  value={formData.policyNumber}
-                  onChange={(e) => handleInputChange('policyNumber', e.target.value)}
-                  placeholder="Número de póliza"
-                />
-              </div>
+              {hasPolicyNumber && (
+                <div className="space-y-2">
+                  <Label htmlFor="policyNumber">Póliza Nº *</Label>
+                  <Input
+                    id="policyNumber"
+                    value={formData.policyNumber}
+                    onChange={(e) => handleInputChange('policyNumber', e.target.value)}
+                    placeholder="Número de póliza"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -294,7 +303,7 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
                   actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>, 
                   comunicamos formalmente a esa Compañía Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
                   con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>, que corresponde a la operación de crédito 
-                  N°<strong>{formData.creditNumber}</strong> asociada a la Póliza N° <strong>{formData.policyNumber}</strong>, todo ello conforme 
+                  N°<strong>{formData.creditNumber}</strong>{hasPolicyNumber ? ` asociada a la Póliza N° ${formData.policyNumber}` : ''}, todo ello conforme 
                   a lo dispuesto en el artículo 537 del Código de Comercio.
                 </p>
 
