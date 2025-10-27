@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
@@ -11,7 +12,6 @@ import firmaImg from '@/assets/firma-cng.jpeg'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
-  hasPolicyNumber: boolean
 }
 
 interface CorteFormData {
@@ -31,9 +31,10 @@ const FIXED_ACCOUNT_DATA = {
   contactPhone: '+569 84295935',
 }
 
-export function GenerateCorteDialog({ refund, hasPolicyNumber }: GenerateCorteDialogProps) {
+export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
   const [open, setOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
   const [formData, setFormData] = useState<CorteFormData>({
     creditNumber: '',
     policyNumber: '',
@@ -218,6 +219,17 @@ export function GenerateCorteDialog({ refund, hasPolicyNumber }: GenerateCorteDi
 
         {!showPreview ? (
           <div className="space-y-4 py-4">
+            <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+              <Checkbox 
+                id="hasPolicyNumber" 
+                checked={hasPolicyNumber}
+                onCheckedChange={(checked) => setHasPolicyNumber(checked as boolean)}
+              />
+              <Label htmlFor="hasPolicyNumber" className="text-sm font-normal cursor-pointer">
+                Tengo número de póliza
+              </Label>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Nombre del cliente</Label>

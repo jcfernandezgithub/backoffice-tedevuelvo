@@ -23,7 +23,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
@@ -82,8 +81,6 @@ export default function RefundDetail() {
       })
     }
   }
-
-  const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
 
   const { data: refund, isLoading } = useQuery({
     queryKey: ['refund', id],
@@ -240,17 +237,7 @@ export default function RefundDetail() {
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
-          <div className="flex items-center gap-2 border rounded-md px-3 py-2 bg-background">
-            <Checkbox 
-              id="hasPolicyNumber" 
-              checked={hasPolicyNumber}
-              onCheckedChange={(checked) => setHasPolicyNumber(checked as boolean)}
-            />
-            <Label htmlFor="hasPolicyNumber" className="text-sm font-normal cursor-pointer">
-              Tengo número de póliza
-            </Label>
-          </div>
-          <GenerateCorteDialog refund={refund} hasPolicyNumber={hasPolicyNumber} />
+          <GenerateCorteDialog refund={refund} />
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
