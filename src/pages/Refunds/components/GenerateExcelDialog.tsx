@@ -36,9 +36,10 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
 
   const handleGenerate = () => {
     // Validar que todas las solicitudes tengan sus datos completos
-    const missingData = selectedRefunds.filter(refund => 
-      !refundData[refund.id]?.policyNumber?.trim() || !refundData[refund.id]?.creditCode?.trim()
-    )
+    const missingData = selectedRefunds.filter(refund => {
+      const data = refundData[refund.id]
+      return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
+    })
 
     if (missingData.length > 0) {
       toast({
@@ -147,7 +148,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           <Accordion type="single" collapsible className="w-full">
             {selectedRefunds.map((refund, index) => {
               const data = refundData[refund.id] || { policyNumber: '', creditCode: '' }
-              const isComplete = data.policyNumber.trim() && data.creditCode.trim()
+              const isComplete = (data.policyNumber?.trim() || '') !== '' && (data.creditCode?.trim() || '') !== ''
               
               return (
                 <AccordionItem key={refund.id} value={refund.id}>
@@ -170,7 +171,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                         <Label htmlFor={`policy-${refund.id}`}>Número de Póliza *</Label>
                         <Input
                           id={`policy-${refund.id}`}
-                          value={data.policyNumber}
+                          value={data.policyNumber || ''}
                           onChange={(e) => updateRefundData(refund.id, 'policyNumber', e.target.value)}
                           placeholder="Ej: POL-123456"
                         />
@@ -180,7 +181,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                         <Label htmlFor={`credit-${refund.id}`}>Código de Crédito / Nro de Operación *</Label>
                         <Input
                           id={`credit-${refund.id}`}
-                          value={data.creditCode}
+                          value={data.creditCode || ''}
                           onChange={(e) => updateRefundData(refund.id, 'creditCode', e.target.value)}
                           placeholder="Ej: CRED-789012"
                         />
