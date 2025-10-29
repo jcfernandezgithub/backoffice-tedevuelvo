@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
-import { AdminQueryParams, RefundStatus } from '@/types/refund'
+import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,8 +23,10 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
   REQUESTED: 'Simulado',
@@ -87,6 +89,10 @@ export default function RefundsList() {
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // Estado para selección de solicitudes
+  const [selectedRefunds, setSelectedRefunds] = useState<Set<string>>(new Set())
+  const [selectAll, setSelectAll] = useState(false)
 
   // Debounce para la búsqueda
   useEffect(() => {
@@ -162,6 +168,54 @@ export default function RefundsList() {
       title: 'Copiado',
       description: 'Campo copiado al portapapeles',
     })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = paginatedItems.map((r: any) => r.id)
+      setSelectedRefunds(new Set(allIds))
+      setSelectAll(true)
+    } else {
+      setSelectedRefunds(new Set())
+      setSelectAll(false)
+    }
+  }
+
+  const handleSelectRefund = (refundId: string, checked: boolean) => {
+    const newSelected = new Set(selectedRefunds)
+    if (checked) {
+      newSelected.add(refundId)
+    } else {
+      newSelected.delete(refundId)
+      setSelectAll(false)
+    }
+    setSelectedRefunds(newSelected)
+  }
+
+  const getSelectedRefundsData = (): RefundRequest[] => {
+    const selected = paginatedItems.filter((r: any) => selectedRefunds.has(r.id))
+    
+    // Validar que todas tengan mandato firmado
+    const withoutMandate = selected.filter((r: any) => {
+      const status = mandateStatuses?.[r.publicId]
+      return !status?.hasSignedPdf
+    })
+
+    if (withoutMandate.length > 0) {
+      toast({
+        title: 'Error',
+        description: `${withoutMandate.length} solicitud(es) seleccionada(s) no tiene(n) mandato firmado`,
+        variant: 'destructive',
+      })
+      return []
+    }
+
+    return selected as RefundRequest[]
+  }
+
+  const handleExcelGenerated = () => {
+    setSelectedRefunds(new Set())
+    setSelectAll(false)
   }
 
   const handleSort = (field: string) => {
@@ -312,10 +366,16 @@ export default function RefundsList() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Solicitudes</h1>
-        <Button onClick={() => refetch()} variant="outline" size="sm">
-          <RotateCw className="h-4 w-4 mr-2" />
-          Actualizar
-        </Button>
+        <div className="flex gap-2">
+          <GenerateExcelDialog 
+            selectedRefunds={getSelectedRefundsData()} 
+            onClose={handleExcelGenerated}
+          />
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RotateCw className="h-4 w-4 mr-2" />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -443,6 +503,13 @@ export default function RefundsList() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectAll}
+                        onCheckedChange={handleSelectAll}
+                        aria-label="Seleccionar todas"
+                      />
+                    </TableHead>
                     <TableHead 
                       className="cursor-pointer hover:bg-muted/50 select-none"
                       onClick={() => handleSort('publicId')}
@@ -522,6 +589,13 @@ export default function RefundsList() {
                 <TableBody>
                   {paginatedItems.map((refund) => (
                     <TableRow key={refund.id}>
+                      <TableCell className="w-12">
+                        <Checkbox
+                          checked={selectedRefunds.has(refund.id)}
+                          onCheckedChange={(checked) => handleSelectRefund(refund.id, checked as boolean)}
+                          aria-label={`Seleccionar solicitud ${refund.publicId}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         <div className="flex items-center gap-1">
                           <span>{refund.publicId}</span>
