@@ -132,7 +132,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           className="gap-2"
         >
           <FileSpreadsheet className="h-4 w-4" />
-          Generar Excel ({selectedRefunds.length})
+          Archivo Altas CIA. ({selectedRefunds.length})
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh]">
