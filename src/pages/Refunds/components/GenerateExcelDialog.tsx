@@ -7,6 +7,13 @@ import { FileSpreadsheet } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { ScrollArea } from '@/components/ui/scroll-area'
+
+interface RefundExcelData {
+  policyNumber: string
+  creditCode: string
+}
 
 interface GenerateExcelDialogProps {
   selectedRefunds: RefundRequest[]
@@ -15,29 +22,35 @@ interface GenerateExcelDialogProps {
 
 export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelDialogProps) {
   const [open, setOpen] = useState(false)
-  const [policyNumber, setPolicyNumber] = useState('')
-  const [creditCode, setCreditCode] = useState('')
+  const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
+
+  const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
+    setRefundData(prev => ({
+      ...prev,
+      [refundId]: {
+        ...prev[refundId],
+        [field]: value
+      }
+    }))
+  }
 
   const handleGenerate = () => {
-    if (!policyNumber.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Debes ingresar el número de póliza',
-        variant: 'destructive',
-      })
-      return
-    }
+    // Validar que todas las solicitudes tengan sus datos completos
+    const missingData = selectedRefunds.filter(refund => 
+      !refundData[refund.id]?.policyNumber?.trim() || !refundData[refund.id]?.creditCode?.trim()
+    )
 
-    if (!creditCode.trim()) {
+    if (missingData.length > 0) {
       toast({
         title: 'Error',
-        description: 'Debes ingresar el código de crédito',
+        description: `Debes completar la información de ${missingData.length} solicitud(es)`,
         variant: 'destructive',
       })
       return
     }
 
     const excelData = selectedRefunds.map((refund) => {
+      const data = refundData[refund.id]
       const calculation = refund.calculationSnapshot || {}
       const rut = refund.rut || ''
       const rutParts = rut.split('-')
@@ -73,12 +86,12 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Rut Empresa': '78168126-1',
         'Ramo comercial': tipoSeguro,
         'Producto': producto,
-        'Poliza N°': policyNumber,
+        'Poliza N°': data.policyNumber,
         'Número del certificado (Folio)': refund.id,
         'Rut Cliente': rutNumber,
         'DV Cliente': rutDV,
         'Nombre_Cliente': refund.fullName,
-        'Fecha_Nacimiento': 'N/A', // No tenemos edad exacta, solo estimación
+        'Fecha_Nacimiento': 'N/A',
         'Sexo': 'N/A',
         'Codigo_producto': '342',
         'Prima Seguro  $': primaBruta,
@@ -87,7 +100,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Vigencia_Desde': vigenciaDesde,
         'Vigencia_Hasta': vigenciaHasta,
         'Plazo Meses': calculation.remainingInstallments || 0,
-        'Codigo_De_credito_o Nro de operación': creditCode,
+        'Codigo_De_credito_o Nro de operación': data.creditCode,
         'Capital Asegurado': calculation.totalAmount || 0,
         'Corre electrónico': refund.email,
         'Dirección particular': 'N/A',
@@ -105,8 +118,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     })
 
     setOpen(false)
-    setPolicyNumber('')
-    setCreditCode('')
+    setRefundData({})
     if (onClose) onClose()
   }
 
@@ -122,36 +134,64 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           Generar Excel ({selectedRefunds.length})
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Generar Excel de Solicitudes</DialogTitle>
           <DialogDescription>
             Se generará un archivo Excel con {selectedRefunds.length} solicitud(es) seleccionada(s).
-            Complete los siguientes datos requeridos:
+            Complete la información requerida para cada solicitud:
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="policyNumber">Número de Póliza *</Label>
-            <Input
-              id="policyNumber"
-              value={policyNumber}
-              onChange={(e) => setPolicyNumber(e.target.value)}
-              placeholder="Ej: POL-123456"
-            />
-          </div>
+        <ScrollArea className="max-h-[50vh] pr-4">
+          <Accordion type="single" collapsible className="w-full">
+            {selectedRefunds.map((refund, index) => {
+              const data = refundData[refund.id] || { policyNumber: '', creditCode: '' }
+              const isComplete = data.policyNumber.trim() && data.creditCode.trim()
+              
+              return (
+                <AccordionItem key={refund.id} value={refund.id}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-3 text-left">
+                      <div className={`h-2 w-2 rounded-full ${isComplete ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                      <div>
+                        <div className="font-medium">
+                          Solicitud {index + 1}: {refund.fullName}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {refund.publicId} • {refund.rut}
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-4 pl-5">
+                      <div className="space-y-2">
+                        <Label htmlFor={`policy-${refund.id}`}>Número de Póliza *</Label>
+                        <Input
+                          id={`policy-${refund.id}`}
+                          value={data.policyNumber}
+                          onChange={(e) => updateRefundData(refund.id, 'policyNumber', e.target.value)}
+                          placeholder="Ej: POL-123456"
+                        />
+                      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="creditCode">Código de Crédito / Nro de Operación *</Label>
-            <Input
-              id="creditCode"
-              value={creditCode}
-              onChange={(e) => setCreditCode(e.target.value)}
-              placeholder="Ej: CRED-789012"
-            />
-          </div>
-        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`credit-${refund.id}`}>Código de Crédito / Nro de Operación *</Label>
+                        <Input
+                          id={`credit-${refund.id}`}
+                          value={data.creditCode}
+                          onChange={(e) => updateRefundData(refund.id, 'creditCode', e.target.value)}
+                          placeholder="Ej: CRED-789012"
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )
+            })}
+          </Accordion>
+        </ScrollArea>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
