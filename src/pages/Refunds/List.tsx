@@ -297,25 +297,37 @@ export default function RefundsList() {
       })
     : normalizedData.items
   
-  // Aplicar filtro por fecha de creación
+  // Aplicar filtro por fecha de creación (interpretando las fechas como LOCAL)
   const dateFilteredItems = textFilteredItems.filter((r: any) => {
     if (!r.createdAt) return true
-    
-    const createdDate = new Date(r.createdAt)
-    createdDate.setHours(0, 0, 0, 0) // Normalizar a medianoche
-    
+
+    // Día de creación en horario local (a medianoche local)
+    const createdAt = new Date(r.createdAt)
+    const createdLocalDay = new Date(
+      createdAt.getFullYear(),
+      createdAt.getMonth(),
+      createdAt.getDate(),
+      0, 0, 0, 0
+    )
+
+    // Helpers para construir límites del día en LOCAL a partir de YYYY-MM-DD
+    const parseLocalStart = (s: string) => {
+      const [y, m, d] = s.split('-').map(Number)
+      return new Date(y, (m as number) - 1, d as number, 0, 0, 0, 0)
+    }
+    const parseLocalEnd = (s: string) => {
+      const [y, m, d] = s.split('-').map(Number)
+      return new Date(y, (m as number) - 1, d as number, 23, 59, 59, 999)
+    }
+
     if (filters.from) {
-      const fromDate = new Date(filters.from)
-      fromDate.setHours(0, 0, 0, 0)
-      if (createdDate < fromDate) return false
+      const fromStart = parseLocalStart(filters.from)
+      if (createdLocalDay < fromStart) return false
     }
-    
     if (filters.to) {
-      const toDate = new Date(filters.to)
-      toDate.setHours(23, 59, 59, 999) // Incluir todo el día "hasta"
-      if (createdDate > toDate) return false
+      const toEnd = parseLocalEnd(filters.to)
+      if (createdLocalDay > toEnd) return false
     }
-    
     return true
   })
   
