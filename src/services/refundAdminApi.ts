@@ -19,8 +19,18 @@ class RefundAdminApiClient {
   }
 
   async list(params: AdminQueryParams): Promise<AdminListResponse> {
+    // Normalizar rango de fechas a límites del día en UTC
+    const normalized: AdminQueryParams = { ...params }
+    const isDateOnly = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
+    if (isDateOnly(normalized.from)) {
+      normalized.from = new Date(`${normalized.from}T00:00:00.000Z`).toISOString()
+    }
+    if (isDateOnly(normalized.to)) {
+      normalized.to = new Date(`${normalized.to}T23:59:59.999Z`).toISOString()
+    }
+
     const query = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => {
+    Object.entries(normalized).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         query.append(key, String(value))
       }
