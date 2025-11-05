@@ -27,6 +27,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
+import { ExportToExcelDialog } from './components/ExportToExcelDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
   REQUESTED: 'Simulado',
@@ -406,6 +407,10 @@ export default function RefundsList() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Solicitudes</h1>
         <div className="flex gap-2">
+          <ExportToExcelDialog 
+            refunds={sortedItems as RefundRequest[]} 
+            totalCount={totalFiltered}
+          />
           <GenerateExcelDialog 
             selectedRefunds={getSelectedRefundsData()} 
             onClose={handleExcelGenerated}
