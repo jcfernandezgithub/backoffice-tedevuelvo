@@ -297,8 +297,30 @@ export default function RefundsList() {
       })
     : normalizedData.items
   
-  // Query para obtener estados de mandatos de TODOS los items filtrados por texto
-  const allPublicIds = textFilteredItems.map((r: any) => r.publicId)
+  // Aplicar filtro por fecha de creación
+  const dateFilteredItems = textFilteredItems.filter((r: any) => {
+    if (!r.createdAt) return true
+    
+    const createdDate = new Date(r.createdAt)
+    createdDate.setHours(0, 0, 0, 0) // Normalizar a medianoche
+    
+    if (filters.from) {
+      const fromDate = new Date(filters.from)
+      fromDate.setHours(0, 0, 0, 0)
+      if (createdDate < fromDate) return false
+    }
+    
+    if (filters.to) {
+      const toDate = new Date(filters.to)
+      toDate.setHours(23, 59, 59, 999) // Incluir todo el día "hasta"
+      if (createdDate > toDate) return false
+    }
+    
+    return true
+  })
+  
+  // Query para obtener estados de mandatos de TODOS los items filtrados
+  const allPublicIds = dateFilteredItems.map((r: any) => r.publicId)
   const { data: mandateStatuses } = useQuery({
     queryKey: ['mandate-statuses', allPublicIds],
     queryFn: async () => {
@@ -324,8 +346,8 @@ export default function RefundsList() {
   
   // Aplicar filtro de mandato (ahora mandateStatuses ya está disponible)
   const filteredItems = mandateFilter === 'all' 
-    ? textFilteredItems
-    : textFilteredItems.filter((r: any) => {
+    ? dateFilteredItems
+    : dateFilteredItems.filter((r: any) => {
         const status = mandateStatuses?.[r.publicId]
         const hasSigned = status?.hasSignedPdf === true
         return mandateFilter === 'signed' ? hasSigned : !hasSigned
