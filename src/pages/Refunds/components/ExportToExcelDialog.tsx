@@ -39,6 +39,9 @@ export function ExportToExcelDialog({ refunds, totalCount }: ExportToExcelDialog
         : calculation.insuranceToEvaluate === 'cesantia' 
         ? 'Cesantía' 
         : 'N/A'
+      
+      // Institución financiera
+      const institucion = calculation.financialEntity || calculation.entityName || refund.institutionId || 'N/A'
 
       return {
         'ID Público': refund.publicId,
@@ -48,8 +51,8 @@ export function ExportToExcelDialog({ refunds, totalCount }: ExportToExcelDialog
         'Email': refund.email || 'N/A',
         'RUT': rut,
         'Teléfono': refund.phone || 'N/A',
+        'Institución Financiera': institucion,
         'Tipo de Seguro': tipoSeguro,
-        'Entidad': calculation.entityName || 'N/A',
         'Monto Total Crédito': calculation.totalAmount || 0,
         'Cuotas Pagadas': calculation.installmentsPaid || 0,
         'Cuotas Restantes': calculation.remainingInstallments || 0,
