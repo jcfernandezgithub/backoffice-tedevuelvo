@@ -10,12 +10,12 @@ import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, Lucid
 const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
 const ESTADO_LABELS: Record<string, string> = {
-  SIMULACION_CONFIRMADA: 'Simulación confirmada',
+  SIMULACION_CONFIRMADA: 'Simulado',
   EN_PROCESO: 'En proceso',
-  DEVOLUCION_CONFIRMADA_COMPANIA: 'Devolución confirmada compañía',
-  FONDOS_RECIBIDOS_TD: 'Fondos recibidos TD',
-  CLIENTE_NOTIFICADO: 'Cliente notificado',
-  PAGADA_CLIENTE: 'Pagada cliente',
+  DEVOLUCION_CONFIRMADA_COMPANIA: 'Enviado',
+  FONDOS_RECIBIDOS_TD: 'Aprobado',
+  CLIENTE_NOTIFICADO: 'Pago programado',
+  PAGADA_CLIENTE: 'Pagado',
   RECHAZADO: 'Rechazado',
 }
 
