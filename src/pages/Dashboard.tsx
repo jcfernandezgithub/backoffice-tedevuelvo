@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { Money } from '@/components/common/Money'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
 import { dashboardDataMock } from '@/mocks/dashboardData'
@@ -57,6 +57,11 @@ export default function Dashboard() {
   const { data: pagosAgg } = useQuery({
     queryKey: ['dashboard', 'pagos-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getPagosAggregate(desde, hasta, agg),
+  })
+
+  const { data: solicitudesAgg } = useQuery({
+    queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
+    queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
   })
 
   const estadoCards = useMemo(() => (
@@ -237,6 +242,43 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sin datos en el rango seleccionado</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tendencia de solicitudes creadas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={solicitudesAgg.series}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <Tooltip 
+                      formatter={(value: number) => [`${value} solicitudes`, 'Cantidad']}
+                      labelFormatter={(label) => `Período: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cantidad" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  Sin datos en el rango seleccionado
+                </div>
               )}
             </div>
           </CardContent>

@@ -150,4 +150,57 @@ export const dashboardService = {
     const total = pagos.reduce((acc, x) => acc + x.monto, 0)
     return { total, series: out }
   },
+
+  async getSolicitudesAggregate(desde?: string, hasta?: string, by: Aggregation = 'day') {
+    try {
+      // Obtener todas las solicitudes en el rango de fechas
+      const response = await refundAdminApi.list({
+        from: desde,
+        to: hasta,
+        pageSize: 1000,
+      })
+
+      const refunds = Array.isArray(response) ? response : response.items || []
+
+      // Agrupar por fecha de creación
+      const map = new Map<string, number>()
+      
+      for (const refund of refunds as RefundRequest[]) {
+        const fecha = dayjs.tz(refund.createdAt).format('YYYY-MM-DD')
+        let key = fecha
+        
+        if (by === 'week') {
+          const d = dayjs.tz(fecha)
+          const week = String(d.isoWeek()).padStart(2, '0')
+          key = `${d.year()}-W${week}`
+        }
+        if (by === 'month') {
+          key = dayjs.tz(fecha).format('YYYY-MM')
+        }
+        
+        map.set(key, (map.get(key) ?? 0) + 1)
+      }
+      
+      const toDate = (bucket: string) => {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(bucket)) return dayjs.tz(bucket)
+        if (/^\d{4}-W\d{2}$/.test(bucket)) {
+          const [y, w] = bucket.split('-W')
+          return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week')
+        }
+        if (/^\d{4}-\d{2}$/.test(bucket)) return dayjs.tz(bucket + '-01')
+        return dayjs.tz(bucket)
+      }
+      
+      const series = [...map.entries()]
+        .map(([k, v]) => ({ bucket: k, cantidad: v, sortKey: toDate(k).valueOf() }))
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map(({ bucket, cantidad }) => ({ bucket, cantidad }))
+
+      const total = refunds.length
+      return { total, series }
+    } catch (error) {
+      console.error('Error obteniendo solicitudes aggregate:', error)
+      return { total: 0, series: [] }
+    }
+  },
 }
