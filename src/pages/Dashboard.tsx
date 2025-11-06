@@ -67,18 +67,19 @@ export default function Dashboard() {
 
   const estadoCards = useMemo(() => (
     [
-      'SIMULACION_CONFIRMADA',
-      'EN_PROCESO',
-      'DEVOLUCION_CONFIRMADA_COMPANIA',
-      'FONDOS_RECIBIDOS_TD',
-      'CLIENTE_NOTIFICADO',
-      'PAGADA_CLIENTE',
-      'RECHAZADO',
-    ].map((k) => ({ 
-      key: k, 
-      title: ESTADO_LABELS[k], 
-      value: counts?.[k] ?? 0,
-      icon: ESTADO_ICONS[k]
+      { key: 'SIMULACION_CONFIRMADA', color: 'blue' },
+      { key: 'EN_PROCESO', color: 'yellow' },
+      { key: 'DEVOLUCION_CONFIRMADA_COMPANIA', color: 'indigo' },
+      { key: 'FONDOS_RECIBIDOS_TD', color: 'green' },
+      { key: 'CLIENTE_NOTIFICADO', color: 'emerald' },
+      { key: 'PAGADA_CLIENTE', color: 'success' },
+      { key: 'RECHAZADO', color: 'destructive' },
+    ].map((item) => ({ 
+      key: item.key, 
+      title: ESTADO_LABELS[item.key], 
+      value: counts?.[item.key] ?? 0,
+      icon: ESTADO_ICONS[item.key],
+      color: item.color
     }))
   ), [counts])
 
@@ -168,7 +169,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados en proceso</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {estadoCards.slice(0, 4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
             ))}
           </div>
         </div>
@@ -176,7 +177,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados finales</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {estadoCards.slice(4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
             ))}
           </div>
         </div>
@@ -289,14 +290,46 @@ export default function Dashboard() {
   )
 }
 
-function Kpi({ title, value, icon: Icon }: { title: string; value: number | React.ReactNode; icon?: LucideIcon }) {
+function Kpi({ title, value, icon: Icon, color }: { 
+  title: string; 
+  value: number | React.ReactNode; 
+  icon?: LucideIcon;
+  color?: string;
+}) {
+  const colorClasses = {
+    blue: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50 hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30',
+    yellow: 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/50 hover:shadow-yellow-200/50 dark:hover:shadow-yellow-900/30',
+    indigo: 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/50 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30',
+    green: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50 hover:shadow-green-200/50 dark:hover:shadow-green-900/30',
+    emerald: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 hover:shadow-emerald-200/50 dark:hover:shadow-emerald-900/30',
+    success: 'bg-green-100 dark:bg-green-950/30 border-green-300 dark:border-green-800/50 hover:shadow-green-300/50 dark:hover:shadow-green-800/30',
+    destructive: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:shadow-red-200/50 dark:hover:shadow-red-900/30',
+  }
+
+  const iconColorClasses = {
+    blue: 'text-blue-600 dark:text-blue-400',
+    yellow: 'text-yellow-600 dark:text-yellow-400',
+    indigo: 'text-indigo-600 dark:text-indigo-400',
+    green: 'text-green-600 dark:text-green-400',
+    emerald: 'text-emerald-600 dark:text-emerald-400',
+    success: 'text-green-700 dark:text-green-500',
+    destructive: 'text-red-600 dark:text-red-400',
+  }
+
+  const cardClass = color ? colorClasses[color as keyof typeof colorClasses] : ''
+  const iconClass = color ? iconColorClasses[color as keyof typeof iconColorClasses] : 'text-muted-foreground'
+
   return (
-    <Card className="hover:shadow-md transition">
+    <Card className={`hover:shadow-lg transition-all duration-300 hover:scale-105 ${cardClass}`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        {Icon && (
+          <div className={`p-2 rounded-lg bg-background/50 ${iconClass}`}>
+            <Icon className="h-6 w-6" />
+          </div>
+        )}
       </CardHeader>
-      <CardContent className="text-2xl font-semibold">{typeof value === 'number' ? value : value}</CardContent>
+      <CardContent className="text-3xl font-bold">{typeof value === 'number' ? value : value}</CardContent>
     </Card>
   )
 }
