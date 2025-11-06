@@ -42,7 +42,16 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     setLoadingRut(refundId)
     
     try {
-      const response = await fetch(`https://r.rutificador.co/pr/${rut}`, {
+      // Formatear RUT con puntos: 15.421.741-K
+      const rutParts = rut.split('-')
+      const rutNumber = rutParts[0].replace(/\./g, '') // Remover puntos existentes
+      const rutDV = rutParts[1] || ''
+      
+      // Agregar puntos cada 3 dígitos desde la derecha
+      const formattedNumber = rutNumber.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+      const formattedRut = `${formattedNumber}-${rutDV}`
+      
+      const response = await fetch(`https://r.rutificador.co/pr/${formattedRut}`, {
         method: 'POST'
       })
       
