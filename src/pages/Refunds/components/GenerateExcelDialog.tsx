@@ -13,6 +13,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 interface RefundExcelData {
   policyNumber: string
   creditCode: string
+  sexo: string
+  direccion: string
+  comuna: string
 }
 
 interface GenerateExcelDialogProps {
@@ -38,7 +41,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     // Validar que todas las solicitudes tengan sus datos completos
     const missingData = selectedRefunds.filter(refund => {
       const data = refundData[refund.id]
-      return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
+      return !data?.policyNumber?.trim() || !data?.creditCode?.trim() || 
+             !data?.sexo?.trim() || !data?.direccion?.trim() || !data?.comuna?.trim()
     })
 
     if (missingData.length > 0) {
@@ -93,7 +97,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'DV Cliente': rutDV,
         'Nombre_Cliente': refund.fullName,
         'Fecha_Nacimiento': 'N/A',
-        'Sexo': 'N/A',
+        'Sexo': data.sexo,
         'Codigo_producto': '342',
         'Prima Seguro  $': primaBruta,
         'Prima_periodo_neta_pesos': primaNeta,
@@ -104,8 +108,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Codigo_De_credito_o Nro de operación': data.creditCode,
         'Capital Asegurado': calculation.totalAmount || 0,
         'Corre electrónico': refund.email,
-        'Dirección particular': 'N/A',
-        'Comuna': 'N/A',
+        'Dirección particular': data.direccion,
+        'Comuna': data.comuna,
         'Región': 'N/A',
       }
     })
@@ -147,8 +151,12 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         <ScrollArea className="max-h-[50vh] pr-4">
           <Accordion type="single" collapsible className="w-full">
             {selectedRefunds.map((refund, index) => {
-              const data = refundData[refund.id] || { policyNumber: '', creditCode: '' }
-              const isComplete = (data.policyNumber?.trim() || '') !== '' && (data.creditCode?.trim() || '') !== ''
+              const data = refundData[refund.id] || { policyNumber: '', creditCode: '', sexo: '', direccion: '', comuna: '' }
+              const isComplete = (data.policyNumber?.trim() || '') !== '' && 
+                                (data.creditCode?.trim() || '') !== '' &&
+                                (data.sexo?.trim() || '') !== '' &&
+                                (data.direccion?.trim() || '') !== '' &&
+                                (data.comuna?.trim() || '') !== ''
               
               return (
                 <AccordionItem key={refund.id} value={refund.id}>
@@ -185,6 +193,43 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                           onChange={(e) => updateRefundData(refund.id, 'creditCode', e.target.value)}
                           placeholder="Ej: CRED-789012"
                         />
+                      </div>
+
+                      <div className="bg-muted/50 p-4 rounded-lg space-y-4 border border-border">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <div className="h-1 w-1 rounded-full bg-primary" />
+                          Datos Personales del Cliente
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor={`sexo-${refund.id}`}>Sexo *</Label>
+                          <Input
+                            id={`sexo-${refund.id}`}
+                            value={data.sexo || ''}
+                            onChange={(e) => updateRefundData(refund.id, 'sexo', e.target.value)}
+                            placeholder="Ej: M, F"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`direccion-${refund.id}`}>Dirección *</Label>
+                          <Input
+                            id={`direccion-${refund.id}`}
+                            value={data.direccion || ''}
+                            onChange={(e) => updateRefundData(refund.id, 'direccion', e.target.value)}
+                            placeholder="Ej: Av. Providencia 123"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`comuna-${refund.id}`}>Comuna *</Label>
+                          <Input
+                            id={`comuna-${refund.id}`}
+                            value={data.comuna || ''}
+                            onChange={(e) => updateRefundData(refund.id, 'comuna', e.target.value)}
+                            placeholder="Ej: Providencia"
+                          />
+                        </div>
                       </div>
                     </div>
                   </AccordionContent>
