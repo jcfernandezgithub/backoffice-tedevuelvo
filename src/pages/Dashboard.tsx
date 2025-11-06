@@ -119,10 +119,23 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Tarjetas por estado">
-        {estadoCards.map((c) => (
-          <Kpi key={c.key} title={c.title} value={c.value} />
-        ))}
+      <section className="space-y-4" aria-label="Métricas por estado">
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados en proceso</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {estadoCards.slice(0, 4).map((c) => (
+              <Kpi key={c.key} title={c.title} value={c.value} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados finales</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {estadoCards.slice(4).map((c) => (
+              <Kpi key={c.key} title={c.title} value={c.value} />
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 gap-4">
