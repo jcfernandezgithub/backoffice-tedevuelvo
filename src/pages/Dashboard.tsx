@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
 import { dashboardDataMock } from '@/mocks/dashboardData'
+import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon } from 'lucide-react'
 
 const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -16,7 +17,16 @@ const ESTADO_LABELS: Record<string, string> = {
   CLIENTE_NOTIFICADO: 'Cliente notificado',
   PAGADA_CLIENTE: 'Pagada cliente',
   RECHAZADO: 'Rechazado',
-  OTRO: 'Otro',
+}
+
+const ESTADO_ICONS: Record<string, LucideIcon> = {
+  SIMULACION_CONFIRMADA: FileCheck,
+  EN_PROCESO: Clock,
+  DEVOLUCION_CONFIRMADA_COMPANIA: Building2,
+  FONDOS_RECIBIDOS_TD: Wallet,
+  CLIENTE_NOTIFICADO: Bell,
+  PAGADA_CLIENTE: CheckCircle2,
+  RECHAZADO: XCircle,
 }
 
 export default function Dashboard() {
@@ -48,7 +58,12 @@ export default function Dashboard() {
       'CLIENTE_NOTIFICADO',
       'PAGADA_CLIENTE',
       'RECHAZADO',
-    ].map((k) => ({ key: k, title: ESTADO_LABELS[k], value: counts?.[k] ?? 0 }))
+    ].map((k) => ({ 
+      key: k, 
+      title: ESTADO_LABELS[k], 
+      value: counts?.[k] ?? 0,
+      icon: ESTADO_ICONS[k]
+    }))
   ), [counts])
 
   return (
@@ -124,7 +139,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados en proceso</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {estadoCards.slice(0, 4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} />
             ))}
           </div>
         </div>
@@ -132,7 +147,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados finales</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {estadoCards.slice(4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} />
             ))}
           </div>
         </div>
@@ -166,11 +181,12 @@ export default function Dashboard() {
   )
 }
 
-function Kpi({ title, value }: { title: string; value: number | React.ReactNode }) {
+function Kpi({ title, value, icon: Icon }: { title: string; value: number | React.ReactNode; icon?: LucideIcon }) {
   return (
     <Card className="hover:shadow-md transition">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
+        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
       </CardHeader>
       <CardContent className="text-2xl font-semibold">{typeof value === 'number' ? value : value}</CardContent>
     </Card>
