@@ -26,6 +26,7 @@ interface GenerateExcelDialogProps {
 export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelDialogProps) {
   const [open, setOpen] = useState(false)
   const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
+  const [loadingRut, setLoadingRut] = useState<string | null>(null)
 
   const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
     setRefundData(prev => ({
@@ -37,12 +38,71 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     }))
   }
 
+  const fetchRutInfo = async (refundId: string, rut: string) => {
+    setLoadingRut(refundId)
+    
+    try {
+      const response = await fetch(`https://www.rutificador.co/rut/buscar/?f=${rut}`, {
+        method: 'POST'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Error al consultar el servicio')
+      }
+
+      const html = await response.text()
+      
+      // Parsear la respuesta HTML
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      const tds = doc.querySelectorAll('td')
+      
+      if (tds.length >= 5) {
+        const sexoRaw = tds[2].textContent?.trim() || ''
+        const direccion = tds[3].textContent?.trim() || ''
+        const comuna = tds[4].textContent?.trim() || ''
+        
+        // Mapear SEXO: VAR -> M, MUJ -> F
+        const sexo = sexoRaw === 'VAR' ? 'M' : sexoRaw === 'MUJ' ? 'F' : sexoRaw
+        
+        // Actualizar los datos
+        setRefundData(prev => ({
+          ...prev,
+          [refundId]: {
+            ...prev[refundId],
+            sexo,
+            direccion,
+            comuna
+          }
+        }))
+        
+        toast({
+          title: 'Información encontrada',
+          description: 'Se han actualizado los datos del cliente',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se pudo obtener la información del RUT',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo consultar el servicio de rutificador',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingRut(null)
+    }
+  }
+
   const handleGenerate = () => {
     // Validar que todas las solicitudes tengan sus datos completos
     const missingData = selectedRefunds.filter(refund => {
       const data = refundData[refund.id]
-      return !data?.policyNumber?.trim() || !data?.creditCode?.trim() || 
-             !data?.sexo?.trim() || !data?.direccion?.trim() || !data?.comuna?.trim()
+      return !data?.policyNumber?.trim() || !data?.creditCode?.trim() || !data?.sexo?.trim()
     })
 
     if (missingData.length > 0) {
@@ -108,8 +168,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Codigo_De_credito_o Nro de operación': data.creditCode,
         'Capital Asegurado': calculation.totalAmount || 0,
         'Corre electrónico': refund.email,
-        'Dirección particular': data.direccion,
-        'Comuna': data.comuna,
+        'Dirección particular': data.direccion || 'N/A',
+        'Comuna': data.comuna || 'N/A',
         'Región': 'N/A',
       }
     })
@@ -154,9 +214,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
               const data = refundData[refund.id] || { policyNumber: '', creditCode: '', sexo: '', direccion: '', comuna: '' }
               const isComplete = (data.policyNumber?.trim() || '') !== '' && 
                                 (data.creditCode?.trim() || '') !== '' &&
-                                (data.sexo?.trim() || '') !== '' &&
-                                (data.direccion?.trim() || '') !== '' &&
-                                (data.comuna?.trim() || '') !== ''
+                                (data.sexo?.trim() || '') !== ''
               
               return (
                 <AccordionItem key={refund.id} value={refund.id}>
@@ -196,9 +254,20 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                       </div>
 
                       <div className="bg-muted/50 p-4 rounded-lg space-y-4 border border-border">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                          <div className="h-1 w-1 rounded-full bg-primary" />
-                          Datos Personales del Cliente
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                            <div className="h-1 w-1 rounded-full bg-primary" />
+                            Datos Personales del Cliente
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchRutInfo(refund.id, refund.rut)}
+                            disabled={loadingRut === refund.id}
+                          >
+                            {loadingRut === refund.id ? 'Buscando...' : 'Buscar Información'}
+                          </Button>
                         </div>
                         
                         <div className="space-y-2">
@@ -212,7 +281,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`direccion-${refund.id}`}>Dirección *</Label>
+                          <Label htmlFor={`direccion-${refund.id}`}>Dirección</Label>
                           <Input
                             id={`direccion-${refund.id}`}
                             value={data.direccion || ''}
@@ -222,7 +291,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`comuna-${refund.id}`}>Comuna *</Label>
+                          <Label htmlFor={`comuna-${refund.id}`}>Comuna</Label>
                           <Input
                             id={`comuna-${refund.id}`}
                             value={data.comuna || ''}
