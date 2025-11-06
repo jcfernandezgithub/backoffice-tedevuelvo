@@ -10,16 +10,23 @@ const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', cur
 
 const ESTADO_LABELS: Record<string, string> = {
   SIMULACION_CONFIRMADA: 'Simulación confirmada',
+  EN_PROCESO: 'En proceso',
   DEVOLUCION_CONFIRMADA_COMPANIA: 'Devolución confirmada compañía',
   FONDOS_RECIBIDOS_TD: 'Fondos recibidos TD',
-  CERTIFICADO_EMITIDO: 'Certificado emitido',
   CLIENTE_NOTIFICADO: 'Cliente notificado',
   PAGADA_CLIENTE: 'Pagada cliente',
+  RECHAZADO: 'Rechazado',
+  OTRO: 'Otro',
 }
 
 export default function Dashboard() {
-  const [desde, setDesde] = useState<string>(dashboardDataMock.rango.desde)
-  const [hasta, setHasta] = useState<string>(dashboardDataMock.rango.hasta)
+  // Rango de fechas por defecto: últimos 30 días
+  const [desde, setDesde] = useState<string>(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 30)
+    return d.toISOString().split('T')[0]
+  })
+  const [hasta, setHasta] = useState<string>(() => new Date().toISOString().split('T')[0])
   const [agg, setAgg] = useState<Aggregation>('day')
 
   const { data: counts } = useQuery({
@@ -35,11 +42,12 @@ export default function Dashboard() {
   const estadoCards = useMemo(() => (
     [
       'SIMULACION_CONFIRMADA',
+      'EN_PROCESO',
       'DEVOLUCION_CONFIRMADA_COMPANIA',
       'FONDOS_RECIBIDOS_TD',
-      'CERTIFICADO_EMITIDO',
       'CLIENTE_NOTIFICADO',
       'PAGADA_CLIENTE',
+      'RECHAZADO',
     ].map((k) => ({ key: k, title: ESTADO_LABELS[k], value: counts?.[k] ?? 0 }))
   ), [counts])
 
@@ -111,7 +119,7 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4" aria-label="Tarjetas por estado">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Tarjetas por estado">
         {estadoCards.map((c) => (
           <Kpi key={c.key} title={c.title} value={c.value} />
         ))}

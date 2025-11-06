@@ -8,10 +8,35 @@ dayjs.extend(utc)
 dayjs.extend(timezone)
 dayjs.tz.setDefault('America/Santiago')
 
-import { dashboardDataMock } from '../mocks/dashboardData'
-import type { PagoCliente } from '../mocks/dashboardData'
+import { refundAdminApi } from './refundAdminApi'
+import type { RefundRequest, RefundStatus } from '@/types/refund'
 
 export type Aggregation = 'day' | 'week' | 'month'
+
+// Mapeo de estados de refunds a estados del dashboard
+const statusToDashboardState = (status: RefundStatus): string => {
+  switch (status) {
+    case 'REQUESTED':
+      return 'SIMULACION_CONFIRMADA'
+    case 'QUALIFYING':
+    case 'DOCS_PENDING':
+    case 'DOCS_RECEIVED':
+      return 'EN_PROCESO'
+    case 'SUBMITTED':
+      return 'DEVOLUCION_CONFIRMADA_COMPANIA'
+    case 'APPROVED':
+      return 'FONDOS_RECIBIDOS_TD'
+    case 'PAYMENT_SCHEDULED':
+      return 'CLIENTE_NOTIFICADO'
+    case 'PAID':
+      return 'PAGADA_CLIENTE'
+    case 'REJECTED':
+    case 'CANCELED':
+      return 'RECHAZADO'
+    default:
+      return 'OTRO'
+  }
+}
 
 function inRange(fechaISO: string, desde?: string, hasta?: string) {
   const d = dayjs.tz(fechaISO)
@@ -22,27 +47,76 @@ function inRange(fechaISO: string, desde?: string, hasta?: string) {
 
 export const dashboardService = {
   async getSolicitudesPorEstado(desde?: string, hasta?: string) {
-    const data = dashboardDataMock.solicitudes.filter((s) => inRange(s.fecha, desde, hasta))
-    const counts: Record<string, number> = {
-      SIMULACION_CONFIRMADA: 0,
-      DEVOLUCION_CONFIRMADA_COMPANIA: 0,
-      FONDOS_RECIBIDOS_TD: 0,
-      CERTIFICADO_EMITIDO: 0,
-      CLIENTE_NOTIFICADO: 0,
-      PAGADA_CLIENTE: 0,
+    try {
+      // Obtener todas las solicitudes del API
+      const response = await refundAdminApi.list({
+        from: desde,
+        to: hasta,
+        pageSize: 1000, // Obtener todas las solicitudes
+      })
+
+      const refunds = Array.isArray(response) ? response : response.items || []
+
+      // Contar por estado mapeado
+      const counts: Record<string, number> = {
+        SIMULACION_CONFIRMADA: 0,
+        EN_PROCESO: 0,
+        DEVOLUCION_CONFIRMADA_COMPANIA: 0,
+        FONDOS_RECIBIDOS_TD: 0,
+        CLIENTE_NOTIFICADO: 0,
+        PAGADA_CLIENTE: 0,
+        RECHAZADO: 0,
+        OTRO: 0,
+      }
+
+      for (const refund of refunds as RefundRequest[]) {
+        const estado = statusToDashboardState(refund.status)
+        counts[estado] = (counts[estado] ?? 0) + 1
+      }
+
+      return counts
+    } catch (error) {
+      console.error('Error obteniendo solicitudes:', error)
+      return {
+        SIMULACION_CONFIRMADA: 0,
+        EN_PROCESO: 0,
+        DEVOLUCION_CONFIRMADA_COMPANIA: 0,
+        FONDOS_RECIBIDOS_TD: 0,
+        CLIENTE_NOTIFICADO: 0,
+        PAGADA_CLIENTE: 0,
+        RECHAZADO: 0,
+        OTRO: 0,
+      }
     }
-    for (const s of data) counts[s.estado] = (counts[s.estado] ?? 0) + 1
-    return Promise.resolve(counts)
   },
 
   async getPagosClientes(desde?: string, hasta?: string) {
-    const pagos = dashboardDataMock.pagos.filter((p) => inRange(p.fecha, desde, hasta))
-    return Promise.resolve(pagos)
+    try {
+      // Obtener solicitudes pagadas
+      const response = await refundAdminApi.list({
+        from: desde,
+        to: hasta,
+        status: 'PAID',
+        pageSize: 1000,
+      })
+
+      const refunds = Array.isArray(response) ? response : response.items || []
+
+      // Transformar a estructura de pagos
+      return (refunds as RefundRequest[]).map(refund => ({
+        fecha: dayjs.tz(refund.updatedAt).format('YYYY-MM-DD'),
+        monto: refund.estimatedAmountCLP || 0,
+      }))
+    } catch (error) {
+      console.error('Error obteniendo pagos:', error)
+      return []
+    }
   },
 
   async getPagosAggregate(desde?: string, hasta?: string, by: Aggregation = 'day') {
-    const pagos = (await this.getPagosClientes(desde, hasta)) as PagoCliente[]
+    const pagos = await this.getPagosClientes(desde, hasta)
     const map = new Map<string, number>()
+    
     for (const p of pagos) {
       let key = p.fecha
       if (by === 'week') {
@@ -53,6 +127,7 @@ export const dashboardService = {
       if (by === 'month') key = dayjs.tz(p.fecha).format('YYYY-MM')
       map.set(key, (map.get(key) ?? 0) + p.monto)
     }
+    
     const toDate = (bucket: string) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(bucket)) return dayjs.tz(bucket)
       if (/^\d{4}-W\d{2}$/.test(bucket)) {
@@ -62,6 +137,7 @@ export const dashboardService = {
       if (/^\d{4}-\d{2}$/.test(bucket)) return dayjs.tz(bucket + '-01')
       return dayjs.tz(bucket)
     }
+    
     const out = [...map.entries()]
       .map(([k, v]) => ({ bucket: k, monto: v, sortKey: toDate(k).valueOf() }))
       .sort((a, b) => a.sortKey - b.sortKey)
