@@ -42,7 +42,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     setLoadingRut(refundId)
     
     try {
-      const response = await fetch(`https://www.rutificador.co/rut/buscar/?f=${rut}`, {
+      const response = await fetch(`https://r.rutificador.co/pr/${rut}`, {
         method: 'POST'
       })
       
