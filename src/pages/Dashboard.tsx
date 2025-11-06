@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useQuery } from '@tanstack/react-query'
 import { Money } from '@/components/common/Money'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts'
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
 import { dashboardDataMock } from '@/mocks/dashboardData'
@@ -17,6 +17,16 @@ const ESTADO_LABELS: Record<string, string> = {
   CLIENTE_NOTIFICADO: 'Pago programado',
   PAGADA_CLIENTE: 'Pagado',
   RECHAZADO: 'Rechazado',
+}
+
+const ESTADO_COLORS: Record<string, string> = {
+  SIMULACION_CONFIRMADA: 'hsl(221, 83%, 53%)', // blue
+  EN_PROCESO: 'hsl(43, 96%, 56%)', // yellow
+  DEVOLUCION_CONFIRMADA_COMPANIA: 'hsl(238, 56%, 58%)', // indigo
+  FONDOS_RECIBIDOS_TD: 'hsl(142, 71%, 45%)', // green
+  CLIENTE_NOTIFICADO: 'hsl(160, 84%, 39%)', // emerald
+  PAGADA_CLIENTE: 'hsl(142, 76%, 36%)', // dark green
+  RECHAZADO: 'hsl(0, 84%, 60%)', // red
 }
 
 const ESTADO_ICONS: Record<string, LucideIcon> = {
@@ -65,6 +75,19 @@ export default function Dashboard() {
       icon: ESTADO_ICONS[k]
     }))
   ), [counts])
+
+  const pieChartData = useMemo(() => {
+    if (!counts) return []
+    const total = Object.values(counts).reduce((sum, val) => sum + val, 0)
+    if (total === 0) return []
+
+    return Object.entries(ESTADO_LABELS).map(([key, label]) => ({
+      name: label,
+      value: counts[key] || 0,
+      percentage: total > 0 ? ((counts[key] || 0) / total * 100).toFixed(1) : '0.0',
+      color: ESTADO_COLORS[key]
+    })).filter(item => item.value > 0)
+  }, [counts])
 
   return (
     <main className="p-4 space-y-4" role="main" aria-label="Panel principal del Dashboard">
@@ -153,13 +176,55 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribución por estado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              {pieChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                      labelLine={true}
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string, props: any) => [
+                        `${value} solicitudes (${props.payload.percentage}%)`,
+                        props.payload.name
+                      ]} 
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                  Sin datos en el rango seleccionado
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Evolución de pagos a clientes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-72">
+            <div className="h-80">
               {pagosAgg && pagosAgg.series.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={pagosAgg.series} barSize={18}>
