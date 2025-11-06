@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useQuery } from '@tanstack/react-query'
 import { Money } from '@/components/common/Money'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
@@ -181,106 +182,106 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Distribución por estado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              {pieChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                      label={({ name, percentage }) => `${name}: ${percentage}%`}
-                      labelLine={true}
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number, name: string, props: any) => [
-                        `${value} solicitudes (${props.payload.percentage}%)`,
-                        props.payload.name
-                      ]} 
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Sin datos en el rango seleccionado
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Evolución de pagos a clientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              {pagosAgg && pagosAgg.series.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={pagosAgg.series} barSize={18}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} tickFormatter={(v) => v.toLocaleString('es-CL')} />
-                    <Tooltip formatter={(value: number) => fmtCLP(value)} labelFormatter={(l) => `${l}`} />
-                    <Bar dataKey="monto" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sin datos en el rango seleccionado</div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
       <section className="grid grid-cols-1 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>Tendencia de solicitudes creadas</CardTitle>
+            <CardTitle>Análisis de solicitudes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-80">
-              {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={solicitudesAgg.series}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value} solicitudes`, 'Cantidad']}
-                      labelFormatter={(label) => `Período: ${label}`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="cantidad" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-                  Sin datos en el rango seleccionado
+            <Tabs defaultValue="distribucion" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="distribucion">Distribución por estado</TabsTrigger>
+                <TabsTrigger value="pagos">Evolución de pagos</TabsTrigger>
+                <TabsTrigger value="tendencia">Tendencia de solicitudes</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="distribucion" className="mt-4">
+                <div className="h-80">
+                  {pieChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                          dataKey="value"
+                          label={({ name, percentage }) => `${name}: ${percentage}%`}
+                          labelLine={true}
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number, name: string, props: any) => [
+                            `${value} solicitudes (${props.payload.percentage}%)`,
+                            props.payload.name
+                          ]} 
+                        />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                      Sin datos en el rango seleccionado
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </TabsContent>
+
+              <TabsContent value="pagos" className="mt-4">
+                <div className="h-80">
+                  {pagosAgg && pagosAgg.series.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={pagosAgg.series} barSize={18}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} tickFormatter={(v) => v.toLocaleString('es-CL')} />
+                        <Tooltip formatter={(value: number) => fmtCLP(value)} labelFormatter={(l) => `${l}`} />
+                        <Bar dataKey="monto" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                      Sin datos en el rango seleccionado
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="tendencia" className="mt-4">
+                <div className="h-80">
+                  {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={solicitudesAgg.series}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                        <Tooltip 
+                          formatter={(value: number) => [`${value} solicitudes`, 'Cantidad']}
+                          labelFormatter={(label) => `Período: ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="cantidad" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                      Sin datos en el rango seleccionado
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </section>
