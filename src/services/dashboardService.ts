@@ -92,18 +92,22 @@ export const dashboardService = {
 
   async getPagosClientes(desde?: string, hasta?: string) {
     try {
-      // Obtener solicitudes pagadas
+      // Obtener todas las solicitudes en el rango de fechas
       const response = await refundAdminApi.list({
         from: desde,
         to: hasta,
-        status: 'PAID',
         pageSize: 1000,
       })
 
       const refunds = Array.isArray(response) ? response : response.items || []
 
+      // Filtrar solo las que están en estado PAID
+      const paidRefunds = (refunds as RefundRequest[]).filter(
+        refund => refund.status === 'PAID'
+      )
+
       // Transformar a estructura de pagos
-      return (refunds as RefundRequest[]).map(refund => ({
+      return paidRefunds.map(refund => ({
         fecha: dayjs.tz(refund.updatedAt).format('YYYY-MM-DD'),
         monto: refund.estimatedAmountCLP || 0,
       }))
