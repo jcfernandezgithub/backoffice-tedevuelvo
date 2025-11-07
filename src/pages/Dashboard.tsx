@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 import { useMemo, useState } from 'react'
@@ -40,7 +41,19 @@ const ESTADO_ICONS: Record<string, LucideIcon> = {
   RECHAZADO: XCircle,
 }
 
+// Mapeo de estados del dashboard a estados de refunds
+const DASHBOARD_TO_REFUND_STATUS: Record<string, string> = {
+  SIMULACION_CONFIRMADA: 'REQUESTED',
+  EN_PROCESO: 'QUALIFYING', // Agrupa QUALIFYING, DOCS_PENDING, DOCS_RECEIVED
+  DEVOLUCION_CONFIRMADA_COMPANIA: 'SUBMITTED',
+  FONDOS_RECIBIDOS_TD: 'APPROVED',
+  CLIENTE_NOTIFICADO: 'PAYMENT_SCHEDULED',
+  PAGADA_CLIENTE: 'PAID',
+  RECHAZADO: 'REJECTED',
+}
+
 export default function Dashboard() {
+  const navigate = useNavigate()
   // Rango de fechas por defecto: últimos 30 días
   const [desde, setDesde] = useState<string>(() => {
     const d = new Date()
@@ -79,7 +92,8 @@ export default function Dashboard() {
       title: ESTADO_LABELS[item.key], 
       value: counts?.[item.key] ?? 0,
       icon: ESTADO_ICONS[item.key],
-      color: item.color
+      color: item.color,
+      refundStatus: DASHBOARD_TO_REFUND_STATUS[item.key]
     }))
   ), [counts])
 
@@ -169,7 +183,7 @@ export default function Dashboard() {
           <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados en proceso</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {estadoCards.slice(0, 4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} />
             ))}
           </div>
         </div>
@@ -177,7 +191,7 @@ export default function Dashboard() {
           <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados finales</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {estadoCards.slice(4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} />
             ))}
           </div>
         </div>
@@ -299,12 +313,21 @@ export default function Dashboard() {
   )
 }
 
-function Kpi({ title, value, icon: Icon, color }: { 
+function Kpi({ title, value, icon: Icon, color, refundStatus }: { 
   title: string; 
   value: number | React.ReactNode; 
   icon?: LucideIcon;
   color?: string;
+  refundStatus?: string;
 }) {
+  const navigate = useNavigate()
+  
+  const handleClick = () => {
+    if (refundStatus) {
+      navigate(`/refunds?status=${refundStatus}`)
+    }
+  }
+  
   const colorClasses = {
     blue: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50 hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30',
     yellow: 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/50 hover:shadow-yellow-200/50 dark:hover:shadow-yellow-900/30',
@@ -329,7 +352,10 @@ function Kpi({ title, value, icon: Icon, color }: {
   const iconClass = color ? iconColorClasses[color as keyof typeof iconColorClasses] : 'text-muted-foreground'
 
   return (
-    <Card className={`hover:shadow-lg transition-all duration-300 sm:hover:scale-105 ${cardClass}`}>
+    <Card 
+      className={`hover:shadow-lg transition-all duration-300 sm:hover:scale-105 ${cardClass} ${refundStatus ? 'cursor-pointer' : ''}`}
+      onClick={handleClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4 md:p-6">
         <CardTitle className="text-xs sm:text-sm font-medium">{title}</CardTitle>
         {Icon && (
