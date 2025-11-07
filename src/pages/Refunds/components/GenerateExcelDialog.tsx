@@ -51,7 +51,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       
       const token = authService.getAccessToken()
       
-      const response = await fetch(`https://tedevuelvo-app-be.onrender.com/api/v1/user/rut/${cleanRut}`, {
+      const response = await fetch(`http://rut-data-extractor-production.up.railway.app/rut/${cleanRut}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
