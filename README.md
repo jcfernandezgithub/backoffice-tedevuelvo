@@ -1,8 +1,27 @@
 # Welcome to your Lovable project
 
-## Versión 1.0.0
+## Versión 1.1.0
 
 ## Changelog
+
+### Versión 1.1.0 - 2025-11-07
+
+#### Nuevas Funcionalidades
+- **Generación de Excel para CIA**: Agregado botón "Archivo Altas CIA" que permite generar un archivo Excel con formato específico para la compañía de seguros.
+  - Formulario interactivo para completar datos requeridos por solicitud (Número de Póliza, Código de Crédito).
+  - Integración con servicio de consulta de datos de clientes por RUT.
+  - Botón "Buscar Información" que consume el servicio `https://rut-data-extractor-production.up.railway.app/rut/{RUT}` para autocompletar datos personales (Sexo, Dirección, Comuna).
+  - Mapeo automático de género: MUJ → F, VAR → M.
+  - Validación de campos obligatorios antes de generar el archivo.
+  - Indicadores visuales de completitud de datos por solicitud.
+  - Manejo de errores con mensaje "Datos no encontrados" cuando el servicio no retorna información.
+
+#### Mejoras Técnicas
+- Refactorización del componente `GenerateExcelDialog` para mejorar la arquitectura y mantenibilidad.
+- Implementación de manejo de estados de carga durante la consulta de información del cliente.
+- Uso de accordion para organizar múltiples solicitudes de forma eficiente.
+
+---
 
 ### Versión 1.0.0 - 2025-10-22
 
