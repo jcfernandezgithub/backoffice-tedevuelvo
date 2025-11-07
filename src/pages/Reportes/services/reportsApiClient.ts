@@ -192,43 +192,31 @@ export const reportsApiClient = {
 
   async getDistribucionPorEstado(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
     const refunds = await fetchRefunds(filtros);
-    
-    // Agrupamos según las categorías del dashboard
-    const grupos = {
-      'SIMULACION_CONFIRMADA': 0,  // Simulado
-      'EN_PROCESO': 0,              // En proceso (agrupa varios estados intermedios)
-      'DEVOLUCION_CONFIRMADA_COMPANIA': 0, // Enviado
-    };
+    const conteos = new Map<string, number>();
     
     refunds.forEach(r => {
-      const status = r.status;
-      
-      // Agrupación igual al dashboard
-      if (status === 'REQUESTED') {
-        grupos.SIMULACION_CONFIRMADA++;
-      } else if (status === 'QUALIFYING' || status === 'DOCS_PENDING' || status === 'DOCS_RECEIVED' || 
-                 status === 'SUBMITTED' || status === 'APPROVED') {
-        grupos.EN_PROCESO++;
-      } else if (status === 'PAYMENT_SCHEDULED' || status === 'PAID') {
-        grupos.DEVOLUCION_CONFIRMADA_COMPANIA++;
+      const mappedStatus = STATUS_MAP[r.status];
+      if (mappedStatus) {
+        conteos.set(mappedStatus, (conteos.get(mappedStatus) || 0) + 1);
       }
     });
 
     const ESTADO_LABELS: Record<string, string> = {
       'SIMULACION_CONFIRMADA': 'Simulado',
-      'EN_PROCESO': 'En proceso',
-      'DEVOLUCION_CONFIRMADA_COMPANIA': 'Enviado',
+      'DEVOLUCION_CONFIRMADA_COMPANIA': 'Aprobado',
+      'FONDOS_RECIBIDOS_TD': 'Docs recibidos',
+      'CERTIFICADO_EMITIDO': 'Enviado',
+      'CLIENTE_NOTIFICADO': 'Pago programado',
+      'PAGADA_CLIENTE': 'Pagado',
     };
 
     const total = refunds.length;
-    return Object.entries(grupos)
-      .filter(([_, cantidad]) => cantidad > 0) // Solo mostrar estados con datos
-      .map(([estado, cantidad]) => ({
-        categoria: estado,
-        name: ESTADO_LABELS[estado] || estado,
-        valor: cantidad,
-        porcentaje: total > 0 ? (cantidad / total) * 100 : 0
-      }));
+    return Array.from(conteos.entries()).map(([estado, cantidad]) => ({
+      categoria: estado,
+      name: ESTADO_LABELS[estado] || estado,
+      valor: cantidad,
+      porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+    }));
   },
 
   async getDistribucionPorAlianza(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
