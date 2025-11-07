@@ -15,12 +15,12 @@ import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const ESTADO_COLORS = {
-  'SIMULACION_CONFIRMADA': 'hsl(var(--primary))',
-  'DEVOLUCION_CONFIRMADA_COMPANIA': 'hsl(var(--accent))',
-  'FONDOS_RECIBIDOS_TD': '#8b5cf6',
-  'CERTIFICADO_EMITIDO': '#06b6d4',
-  'CLIENTE_NOTIFICADO': '#10b981',
-  'PAGADA_CLIENTE': '#f59e0b',
+  'SIMULACION_CONFIRMADA': 'hsl(221, 83%, 53%)', // blue
+  'DEVOLUCION_CONFIRMADA_COMPANIA': 'hsl(238, 56%, 58%)', // indigo  
+  'FONDOS_RECIBIDOS_TD': 'hsl(142, 71%, 45%)', // green
+  'CERTIFICADO_EMITIDO': 'hsl(160, 84%, 39%)', // emerald
+  'CLIENTE_NOTIFICADO': 'hsl(45, 93%, 47%)', // yellow
+  'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
 };
 
 export function TabResumen() {
