@@ -1,10 +1,33 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { TrendingDown } from 'lucide-react';
+import { TrendingDown, ExternalLink } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { refundAdminApi } from '@/services/refundAdminApi';
+import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { FunnelStep } from '../types/reportTypes';
+import type { RefundRequest, RefundStatus } from '@/types/refund';
 
 interface FunnelChartProps {
   data?: FunnelStep[];
@@ -21,7 +44,70 @@ const ESTADO_LABELS: Record<string, string> = {
   'PAGADA_CLIENTE': 'Pagada al cliente',
 };
 
+// Mapeo inverso de estados de reportes a estados de API
+const ESTADO_TO_STATUS_MAP: Record<string, RefundStatus[]> = {
+  'SIMULACION_CONFIRMADA': ['REQUESTED', 'QUALIFYING', 'DOCS_PENDING'],
+  'DEVOLUCION_CONFIRMADA_COMPANIA': ['DOCS_RECEIVED'],
+  'FONDOS_RECIBIDOS_TD': ['SUBMITTED'],
+  'CERTIFICADO_EMITIDO': ['APPROVED'],
+  'CLIENTE_NOTIFICADO': ['PAYMENT_SCHEDULED'],
+  'PAGADA_CLIENTE': ['PAID'],
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  'REQUESTED': 'Simulado',
+  'QUALIFYING': 'Calificando',
+  'DOCS_PENDING': 'Docs pendientes',
+  'DOCS_RECEIVED': 'Docs recibidos',
+  'SUBMITTED': 'Enviado',
+  'APPROVED': 'Aprobado',
+  'PAYMENT_SCHEDULED': 'Pago programado',
+  'PAID': 'Pagado',
+};
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  'REQUESTED': 'outline',
+  'QUALIFYING': 'secondary',
+  'DOCS_PENDING': 'secondary',
+  'DOCS_RECEIVED': 'secondary',
+  'SUBMITTED': 'default',
+  'APPROVED': 'default',
+  'PAYMENT_SCHEDULED': 'default',
+  'PAID': 'default',
+};
+
 export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
+  const navigate = useNavigate();
+  const [selectedEtapa, setSelectedEtapa] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Obtener todas las solicitudes
+  const { data: allRefunds = [] } = useQuery({
+    queryKey: ['refunds-all'],
+    queryFn: async () => {
+      const response = await refundAdminApi.list({ pageSize: 10000 });
+      return Array.isArray(response) ? response : response.items || [];
+    }
+  });
+
+  // Filtrar solicitudes por etapa seleccionada
+  const filteredRefunds = selectedEtapa
+    ? allRefunds.filter(refund => {
+        const allowedStatuses = ESTADO_TO_STATUS_MAP[selectedEtapa] || [];
+        return allowedStatuses.includes(refund.status);
+      })
+    : [];
+
+  const handleEtapaClick = (etapa: string) => {
+    setSelectedEtapa(etapa);
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setTimeout(() => setSelectedEtapa(null), 300);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -78,18 +164,20 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
           return (
             <div key={step.etapa} className="relative">
               <div className="flex items-center gap-4">
-                {/* Barra del funnel */}
-                <div
+                {/* Barra del funnel - Clickeable */}
+                <button
+                  onClick={() => handleEtapaClick(step.etapa)}
                   className={cn(
-                    'bg-gradient-to-r from-primary to-accent rounded-lg p-4 text-primary-foreground relative overflow-hidden flex-1',
+                    'bg-gradient-to-r from-primary to-accent rounded-lg p-4 text-primary-foreground relative overflow-hidden flex-1 transition-all hover:shadow-lg hover:scale-[1.02] cursor-pointer',
                     isFirst && 'from-emerald-500 to-emerald-600',
                     isLast && 'from-blue-600 to-blue-700'
                   )}
                   style={{ maxWidth: `${Math.max(widthPercentage, 15)}%` }}
                 >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-medium text-sm">
+                    <h4 className="font-medium text-sm flex items-center gap-2">
                       {ESTADO_LABELS[step.etapa] || step.etapa}
+                      <ExternalLink className="h-3 w-3 opacity-70" />
                     </h4>
                     <div className="text-right">
                       <div className="font-bold">
@@ -108,7 +196,7 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
                       clipPath: 'polygon(0 0, 100% 20%, 100% 80%, 0 100%)'
                     }}
                   />
-                </div>
+                </button>
 
                 {/* Indicador de pérdida al costado - VISIBLE Y CLARO */}
                 {perdida > 0 && (
@@ -162,6 +250,86 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
           </div>
         </div>
       </CardContent>
+
+      {/* Drawer con detalle de solicitudes */}
+      <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>
+              {selectedEtapa ? ESTADO_LABELS[selectedEtapa] : 'Detalle'}
+            </SheetTitle>
+            <SheetDescription>
+              {filteredRefunds.length} solicitudes en este estado
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6">
+            {filteredRefunds.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Público</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>RUT</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Monto</TableHead>
+                      <TableHead>Creación</TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRefunds.map((refund) => (
+                      <TableRow key={refund.id}>
+                        <TableCell className="font-mono text-sm">
+                          {refund.publicId}
+                        </TableCell>
+                        <TableCell>{refund.fullName || '-'}</TableCell>
+                        <TableCell>{refund.rut || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {refund.email || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_VARIANT[refund.status] || 'outline'}>
+                            {STATUS_LABELS[refund.status] || refund.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {new Intl.NumberFormat('es-CL', {
+                            style: 'currency',
+                            currency: 'CLP',
+                            maximumFractionDigits: 0
+                          }).format(refund.estimatedAmountCLP)}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(refund.createdAt), 'dd/MM/yyyy', { locale: es })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigate(`/refunds/${refund.id}`);
+                              handleCloseDrawer();
+                            }}
+                          >
+                            Ver detalle
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="h-32 flex items-center justify-center text-muted-foreground">
+                No hay solicitudes en este estado
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
