@@ -66,6 +66,8 @@ export function TabResumen() {
   const { filtros } = useFilters();
   const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { data: kpis, isLoading: loadingKpis } = useKpisResumen(filtros);
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
@@ -88,6 +90,17 @@ export function TabResumen() {
       return Array.isArray(response) ? response : response.items || [];
     }
   });
+
+  // Paginación
+  const totalPages = Math.ceil(refunds.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRefunds = refunds.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
     fecha: punto.fecha,
@@ -201,70 +214,125 @@ export function TabResumen() {
               ))}
             </div>
           ) : refunds.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID Público</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>RUT</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Mandato</TableHead>
-                    <TableHead className="text-right">Monto estimado</TableHead>
-                    <TableHead>Institución</TableHead>
-                    <TableHead>Creación</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {refunds.map((refund) => (
-                    <TableRow key={refund.id}>
-                      <TableCell className="font-mono text-sm">
-                        {refund.publicId}
-                      </TableCell>
-                      <TableCell>{refund.fullName || '-'}</TableCell>
-                      <TableCell>{refund.rut || '-'}</TableCell>
-                      <TableCell>{refund.email || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={STATUS_VARIANT[refund.status] || 'outline'}>
-                          {STATUS_LABELS[refund.status] || refund.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {refund.mandateStatus === 'SIGNED' ? (
-                          <Badge variant="default" className="bg-green-600">Firmado</Badge>
-                        ) : refund.mandateStatus === 'PENDING' ? (
-                          <Badge variant="secondary">Pendiente</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {new Intl.NumberFormat('es-CL', {
-                          style: 'currency',
-                          currency: 'CLP',
-                          maximumFractionDigits: 0
-                        }).format(refund.estimatedAmountCLP)}
-                      </TableCell>
-                      <TableCell>{refund.institutionId || '-'}</TableCell>
-                      <TableCell>
-                        {format(new Date(refund.createdAt), 'dd/MM/yyyy', { locale: es })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/solicitudes/${refund.id}`)}
-                        >
-                          Abrir
-                        </Button>
-                      </TableCell>
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID Público</TableHead>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>RUT</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Mandato</TableHead>
+                      <TableHead className="text-right">Monto estimado</TableHead>
+                      <TableHead>Institución</TableHead>
+                      <TableHead>Creación</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedRefunds.map((refund) => (
+                      <TableRow key={refund.id}>
+                        <TableCell className="font-mono text-sm">
+                          {refund.publicId}
+                        </TableCell>
+                        <TableCell>{refund.fullName || '-'}</TableCell>
+                        <TableCell>{refund.rut || '-'}</TableCell>
+                        <TableCell>{refund.email || '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={STATUS_VARIANT[refund.status] || 'outline'}>
+                            {STATUS_LABELS[refund.status] || refund.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {refund.mandateStatus === 'SIGNED' ? (
+                            <Badge variant="default" className="bg-green-600">Firmado</Badge>
+                          ) : refund.mandateStatus === 'PENDING' ? (
+                            <Badge variant="secondary">Pendiente</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {new Intl.NumberFormat('es-CL', {
+                            style: 'currency',
+                            currency: 'CLP',
+                            maximumFractionDigits: 0
+                          }).format(refund.estimatedAmountCLP)}
+                        </TableCell>
+                        <TableCell>{refund.institutionId || '-'}</TableCell>
+                        <TableCell>
+                          {format(new Date(refund.createdAt), 'dd/MM/yyyy', { locale: es })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/solicitudes/${refund.id}`)}
+                          >
+                            Abrir
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Paginación */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, refunds.length)} de {refunds.length} solicitudes
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Anterior
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNumber}
+                            variant={currentPage === pageNumber ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNumber)}
+                            className="w-9"
+                          >
+                            {pageNumber}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="h-32 flex items-center justify-center text-muted-foreground">
               No hay datos para mostrar
