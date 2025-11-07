@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { TrendingDown } from 'lucide-react';
 import type { FunnelStep } from '../types/reportTypes';
 
 interface FunnelChartProps {
@@ -75,52 +77,61 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
 
           return (
             <div key={step.etapa} className="relative">
-              {/* Barra del funnel */}
-              <div
-                className={cn(
-                  'bg-gradient-to-r from-primary to-accent rounded-lg p-4 text-primary-foreground relative overflow-hidden',
-                  isFirst && 'from-emerald-500 to-emerald-600',
-                  isLast && 'from-blue-600 to-blue-700'
-                )}
-                style={{ width: `${Math.max(widthPercentage, 15)}%` }}
-              >
-                <div className="flex justify-between items-center">
-                  <h4 className="font-medium text-sm">
-                    {ESTADO_LABELS[step.etapa] || step.etapa}
-                  </h4>
-                  <div className="text-right">
-                    <div className="font-bold">
-                      {step.cantidad.toLocaleString('es-CL')}
-                    </div>
-                    <div className="text-xs opacity-90">
-                      {step.porcentaje.toFixed(1)}%
+              <div className="flex items-center gap-4">
+                {/* Barra del funnel */}
+                <div
+                  className={cn(
+                    'bg-gradient-to-r from-primary to-accent rounded-lg p-4 text-primary-foreground relative overflow-hidden flex-1',
+                    isFirst && 'from-emerald-500 to-emerald-600',
+                    isLast && 'from-blue-600 to-blue-700'
+                  )}
+                  style={{ maxWidth: `${Math.max(widthPercentage, 15)}%` }}
+                >
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-sm">
+                      {ESTADO_LABELS[step.etapa] || step.etapa}
+                    </h4>
+                    <div className="text-right">
+                      <div className="font-bold">
+                        {step.cantidad.toLocaleString('es-CL')}
+                      </div>
+                      <div className="text-xs opacity-90">
+                        {step.porcentaje.toFixed(1)}%
+                      </div>
                     </div>
                   </div>
+                  
+                  {/* Forma de funnel */}
+                  <div
+                    className="absolute right-0 top-0 h-full w-4 bg-gradient-to-r from-transparent to-background"
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 20%, 100% 80%, 0 100%)'
+                    }}
+                  />
                 </div>
-                
-                {/* Forma de funnel */}
-                <div
-                  className="absolute right-0 top-0 h-full w-4 bg-gradient-to-r from-transparent to-background"
-                  style={{
-                    clipPath: 'polygon(0 0, 100% 20%, 100% 80%, 0 100%)'
-                  }}
-                />
-              </div>
 
-              {/* Indicador de pérdida */}
-              {perdida > 0 && (
-                <div className="flex items-center mt-2 text-sm text-muted-foreground">
-                  <div className="w-4 h-px bg-destructive mr-2" />
-                  <span>
-                    Pérdida: {perdida.toLocaleString('es-CL')} ({perdidaPorcentaje.toFixed(1)}%)
-                  </span>
-                </div>
-              )}
+                {/* Indicador de pérdida al costado - VISIBLE Y CLARO */}
+                {perdida > 0 && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-destructive/10 border border-destructive/30 rounded-lg">
+                      <TrendingDown className="h-4 w-4 text-destructive" />
+                      <div className="text-sm">
+                        <div className="font-semibold text-destructive">
+                          -{perdida.toLocaleString('es-CL')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {perdidaPorcentaje.toFixed(1)}% fuga
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Conector al siguiente paso */}
               {!isLast && (
-                <div className="flex justify-center my-2">
-                  <div className="w-px h-4 bg-border" />
+                <div className="flex justify-start my-3 ml-8">
+                  <div className="w-px h-6 bg-border" />
                 </div>
               )}
             </div>
