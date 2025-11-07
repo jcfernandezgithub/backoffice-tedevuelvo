@@ -20,7 +20,7 @@ const items = [
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'dev' as const, adminOnly: false },
   { title: 'Certificados', url: '/certificados', icon: FileCheck2, status: 'dev' as const, adminOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false },
-  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'dev' as const, adminOnly: false },
+  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false },
 ]
 
@@ -55,6 +55,11 @@ export function AppSidebar() {
                           {item.status === 'live' && (
                             <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1.5 py-0">
                               Productiva
+                            </Badge>
+                          )}
+                          {item.status === 'cert' && (
+                            <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white text-[10px] px-1.5 py-0">
+                              En certificación
                             </Badge>
                           )}
                           {item.status === 'dev' && (
