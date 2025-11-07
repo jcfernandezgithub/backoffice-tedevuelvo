@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +40,14 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   const { data: alianzas = [] } = useAlianzas();
   const { data: companias = [] } = useCompanias();
   
+  // Sincronizar filtros locales con los globales cuando cambien
   const [localFiltros, setLocalFiltros] = useState(filtros);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Actualizar filtros locales cuando cambien los globales
+  useEffect(() => {
+    setLocalFiltros(filtros);
+  }, [filtros]);
 
   const handleDateChange = (field: 'fechaDesde' | 'fechaHasta', date?: Date) => {
     if (!date) return;
