@@ -28,6 +28,8 @@ const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
 
 // Fetch todas las solicitudes aplicando filtros
 async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
+  console.log('[ReportsAPI] Filtros recibidos:', filtros);
+  
   // La API solo permite filtrar por rango de fechas y estado
   // Los demás filtros se aplicarán en cliente
   const params: any = {
@@ -41,11 +43,21 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
     params.to = filtros.fechaHasta;
   }
 
+  console.log('[ReportsAPI] Params enviados a API:', params);
+
   const response = await refundAdminApi.list(params);
-  let items = response.items || [];
+  let items = Array.isArray(response) ? response : response.items || [];
+
+  console.log('[ReportsAPI] Items recibidos de API:', items.length);
+  console.log('[ReportsAPI] Primeros 3 items:', items.slice(0, 3).map(r => ({ 
+    id: r.publicId, 
+    createdAt: r.createdAt, 
+    status: r.status 
+  })));
 
   // Filtrar solo solicitudes no rechazadas/canceladas
   items = items.filter(r => r.status !== 'REJECTED' && r.status !== 'CANCELED');
+  console.log('[ReportsAPI] Items después de filtrar rechazadas:', items.length);
 
   // Aplicar filtros adicionales en cliente
   if (filtros.estados?.length) {

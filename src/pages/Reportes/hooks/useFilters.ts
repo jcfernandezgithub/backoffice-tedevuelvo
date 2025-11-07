@@ -11,23 +11,15 @@ export function useFilters() {
     const hoy = dayjs();
     const hace3Meses = hoy.subtract(3, 'month');
     
-    // Validar que las fechas de la URL sean razonables (no en el futuro)
+    // Obtener fechas de la URL
     let fechaDesde = searchParams.get('fechaDesde');
     let fechaHasta = searchParams.get('fechaHasta');
-    
-    // Si las fechas están en el futuro, usar valores por defecto
-    if (fechaDesde && dayjs(fechaDesde).isAfter(hoy, 'day')) {
-      fechaDesde = hace3Meses.format('YYYY-MM-DD');
-    }
-    if (fechaHasta && dayjs(fechaHasta).isAfter(hoy, 'day')) {
-      fechaHasta = hoy.format('YYYY-MM-DD');
-    }
     
     // Si no hay fechas, usar valores por defecto
     if (!fechaDesde) fechaDesde = hace3Meses.format('YYYY-MM-DD');
     if (!fechaHasta) fechaHasta = hoy.format('YYYY-MM-DD');
     
-    return {
+    const filtrosIniciales = {
       fechaDesde,
       fechaHasta,
       estados: searchParams.get('estados')?.split(',').filter(Boolean) as EstadoSolicitud[] || [],
@@ -37,6 +29,10 @@ export function useFilters() {
       montoMin: searchParams.get('montoMin') ? Number(searchParams.get('montoMin')) : undefined,
       montoMax: searchParams.get('montoMax') ? Number(searchParams.get('montoMax')) : undefined,
     };
+    
+    console.log('[useFilters] Filtros iniciales:', filtrosIniciales);
+    
+    return filtrosIniciales;
   });
 
   const actualizarFiltros = useCallback((nuevosFiltros: Partial<FiltrosReporte>) => {
