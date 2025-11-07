@@ -201,9 +201,19 @@ export const reportsApiClient = {
       }
     });
 
+    const ESTADO_LABELS: Record<string, string> = {
+      'SIMULACION_CONFIRMADA': 'Simulación Confirmada',
+      'DEVOLUCION_CONFIRMADA_COMPANIA': 'Devolución Confirmada',
+      'FONDOS_RECIBIDOS_TD': 'Fondos Recibidos',
+      'CERTIFICADO_EMITIDO': 'Certificado Emitido',
+      'CLIENTE_NOTIFICADO': 'Cliente Notificado',
+      'PAGADA_CLIENTE': 'Pagada al Cliente',
+    };
+
     const total = refunds.length;
     return Array.from(conteos.entries()).map(([estado, cantidad]) => ({
       categoria: estado,
+      name: ESTADO_LABELS[estado] || estado,
       valor: cantidad,
       porcentaje: total > 0 ? (cantidad / total) * 100 : 0
     }));
@@ -222,6 +232,7 @@ export const reportsApiClient = {
     const total = refunds.length;
     return Array.from(conteos.entries()).map(([nombre, cantidad]) => ({
       categoria: nombre,
+      name: nombre,
       valor: cantidad,
       porcentaje: total > 0 ? (cantidad / total) * 100 : 0
     }));

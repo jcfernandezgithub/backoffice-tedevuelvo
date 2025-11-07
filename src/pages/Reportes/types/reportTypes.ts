@@ -84,6 +84,7 @@ export interface TimeSeriesPoint {
 
 export interface DistribucionItem {
   categoria: string;
+  name: string;
   valor: number;
   porcentaje: number;
 }
