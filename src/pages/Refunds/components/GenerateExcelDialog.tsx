@@ -52,7 +52,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const token = authService.getAccessToken()
       
       const response = await fetch(`https://tedevuelvo-app-be.onrender.com/api/v1/user/rut/${cleanRut}`, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` })
