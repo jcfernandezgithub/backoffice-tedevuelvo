@@ -267,11 +267,11 @@ export function TabResumen() {
                         </TableCell>
                         <TableCell>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/solicitudes/${refund.id}`)}
+                            onClick={() => navigate(`/refunds/${refund.id}`)}
                           >
-                            Abrir
+                            Ver detalle
                           </Button>
                         </TableCell>
                       </TableRow>
