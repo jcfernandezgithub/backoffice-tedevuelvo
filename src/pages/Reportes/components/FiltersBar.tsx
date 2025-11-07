@@ -364,30 +364,6 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
             Limpiar
           </Button>
         </div>
-
-        {/* Filtros activos */}
-        {(contarFiltrosActivos() > 0 || localFiltros.estados?.length || localFiltros.alianzas?.length) && (
-          <div className="flex flex-wrap gap-2 pt-2">
-            {localFiltros.estados?.map(estado => (
-              <Badge key={estado} variant="secondary">
-                {ESTADOS.find(e => e.value === estado)?.label}
-                <X
-                  className="h-3 w-3 ml-1 cursor-pointer"
-                  onClick={() => handleMultiSelectChange('estados', estado, false)}
-                />
-              </Badge>
-            ))}
-            {localFiltros.alianzas?.map(alianzaId => (
-              <Badge key={alianzaId} variant="secondary">
-                {alianzas.find(a => a.id === alianzaId)?.nombre}
-                <X
-                  className="h-3 w-3 ml-1 cursor-pointer"
-                  onClick={() => handleMultiSelectChange('alianzas', alianzaId, false)}
-                />
-              </Badge>
-            ))}
-          </div>
-        )}
       </CardContent>
     </Card>
   );
