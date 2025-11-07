@@ -66,9 +66,10 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const data = await response.json()
       
       // Mapear la respuesta del servicio
-      const sexo = data.sex || data.sexo || ''
-      const direccion = data.address || data.direccion || ''
-      const comuna = data.commune || data.comuna || ''
+      const genero = data.data?.genero || ''
+      const sexo = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : genero
+      const direccion = data.data?.direccion || ''
+      const comuna = data.data?.comuna || ''
       
       // Actualizar los datos
       setRefundData(prev => ({
