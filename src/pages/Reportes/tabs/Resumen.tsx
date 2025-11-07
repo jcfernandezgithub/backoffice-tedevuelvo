@@ -16,11 +16,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 
 const ESTADO_COLORS = {
   'SIMULACION_CONFIRMADA': 'hsl(221, 83%, 53%)', // blue
-  'DEVOLUCION_CONFIRMADA_COMPANIA': 'hsl(238, 56%, 58%)', // indigo  
-  'FONDOS_RECIBIDOS_TD': 'hsl(142, 71%, 45%)', // green
-  'CERTIFICADO_EMITIDO': 'hsl(160, 84%, 39%)', // emerald
-  'CLIENTE_NOTIFICADO': 'hsl(45, 93%, 47%)', // yellow
-  'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
+  'EN_PROCESO': 'hsl(43, 96%, 56%)', // yellow
+  'DEVOLUCION_CONFIRMADA_COMPANIA': 'hsl(238, 56%, 58%)', // indigo
 };
 
 export function TabResumen() {
@@ -108,11 +105,12 @@ export function TabResumen() {
                     data={distribucionEstado}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
+                    innerRadius={40}
                     outerRadius={80}
-                    fill="#8884d8"
+                    paddingAngle={2}
                     dataKey="valor"
+                    label={({ name, porcentaje }) => `${name}: ${porcentaje.toFixed(1)}%`}
+                    labelLine={true}
                   >
                     {distribucionEstado.map((entry, index) => (
                       <Cell 
@@ -122,9 +120,12 @@ export function TabResumen() {
                     ))}
                   </Pie>
                   <Tooltip 
-                    formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
+                    formatter={(value: number, name: string, props: any) => [
+                      `${value} solicitudes (${props.payload.porcentaje.toFixed(1)}%)`,
+                      props.payload.name
+                    ]}
                   />
-                  <Legend />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
