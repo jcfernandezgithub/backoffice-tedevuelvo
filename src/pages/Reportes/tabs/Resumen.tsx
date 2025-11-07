@@ -1,20 +1,31 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { KpiCard } from '../components/KpiCard';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
-import { DataGrid } from '@/components/datagrid/DataGrid';
-import { Money } from '@/components/common/Money';
 import { useFilters } from '../hooks/useFilters';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { refundAdminApi } from '@/services/refundAdminApi';
 import {
   useKpisResumen,
   useSerieTemporal,
   useDistribucionPorEstado
 } from '../hooks/useReportsData';
-import { useQuery } from '@tanstack/react-query';
-import { solicitudesService } from '@/services/solicitudesService';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const ESTADO_COLORS = {
   'SIMULACION_CONFIRMADA': 'hsl(221, 83%, 53%)', // blue
@@ -25,8 +36,35 @@ const ESTADO_COLORS = {
   'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  'REQUESTED': 'Simulado',
+  'QUALIFYING': 'Calificando',
+  'DOCS_PENDING': 'Docs pendientes',
+  'DOCS_RECEIVED': 'Docs recibidos',
+  'SUBMITTED': 'Enviado',
+  'APPROVED': 'Aprobado',
+  'PAYMENT_SCHEDULED': 'Pago programado',
+  'PAID': 'Pagado',
+  'REJECTED': 'Rechazado',
+  'CANCELED': 'Cancelado',
+};
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  'REQUESTED': 'outline',
+  'QUALIFYING': 'secondary',
+  'DOCS_PENDING': 'secondary',
+  'DOCS_RECEIVED': 'secondary',
+  'SUBMITTED': 'default',
+  'APPROVED': 'default',
+  'PAYMENT_SCHEDULED': 'default',
+  'PAID': 'default',
+  'REJECTED': 'destructive',
+  'CANCELED': 'destructive',
+};
+
 export function TabResumen() {
   const { filtros } = useFilters();
+  const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
 
   const { data: kpis, isLoading: loadingKpis } = useKpisResumen(filtros);
@@ -42,10 +80,13 @@ export function TabResumen() {
   );
   const { data: distribucionEstado, isLoading: loadingDistribucion } = useDistribucionPorEstado(filtros);
   
-  // Obtener todas las solicitudes del sistema
-  const { data: solicitudes = [], isLoading: loadingSolicitudes } = useQuery({
-    queryKey: ['solicitudes'],
-    queryFn: () => solicitudesService.list()
+  // Obtener todas las solicitudes del sistema usando el mismo servicio que la página de Solicitudes
+  const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
+    queryKey: ['refunds-all'],
+    queryFn: async () => {
+      const response = await refundAdminApi.list({ pageSize: 10000 });
+      return Array.isArray(response) ? response : response.items || [];
+    }
   });
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
@@ -145,43 +186,85 @@ export function TabResumen() {
       {/* Tabla resumen */}
       <Card>
         <CardHeader>
-          <CardTitle>Resumen Detallado</CardTitle>
+          <CardTitle>
+            Resumen Detallado
+            {refunds.length > 0 && (
+              <span className="text-muted-foreground ml-2">({refunds.length} total)</span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingSolicitudes ? (
+          {loadingRefunds ? (
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : solicitudes.length > 0 ? (
-            <DataGrid
-              data={solicitudes}
-              columns={[
-                { key: 'id', header: 'ID', sortable: true },
-                { 
-                  key: 'cliente', 
-                  header: 'Cliente', 
-                  render: (r) => r.cliente?.nombre,
-                  sortable: true 
-                },
-                { key: 'estado', header: 'Estado', sortable: true },
-                { key: 'alianzaId', header: 'Alianza', sortable: true },
-                { 
-                  key: 'montoADevolverEstimado', 
-                  header: 'Estimado', 
-                  render: (r) => <Money value={r.montoADevolverEstimado} />, 
-                  sortable: true 
-                },
-                { 
-                  key: 'updatedAt', 
-                  header: 'Actualizado', 
-                  render: (r) => new Date(r.updatedAt).toLocaleDateString('es-CL'), 
-                  sortable: true 
-                },
-              ]}
-              pageSize={10}
-            />
+          ) : refunds.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID Público</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>RUT</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Mandato</TableHead>
+                    <TableHead className="text-right">Monto estimado</TableHead>
+                    <TableHead>Institución</TableHead>
+                    <TableHead>Creación</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {refunds.map((refund) => (
+                    <TableRow key={refund.id}>
+                      <TableCell className="font-mono text-sm">
+                        {refund.publicId}
+                      </TableCell>
+                      <TableCell>{refund.fullName || '-'}</TableCell>
+                      <TableCell>{refund.rut || '-'}</TableCell>
+                      <TableCell>{refund.email || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[refund.status] || 'outline'}>
+                          {STATUS_LABELS[refund.status] || refund.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {refund.mandateStatus === 'SIGNED' ? (
+                          <Badge variant="default" className="bg-green-600">Firmado</Badge>
+                        ) : refund.mandateStatus === 'PENDING' ? (
+                          <Badge variant="secondary">Pendiente</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(refund.estimatedAmountCLP)}
+                      </TableCell>
+                      <TableCell>{refund.institutionId || '-'}</TableCell>
+                      <TableCell>
+                        {format(new Date(refund.createdAt), 'dd/MM/yyyy', { locale: es })}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/solicitudes/${refund.id}`)}
+                        >
+                          Abrir
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <div className="h-32 flex items-center justify-center text-muted-foreground">
               No hay datos para mostrar
