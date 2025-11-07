@@ -202,12 +202,12 @@ export const reportsApiClient = {
     });
 
     const ESTADO_LABELS: Record<string, string> = {
-      'SIMULACION_CONFIRMADA': 'Simulación Confirmada',
-      'DEVOLUCION_CONFIRMADA_COMPANIA': 'Devolución Confirmada',
-      'FONDOS_RECIBIDOS_TD': 'Fondos Recibidos',
-      'CERTIFICADO_EMITIDO': 'Certificado Emitido',
-      'CLIENTE_NOTIFICADO': 'Cliente Notificado',
-      'PAGADA_CLIENTE': 'Pagada al Cliente',
+      'SIMULACION_CONFIRMADA': 'Simulado',
+      'DEVOLUCION_CONFIRMADA_COMPANIA': 'Aprobado',
+      'FONDOS_RECIBIDOS_TD': 'Docs recibidos',
+      'CERTIFICADO_EMITIDO': 'Enviado',
+      'CLIENTE_NOTIFICADO': 'Pago programado',
+      'PAGADA_CLIENTE': 'Pagado',
     };
 
     const total = refunds.length;
