@@ -4,13 +4,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { KpiCard } from '../components/KpiCard';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { DataGrid } from '@/components/datagrid/DataGrid';
+import { Money } from '@/components/common/Money';
 import { useFilters } from '../hooks/useFilters';
 import {
   useKpisResumen,
   useSerieTemporal,
-  useTablaResumen,
   useDistribucionPorEstado
 } from '../hooks/useReportsData';
+import { useQuery } from '@tanstack/react-query';
+import { solicitudesService } from '@/services/solicitudesService';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
@@ -26,7 +28,6 @@ const ESTADO_COLORS = {
 export function TabResumen() {
   const { filtros } = useFilters();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
-  const [paginaTabla, setPaginaTabla] = useState(1);
 
   const { data: kpis, isLoading: loadingKpis } = useKpisResumen(filtros);
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
@@ -40,7 +41,12 @@ export function TabResumen() {
     'montoRecuperado'
   );
   const { data: distribucionEstado, isLoading: loadingDistribucion } = useDistribucionPorEstado(filtros);
-  const { data: tablaData, isLoading: loadingTabla } = useTablaResumen(filtros, paginaTabla, 10);
+  
+  // Obtener todas las solicitudes del sistema
+  const { data: solicitudes = [], isLoading: loadingSolicitudes } = useQuery({
+    queryKey: ['solicitudes'],
+    queryFn: () => solicitudesService.list()
+  });
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
     fecha: punto.fecha,
@@ -142,42 +148,37 @@ export function TabResumen() {
           <CardTitle>Resumen Detallado</CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingTabla ? (
+          {loadingSolicitudes ? (
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : tablaData ? (
+          ) : solicitudes.length > 0 ? (
             <DataGrid
-              data={tablaData.items}
+              data={solicitudes}
               columns={[
-                { key: 'id', header: 'ID', sortable: false },
-                { key: 'fechaCreacion', header: 'Fecha', sortable: true },
-                { key: 'estado', header: 'Estado', sortable: false },
-                { key: 'tipoSeguro', header: 'Tipo', sortable: false },
-                {
-                  key: 'montoRecuperado',
-                  header: 'Monto Recuperado',
-                  sortable: true,
-                  render: (item) => new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP',
-                    maximumFractionDigits: 0
-                  }).format(item.montoRecuperado)
+                { key: 'id', header: 'ID', sortable: true },
+                { 
+                  key: 'cliente', 
+                  header: 'Cliente', 
+                  render: (r) => r.cliente?.nombre,
+                  sortable: true 
                 },
-                {
-                  key: 'montoPagado',
-                  header: 'Monto Pagado',
-                  sortable: true,
-                  render: (item) => new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP',
-                    maximumFractionDigits: 0
-                  }).format(item.montoPagado)
+                { key: 'estado', header: 'Estado', sortable: true },
+                { key: 'alianzaId', header: 'Alianza', sortable: true },
+                { 
+                  key: 'montoADevolverEstimado', 
+                  header: 'Estimado', 
+                  render: (r) => <Money value={r.montoADevolverEstimado} />, 
+                  sortable: true 
                 },
-                { key: 'alianza', header: 'Alianza', sortable: false },
-                { key: 'compania', header: 'Compañía', sortable: false },
+                { 
+                  key: 'updatedAt', 
+                  header: 'Actualizado', 
+                  render: (r) => new Date(r.updatedAt).toLocaleDateString('es-CL'), 
+                  sortable: true 
+                },
               ]}
               pageSize={10}
             />
