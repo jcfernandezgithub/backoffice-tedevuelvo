@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { authService } from '@/services/authService'
 
 interface RefundExcelData {
   policyNumber: string
@@ -43,52 +42,64 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     setLoadingRut(refundId)
     
     try {
-      // Limpiar el RUT: remover puntos y guión
+      // Formatear RUT con puntos: 15.421.741-K
       const rutParts = rut.split('-')
-      const rutNumber = rutParts[0].replace(/\./g, '')
+      const rutNumber = rutParts[0].replace(/\./g, '') // Remover puntos existentes
       const rutDV = rutParts[1] || ''
-      const cleanRut = `${rutNumber}${rutDV}` // Ej: 15421741K
       
-      const token = authService.getAccessToken()
+      // Agregar puntos cada 3 dígitos desde la derecha
+      const formattedNumber = rutNumber.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+      const formattedRut = `${formattedNumber}-${rutDV}`
       
-      const response = await fetch(`https://tedevuelvo-app-be.onrender.com/api/v1/user/rut/${cleanRut}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
+      const response = await fetch(`https://r.rutificador.co/pr/${formattedRut}`, {
+        method: 'POST'
       })
       
       if (!response.ok) {
         throw new Error('Error al consultar el servicio')
       }
 
-      const data = await response.json()
+      const html = await response.text()
       
-      // Mapear la respuesta del servicio
-      const sexo = data.sex || data.sexo || ''
-      const direccion = data.address || data.direccion || ''
-      const comuna = data.commune || data.comuna || ''
+      // Parsear la respuesta HTML
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      const tds = doc.querySelectorAll('td')
       
-      // Actualizar los datos
-      setRefundData(prev => ({
-        ...prev,
-        [refundId]: {
-          ...prev[refundId],
-          sexo,
-          direccion,
-          comuna
-        }
-      }))
-      
-      toast({
-        title: 'Información encontrada',
-        description: 'Se han actualizado los datos del cliente',
-      })
+      if (tds.length >= 5) {
+        const sexoRaw = tds[2].textContent?.trim() || ''
+        const direccion = tds[3].textContent?.trim() || ''
+        const comuna = tds[4].textContent?.trim() || ''
+        
+        // Mapear SEXO: VAR -> M, MUJ -> F
+        const sexo = sexoRaw === 'VAR' ? 'M' : sexoRaw === 'MUJ' ? 'F' : sexoRaw
+        
+        // Actualizar los datos
+        setRefundData(prev => ({
+          ...prev,
+          [refundId]: {
+            ...prev[refundId],
+            sexo,
+            direccion,
+            comuna
+          }
+        }))
+        
+        toast({
+          title: 'Información encontrada',
+          description: 'Se han actualizado los datos del cliente',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se pudo obtener la información del RUT',
+          variant: 'destructive',
+        })
+      }
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'No se pudo consultar la información del RUT',
+        description: 'No se pudo consultar el servicio de rutificador',
         variant: 'destructive',
       })
     } finally {
