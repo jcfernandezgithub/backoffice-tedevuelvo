@@ -97,24 +97,24 @@ export default function Dashboard() {
   }, [counts])
 
   return (
-    <main className="p-4 space-y-4" role="main" aria-label="Panel principal del Dashboard">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">KPIs por estado y evolución de pagos a clientes (CLP)</p>
+    <main className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6" role="main" aria-label="Panel principal del Dashboard">
+      <header className="flex flex-col gap-1 sm:gap-2">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">KPIs por estado y evolución de pagos a clientes (CLP)</p>
       </header>
 
-      <section aria-label="Filtros" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Rango de fechas</CardTitle>
+      <section aria-label="Filtros" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <Card className="order-1">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm">Rango de fechas</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 grid grid-cols-2 gap-2 sm:gap-3">
             <div className="flex flex-col gap-1">
               <label htmlFor="fecha-desde" className="text-xs text-muted-foreground">Desde</label>
               <input
                 id="fecha-desde"
                 type="date"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={desde}
                 max={hasta}
                 onChange={(e) => setDesde(e.target.value)}
@@ -125,7 +125,7 @@ export default function Dashboard() {
               <input
                 id="fecha-hasta"
                 type="date"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={hasta}
                 min={desde}
                 onChange={(e) => setHasta(e.target.value)}
@@ -133,16 +133,16 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Agrupación</CardTitle>
+        <Card className="order-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm">Agrupación</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-3">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 grid grid-cols-1 gap-2 sm:gap-3">
             <div className="flex flex-col gap-1">
               <label htmlFor="agg" className="text-xs text-muted-foreground">Agrupar por</label>
               <select
                 id="agg"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={agg}
                 onChange={(e) => setAgg(e.target.value as Aggregation)}
                 aria-label="Seleccionar agrupación"
@@ -154,28 +154,28 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-sm">Monto total pagado a clientes (CLP)</CardTitle>
+        <Card className="border-primary order-3 sm:col-span-2 lg:col-span-1">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm">Monto total pagado a clientes (CLP)</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 text-xl sm:text-2xl font-semibold">
             {pagosAgg ? <Money value={pagosAgg.total} /> : '—'}
           </CardContent>
         </Card>
       </section>
 
-      <section className="space-y-4" aria-label="Métricas por estado">
+      <section className="space-y-3 sm:space-y-4" aria-label="Métricas por estado">
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados en proceso</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados en proceso</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {estadoCards.slice(0, 4).map((c) => (
               <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
             ))}
           </div>
         </div>
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Estados finales</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados finales</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {estadoCards.slice(4).map((c) => (
               <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} />
             ))}
@@ -183,21 +183,30 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-4">
+      <section className="grid grid-cols-1 gap-3 sm:gap-4">
         <Card>
-          <CardHeader>
-            <CardTitle>Análisis de solicitudes</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg md:text-xl">Análisis de solicitudes</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <Tabs defaultValue="distribucion" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="distribucion">Distribución por estado</TabsTrigger>
-                <TabsTrigger value="pagos">Evolución de pagos</TabsTrigger>
-                <TabsTrigger value="tendencia">Tendencia de solicitudes</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 h-auto">
+                <TabsTrigger value="distribucion" className="text-xs sm:text-sm px-2 py-2">
+                  <span className="hidden sm:inline">Distribución por estado</span>
+                  <span className="sm:hidden">Distribución</span>
+                </TabsTrigger>
+                <TabsTrigger value="pagos" className="text-xs sm:text-sm px-2 py-2">
+                  <span className="hidden sm:inline">Evolución de pagos</span>
+                  <span className="sm:hidden">Pagos</span>
+                </TabsTrigger>
+                <TabsTrigger value="tendencia" className="text-xs sm:text-sm px-2 py-2">
+                  <span className="hidden sm:inline">Tendencia de solicitudes</span>
+                  <span className="sm:hidden">Tendencia</span>
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="distribucion" className="mt-4">
-                <div className="h-80">
+              <TabsContent value="distribucion" className="mt-3 sm:mt-4">
+                <div className="h-64 sm:h-72 md:h-80">
                   {pieChartData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -205,8 +214,8 @@ export default function Dashboard() {
                           data={pieChartData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
+                          innerRadius={40}
+                          outerRadius={80}
                           paddingAngle={2}
                           dataKey="value"
                           label={({ name, percentage }) => `${name}: ${percentage}%`}
@@ -222,45 +231,45 @@ export default function Dashboard() {
                             props.payload.name
                           ]} 
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ fontSize: '12px' }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
                       Sin datos en el rango seleccionado
                     </div>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="pagos" className="mt-4">
-                <div className="h-80">
+              <TabsContent value="pagos" className="mt-3 sm:mt-4">
+                <div className="h-64 sm:h-72 md:h-80">
                   {pagosAgg && pagosAgg.series.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={pagosAgg.series} barSize={18}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} tickFormatter={(v) => v.toLocaleString('es-CL')} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
+                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} tickFormatter={(v) => v.toLocaleString('es-CL')} />
                         <Tooltip formatter={(value: number) => fmtCLP(value)} labelFormatter={(l) => `${l}`} />
                         <Bar dataKey="monto" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
                       Sin datos en el rango seleccionado
                     </div>
                   )}
                 </div>
               </TabsContent>
 
-              <TabsContent value="tendencia" className="mt-4">
-                <div className="h-80">
+              <TabsContent value="tendencia" className="mt-3 sm:mt-4">
+                <div className="h-64 sm:h-72 md:h-80">
                   {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={solicitudesAgg.series}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
-                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
+                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                         <Tooltip 
                           formatter={(value: number) => [`${value} solicitudes`, 'Cantidad']}
                           labelFormatter={(label) => `Período: ${label}`}
@@ -276,7 +285,7 @@ export default function Dashboard() {
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
                       Sin datos en el rango seleccionado
                     </div>
                   )}
@@ -284,7 +293,7 @@ export default function Dashboard() {
               </TabsContent>
             </Tabs>
           </CardContent>
-        </Card>
+         </Card>
       </section>
     </main>
   )
@@ -320,16 +329,16 @@ function Kpi({ title, value, icon: Icon, color }: {
   const iconClass = color ? iconColorClasses[color as keyof typeof iconColorClasses] : 'text-muted-foreground'
 
   return (
-    <Card className={`hover:shadow-lg transition-all duration-300 hover:scale-105 ${cardClass}`}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+    <Card className={`hover:shadow-lg transition-all duration-300 sm:hover:scale-105 ${cardClass}`}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4 md:p-6">
+        <CardTitle className="text-xs sm:text-sm font-medium">{title}</CardTitle>
         {Icon && (
-          <div className={`p-2 rounded-lg bg-background/50 ${iconClass}`}>
-            <Icon className="h-6 w-6" />
+          <div className={`p-1.5 sm:p-2 rounded-lg bg-background/50 ${iconClass}`}>
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
           </div>
         )}
       </CardHeader>
-      <CardContent className="text-3xl font-bold">{typeof value === 'number' ? value : value}</CardContent>
+      <CardContent className="text-2xl sm:text-3xl font-bold p-3 pt-0 sm:p-4 sm:pt-0 md:p-6 md:pt-0">{typeof value === 'number' ? value : value}</CardContent>
     </Card>
   )
 }
