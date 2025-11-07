@@ -88,8 +88,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       })
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'No se pudo consultar la información del RUT',
+        title: 'Datos no encontrados',
+        description: 'No se pudo obtener la información del RUT consultado',
         variant: 'destructive',
       })
     } finally {
