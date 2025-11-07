@@ -117,18 +117,18 @@ export default function Dashboard() {
         <p className="text-xs sm:text-sm text-muted-foreground">KPIs por estado y evolución de pagos a clientes (CLP)</p>
       </header>
 
-      <section aria-label="Filtros" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="order-1">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-xs sm:text-sm">Rango de fechas</CardTitle>
+      <section aria-label="Filtros" className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
+        <Card className="lg:col-span-4">
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm">Rango de fechas</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 grid grid-cols-2 gap-2 sm:gap-3">
+          <CardContent className="p-4 pt-0 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label htmlFor="fecha-desde" className="text-xs text-muted-foreground">Desde</label>
               <input
                 id="fecha-desde"
                 type="date"
-                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={desde}
                 max={hasta}
                 onChange={(e) => setDesde(e.target.value)}
@@ -139,7 +139,7 @@ export default function Dashboard() {
               <input
                 id="fecha-hasta"
                 type="date"
-                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={hasta}
                 min={desde}
                 onChange={(e) => setHasta(e.target.value)}
@@ -147,16 +147,16 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="order-2">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-xs sm:text-sm">Agrupación</CardTitle>
+        <Card className="lg:col-span-3">
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm">Agrupación</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 grid grid-cols-1 gap-2 sm:gap-3">
+          <CardContent className="p-4 pt-0">
             <div className="flex flex-col gap-1">
               <label htmlFor="agg" className="text-xs text-muted-foreground">Agrupar por</label>
               <select
                 id="agg"
-                className="h-8 sm:h-9 rounded-md border bg-background px-2 sm:px-3 text-xs sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={agg}
                 onChange={(e) => setAgg(e.target.value as Aggregation)}
                 aria-label="Seleccionar agrupación"
@@ -168,11 +168,11 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-primary order-3 sm:col-span-2 lg:col-span-1">
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-xs sm:text-sm">Monto total pagado a clientes (CLP)</CardTitle>
+        <Card className="border-primary lg:col-span-5">
+          <CardHeader className="p-4">
+            <CardTitle className="text-sm">Monto total pagado a clientes (CLP)</CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 text-xl sm:text-2xl font-semibold">
+          <CardContent className="p-4 pt-0 text-2xl font-semibold">
             {pagosAgg ? <Money value={pagosAgg.total} /> : '—'}
           </CardContent>
         </Card>
