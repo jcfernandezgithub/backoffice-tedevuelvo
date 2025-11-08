@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.1
+## Versión 1.1.2
 
 ## Changelog
+
+### Versión 1.1.2 - 2025-11-08
+
+#### Correcciones Críticas
+- **Formato de estados en actualización**: Corregido el envío de estados al backend.
+  - Los estados ahora se convierten a MAYÚSCULAS antes de enviarlos a la API (SIMULATED, REQUESTED, QUALIFYING, DOCS_PENDING, DOCS_RECEIVED, SUBMITTED, APPROVED, REJECTED, PAYMENT_SCHEDULED, PAID, CANCELED).
+  - El frontend continúa usando minúsculas internamente (simulated, requested, etc.) para consistencia.
+  - Función `updateStatus` en `refundAdminApi.ts` ahora transforma el estado con `.toUpperCase()` antes del envío.
+  - Corrige el error: "status must be one of the following values: SIMULATED, REQUESTED..." al intentar cambiar estados.
+
+---
 
 ### Versión 1.1.1 - 2025-11-08
 
