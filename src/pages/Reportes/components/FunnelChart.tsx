@@ -46,7 +46,7 @@ const ESTADO_LABELS: Record<string, string> = {
 
 // Mapeo inverso de estados de reportes a estados de API
 const ESTADO_TO_STATUS_MAP: Record<string, RefundStatus[]> = {
-  'SIMULACION_CONFIRMADA': ['simulated', 'qualifying', 'docs_pending'],
+  'SIMULACION_CONFIRMADA': ['simulated', 'requested', 'qualifying', 'docs_pending'],
   'DEVOLUCION_CONFIRMADA_COMPANIA': ['docs_received'],
   'FONDOS_RECIBIDOS_TD': ['submitted'],
   'CERTIFICADO_EMITIDO': ['approved'],
@@ -56,10 +56,11 @@ const ESTADO_TO_STATUS_MAP: Record<string, RefundStatus[]> = {
 
 const STATUS_LABELS: Record<string, string> = {
   'simulated': 'Simulado',
-  'qualifying': 'Calificando',
-  'docs_pending': 'Docs pendientes',
-  'docs_received': 'Docs recibidos',
-  'submitted': 'Enviado',
+  'requested': 'Solicitado',
+  'qualifying': 'En calificación',
+  'docs_pending': 'Documentos pendientes',
+  'docs_received': 'Documentos recibidos',
+  'submitted': 'Ingresado',
   'approved': 'Aprobado',
   'payment_scheduled': 'Pago programado',
   'paid': 'Pagado',
@@ -67,6 +68,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   'simulated': 'outline',
+  'requested': 'secondary',
   'qualifying': 'secondary',
   'docs_pending': 'secondary',
   'docs_received': 'secondary',

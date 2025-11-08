@@ -30,10 +30,11 @@ import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
+  requested: 'Solicitado',
   qualifying: 'En calificación',
-  docs_pending: 'Docs pendientes',
-  docs_received: 'Docs recibidos',
-  submitted: 'Enviado',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
   approved: 'Aprobado',
   rejected: 'Rechazado',
   payment_scheduled: 'Pago programado',
@@ -43,6 +44,7 @@ const statusLabels: Record<RefundStatus, string> = {
 
 const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   simulated: 'secondary',
+  requested: 'secondary',
   qualifying: 'secondary',
   docs_pending: 'outline',
   docs_received: 'outline',
@@ -469,6 +471,8 @@ export default function RefundDetail() {
                     switch (status) {
                       case 'simulated':
                         return 'bg-blue-500 border-blue-200'
+                      case 'requested':
+                        return 'bg-blue-400 border-blue-100'
                       case 'qualifying':
                         return 'bg-yellow-500 border-yellow-200'
                       case 'docs_pending':
@@ -496,6 +500,8 @@ export default function RefundDetail() {
                     switch (status) {
                       case 'simulated':
                         return 'border-blue-300'
+                      case 'requested':
+                        return 'border-blue-200'
                       case 'qualifying':
                         return 'border-yellow-300'
                       case 'docs_pending':

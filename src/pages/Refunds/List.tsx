@@ -31,10 +31,11 @@ import { ExportToExcelDialog } from './components/ExportToExcelDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
+  requested: 'Solicitado',
   qualifying: 'En calificación',
-  docs_pending: 'Docs pendientes',
-  docs_received: 'Docs recibidos',
-  submitted: 'Enviado',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
   approved: 'Aprobado',
   rejected: 'Rechazado',
   payment_scheduled: 'Pago programado',
@@ -46,6 +47,8 @@ const getStatusColors = (status: RefundStatus): string => {
   switch (status) {
     case 'simulated':
       return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+    case 'requested':
+      return 'bg-blue-400 hover:bg-blue-500 text-white border-blue-400'
     case 'qualifying':
       return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
     case 'docs_pending':

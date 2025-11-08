@@ -1,5 +1,6 @@
 export type RefundStatus =
   | 'simulated'
+  | 'requested'
   | 'qualifying'
   | 'docs_pending'
   | 'docs_received'

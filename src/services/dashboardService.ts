@@ -17,6 +17,7 @@ export type Aggregation = 'day' | 'week' | 'month'
 const statusToDashboardState = (status: RefundStatus): string => {
   switch (status) {
     case 'simulated':
+    case 'requested':
       return 'SIMULACION_CONFIRMADA'
     case 'qualifying':
     case 'docs_pending':

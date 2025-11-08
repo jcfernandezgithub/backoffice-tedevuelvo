@@ -15,6 +15,7 @@ import type {
 // Mapeo de estados de API a estados de reportes
 const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
   'simulated': 'SIMULACION_CONFIRMADA',
+  'requested': 'SIMULACION_CONFIRMADA',
   'qualifying': 'SIMULACION_CONFIRMADA',
   'docs_pending': 'SIMULACION_CONFIRMADA',
   'docs_received': 'DEVOLUCION_CONFIRMADA_COMPANIA',
