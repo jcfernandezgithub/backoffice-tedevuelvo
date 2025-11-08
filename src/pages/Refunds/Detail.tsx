@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { differenceInYears } from 'date-fns'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -163,6 +164,30 @@ export default function RefundDetail() {
         description: 'No se pudo obtener el mandato firmado',
         variant: 'destructive',
       })
+    }
+  }
+
+  const formatBirthDate = (dateString?: string) => {
+    if (!dateString) return 'N/A'
+    try {
+      const date = new Date(dateString)
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    } catch {
+      return 'N/A'
+    }
+  }
+
+  const calculateAge = (dateString?: string) => {
+    if (!dateString) return 'N/A'
+    try {
+      const birthDate = new Date(dateString)
+      const age = differenceInYears(new Date(), birthDate)
+      return `${age} años`
+    } catch {
+      return 'N/A'
     }
   }
 
@@ -337,6 +362,14 @@ export default function RefundDetail() {
               <div>
                 <p className="text-sm text-muted-foreground">Teléfono</p>
                 <p className="font-medium">{refund.phone || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Fecha de nacimiento</p>
+                <p className="font-medium">{formatBirthDate(refund.birthDate)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Edad</p>
+                <p className="font-medium">{calculateAge(refund.birthDate)}</p>
               </div>
             </CardContent>
           </Card>
