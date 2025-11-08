@@ -9,6 +9,11 @@ import type {
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
+// Normalizar el status del servicio a nuestro formato interno
+function normalizeStatus(status: string): string {
+  return status.toLowerCase()
+}
+
 class RefundAdminApiClient {
   private async getAuthHeaders(): Promise<HeadersInit> {
     const token = authService.getAccessToken()
@@ -53,7 +58,31 @@ class RefundAdminApiClient {
       throw new Error(error.message || 'Error al cargar refunds')
     }
 
-    return response.json()
+    const data = await response.json()
+    
+    // Normalizar los estados en la respuesta
+    if (Array.isArray(data)) {
+      // Si el servicio retorna un array directo, crear la estructura esperada
+      return {
+        total: data.length,
+        page: params.page || 1,
+        pageSize: params.pageSize || 20,
+        items: data.map(item => ({
+          ...item,
+          status: normalizeStatus(item.status)
+        }))
+      }
+    } else if (data.items && Array.isArray(data.items)) {
+      return {
+        ...data,
+        items: data.items.map((item: any) => ({
+          ...item,
+          status: normalizeStatus(item.status)
+        }))
+      }
+    }
+    
+    return data
   }
 
   async getById(id: string): Promise<RefundRequest> {
@@ -70,7 +99,11 @@ class RefundAdminApiClient {
       throw new Error(error.message || 'Error al cargar detalle')
     }
 
-    return response.json()
+    const data = await response.json()
+    return {
+      ...data,
+      status: normalizeStatus(data.status)
+    }
   }
 
   async updateStatus(id: string, dto: AdminUpdateStatusDto): Promise<RefundRequest> {
@@ -89,7 +122,11 @@ class RefundAdminApiClient {
       throw new Error(error.message || 'Error al actualizar estado')
     }
 
-    return response.json()
+    const data = await response.json()
+    return {
+      ...data,
+      status: normalizeStatus(data.status)
+    }
   }
 
   async listDocs(publicId: string, kinds?: string[]): Promise<RefundDocument[]> {
