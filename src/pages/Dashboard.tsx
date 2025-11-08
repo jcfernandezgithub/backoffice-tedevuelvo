@@ -41,15 +41,15 @@ const ESTADO_ICONS: Record<string, LucideIcon> = {
   RECHAZADO: XCircle,
 }
 
-// Mapeo de estados del dashboard a estados de refunds
+// Mapeo de estados del dashboard a estados de refunds (lowercase para URL)
 const DASHBOARD_TO_REFUND_STATUS: Record<string, string> = {
-  SIMULACION_CONFIRMADA: 'REQUESTED',
-  EN_PROCESO: 'QUALIFYING', // Agrupa QUALIFYING, DOCS_PENDING, DOCS_RECEIVED
-  DEVOLUCION_CONFIRMADA_COMPANIA: 'SUBMITTED',
-  FONDOS_RECIBIDOS_TD: 'APPROVED',
-  CLIENTE_NOTIFICADO: 'PAYMENT_SCHEDULED',
-  PAGADA_CLIENTE: 'PAID',
-  RECHAZADO: 'REJECTED',
+  SIMULACION_CONFIRMADA: 'requested',
+  EN_PROCESO: 'qualifying', // Agrupa QUALIFYING, DOCS_PENDING, DOCS_RECEIVED
+  DEVOLUCION_CONFIRMADA_COMPANIA: 'submitted',
+  FONDOS_RECIBIDOS_TD: 'approved',
+  CLIENTE_NOTIFICADO: 'payment_scheduled',
+  PAGADA_CLIENTE: 'paid',
+  RECHAZADO: 'rejected',
 }
 
 export default function Dashboard() {
