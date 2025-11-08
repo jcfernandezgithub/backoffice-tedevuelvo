@@ -45,17 +45,20 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
+    <Sidebar 
+      className={collapsed ? 'w-14' : 'w-64'} 
+      collapsible="icon"
+    >
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Principal</SidebarGroupLabel>
+          {!collapsed && <SidebarGroupLabel>Principal</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end className={getNavCls} onClick={handleLinkClick}>
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
                           <span>{item.title}</span>
