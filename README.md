@@ -1,8 +1,42 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.2
+## Versión 1.1.3
 
 ## Changelog
+
+### Versión 1.1.3 - 2025-11-08
+
+#### Mejoras de Responsive y Performance Mobile
+
+- **Optimización para dispositivos móviles**: Todas las vistas ahora son completamente responsivas.
+  - Vista de **Refunds/Solicitudes**: Tabla en desktop, cards optimizados en móvil.
+  - Vista de **Dashboard**: Grid adaptativo (2 columnas en móvil, hasta 4 en desktop).
+  - Padding y spacing adaptativos en todas las páginas para mejor uso del espacio.
+  
+- **Componentes nuevos para mobile**:
+  - `MobileCard`: Componente reutilizable para mostrar datos en formato card.
+  - `ResponsiveContainer`: Wrapper para mostrar diferentes vistas según el dispositivo.
+  - `LoadingSkeleton` y `EmptyState`: Estados de carga y vacío optimizados.
+  - `DataGrid` mejorado: Auto-switch entre tabla (desktop) y cards (móvil).
+
+- **Navegación mejorada**:
+  - Sidebar ahora se puede colapsar/expandir con botón de menú hamburguesa.
+  - Cierre automático del sidebar en móvil al hacer clic en enlaces.
+  - Botón de toggle con animaciones suaves.
+
+- **Optimizaciones de performance**:
+  - Touch optimization: `touch-action: manipulation` para mejor respuesta táctil.
+  - Tap highlight removido para UX nativa.
+  - Overscroll behavior deshabilitado.
+  - Antialiasing mejorado con `font-feature-settings`.
+  - Reducción de elementos visuales no esenciales en móvil.
+
+- **Breakpoints utilizados**:
+  - Mobile: < 768px (md)
+  - Tablet: 768px - 1024px (lg)
+  - Desktop: > 1024px
+
+---
 
 ### Versión 1.1.2 - 2025-11-08
 
