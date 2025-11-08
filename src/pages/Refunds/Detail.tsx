@@ -353,11 +353,11 @@ export default function RefundDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Fecha de nacimiento</p>
-                <p className="font-medium">{formatBirthDate(refund.birthdate)}</p>
+                <p className="font-medium">{formatBirthDate(refund.calculationSnapshot?.birthDate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Edad</p>
-                <p className="font-medium">{refund.age ? `${refund.age} años` : 'N/A'}</p>
+                <p className="font-medium">{refund.calculationSnapshot?.age ? `${refund.calculationSnapshot.age} años` : 'N/A'}</p>
               </div>
             </CardContent>
           </Card>

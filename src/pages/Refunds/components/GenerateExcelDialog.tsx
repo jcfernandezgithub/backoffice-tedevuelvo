@@ -136,9 +136,9 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       
       // Fecha de nacimiento en formato dd/mm/aaaa
       let fechaNacimiento = 'N/A'
-      if (refund.birthdate) {
+      if (calculation.birthDate) {
         try {
-          const birthDate = new Date(refund.birthdate)
+          const birthDate = new Date(calculation.birthDate)
           const day = String(birthDate.getDate()).padStart(2, '0')
           const month = String(birthDate.getMonth() + 1).padStart(2, '0')
           const year = birthDate.getFullYear()
