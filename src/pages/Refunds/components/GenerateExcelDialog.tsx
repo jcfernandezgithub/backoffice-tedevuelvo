@@ -134,6 +134,20 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       vigenciaHastaDate.setFullYear(vigenciaHastaDate.getFullYear() + 3)
       const vigenciaHasta = vigenciaHastaDate.toLocaleDateString('es-CL')
       
+      // Fecha de nacimiento en formato dd/mm/aaaa
+      let fechaNacimiento = 'N/A'
+      if (refund.birthDate) {
+        try {
+          const birthDate = new Date(refund.birthDate)
+          const day = String(birthDate.getDate()).padStart(2, '0')
+          const month = String(birthDate.getMonth() + 1).padStart(2, '0')
+          const year = birthDate.getFullYear()
+          fechaNacimiento = `${day}/${month}/${year}`
+        } catch {
+          fechaNacimiento = 'N/A'
+        }
+      }
+      
       // Tipo de seguro
       const tipoSeguro = calculation.insuranceToEvaluate === 'desgravamen' 
         ? 'Desgravamen' 
@@ -155,7 +169,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Rut Cliente': rutNumber,
         'DV Cliente': rutDV,
         'Nombre_Cliente': refund.fullName,
-        'Fecha_Nacimiento': 'N/A',
+        'Fecha_Nacimiento': fechaNacimiento,
         'Sexo': data.sexo,
         'Codigo_producto': '342',
         'Prima Seguro  $': primaBruta,
