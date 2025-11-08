@@ -56,7 +56,7 @@ export default function Login() {
             <Button type="submit" className="w-full" disabled={isSubmitting} variant="hero">Entrar</Button>
           </form>
           <div className="mt-6 pt-4 border-t text-center">
-            <p className="text-xs text-muted-foreground">Versión 1.1.0</p>
+            <p className="text-xs text-muted-foreground">Versión 1.1.1</p>
           </div>
         </CardContent>
       </Card>

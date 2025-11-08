@@ -1,8 +1,45 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.0
+## Versión 1.1.1
 
 ## Changelog
+
+### Versión 1.1.1 - 2025-11-08
+
+#### Nuevas Funcionalidades
+- **Visualización de datos demográficos**: Agregado el despliegue de edad y fecha de nacimiento en la sección "Datos del cliente" del detalle de solicitudes.
+  - La edad se obtiene directamente desde `calculationSnapshot.age` del servicio.
+  - La fecha de nacimiento se formatea en formato dd/mm/aaaa desde `calculationSnapshot.birthDate`.
+  - Ambos campos se muestran con valor "N/A" cuando no están disponibles.
+
+- **Exportación de fecha de nacimiento en Excel**: La funcionalidad de generación de Excel ahora incluye la fecha de nacimiento del cliente.
+  - Columna `Fecha_Nacimiento` en el archivo Excel generado.
+  - Formato dd/mm/aaaa extraído desde `calculationSnapshot.birthDate`.
+  - Manejo de casos sin fecha de nacimiento con valor "N/A".
+
+#### Correcciones
+- **Normalización de estados**: Implementada normalización automática de estados de solicitudes desde el servicio.
+  - Los estados ahora se convierten a minúsculas automáticamente (simulated, requested, qualifying, etc.).
+  - Función `normalizeStatus` en `refundAdminApi.ts` para asegurar consistencia.
+  - Mapeo correcto de todos los estados del servicio a las etiquetas en español:
+    - `simulated` → "Simulado"
+    - `requested` → "Solicitado"
+    - `qualifying` → "En calificación"
+    - `docs_pending` → "Documentos pendientes"
+    - `docs_received` → "Documentos recibidos"
+    - `submitted` → "Ingresado"
+    - `approved` → "Aprobado"
+    - `rejected` → "Rechazado"
+    - `payment_scheduled` → "Pago programado"
+    - `paid` → "Pagado"
+    - `canceled` → "Cancelado"
+
+#### Mejoras Técnicas
+- Actualización del tipo `RefundRequest` para reflejar la estructura real del servicio.
+- Mejora en el manejo de respuestas del servicio con normalización de estados en todos los endpoints.
+- Optimización del código para usar los campos correctos desde `calculationSnapshot`.
+
+---
 
 ### Versión 1.1.0 - 2025-11-07
 
