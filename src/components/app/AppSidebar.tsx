@@ -25,7 +25,7 @@ const items = [
 ]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
+  const { state, isMobile, setOpenMobile } = useSidebar()
   const { user } = useAuth()
   const collapsed = state === 'collapsed'
   const location = useLocation()
@@ -37,6 +37,13 @@ export function AppSidebar() {
 
   const visibleItems = items.filter(item => !item.adminOnly || user?.rol === 'ADMIN')
 
+  // Cerrar sidebar en móvil al hacer clic en un enlace
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
+
   return (
     <Sidebar className={collapsed ? 'w-14' : 'w-64'}>
       <SidebarContent>
@@ -47,7 +54,7 @@ export function AppSidebar() {
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls}>
+                    <NavLink to={item.url} end className={getNavCls} onClick={handleLinkClick}>
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
