@@ -30,39 +30,39 @@ import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
-  REQUESTED: 'Simulado',
-  QUALIFYING: 'En calificación',
-  DOCS_PENDING: 'Docs pendientes',
-  DOCS_RECEIVED: 'Docs recibidos',
-  SUBMITTED: 'Enviado',
-  APPROVED: 'Aprobado',
-  REJECTED: 'Rechazado',
-  PAYMENT_SCHEDULED: 'Pago programado',
-  PAID: 'Pagado',
-  CANCELED: 'Cancelado',
+  simulated: 'Simulado',
+  qualifying: 'En calificación',
+  docs_pending: 'Docs pendientes',
+  docs_received: 'Docs recibidos',
+  submitted: 'Enviado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
 }
 
 const getStatusColors = (status: RefundStatus): string => {
   switch (status) {
-    case 'REQUESTED':
+    case 'simulated':
       return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
-    case 'QUALIFYING':
+    case 'qualifying':
       return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
-    case 'DOCS_PENDING':
+    case 'docs_pending':
       return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
-    case 'DOCS_RECEIVED':
+    case 'docs_received':
       return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
-    case 'SUBMITTED':
+    case 'submitted':
       return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
-    case 'APPROVED':
+    case 'approved':
       return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
-    case 'PAYMENT_SCHEDULED':
+    case 'payment_scheduled':
       return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
-    case 'PAID':
+    case 'paid':
       return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-    case 'REJECTED':
+    case 'rejected':
       return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
-    case 'CANCELED':
+    case 'canceled':
       return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
     default:
       return 'bg-primary hover:bg-primary/90 text-white border-primary'

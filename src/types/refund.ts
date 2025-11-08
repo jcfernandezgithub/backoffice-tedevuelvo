@@ -1,14 +1,14 @@
 export type RefundStatus =
-  | 'REQUESTED'
-  | 'QUALIFYING'
-  | 'DOCS_PENDING'
-  | 'DOCS_RECEIVED'
-  | 'SUBMITTED'
-  | 'APPROVED'
-  | 'REJECTED'
-  | 'PAYMENT_SCHEDULED'
-  | 'PAID'
-  | 'CANCELED'
+  | 'simulated'
+  | 'qualifying'
+  | 'docs_pending'
+  | 'docs_received'
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'payment_scheduled'
+  | 'paid'
+  | 'canceled'
 
 export interface StatusHistoryEntry {
   at: string

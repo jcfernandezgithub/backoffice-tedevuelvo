@@ -29,29 +29,29 @@ import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 
 const statusLabels: Record<RefundStatus, string> = {
-  REQUESTED: 'Simulado',
-  QUALIFYING: 'En calificación',
-  DOCS_PENDING: 'Docs pendientes',
-  DOCS_RECEIVED: 'Docs recibidos',
-  SUBMITTED: 'Enviado',
-  APPROVED: 'Aprobado',
-  REJECTED: 'Rechazado',
-  PAYMENT_SCHEDULED: 'Pago programado',
-  PAID: 'Pagado',
-  CANCELED: 'Cancelado',
+  simulated: 'Simulado',
+  qualifying: 'En calificación',
+  docs_pending: 'Docs pendientes',
+  docs_received: 'Docs recibidos',
+  submitted: 'Enviado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
 }
 
 const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  REQUESTED: 'secondary',
-  QUALIFYING: 'secondary',
-  DOCS_PENDING: 'outline',
-  DOCS_RECEIVED: 'outline',
-  SUBMITTED: 'default',
-  APPROVED: 'default',
-  REJECTED: 'destructive',
-  PAYMENT_SCHEDULED: 'default',
-  PAID: 'default',
-  CANCELED: 'destructive',
+  simulated: 'secondary',
+  qualifying: 'secondary',
+  docs_pending: 'outline',
+  docs_received: 'outline',
+  submitted: 'default',
+  approved: 'default',
+  rejected: 'destructive',
+  payment_scheduled: 'default',
+  paid: 'default',
+  canceled: 'destructive',
 }
 
 export default function RefundDetail() {
@@ -64,7 +64,7 @@ export default function RefundDetail() {
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
-    status: 'REQUESTED',
+    status: 'simulated',
     note: '',
     by: user?.email || '',
     force: false,
@@ -467,25 +467,25 @@ export default function RefundDetail() {
                   // Determinar color del indicador según el estado final
                   const getStatusColor = (status: RefundStatus) => {
                     switch (status) {
-                      case 'REQUESTED':
+                      case 'simulated':
                         return 'bg-blue-500 border-blue-200'
-                      case 'QUALIFYING':
+                      case 'qualifying':
                         return 'bg-yellow-500 border-yellow-200'
-                      case 'DOCS_PENDING':
+                      case 'docs_pending':
                         return 'bg-orange-500 border-orange-200'
-                      case 'DOCS_RECEIVED':
+                      case 'docs_received':
                         return 'bg-cyan-500 border-cyan-200'
-                      case 'SUBMITTED':
+                      case 'submitted':
                         return 'bg-indigo-500 border-indigo-200'
-                      case 'APPROVED':
+                      case 'approved':
                         return 'bg-green-500 border-green-200'
-                      case 'PAYMENT_SCHEDULED':
+                      case 'payment_scheduled':
                         return 'bg-emerald-500 border-emerald-200'
-                      case 'PAID':
+                      case 'paid':
                         return 'bg-green-600 border-green-300'
-                      case 'REJECTED':
+                      case 'rejected':
                         return 'bg-red-500 border-red-200'
-                      case 'CANCELED':
+                      case 'canceled':
                         return 'bg-gray-500 border-gray-200'
                       default:
                         return 'bg-primary border-primary/20'
@@ -494,25 +494,25 @@ export default function RefundDetail() {
 
                   const getBorderColor = (status: RefundStatus) => {
                     switch (status) {
-                      case 'REQUESTED':
+                      case 'simulated':
                         return 'border-blue-300'
-                      case 'QUALIFYING':
+                      case 'qualifying':
                         return 'border-yellow-300'
-                      case 'DOCS_PENDING':
+                      case 'docs_pending':
                         return 'border-orange-300'
-                      case 'DOCS_RECEIVED':
+                      case 'docs_received':
                         return 'border-cyan-300'
-                      case 'SUBMITTED':
+                      case 'submitted':
                         return 'border-indigo-300'
-                      case 'APPROVED':
+                      case 'approved':
                         return 'border-green-300'
-                      case 'PAYMENT_SCHEDULED':
+                      case 'payment_scheduled':
                         return 'border-emerald-300'
-                      case 'PAID':
+                      case 'paid':
                         return 'border-green-400'
-                      case 'REJECTED':
+                      case 'rejected':
                         return 'border-red-300'
-                      case 'CANCELED':
+                      case 'canceled':
                         return 'border-gray-300'
                       default:
                         return 'border-primary'

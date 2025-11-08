@@ -16,22 +16,22 @@ export type Aggregation = 'day' | 'week' | 'month'
 // Mapeo de estados de refunds a estados del dashboard
 const statusToDashboardState = (status: RefundStatus): string => {
   switch (status) {
-    case 'REQUESTED':
+    case 'simulated':
       return 'SIMULACION_CONFIRMADA'
-    case 'QUALIFYING':
-    case 'DOCS_PENDING':
-    case 'DOCS_RECEIVED':
+    case 'qualifying':
+    case 'docs_pending':
+    case 'docs_received':
       return 'EN_PROCESO'
-    case 'SUBMITTED':
+    case 'submitted':
       return 'DEVOLUCION_CONFIRMADA_COMPANIA'
-    case 'APPROVED':
+    case 'approved':
       return 'FONDOS_RECIBIDOS_TD'
-    case 'PAYMENT_SCHEDULED':
+    case 'payment_scheduled':
       return 'CLIENTE_NOTIFICADO'
-    case 'PAID':
+    case 'paid':
       return 'PAGADA_CLIENTE'
-    case 'REJECTED':
-    case 'CANCELED':
+    case 'rejected':
+    case 'canceled':
       return 'RECHAZADO'
     default:
       return 'OTRO'
@@ -101,9 +101,9 @@ export const dashboardService = {
 
       const refunds = Array.isArray(response) ? response : response.items || []
 
-      // Filtrar solo las que están en estado PAID
+      // Filtrar solo las que están en estado paid
       const paidRefunds = (refunds as RefundRequest[]).filter(
-        refund => refund.status === 'PAID'
+        refund => refund.status === 'paid'
       )
 
       // Transformar a estructura de pagos

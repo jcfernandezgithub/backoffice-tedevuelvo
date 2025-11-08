@@ -46,34 +46,34 @@ const ESTADO_LABELS: Record<string, string> = {
 
 // Mapeo inverso de estados de reportes a estados de API
 const ESTADO_TO_STATUS_MAP: Record<string, RefundStatus[]> = {
-  'SIMULACION_CONFIRMADA': ['REQUESTED', 'QUALIFYING', 'DOCS_PENDING'],
-  'DEVOLUCION_CONFIRMADA_COMPANIA': ['DOCS_RECEIVED'],
-  'FONDOS_RECIBIDOS_TD': ['SUBMITTED'],
-  'CERTIFICADO_EMITIDO': ['APPROVED'],
-  'CLIENTE_NOTIFICADO': ['PAYMENT_SCHEDULED'],
-  'PAGADA_CLIENTE': ['PAID'],
+  'SIMULACION_CONFIRMADA': ['simulated', 'qualifying', 'docs_pending'],
+  'DEVOLUCION_CONFIRMADA_COMPANIA': ['docs_received'],
+  'FONDOS_RECIBIDOS_TD': ['submitted'],
+  'CERTIFICADO_EMITIDO': ['approved'],
+  'CLIENTE_NOTIFICADO': ['payment_scheduled'],
+  'PAGADA_CLIENTE': ['paid'],
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  'REQUESTED': 'Simulado',
-  'QUALIFYING': 'Calificando',
-  'DOCS_PENDING': 'Docs pendientes',
-  'DOCS_RECEIVED': 'Docs recibidos',
-  'SUBMITTED': 'Enviado',
-  'APPROVED': 'Aprobado',
-  'PAYMENT_SCHEDULED': 'Pago programado',
-  'PAID': 'Pagado',
+  'simulated': 'Simulado',
+  'qualifying': 'Calificando',
+  'docs_pending': 'Docs pendientes',
+  'docs_received': 'Docs recibidos',
+  'submitted': 'Enviado',
+  'approved': 'Aprobado',
+  'payment_scheduled': 'Pago programado',
+  'paid': 'Pagado',
 };
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  'REQUESTED': 'outline',
-  'QUALIFYING': 'secondary',
-  'DOCS_PENDING': 'secondary',
-  'DOCS_RECEIVED': 'secondary',
-  'SUBMITTED': 'default',
-  'APPROVED': 'default',
-  'PAYMENT_SCHEDULED': 'default',
-  'PAID': 'default',
+  'simulated': 'outline',
+  'qualifying': 'secondary',
+  'docs_pending': 'secondary',
+  'docs_received': 'secondary',
+  'submitted': 'default',
+  'approved': 'default',
+  'payment_scheduled': 'default',
+  'paid': 'default',
 };
 
 export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {

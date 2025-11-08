@@ -14,16 +14,16 @@ import type {
 
 // Mapeo de estados de API a estados de reportes
 const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
-  'REQUESTED': 'SIMULACION_CONFIRMADA',
-  'QUALIFYING': 'SIMULACION_CONFIRMADA',
-  'DOCS_PENDING': 'SIMULACION_CONFIRMADA',
-  'DOCS_RECEIVED': 'DEVOLUCION_CONFIRMADA_COMPANIA',
-  'SUBMITTED': 'FONDOS_RECIBIDOS_TD',
-  'APPROVED': 'CERTIFICADO_EMITIDO',
-  'PAYMENT_SCHEDULED': 'CLIENTE_NOTIFICADO',
-  'PAID': 'PAGADA_CLIENTE',
-  'REJECTED': null, // No se incluye en reportes
-  'CANCELED': null, // No se incluye en reportes
+  'simulated': 'SIMULACION_CONFIRMADA',
+  'qualifying': 'SIMULACION_CONFIRMADA',
+  'docs_pending': 'SIMULACION_CONFIRMADA',
+  'docs_received': 'DEVOLUCION_CONFIRMADA_COMPANIA',
+  'submitted': 'FONDOS_RECIBIDOS_TD',
+  'approved': 'CERTIFICADO_EMITIDO',
+  'payment_scheduled': 'CLIENTE_NOTIFICADO',
+  'paid': 'PAGADA_CLIENTE',
+  'rejected': null, // No se incluye en reportes
+  'canceled': null, // No se incluye en reportes
 };
 
 // Fetch todas las solicitudes aplicando filtros
@@ -56,7 +56,7 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   })));
 
   // Filtrar solo solicitudes no rechazadas/canceladas
-  items = items.filter(r => r.status !== 'REJECTED' && r.status !== 'CANCELED');
+  items = items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
   console.log('[ReportsAPI] Items después de filtrar rechazadas:', items.length);
 
   // Aplicar filtros adicionales en cliente
@@ -79,13 +79,13 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
 
 function calcularKpis(refunds: RefundRequest[]): KpiData[] {
   const total = refunds.length;
-  const pagadas = refunds.filter(r => r.status === 'PAID').length;
+  const pagadas = refunds.filter(r => r.status === 'paid').length;
   const tasaExito = total > 0 ? (pagadas / total) * 100 : 0;
   const totalRecuperado = refunds.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
   
   // Estimamos que el monto pagado al cliente es ~85% del monto recuperado
   const totalPagado = refunds
-    .filter(r => r.status === 'PAID')
+    .filter(r => r.status === 'paid')
     .reduce((acc, r) => acc + r.estimatedAmountCLP * 0.85, 0);
 
   // Estimamos comisiones en ~12% del monto pagado
@@ -161,11 +161,11 @@ function generarSerieTemporal(
           valor = refundsGrupo.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
           break;
         case 'montoPagado':
-          const pagadas = refundsGrupo.filter(r => r.status === 'PAID');
+          const pagadas = refundsGrupo.filter(r => r.status === 'paid');
           valor = pagadas.reduce((acc, r) => acc + r.estimatedAmountCLP * 0.85, 0);
           break;
         case 'tasaExito':
-          const pagadasCount = refundsGrupo.filter(r => r.status === 'PAID').length;
+          const pagadasCount = refundsGrupo.filter(r => r.status === 'paid').length;
           valor = refundsGrupo.length > 0 ? (pagadasCount / refundsGrupo.length) * 100 : 0;
           break;
       }
@@ -282,7 +282,7 @@ export const reportsApiClient = {
 
     return Array.from(porInstitucion.entries()).map(([institucion, refundsInst]) => {
       // Calcular días promedio de las solicitudes cerradas
-      const cerradas = refundsInst.filter(r => r.status === 'PAID' || r.status === 'REJECTED');
+      const cerradas = refundsInst.filter(r => r.status === 'paid' || r.status === 'rejected');
       const promedios = cerradas.map(r => {
         const inicio = dayjs(r.createdAt);
         const fin = dayjs(r.updatedAt);
@@ -329,7 +329,7 @@ export const reportsApiClient = {
         estado: STATUS_MAP[r.status] || 'SIMULACION_CONFIRMADA',
         tipoSeguro: 'cesantia', // Por defecto, hasta que tengamos el dato
         montoRecuperado: r.estimatedAmountCLP,
-        montoPagado: r.status === 'PAID' ? r.estimatedAmountCLP * 0.85 : 0,
+        montoPagado: r.status === 'paid' ? r.estimatedAmountCLP * 0.85 : 0,
         alianza: r.institutionId || 'N/A',
         compania: 'Por determinar'
       })),
