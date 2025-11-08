@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { differenceInYears } from 'date-fns'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -180,17 +179,6 @@ export default function RefundDetail() {
     }
   }
 
-  const calculateAge = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    try {
-      const birthDate = new Date(dateString)
-      const age = differenceInYears(new Date(), birthDate)
-      return `${age} años`
-    } catch {
-      return 'N/A'
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -365,11 +353,11 @@ export default function RefundDetail() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Fecha de nacimiento</p>
-                <p className="font-medium">{formatBirthDate(refund.birthDate)}</p>
+                <p className="font-medium">{formatBirthDate(refund.birthdate)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Edad</p>
-                <p className="font-medium">{calculateAge(refund.birthDate)}</p>
+                <p className="font-medium">{refund.age ? `${refund.age} años` : 'N/A'}</p>
               </div>
             </CardContent>
           </Card>

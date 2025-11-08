@@ -28,7 +28,8 @@ export interface RefundRequest {
   email: string
   rut: string
   phone?: string
-  birthDate?: string
+  birthdate?: string
+  age?: number
   institutionId: string
   estimatedAmountCLP: number
   currency: string
