@@ -107,10 +107,16 @@ class RefundAdminApiClient {
   }
 
   async updateStatus(id: string, dto: AdminUpdateStatusDto): Promise<RefundRequest> {
+    // Convertir el status a mayúsculas para el backend
+    const backendDto = {
+      ...dto,
+      status: dto.status.toUpperCase()
+    }
+    
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${id}/status`, {
       method: 'PATCH',
       headers: await this.getAuthHeaders(),
-      body: JSON.stringify(dto),
+      body: JSON.stringify(backendDto),
     })
 
     if (response.status === 401) {
