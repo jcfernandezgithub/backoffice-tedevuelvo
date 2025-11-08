@@ -28,6 +28,8 @@ import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDo
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
+import { MobileCard } from '@/components/common/MobileCard'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -73,6 +75,7 @@ const getStatusColors = (status: RefundStatus): string => {
 }
 
 export default function RefundsList() {
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -406,21 +409,25 @@ export default function RefundsList() {
   const paginatedItems = sortedItems.slice(startIndex, startIndex + normalizedData.pageSize)
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Solicitudes</h1>
-        <div className="flex gap-2">
-          <ExportToExcelDialog 
-            refunds={sortedItems as RefundRequest[]} 
-            totalCount={totalFiltered}
-          />
-          <GenerateExcelDialog 
-            selectedRefunds={getSelectedRefundsData()} 
-            onClose={handleExcelGenerated}
-          />
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-2xl md:text-3xl font-bold">Solicitudes</h1>
+        <div className="flex flex-wrap gap-2">
+          {!isMobile && (
+            <>
+              <ExportToExcelDialog 
+                refunds={sortedItems as RefundRequest[]} 
+                totalCount={totalFiltered}
+              />
+              <GenerateExcelDialog 
+                selectedRefunds={getSelectedRefundsData()} 
+                onClose={handleExcelGenerated}
+              />
+            </>
+          )}
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RotateCw className="h-4 w-4 mr-2" />
-            Actualizar
+            {!isMobile && 'Actualizar'}
           </Button>
         </div>
       </div>
@@ -547,202 +554,277 @@ export default function RefundsList() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectAll}
-                        onCheckedChange={handleSelectAll}
-                        aria-label="Seleccionar todas"
-                      />
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('publicId')}
-                    >
-                      <div className="flex items-center">
-                        ID Público
-                        <SortIcon field="publicId" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('fullName')}
-                    >
-                      <div className="flex items-center">
-                        Nombre
-                        <SortIcon field="fullName" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('rut')}
-                    >
-                      <div className="flex items-center">
-                        RUT
-                        <SortIcon field="rut" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('email')}
-                    >
-                      <div className="flex items-center">
-                        Email
-                        <SortIcon field="email" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('status')}
-                    >
-                      <div className="flex items-center">
-                        Estado
-                        <SortIcon field="status" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Mandato</TableHead>
-                    <TableHead 
-                      className="text-right cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('estimatedAmountCLP')}
-                    >
-                      <div className="flex items-center justify-end">
-                        Monto estimado
-                        <SortIcon field="estimatedAmountCLP" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('institutionId')}
-                    >
-                      <div className="flex items-center">
-                        Institución
-                        <SortIcon field="institutionId" />
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50 select-none"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      <div className="flex items-center">
-                        Creación
-                        <SortIcon field="createdAt" />
-                      </div>
-                    </TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedItems.map((refund) => (
-                    <TableRow key={refund.id}>
-                      <TableCell className="w-12">
+              {/* Vista Desktop - Tabla */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Seleccionar todas"
+                        />
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('publicId')}
+                      >
+                        <div className="flex items-center">
+                          ID Público
+                          <SortIcon field="publicId" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('fullName')}
+                      >
+                        <div className="flex items-center">
+                          Nombre
+                          <SortIcon field="fullName" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('rut')}
+                      >
+                        <div className="flex items-center">
+                          RUT
+                          <SortIcon field="rut" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('email')}
+                      >
+                        <div className="flex items-center">
+                          Email
+                          <SortIcon field="email" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('status')}
+                      >
+                        <div className="flex items-center">
+                          Estado
+                          <SortIcon field="status" />
+                        </div>
+                      </TableHead>
+                      <TableHead>Mandato</TableHead>
+                      <TableHead 
+                        className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('estimatedAmountCLP')}
+                      >
+                        <div className="flex items-center justify-end">
+                          Monto estimado
+                          <SortIcon field="estimatedAmountCLP" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('institutionId')}
+                      >
+                        <div className="flex items-center">
+                          Institución
+                          <SortIcon field="institutionId" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        <div className="flex items-center">
+                          Creación
+                          <SortIcon field="createdAt" />
+                        </div>
+                      </TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedItems.map((refund) => (
+                      <TableRow key={refund.id}>
+                        <TableCell className="w-12">
+                          <Checkbox
+                            checked={selectedRefunds.has(refund.id)}
+                            onCheckedChange={(checked) => handleSelectRefund(refund.id, checked as boolean)}
+                            aria-label={`Seleccionar solicitud ${refund.publicId}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{refund.publicId}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.publicId, `publicId-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `publicId-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>{refund.fullName}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span>{refund.rut}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.rut, `rut-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `rut-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{refund.email}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.email, `email-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `email-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColors(refund.status)}>
+                            {statusLabels[refund.status]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {mandateStatuses?.[refund.publicId] ? (
+                            mandateStatuses[refund.publicId].hasSignedPdf ? (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-xs">Firmado</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-orange-600">
+                                <AlertCircle className="h-4 w-4" />
+                                <span className="text-xs">Pendiente</span>
+                              </div>
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          ${refund.estimatedAmountCLP.toLocaleString('es-CL')}
+                        </TableCell>
+                        <TableCell className="text-sm">{refund.institutionId}</TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(refund.createdAt).toLocaleString('es-CL', {
+                            dateStyle: 'short',
+                            timeStyle: 'short'
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/refunds/${refund.id}`)}
+                          >
+                            Ver detalle
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Vista Mobile - Cards */}
+              <div className="md:hidden space-y-3">
+                {paginatedItems.map((refund) => (
+                  <MobileCard
+                    key={refund.id}
+                    onClick={() => navigate(`/refunds/${refund.id}`)}
+                    header={
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {refund.publicId}
+                        </span>
                         <Checkbox
                           checked={selectedRefunds.has(refund.id)}
                           onCheckedChange={(checked) => handleSelectRefund(refund.id, checked as boolean)}
-                          aria-label={`Seleccionar solicitud ${refund.publicId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Seleccionar ${refund.publicId}`}
                         />
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        <div className="flex items-center gap-1">
-                          <span>{refund.publicId}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(refund.publicId, `publicId-${refund.id}`)}
-                            className="h-6 w-6 p-0"
-                          >
-                            {copiedField === `publicId-${refund.id}` ? (
-                              <Check className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>{refund.fullName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span>{refund.rut}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(refund.rut, `rut-${refund.id}`)}
-                            className="h-6 w-6 p-0"
-                          >
-                            {copiedField === `rut-${refund.id}` ? (
-                              <Check className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        <div className="flex items-center gap-1">
-                          <span>{refund.email}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopy(refund.email, `email-${refund.id}`)}
-                            className="h-6 w-6 p-0"
-                          >
-                            {copiedField === `email-${refund.id}` ? (
-                              <Check className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColors(refund.status)}>
-                          {statusLabels[refund.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {mandateStatuses?.[refund.publicId] ? (
+                      </div>
+                    }
+                    fields={[
+                      {
+                        label: 'Nombre',
+                        value: refund.fullName,
+                        fullWidth: true
+                      },
+                      {
+                        label: 'RUT',
+                        value: refund.rut
+                      },
+                      {
+                        label: 'Estado',
+                        value: (
+                          <Badge className={getStatusColors(refund.status)}>
+                            {statusLabels[refund.status]}
+                          </Badge>
+                        )
+                      },
+                      {
+                        label: 'Monto',
+                        value: `$${refund.estimatedAmountCLP.toLocaleString('es-CL')}`
+                      },
+                      {
+                        label: 'Institución',
+                        value: refund.institutionId
+                      },
+                      {
+                        label: 'Mandato',
+                        value: mandateStatuses?.[refund.publicId] ? (
                           mandateStatuses[refund.publicId].hasSignedPdf ? (
                             <div className="flex items-center gap-1 text-green-600">
-                              <CheckCircle className="h-4 w-4" />
+                              <CheckCircle className="h-3 w-3" />
                               <span className="text-xs">Firmado</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1 text-orange-600">
-                              <AlertCircle className="h-4 w-4" />
+                              <AlertCircle className="h-3 w-3" />
                               <span className="text-xs">Pendiente</span>
                             </div>
                           )
                         ) : (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        ${refund.estimatedAmountCLP.toLocaleString('es-CL')}
-                      </TableCell>
-                      <TableCell className="text-sm">{refund.institutionId}</TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(refund.createdAt).toLocaleString('es-CL', {
-                          dateStyle: 'short',
-                          timeStyle: 'short'
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/refunds/${refund.id}`)}
-                        >
-                          Ver detalle
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          <span className="text-xs">-</span>
+                        )
+                      },
+                      {
+                        label: 'Fecha',
+                        value: new Date(refund.createdAt).toLocaleDateString('es-CL')
+                      }
+                    ]}
+                  />
+                ))}
+              </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
                   <div className="text-sm text-muted-foreground">
                     Página {currentPage} de {totalPages}
                   </div>
