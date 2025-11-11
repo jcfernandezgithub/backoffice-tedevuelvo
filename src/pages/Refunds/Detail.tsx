@@ -27,6 +27,7 @@ import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCir
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
+import { Money } from '@/components/common/Money'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -376,8 +377,15 @@ export default function RefundDetail() {
               <div>
                 <p className="text-sm text-muted-foreground">Monto estimado</p>
                 <p className="font-medium text-lg">
-                  ${refund.estimatedAmountCLP.toLocaleString('es-CL')} {refund.currency}
+                  {typeof refund.estimatedAmountCLP === 'number' ? (
+                    <>
+                      <Money value={refund.estimatedAmountCLP} /> {refund.currency}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
                 </p>
+
               </div>
               {refund.calculationSnapshot && (
                 <div className="col-span-2">
