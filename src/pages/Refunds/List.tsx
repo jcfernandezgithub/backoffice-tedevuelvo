@@ -727,7 +727,7 @@ export default function RefundsList() {
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${refund.estimatedAmountCLP.toLocaleString('es-CL')}
+                          ${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}
                         </TableCell>
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
                         <TableCell className="text-sm">
@@ -790,7 +790,7 @@ export default function RefundsList() {
                       },
                       {
                         label: 'Monto',
-                        value: `$${refund.estimatedAmountCLP.toLocaleString('es-CL')}`
+                        value: `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
                       },
                       {
                         label: 'Institución',
