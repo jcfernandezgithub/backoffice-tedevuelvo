@@ -4,7 +4,8 @@ export type EstadoSolicitud =
   | 'FONDOS_RECIBIDOS_TD'
   | 'CERTIFICADO_EMITIDO'
   | 'CLIENTE_NOTIFICADO'
-  | 'PAGADA_CLIENTE';
+  | 'PAGADA_CLIENTE'
+  | 'DATOS_SIN_SIMULACION';
 
 export type TipoSeguro = 'cesantia' | 'desgravamen';
 export type Granularidad = 'day' | 'week' | 'month';

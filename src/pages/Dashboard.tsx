@@ -19,6 +19,7 @@ const ESTADO_LABELS: Record<string, string> = {
   CLIENTE_NOTIFICADO: 'Pago programado',
   PAGADA_CLIENTE: 'Pagado',
   RECHAZADO: 'Rechazado',
+  DATOS_SIN_SIMULACION: 'Datos (sin simulación)',
 }
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -29,6 +30,7 @@ const ESTADO_COLORS: Record<string, string> = {
   CLIENTE_NOTIFICADO: 'hsl(160, 84%, 39%)', // emerald
   PAGADA_CLIENTE: 'hsl(142, 76%, 36%)', // dark green
   RECHAZADO: 'hsl(0, 84%, 60%)', // red
+  DATOS_SIN_SIMULACION: 'hsl(270, 70%, 60%)', // purple
 }
 
 const ESTADO_ICONS: Record<string, LucideIcon> = {
@@ -39,6 +41,7 @@ const ESTADO_ICONS: Record<string, LucideIcon> = {
   CLIENTE_NOTIFICADO: Bell,
   PAGADA_CLIENTE: CheckCircle2,
   RECHAZADO: XCircle,
+  DATOS_SIN_SIMULACION: FileCheck,
 }
 
 // Mapeo de estados del dashboard a estados de refunds (lowercase para URL)
@@ -50,6 +53,7 @@ const DASHBOARD_TO_REFUND_STATUS: Record<string, string> = {
   CLIENTE_NOTIFICADO: 'payment_scheduled',
   PAGADA_CLIENTE: 'paid',
   RECHAZADO: 'rejected',
+  DATOS_SIN_SIMULACION: 'datos_sin_simulacion',
 }
 
 export default function Dashboard() {
@@ -80,6 +84,7 @@ export default function Dashboard() {
 
   const estadoCards = useMemo(() => (
     [
+      { key: 'DATOS_SIN_SIMULACION', color: 'purple' },
       { key: 'SIMULACION_CONFIRMADA', color: 'blue' },
       { key: 'EN_PROCESO', color: 'yellow' },
       { key: 'DEVOLUCION_CONFIRMADA_COMPANIA', color: 'indigo' },

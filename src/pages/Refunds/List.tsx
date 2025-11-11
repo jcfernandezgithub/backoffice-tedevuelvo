@@ -43,6 +43,7 @@ const statusLabels: Record<RefundStatus, string> = {
   payment_scheduled: 'Pago programado',
   paid: 'Pagado',
   canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
 }
 
 const getStatusColors = (status: RefundStatus): string => {
@@ -69,6 +70,8 @@ const getStatusColors = (status: RefundStatus): string => {
       return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
     case 'canceled':
       return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
+    case 'datos_sin_simulacion':
+      return 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500'
     default:
       return 'bg-primary hover:bg-primary/90 text-white border-primary'
   }

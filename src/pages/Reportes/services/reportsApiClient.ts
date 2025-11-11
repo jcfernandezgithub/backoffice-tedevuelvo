@@ -25,6 +25,7 @@ const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
   'paid': 'PAGADA_CLIENTE',
   'rejected': null, // No se incluye en reportes
   'canceled': null, // No se incluye en reportes
+  'datos_sin_simulacion': 'DATOS_SIN_SIMULACION',
 };
 
 // Fetch todas las solicitudes aplicando filtros

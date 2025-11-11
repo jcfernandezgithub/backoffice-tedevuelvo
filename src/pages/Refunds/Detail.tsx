@@ -40,6 +40,7 @@ const statusLabels: Record<RefundStatus, string> = {
   payment_scheduled: 'Pago programado',
   paid: 'Pagado',
   canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
 }
 
 const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -54,6 +55,7 @@ const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructiv
   payment_scheduled: 'default',
   paid: 'default',
   canceled: 'destructive',
+  datos_sin_simulacion: 'outline',
 }
 
 export default function RefundDetail() {

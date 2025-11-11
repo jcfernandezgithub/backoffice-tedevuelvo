@@ -10,6 +10,7 @@ export type RefundStatus =
   | 'payment_scheduled'
   | 'paid'
   | 'canceled'
+  | 'datos_sin_simulacion'
 
 export interface StatusHistoryEntry {
   at: string
