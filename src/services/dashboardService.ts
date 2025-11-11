@@ -16,6 +16,8 @@ export type Aggregation = 'day' | 'week' | 'month'
 // Mapeo de estados de refunds a estados del dashboard
 const statusToDashboardState = (status: RefundStatus): string => {
   switch (status) {
+    case 'datos_sin_simulacion':
+      return 'DATOS_SIN_SIMULACION'
     case 'simulated':
     case 'requested':
       return 'SIMULACION_CONFIRMADA'
@@ -60,6 +62,7 @@ export const dashboardService = {
 
       // Contar por estado mapeado
       const counts: Record<string, number> = {
+        DATOS_SIN_SIMULACION: 0,
         SIMULACION_CONFIRMADA: 0,
         EN_PROCESO: 0,
         DEVOLUCION_CONFIRMADA_COMPANIA: 0,
@@ -79,6 +82,7 @@ export const dashboardService = {
     } catch (error) {
       console.error('Error obteniendo solicitudes:', error)
       return {
+        DATOS_SIN_SIMULACION: 0,
         SIMULACION_CONFIRMADA: 0,
         EN_PROCESO: 0,
         DEVOLUCION_CONFIRMADA_COMPANIA: 0,
