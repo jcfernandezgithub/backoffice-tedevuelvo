@@ -562,7 +562,7 @@ export default function RefundDetail() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {new Date(entry.at).toLocaleString('es-CL')}
+                          {entry.at ? new Date(entry.at).toLocaleString('es-CL') : 'Fecha no disponible'}
                           {entry.by && ` • por ${entry.by}`}
                         </p>
                         {entry.note && <p className="text-sm mt-2">{entry.note}</p>}

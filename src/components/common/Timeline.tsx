@@ -4,7 +4,7 @@ export function Timeline({ items }: { items: { fecha: string; evento: string; de
       {items.map((it, i) => (
         <li key={i} className="ms-4">
           <div className="absolute w-2 h-2 bg-primary rounded-full -start-1.5 mt-2" />
-          <time className="block text-xs text-muted-foreground">{new Date(it.fecha).toLocaleString('es-CL')}</time>
+          <time className="block text-xs text-muted-foreground">{it.fecha ? new Date(it.fecha).toLocaleString('es-CL') : 'Fecha no disponible'}</time>
           <p className="text-sm font-medium">{it.evento}</p>
           {it.detalle && <p className="text-sm text-muted-foreground">{it.detalle}</p>}
         </li>
