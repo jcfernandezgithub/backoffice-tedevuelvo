@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.4
+## Versión 1.1.5
 
 ## Changelog
+
+### Versión 1.1.5 - 2025-11-11
+
+#### Correcciones Críticas
+- **Fix de crash en página de detalle**: Corregido error `TypeError: Cannot read properties of undefined (reading 'toLocaleString')` en la vista de detalle de solicitudes.
+  - El problema ocurría cuando `estimatedAmountCLP` era undefined.
+  - Reemplazado código que llamaba directamente a `.toLocaleString()` por el componente `Money` con validación de tipo.
+  - Agregada verificación segura: si el valor no es un número, se muestra 'N/A'.
+  - Mejora en la robustez del renderizado de montos en toda la aplicación.
+
+---
 
 ### Versión 1.1.4 - 2025-11-11
 
