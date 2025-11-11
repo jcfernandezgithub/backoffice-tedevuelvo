@@ -1,8 +1,24 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.3
+## Versión 1.1.4
 
 ## Changelog
+
+### Versión 1.1.4 - 2025-11-11
+
+#### Nuevo Estado de Solicitud
+
+- **Estado DATOS_SIN_SIMULACION agregado**: 
+  - Nuevo estado "Datos (sin simulación)" disponible en todas las vistas.
+  - Dashboard actualizado para mostrar contador de solicitudes en este estado.
+  - Reportes y gráficos ahora incluyen este estado en sus análisis.
+  - Correcciones en el mapeo de estados en `dashboardService.ts` y `reportsApiClient.ts`.
+
+#### Correcciones
+- **Manejo de valores nulos**: Corregido error al renderizar montos undefined en lista de solicitudes.
+  - Agregado optional chaining (`?.`) y valor por defecto para `estimatedAmountCLP`.
+
+---
 
 ### Versión 1.1.3 - 2025-11-08
 
