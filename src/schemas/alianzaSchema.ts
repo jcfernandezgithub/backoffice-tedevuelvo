@@ -9,12 +9,12 @@ export const alianzaSchema = z.object({
   direccion: z.string().optional(),
   descripcion: z.string().optional(),
   comisionDegravamen: z
-    .number({ invalid_type_error: 'Debe ser un número' })
-    .min(0, 'Debe ser ≥ 0')
+    .number({ invalid_type_error: 'Debe ser un número', required_error: 'Comisión de degravamen es requerida' })
+    .min(0.01, 'Debe ser mayor a 0')
     .max(100, 'Debe ser ≤ 100'),
   comisionCesantia: z
-    .number({ invalid_type_error: 'Debe ser un número' })
-    .min(0, 'Debe ser ≥ 0')
+    .number({ invalid_type_error: 'Debe ser un número', required_error: 'Comisión de cesantía es requerida' })
+    .min(0.01, 'Debe ser mayor a 0')
     .max(100, 'Debe ser ≤ 100'),
   activo: z.boolean().default(true),
   fechaInicio: z.date({ required_error: 'Fecha de inicio es requerida' }),
