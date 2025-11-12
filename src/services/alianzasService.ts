@@ -12,7 +12,7 @@ export const alianzasService = {
     search?: string
     page?: number
     pageSize?: number
-    sortBy?: "nombre" | "comision"
+    sortBy?: "nombre" | "comisionDegravamen"
     sortDir?: "asc" | "desc"
   }) {
     await delay()
@@ -29,8 +29,8 @@ export const alianzasService = {
     if (query?.sortBy) {
       rows.sort((a, b) => {
         const dir = query.sortDir === "desc" ? -1 : 1
-        const va = query.sortBy === "nombre" ? a.nombre : a.comision
-        const vb = query.sortBy === "nombre" ? b.nombre : b.comision
+        const va = query.sortBy === "nombre" ? a.nombre : a.comisionDegravamen
+        const vb = query.sortBy === "nombre" ? b.nombre : b.comisionDegravamen
         return (va > vb ? 1 : va < vb ? -1 : 0) * dir
       })
     }
@@ -55,7 +55,8 @@ export const alianzasService = {
       contacto: parsed.contacto,
       direccion: parsed.direccion,
       descripcion: parsed.descripcion,
-      comision: parsed.comision,
+      comisionDegravamen: parsed.comisionDegravamen,
+      comisionCesantia: parsed.comisionCesantia,
       activo: parsed.activo ?? true,
       fechaInicio: parsed.fechaInicio.toISOString(),
       fechaTermino: parsed.fechaTermino.toISOString(),

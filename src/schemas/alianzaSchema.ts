@@ -8,7 +8,11 @@ export const alianzaSchema = z.object({
   }),
   direccion: z.string().optional(),
   descripcion: z.string().optional(),
-  comision: z
+  comisionDegravamen: z
+    .number({ invalid_type_error: 'Debe ser un número' })
+    .min(0, 'Debe ser ≥ 0')
+    .max(100, 'Debe ser ≤ 100'),
+  comisionCesantia: z
     .number({ invalid_type_error: 'Debe ser un número' })
     .min(0, 'Debe ser ≥ 0')
     .max(100, 'Debe ser ≤ 100'),

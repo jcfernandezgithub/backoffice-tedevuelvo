@@ -63,7 +63,7 @@ export default function AlianzasList() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [sortBy, setSortBy] = useState<'nombre' | 'comision' | undefined>('nombre')
+  const [sortBy, setSortBy] = useState<'nombre' | 'comisionDegravamen' | undefined>('nombre')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const dSearch = useDebounce(search)
   const qc = useQueryClient()
@@ -83,7 +83,7 @@ export default function AlianzasList() {
     setPage(1)
   }, [dSearch])
 
-  const toggleSort = (key: 'nombre' | 'comision') => {
+  const toggleSort = (key: 'nombre' | 'comisionDegravamen') => {
     if (sortBy !== key) {
       setSortBy(key)
       setSortDir('asc')
@@ -153,8 +153,8 @@ export default function AlianzasList() {
                     <TableHead>Contacto</TableHead>
                     <TableHead>Dirección</TableHead>
                     <TableHead>
-                      <button className="inline-flex items-center gap-1" onClick={() => toggleSort('comision')} aria-label="Ordenar por comisión">
-                        Comisión <ArrowUpDown className="h-4 w-4" />
+                      <button className="inline-flex items-center gap-1" onClick={() => toggleSort('comisionDegravamen')} aria-label="Ordenar por comisión degravamen">
+                        Comisiones <ArrowUpDown className="h-4 w-4" />
                       </button>
                     </TableHead>
                     <TableHead>Estado</TableHead>
@@ -190,7 +190,12 @@ export default function AlianzasList() {
                         </div>
                       </TableCell>
                       <TableCell>{a.direccion ?? '—'}</TableCell>
-                      <TableCell>{fmtPct(a.comision)}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>D: {fmtPct(a.comisionDegravamen)}</div>
+                          <div className="text-muted-foreground">C: {fmtPct(a.comisionCesantia)}</div>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Badge variant={a.activo ? 'default' : 'secondary'}>{a.activo ? 'Activo' : 'Inactivo'}</Badge>
@@ -284,7 +289,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
       contacto: { fono: '', email: '' }, 
       direccion: '',
       descripcion: '', 
-      comision: 0, 
+      comisionDegravamen: 0, 
+      comisionCesantia: 0,
       activo: true,
       logo: '' 
     },
@@ -296,9 +302,12 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
   const [pendingData, setPendingData] = useState<NuevaAlianzaInput | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   
-  const comisionValue = form.watch('comision')
-  const showComisionWarning = comisionValue !== undefined && comisionValue !== null && 
-    (comisionValue < 1 || comisionValue > 10) && comisionValue >= 0 && comisionValue <= 100
+  const comisionDegravamenValue = form.watch('comisionDegravamen')
+  const comisionCesantiaValue = form.watch('comisionCesantia')
+  const showDegravamenWarning = comisionDegravamenValue !== undefined && comisionDegravamenValue !== null && 
+    (comisionDegravamenValue < 1 || comisionDegravamenValue > 10) && comisionDegravamenValue >= 0 && comisionDegravamenValue <= 100
+  const showCesantiaWarning = comisionCesantiaValue !== undefined && comisionCesantiaValue !== null && 
+    (comisionCesantiaValue < 1 || comisionCesantiaValue > 10) && comisionCesantiaValue >= 0 && comisionCesantiaValue <= 100
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -320,7 +329,11 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
 
   const confirmCreate = () => {
     if (pendingData) {
-      onCreate({ ...pendingData, comision: Number(pendingData.comision) })
+      onCreate({ 
+        ...pendingData, 
+        comisionDegravamen: Number(pendingData.comisionDegravamen),
+        comisionCesantia: Number(pendingData.comisionCesantia)
+      })
       setConfirmOpen(false)
       setOpen(false)
       form.reset()
@@ -343,81 +356,127 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              {/* Fila 1: Nombre y Comisión */}
-              <div className="grid grid-cols-4 gap-4">
-              <FormField
-                control={form.control}
-                name="nombre"
-                render={({ field }) => (
-                  <FormItem className="col-span-3">
-                    <FormLabel>Nombre *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nombre de la alianza" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="comision"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Comisión *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          min={0} 
-                          max={100} 
-                          placeholder="0.00"
-                          className="pr-8"
-                          value={value || ''}
-                          onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-5">
+              {/* Información Básica */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Información Básica</h3>
+                <FormField
+                  control={form.control}
+                  name="nombre"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre de la Alianza *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nombre de la alianza" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="descripcion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Información relevante sobre la alianza"
+                          className="resize-none h-[60px]"
                           {...field} 
                         />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Separator />
+
+              {/* Comisiones */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Comisiones</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="comisionDegravamen"
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <FormItem>
+                        <FormLabel>Seguro de Degravamen *</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              min={0} 
+                              max={100} 
+                              placeholder="0.00"
+                              className="pr-8"
+                              value={value || ''}
+                              onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                              {...field} 
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="comisionCesantia"
+                    render={({ field: { value, onChange, ...field } }) => (
+                      <FormItem>
+                        <FormLabel>Seguro de Cesantía *</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              min={0} 
+                              max={100} 
+                              placeholder="0.00"
+                              className="pr-8"
+                              value={value || ''}
+                              onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                              {...field} 
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                {/* Advertencias de comisión */}
+                {showDegravamenWarning && (
+                  <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                      Comisión de degravamen fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
+                    </AlertDescription>
+                  </Alert>
                 )}
-              />
-            </div>
-            
-            {/* Advertencia de comisión */}
-            {showComisionWarning && (
-              <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                  Comisión fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
-                </AlertDescription>
-              </Alert>
-            )}
+                {showCesantiaWarning && (
+                  <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                      Comisión de cesantía fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
 
-            {/* Fila 2: Descripción */}
-            <FormField
-              control={form.control}
-              name="descripcion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Información relevante sobre la alianza"
-                      className="resize-none h-[60px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <Separator />
 
-            {/* Fila 3: Contacto y Dirección */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Información de Contacto */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Información de Contacto</h3>
+              <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="contacto.email"
@@ -457,10 +516,15 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
+              </div>
             </div>
 
-            {/* Fila 4: Fechas de Vigencia */}
-            <div className="grid grid-cols-2 gap-4">
+            <Separator />
+
+            {/* Vigencia del Contrato */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Vigencia del Contrato</h3>
+              <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="fechaInicio"
@@ -539,10 +603,15 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
+              </div>
             </div>
 
-            {/* Fila 5: Logo y Estado */}
-            <div className="grid grid-cols-2 gap-4 items-start">
+            <Separator />
+
+            {/* Configuración Adicional */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-foreground">Configuración Adicional</h3>
+              <div className="grid grid-cols-2 gap-4 items-start">
               <FormField
                 control={form.control}
                 name="logo"
@@ -587,9 +656,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
+              </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
@@ -619,8 +689,12 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                 <p className="text-muted-foreground">{pendingData.nombre}</p>
               </div>
               <div>
-                <span className="font-medium">Comisión:</span>
-                <p className="text-muted-foreground">{pendingData.comision}%</p>
+                <span className="font-medium">Comisión Degravamen:</span>
+                <p className="text-muted-foreground">{pendingData.comisionDegravamen}%</p>
+              </div>
+              <div>
+                <span className="font-medium">Comisión Cesantía:</span>
+                <p className="text-muted-foreground">{pendingData.comisionCesantia}%</p>
               </div>
               {pendingData.contacto.email && (
                 <div>

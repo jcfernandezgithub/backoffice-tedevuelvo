@@ -4,7 +4,8 @@ export interface Alianza {
   contacto: { fono?: string; email?: string };
   direccion?: string;
   descripcion?: string;
-  comision: number; // porcentaje 0..100
+  comisionDegravamen: number; // porcentaje 0..100
+  comisionCesantia: number; // porcentaje 0..100
   activo: boolean;
   fechaInicio: string;
   fechaTermino: string;
