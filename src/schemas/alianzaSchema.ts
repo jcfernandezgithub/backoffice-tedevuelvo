@@ -12,7 +12,13 @@ export const alianzaSchema = z.object({
     .min(0, 'Debe ser ≥ 0')
     .max(30, 'Debe ser ≤ 30'),
   activo: z.boolean().default(true),
+  vigencia: z.boolean().default(true),
+  fechaInicio: z.date({ required_error: 'Fecha de inicio es requerida' }),
+  fechaTermino: z.date({ required_error: 'Fecha de término es requerida' }),
   logo: z.string().optional(),
+}).refine((data) => data.fechaTermino > data.fechaInicio, {
+  message: 'La fecha de término debe ser posterior a la fecha de inicio',
+  path: ['fechaTermino'],
 })
 
 export type NuevaAlianzaInput = z.infer<typeof alianzaSchema>
