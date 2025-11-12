@@ -3,7 +3,8 @@ export interface Alianza {
   nombre: string;
   contacto: { fono?: string; email?: string };
   direccion?: string;
-  comision: number; // porcentaje 0..30
+  descripcion?: string;
+  comision: number; // porcentaje 0..100
   activo: boolean;
   fechaInicio: string;
   fechaTermino: string;

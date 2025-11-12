@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Textarea } from '@/components/ui/textarea'
 import type { Alianza } from '@/types/alianzas'
 import { useAllianceUserCount } from './hooks/useAllianceUsers'
 
@@ -266,7 +268,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     defaultValues: { 
       nombre: '', 
       contacto: { fono: '', email: '' }, 
-      direccion: '', 
+      direccion: '',
+      descripcion: '', 
       comision: 0, 
       activo: true,
       logo: '' 
@@ -274,6 +277,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     mode: 'onBlur',
   })
   const [open, setOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingData, setPendingData] = useState<NuevaAlianzaInput | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   
   const comisionValue = form.watch('comision')
@@ -293,34 +298,44 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     }
   }
 
-  const submit = (v: NuevaAlianzaInput) => {
-    onCreate({ ...v, comision: Number(v.comision) })
-    setOpen(false)
-    form.reset()
-    setLogoPreview(null)
+  const handleFormSubmit = (v: NuevaAlianzaInput) => {
+    setPendingData(v)
+    setConfirmOpen(true)
+  }
+
+  const confirmCreate = () => {
+    if (pendingData) {
+      onCreate({ ...pendingData, comision: Number(pendingData.comision) })
+      setConfirmOpen(false)
+      setOpen(false)
+      form.reset()
+      setLogoPreview(null)
+      setPendingData(null)
+    }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="hero" className="inline-flex items-center gap-2" aria-label="Crear Alianza">
-          <Plus className="h-4 w-4" /> Crear Alianza
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl" aria-describedby="form-desc">
-        <DialogHeader>
-          <DialogTitle>Nueva Alianza</DialogTitle>
-          <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(submit)} className="space-y-4">
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button variant="hero" className="inline-flex items-center gap-2" aria-label="Crear Alianza">
+            <Plus className="h-4 w-4" /> Crear Alianza
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" aria-describedby="form-desc">
+          <DialogHeader>
+            <DialogTitle>Nueva Alianza</DialogTitle>
+            <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             {/* Información Básica */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="nombre"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="col-span-2">
                     <FormLabel>Nombre *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nombre de la alianza" {...field} />
@@ -332,7 +347,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               <FormField
                 control={form.control}
                 name="comision"
-                render={({ field }) => (
+                render={({ field: { value, onChange, ...field } }) => (
                   <FormItem>
                     <FormLabel>Comisión *</FormLabel>
                     <FormControl>
@@ -344,6 +359,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                           max={100} 
                           placeholder="0.00"
                           className="pr-8"
+                          value={value || ''}
+                          onChange={(e) => onChange(e.target.valueAsNumber || 0)}
                           {...field} 
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -393,19 +410,38 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="direccion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Calle, número, comuna, ciudad" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="direccion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dirección</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Calle, número, comuna, ciudad" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="descripcion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Información relevante sobre la alianza"
+                        className="resize-none h-[40px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             {/* Vigencia del Contrato */}
             <div className="grid grid-cols-2 gap-4">
@@ -489,57 +525,55 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               />
             </div>
 
-            {/* Logo */}
-            <FormField
-              control={form.control}
-              name="logo"
-              render={({ field: { value, onChange, ...field } }) => (
-                <FormItem>
-                  <FormLabel>Logo de la Alianza</FormLabel>
-                  <FormControl>
-                    <div className="space-y-2">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        {...field}
-                      />
-                      {logoPreview && (
-                        <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                          <img src={logoPreview} alt="Vista previa" className="h-12 w-12 object-contain rounded" />
-                          <span className="text-xs text-muted-foreground">Imagen seleccionada</span>
-                        </div>
-                      )}
+            {/* Logo y Estado */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="logo"
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Logo de la Alianza</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                          {...field}
+                        />
+                        {logoPreview && (
+                          <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
+                            <img src={logoPreview} alt="Vista previa" className="h-10 w-10 object-contain rounded" />
+                            <span className="text-xs text-muted-foreground">Imagen seleccionada</span>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="activo"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col justify-end">
+                    <div className="flex flex-row items-center justify-between rounded-lg border p-3 h-[40px]">
+                      <FormLabel className="text-sm font-medium">Alianza Activa</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            {/* Estado */}
-            <FormField
-              control={form.control}
-              name="activo"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-sm font-medium">Alianza Activa</FormLabel>
-                    <p className="text-xs text-muted-foreground">
-                      La alianza estará operativa en el sistema
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
@@ -551,5 +585,73 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
         </Form>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirmar Creación de Alianza</AlertDialogTitle>
+          <AlertDialogDescription>
+            Se creará una nueva alianza con los siguientes datos:
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        
+        {pendingData && (
+          <div className="space-y-2 my-4 p-4 rounded-lg bg-muted/50 border">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="font-medium">Nombre:</span>
+                <p className="text-muted-foreground">{pendingData.nombre}</p>
+              </div>
+              <div>
+                <span className="font-medium">Comisión:</span>
+                <p className="text-muted-foreground">{pendingData.comision}%</p>
+              </div>
+              {pendingData.contacto.email && (
+                <div>
+                  <span className="font-medium">Email:</span>
+                  <p className="text-muted-foreground">{pendingData.contacto.email}</p>
+                </div>
+              )}
+              {pendingData.contacto.fono && (
+                <div>
+                  <span className="font-medium">Teléfono:</span>
+                  <p className="text-muted-foreground">{pendingData.contacto.fono}</p>
+                </div>
+              )}
+              {pendingData.direccion && (
+                <div className="col-span-2">
+                  <span className="font-medium">Dirección:</span>
+                  <p className="text-muted-foreground">{pendingData.direccion}</p>
+                </div>
+              )}
+              {pendingData.descripcion && (
+                <div className="col-span-2">
+                  <span className="font-medium">Descripción:</span>
+                  <p className="text-muted-foreground">{pendingData.descripcion}</p>
+                </div>
+              )}
+              <div>
+                <span className="font-medium">Vigencia:</span>
+                <p className="text-muted-foreground">
+                  {pendingData.fechaInicio && format(pendingData.fechaInicio, "dd/MM/yyyy")} - {pendingData.fechaTermino && format(pendingData.fechaTermino, "dd/MM/yyyy")}
+                </p>
+              </div>
+              <div>
+                <span className="font-medium">Estado:</span>
+                <p className="text-muted-foreground">{pendingData.activo ? 'Activa' : 'Inactiva'}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmCreate} disabled={loading}>
+            {loading ? 'Creando...' : 'Confirmar y Crear'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }

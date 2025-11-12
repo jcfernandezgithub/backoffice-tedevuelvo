@@ -7,6 +7,7 @@ export const alianzaSchema = z.object({
     email: z.string().email('Email inválido').optional(),
   }),
   direccion: z.string().optional(),
+  descripcion: z.string().optional(),
   comision: z
     .number({ invalid_type_error: 'Debe ser un número' })
     .min(0, 'Debe ser ≥ 0')

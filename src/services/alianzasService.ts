@@ -54,6 +54,7 @@ export const alianzasService = {
       nombre: parsed.nombre,
       contacto: parsed.contacto,
       direccion: parsed.direccion,
+      descripcion: parsed.descripcion,
       comision: parsed.comision,
       activo: parsed.activo ?? true,
       fechaInicio: parsed.fechaInicio.toISOString(),
