@@ -12,6 +12,7 @@ export const alianzaSchema = z.object({
     .min(0, 'Debe ser ≥ 0')
     .max(30, 'Debe ser ≤ 30'),
   activo: z.boolean().default(true),
+  logo: z.string().optional(),
 })
 
 export type NuevaAlianzaInput = z.infer<typeof alianzaSchema>

@@ -5,6 +5,7 @@ export interface Alianza {
   direccion?: string;
   comision: number; // porcentaje 0..30
   activo: boolean;
+  logo?: string;
   createdAt: string;
   updatedAt: string;
 }

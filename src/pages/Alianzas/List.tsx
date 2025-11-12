@@ -256,15 +256,30 @@ export default function AlianzasList() {
 function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianzaInput) => void; loading?: boolean }) {
   const form = useForm<NuevaAlianzaInput>({
     resolver: zodResolver(alianzaSchema),
-    defaultValues: { nombre: '', contacto: { fono: '', email: '' }, direccion: '', comision: 0, activo: true },
+    defaultValues: { nombre: '', contacto: { fono: '', email: '' }, direccion: '', comision: 0, activo: true, logo: '' },
     mode: 'onBlur',
   })
   const [open, setOpen] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setLogoPreview(base64String)
+        form.setValue('logo', base64String)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const submit = (v: NuevaAlianzaInput) => {
     onCreate({ ...v, comision: Number(v.comision) })
     setOpen(false)
     form.reset()
+    setLogoPreview(null)
   }
 
   return (
@@ -348,6 +363,32 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                     </div>
                   </FormControl>
                   <p id="comision-help" className="text-xs text-muted-foreground">0 a 30, con hasta 2 decimales</p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="logo"
+              render={({ field: { value, onChange, ...field } }) => (
+                <FormItem>
+                  <FormLabel>Logo (opcional)</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        {...field}
+                      />
+                      {logoPreview && (
+                        <div className="flex items-center gap-2">
+                          <img src={logoPreview} alt="Vista previa del logo" className="h-16 w-16 object-contain rounded border" />
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">Sube una imagen que represente a la alianza</p>
                   <FormMessage />
                 </FormItem>
               )}
