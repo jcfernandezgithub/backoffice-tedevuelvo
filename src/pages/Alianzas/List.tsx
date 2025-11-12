@@ -15,13 +15,14 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { Alianza } from '@/types/alianzas'
 import { useAllianceUserCount } from './hooks/useAllianceUsers'
 
@@ -274,6 +275,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
   })
   const [open, setOpen] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  
+  const comisionValue = form.watch('comision')
+  const showComisionWarning = comisionValue !== undefined && comisionValue !== null && 
+    (comisionValue < 1 || comisionValue > 10) && comisionValue >= 0 && comisionValue <= 100
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -336,7 +341,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                           type="number" 
                           step="0.01" 
                           min={0} 
-                          max={30} 
+                          max={100} 
                           placeholder="0.00"
                           className="pr-8"
                           {...field} 
@@ -344,6 +349,14 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                       </div>
                     </FormControl>
+                    {showComisionWarning && (
+                      <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                        <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                          Comisión fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

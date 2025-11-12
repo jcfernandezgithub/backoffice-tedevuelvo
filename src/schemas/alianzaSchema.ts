@@ -10,7 +10,7 @@ export const alianzaSchema = z.object({
   comision: z
     .number({ invalid_type_error: 'Debe ser un número' })
     .min(0, 'Debe ser ≥ 0')
-    .max(30, 'Debe ser ≤ 30'),
+    .max(100, 'Debe ser ≤ 100'),
   activo: z.boolean().default(true),
   fechaInicio: z.date({ required_error: 'Fecha de inicio es requerida' }),
   fechaTermino: z.date({ required_error: 'Fecha de término es requerida' }),
