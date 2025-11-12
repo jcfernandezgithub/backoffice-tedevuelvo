@@ -307,7 +307,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
   const showDegravamenWarning = comisionDegravamenValue !== undefined && comisionDegravamenValue !== null && 
     (comisionDegravamenValue < 1 || comisionDegravamenValue > 10) && comisionDegravamenValue >= 0 && comisionDegravamenValue <= 100
   const showCesantiaWarning = comisionCesantiaValue !== undefined && comisionCesantiaValue !== null && 
-    (comisionCesantiaValue < 1 || comisionCesantiaValue > 10) && comisionCesantiaValue >= 0 && comisionCesantiaValue <= 100
+    (comisionCesantiaValue < 1 || comisionCesantiaValue > 50) && comisionCesantiaValue >= 0 && comisionCesantiaValue <= 100
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -350,16 +350,15 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             <Plus className="h-4 w-4" /> Crear Alianza
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="form-desc">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" aria-describedby="form-desc">
           <DialogHeader>
             <DialogTitle>Nueva Alianza</DialogTitle>
             <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-5">
-              {/* Información Básica */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Información Básica</h3>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+              {/* Fila 1: Nombre y Descripción */}
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="nombre"
@@ -380,9 +379,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                     <FormItem>
                       <FormLabel>Descripción</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Input 
                           placeholder="Información relevante sobre la alianza"
-                          className="resize-none h-[60px]"
                           {...field} 
                         />
                       </FormControl>
@@ -392,91 +390,80 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                 />
               </div>
 
-              <Separator />
-
-              {/* Comisiones */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">Comisiones</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="comisionDegravamen"
-                    render={({ field: { value, onChange, ...field } }) => (
-                      <FormItem>
-                        <FormLabel>Seguro de Degravamen *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              min={0} 
-                              max={100} 
-                              placeholder="0.00"
-                              className="pr-8"
-                              value={value || ''}
-                              onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-                              {...field} 
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="comisionCesantia"
-                    render={({ field: { value, onChange, ...field } }) => (
-                      <FormItem>
-                        <FormLabel>Seguro de Cesantía *</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              min={0} 
-                              max={100} 
-                              placeholder="0.00"
-                              className="pr-8"
-                              value={value || ''}
-                              onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-                              {...field} 
-                            />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                {/* Advertencias de comisión */}
-                {showDegravamenWarning && (
-                  <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                      Comisión de degravamen fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {showCesantiaWarning && (
-                  <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                    <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                      Comisión de cesantía fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
-                    </AlertDescription>
-                  </Alert>
-                )}
+              {/* Fila 2: Comisiones */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="comisionDegravamen"
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Seguro de Degravamen *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            min={0} 
+                            max={100} 
+                            placeholder="0.00"
+                            className="pr-8"
+                            value={value || ''}
+                            onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                            {...field} 
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                        </div>
+                      </FormControl>
+                      {showDegravamenWarning && (
+                        <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                          <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                            Comisión de degravamen fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="comisionCesantia"
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Seguro de Cesantía *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input 
+                            type="number" 
+                            step="0.01" 
+                            min={0} 
+                            max={100} 
+                            placeholder="0.00"
+                            className="pr-8"
+                            value={value || ''}
+                            onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                            {...field} 
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                        </div>
+                      </FormControl>
+                      {showCesantiaWarning && (
+                        <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                          <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                            Comisión de cesantía fuera del rango típico (1% - 50%). Verifica que el valor sea correcto.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <Separator />
-
-            {/* Información de Contacto */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Información de Contacto</h3>
-              <div className="grid grid-cols-3 gap-4">
+            {/* Fila 3: Contacto y Dirección */}
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="contacto.email"
@@ -516,15 +503,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
-              </div>
             </div>
 
-            <Separator />
-
-            {/* Vigencia del Contrato */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Vigencia del Contrato</h3>
-              <div className="grid grid-cols-2 gap-4">
+            {/* Fila 4: Fechas de Vigencia */}
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="fechaInicio"
@@ -603,15 +585,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
-              </div>
             </div>
 
-            <Separator />
-
-            {/* Configuración Adicional */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">Configuración Adicional</h3>
-              <div className="grid grid-cols-2 gap-4 items-start">
+            {/* Fila 5: Logo y Estado */}
+            <div className="grid grid-cols-2 gap-4 items-start">
               <FormField
                 control={form.control}
                 name="logo"
@@ -656,10 +633,9 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
-              </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
