@@ -528,7 +528,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             </div>
 
             {/* Fila 5: Logo y Estado */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 items-start">
               <FormField
                 control={form.control}
                 name="logo"
@@ -536,21 +536,19 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   <FormItem>
                     <FormLabel>Logo de la Alianza</FormLabel>
                     <FormControl>
-                      <div className="space-y-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleLogoChange}
-                          {...field}
-                        />
-                        {logoPreview && (
-                          <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30">
-                            <img src={logoPreview} alt="Vista previa" className="h-10 w-10 object-contain rounded" />
-                            <span className="text-xs text-muted-foreground">Imagen seleccionada</span>
-                          </div>
-                        )}
-                      </div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoChange}
+                        {...field}
+                      />
                     </FormControl>
+                    {logoPreview && (
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 mt-2">
+                        <img src={logoPreview} alt="Vista previa" className="h-10 w-10 object-contain rounded" />
+                        <span className="text-xs text-muted-foreground">Imagen seleccionada</span>
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -561,8 +559,9 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                 name="activo"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex flex-row items-center justify-between rounded-lg border p-3 space-x-2">
-                      <FormLabel className="text-sm font-medium mb-0">Alianza Activa</FormLabel>
+                    <FormLabel>Estado</FormLabel>
+                    <div className="flex items-center justify-between rounded-lg border p-3">
+                      <span className="text-sm font-medium">Alianza Activa</span>
                       <FormControl>
                         <Switch
                           checked={field.value}
@@ -570,6 +569,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                         />
                       </FormControl>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
