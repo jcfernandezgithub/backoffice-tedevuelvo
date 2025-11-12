@@ -274,7 +274,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
       activo: true,
       logo: '' 
     },
-    mode: 'onBlur',
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
   })
   const [open, setOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -322,20 +323,20 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             <Plus className="h-4 w-4" /> Crear Alianza
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" aria-describedby="form-desc">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="form-desc">
           <DialogHeader>
             <DialogTitle>Nueva Alianza</DialogTitle>
             <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-            {/* Información Básica */}
-            <div className="space-y-4">
+              {/* Fila 1: Nombre y Comisión */}
+              <div className="grid grid-cols-4 gap-4">
               <FormField
                 control={form.control}
                 name="nombre"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="col-span-3">
                     <FormLabel>Nombre *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nombre de la alianza" {...field} />
@@ -344,28 +345,65 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
-              
               <FormField
                 control={form.control}
-                name="descripcion"
-                render={({ field }) => (
+                name="comision"
+                render={({ field: { value, onChange, ...field } }) => (
                   <FormItem>
-                    <FormLabel>Descripción</FormLabel>
+                    <FormLabel>Comisión *</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Información relevante sobre la alianza"
-                        className="resize-none h-[60px]"
-                        {...field} 
-                      />
+                      <div className="relative">
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min={0} 
+                          max={100} 
+                          placeholder="0.00"
+                          className="pr-8"
+                          value={value || ''}
+                          onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                          {...field} 
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+            
+            {/* Advertencia de comisión */}
+            {showComisionWarning && (
+              <Alert variant="default" className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                  Comisión fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
+                </AlertDescription>
+              </Alert>
+            )}
 
-            {/* Contacto */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Fila 2: Descripción */}
+            <FormField
+              control={form.control}
+              name="descripcion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descripción</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Información relevante sobre la alianza"
+                      className="resize-none h-[60px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Fila 3: Contacto y Dirección */}
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="contacto.email"
@@ -392,64 +430,29 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                   </FormItem>
                 )}
               />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="direccion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Dirección</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Calle, número, comuna, ciudad" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Comisión y Fechas de Vigencia */}
-            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="comision"
-                render={({ field: { value, onChange, ...field } }) => (
+                name="direccion"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Comisión *</FormLabel>
+                    <FormLabel>Dirección</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <Input 
-                          type="number" 
-                          step="0.01" 
-                          min={0} 
-                          max={100} 
-                          placeholder="0.00"
-                          className="pr-8"
-                          value={value || ''}
-                          onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-                          {...field} 
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                      </div>
+                      <Input placeholder="Calle, comuna, ciudad" {...field} />
                     </FormControl>
-                    {showComisionWarning && (
-                      <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                        <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                        <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                          Comisión fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
-                        </AlertDescription>
-                      </Alert>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Fila 4: Fechas de Vigencia */}
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="fechaInicio"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Inicio Vigencia *</FormLabel>
+                    <FormLabel>Inicio de Vigencia *</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -488,7 +491,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                 name="fechaTermino"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Término Vigencia *</FormLabel>
+                    <FormLabel>Término de Vigencia *</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -524,7 +527,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               />
             </div>
 
-            {/* Logo y Estado */}
+            {/* Fila 5: Logo y Estado */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -557,9 +560,9 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                 control={form.control}
                 name="activo"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col justify-end">
-                    <div className="flex flex-row items-center justify-between rounded-lg border p-3 h-[40px]">
-                      <FormLabel className="text-sm font-medium">Alianza Activa</FormLabel>
+                  <FormItem>
+                    <div className="flex flex-row items-center justify-between rounded-lg border p-3 space-x-2">
+                      <FormLabel className="text-sm font-medium mb-0">Alianza Activa</FormLabel>
                       <FormControl>
                         <Switch
                           checked={field.value}
