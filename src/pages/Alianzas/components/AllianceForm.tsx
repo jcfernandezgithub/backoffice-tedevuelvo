@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
+import { Switch } from '@/components/ui/switch'
 import { Plus, Building2, DollarSign, Mail, CalendarIcon, AlertTriangle, Info } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -248,6 +249,44 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                               </div>
                             )}
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Estado de la Alianza */}
+                  <Card className="border-l-4 border-l-accent flex flex-col">
+                    <CardHeader className="pb-2 px-4 pt-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
+                          <Info className="h-3.5 w-3.5 text-accent" />
+                        </div>
+                        Estado de la Alianza
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1">
+                      <FormField
+                        control={form.control}
+                        name="activo"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-xs font-medium">
+                                {field.value ? 'La alianza está activa' : 'La alianza está inactiva'}
+                              </FormLabel>
+                              <p className="text-[10px] text-muted-foreground">
+                                {field.value 
+                                  ? 'Los usuarios pueden acceder al sistema' 
+                                  : 'Los usuarios no podrán acceder al sistema'}
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
                           </FormItem>
                         )}
                       />
