@@ -123,102 +123,174 @@ export default function AlianzasList() {
   })
 
   return (
-    <main className="p-4 space-y-4">
-      <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-semibold">Alianzas</h1>
+    <main className="p-4 md:p-6 space-y-6 bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Alianzas Comerciales
+          </h1>
+          <p className="text-muted-foreground mt-1">Gestiona tus alianzas estratégicas y comisiones</p>
+        </div>
         <CreateAlianzaButton onCreate={(v) => crearMutation.mutate(v)} loading={crearMutation.isPending} />
-      </header>
+      </div>
 
-      <Card>
-        <CardHeader className="gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle>Listado</CardTitle>
-            <CardDescription>Gestiona alianzas y comisiones</CardDescription>
-          </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, email o fono"
-              aria-label="Buscar alianzas"
-            />
+      {/* Filtros y búsqueda */}
+      <Card className="border-l-4 border-l-primary shadow-md">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre, email, teléfono o RUT..."
+                  aria-label="Buscar alianzas"
+                  className="pl-10 h-11"
+                />
+              </div>
+            </div>
+            {listQuery.data && listQuery.data.total > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
+                <Building2 className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">
+                  {listQuery.data.total} {listQuery.data.total === 1 ? 'alianza' : 'alianzas'}
+                </span>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           {listQuery.isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-40 w-full rounded-xl" />
               ))}
             </div>
           ) : listQuery.data && listQuery.data.items.length > 0 ? (
-            <div className="w-full overflow-x-auto">
-              <Table role="table" aria-label="Tabla de alianzas">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <button className="inline-flex items-center gap-1" onClick={() => toggleSort('nombre')} aria-label="Ordenar por nombre">
-                        Nombre <ArrowUpDown className="h-4 w-4" />
-                      </button>
-                    </TableHead>
-                    <TableHead>Contacto</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead>
-                      <button className="inline-flex items-center gap-1" onClick={() => toggleSort('comisionDegravamen')} aria-label="Ordenar por comisión degravamen">
-                        Comisiones <ArrowUpDown className="h-4 w-4" />
-                      </button>
-                    </TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Creación</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {listQuery.data.items.map((a) => (
-                    <TableRow key={a.id} tabIndex={0}>
-                      <TableCell className="font-medium">{a.nombre}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3 text-sm">
-                          {a.contacto.fono && (
-                            <span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{a.contacto.fono}</span>
+            <div className="space-y-4">
+              {listQuery.data.items.map((a, index) => (
+                <Card 
+                  key={a.id} 
+                  className="group relative overflow-hidden border-l-4 hover:shadow-lg transition-all duration-300 animate-fade-in"
+                  style={{ 
+                    borderLeftColor: a.activo ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                    animationDelay: `${index * 50}ms`
+                  }}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                      {/* Columna izquierda: Info principal */}
+                      <div className="flex-1 space-y-4">
+                        {/* Nombre y código */}
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                              <Building2 className="w-6 h-6 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-xl font-bold text-foreground truncate">{a.nombre}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <code className="text-xs font-mono bg-muted px-2 py-1 rounded">{a.code}</code>
+                                <span className="text-xs text-muted-foreground">•</span>
+                                <span className="text-xs text-muted-foreground">{a.rut}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {a.descripcion && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 ml-15">{a.descripcion}</p>
                           )}
+                        </div>
+
+                        {/* Contacto */}
+                        <div className="flex flex-wrap gap-3">
                           {a.contacto.email && (
-                            <span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5" />{a.contacto.email}</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <Mail className="h-3.5 w-3.5 text-primary" />
+                              <span className="text-xs font-medium">{a.contacto.email}</span>
+                            </div>
+                          )}
+                          {a.contacto.fono && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <Phone className="h-3.5 w-3.5 text-accent" />
+                              <span className="text-xs font-medium">{a.contacto.fono}</span>
+                            </div>
+                          )}
+                          {a.direccion && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                              <svg className="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              <span className="text-xs text-muted-foreground truncate max-w-[200px]">{a.direccion}</span>
+                            </div>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>{a.direccion ?? '—'}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>D: {fmtPct(a.comisionDegravamen)}</div>
-                          <div className="text-muted-foreground">C: {fmtPct(a.comisionCesantia)}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
+
+                        {/* Estado y usuarios */}
                         <div className="flex items-center gap-2">
-                          <Badge variant={a.activo ? 'default' : 'secondary'}>{a.activo ? 'Activo' : 'Inactivo'}</Badge>
+                          <Badge 
+                            variant={a.activo ? 'default' : 'secondary'}
+                            className="font-medium"
+                          >
+                            {a.activo ? '✓ Activa' : 'Inactiva'}
+                          </Badge>
                           <AllianceUserCountPill alianzaId={a.id} />
+                          <span className="text-xs text-muted-foreground">
+                            Creada: {new Date(a.createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}
+                          </span>
                         </div>
-                      </TableCell>
-                      <TableCell>{new Date(a.createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                      </div>
+
+                      {/* Columna derecha: Comisiones y Acciones */}
+                      <div className="flex flex-col gap-4 md:w-72 shrink-0">
+                        {/* Comisiones */}
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comisiones</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
+                              <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full -mr-8 -mt-8" />
+                              <p className="text-xs text-primary font-medium mb-1">Degravamen</p>
+                              <p className="text-2xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
+                            </div>
+                            <div className="relative overflow-hidden rounded-lg border border-accent/20 bg-gradient-to-br from-accent/5 to-transparent p-3">
+                              <div className="absolute top-0 right-0 w-16 h-16 bg-accent/10 rounded-full -mr-8 -mt-8" />
+                              <p className="text-xs text-accent font-medium mb-1">Cesantía</p>
+                              <p className="text-2xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Acciones */}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setViewAlianza(a)}
+                            className="flex-1 hover:bg-primary/5 hover:border-primary/30"
+                          >
+                            <Eye className="h-4 w-4 mr-1.5" />
+                            Ver
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditAlianza(a)}
+                            className="flex-1 hover:bg-accent/5 hover:border-accent/30"
+                          >
+                            <Pencil className="h-4 w-4 mr-1.5" />
+                            Editar
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="icon" aria-label="Acciones">
+                              <Button variant="outline" size="sm" className="px-2">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem onClick={() => setViewAlianza(a)}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Ver detalles
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditAlianza(a)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Editar alianza
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
                               <DropdownMenuItem asChild>
                                 <Link to={`/alianzas/${a.id}#usuarios`} className="flex items-center">
                                   <Users className="mr-2 h-4 w-4" />
@@ -236,23 +308,27 @@ export default function AlianzasList() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground">No hay alianzas aún.</p>
+            <div className="text-center py-16">
+              <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                <Building2 className="w-12 h-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">No hay alianzas registradas</h3>
+              <p className="text-muted-foreground mb-6">Comienza creando tu primera alianza comercial</p>
             </div>
           )}
 
           {/* Paginación */}
           {listQuery.data && listQuery.data.total > 0 && (
-            <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+            <div className="mt-6 pt-6 border-t flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
               <p className="text-sm text-muted-foreground">
-                Página {listQuery.data.page} de {Math.ceil(listQuery.data.total / listQuery.data.pageSize)} • {listQuery.data.total} alianzas
+                Mostrando <span className="font-medium text-foreground">{Math.min((listQuery.data.page - 1) * listQuery.data.pageSize + 1, listQuery.data.total)}</span> - <span className="font-medium text-foreground">{Math.min(listQuery.data.page * listQuery.data.pageSize, listQuery.data.total)}</span> de <span className="font-medium text-foreground">{listQuery.data.total}</span> {listQuery.data.total === 1 ? 'alianza' : 'alianzas'}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -260,14 +336,33 @@ export default function AlianzasList() {
                   size="sm"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={listQuery.data.page === 1 || listQuery.isFetching}
+                  className="min-w-24"
                 >
                   Anterior
                 </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, Math.ceil(listQuery.data.total / listQuery.data.pageSize)) }, (_, i) => {
+                    const pageNum = i + 1;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={listQuery.data.page === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setPage(pageNum)}
+                        disabled={listQuery.isFetching}
+                        className="w-9 h-9 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPage((p) => p + 1)}
                   disabled={listQuery.data.page >= Math.ceil(listQuery.data.total / listQuery.data.pageSize) || listQuery.isFetching}
+                  className="min-w-24"
                 >
                   Siguiente
                 </Button>
@@ -276,6 +371,7 @@ export default function AlianzasList() {
           )}
         </CardContent>
       </Card>
+
 
       {/* Diálogo de Ver Detalles */}
       <ViewAlianzaDialog alianza={viewAlianza} open={!!viewAlianza} onOpenChange={(open) => !open && setViewAlianza(null)} />
