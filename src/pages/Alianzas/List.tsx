@@ -295,45 +295,6 @@ export default function AlianzasList() {
                           </div>
                         </div>
 
-                        {/* Vigencia del Contrato */}
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Vigencia del Contrato</p>
-                          <div className="rounded-lg border border-border bg-gradient-to-br from-muted/30 to-transparent p-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <CalendarIcon className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Inicio</p>
-                                <p className="text-sm font-bold text-foreground">
-                                  {new Date(a.fechaInicio).toLocaleDateString('es-CL', { 
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    timeZone: 'America/Santiago' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="h-px bg-border" />
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                                <CalendarIcon className="h-4 w-4 text-accent" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Término</p>
-                                <p className="text-sm font-bold text-foreground">
-                                  {new Date(a.fechaTermino).toLocaleDateString('es-CL', { 
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    timeZone: 'America/Santiago' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
 
                         {/* Acciones */}
                         <div className="flex gap-2">
