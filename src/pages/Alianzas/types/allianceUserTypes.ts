@@ -5,6 +5,7 @@ export interface AllianceUser {
   id: string;
   alianzaId: string;
   name: string;
+  rut: string;
   email: string;
   phone: string;
   role: AllianceRole;
