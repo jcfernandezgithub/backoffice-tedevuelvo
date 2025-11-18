@@ -285,7 +285,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
   const form = useForm<NuevaAlianzaInput>({
     resolver: zodResolver(alianzaSchema),
     defaultValues: { 
-      nombre: '', 
+      nombre: '',
+      rut: '',
       contacto: { fono: '', email: '' }, 
       direccion: '',
       descripcion: '', 
@@ -357,16 +358,29 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              {/* Fila 1: Nombre y Descripción */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Fila 1: Nombre, RUT y Descripción */}
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="nombre"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nombre de la Alianza *</FormLabel>
+                      <FormLabel>Nombre *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre de la alianza" {...field} />
+                        <Input placeholder="Ej: Sindicato XYZ" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="rut"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RUT *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="12.345.678-9" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -663,6 +677,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               <div>
                 <span className="font-medium">Nombre:</span>
                 <p className="text-muted-foreground">{pendingData.nombre}</p>
+              </div>
+              <div>
+                <span className="font-medium">RUT:</span>
+                <p className="text-muted-foreground">{pendingData.rut}</p>
               </div>
               <div>
                 <span className="font-medium">Comisión Degravamen:</span>

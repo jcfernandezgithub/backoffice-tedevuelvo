@@ -1,11 +1,8 @@
-import { alianzasMock } from "../mocks/alianzas_v2"
 import type { Alianza } from "../types/alianzas"
 import { alianzaSchema } from "../schemas/alianzaSchema"
+import { authenticatedFetch } from "./apiClient"
 
-let data: Alianza[] = [...alianzasMock]
-
-const delay = (ms = 250) => new Promise((res) => setTimeout(res, ms))
-const idGen = () => "AL-" + Math.random().toString(36).slice(2, 8).toUpperCase()
+const API_BASE = "/partners"
 
 export const alianzasService = {
   async list(query?: {
@@ -15,65 +12,132 @@ export const alianzasService = {
     sortBy?: "nombre" | "comisionDegravamen"
     sortDir?: "asc" | "desc"
   }) {
-    await delay()
-    let rows = [...data]
-    if (query?.search) {
-      const s = query.search.toLowerCase()
-      rows = rows.filter(
-        (a) =>
-          a.nombre.toLowerCase().includes(s) ||
-          a.contacto.email?.toLowerCase().includes(s) ||
-          a.contacto.fono?.toLowerCase().includes(s)
-      )
+    try {
+      const response = await authenticatedFetch(API_BASE)
+      const partners = await response.json()
+      
+      let rows = partners.map((p: any) => ({
+        id: p._id || p.id,
+        nombre: p.name,
+        rut: p.rut,
+        contacto: {
+          email: p.contactEmail,
+          fono: p.contactPhone,
+        },
+        direccion: p.settings?.address || '',
+        descripcion: p.displayName || p.name,
+        comisionDegravamen: p.settings?.commissionRateDegravamen || 0,
+        comisionCesantia: p.settings?.commissionRateCesantia || 0,
+        activo: p.isActive !== false,
+        fechaInicio: p.createdAt,
+        fechaTermino: p.settings?.contractEndDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        logo: p.settings?.logo || '',
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }))
+
+      if (query?.search) {
+        const s = query.search.toLowerCase()
+        rows = rows.filter(
+          (a: Alianza) =>
+            a.nombre.toLowerCase().includes(s) ||
+            a.contacto.email?.toLowerCase().includes(s) ||
+            a.contacto.fono?.toLowerCase().includes(s) ||
+            a.rut?.toLowerCase().includes(s)
+        )
+      }
+      
+      if (query?.sortBy) {
+        rows.sort((a: Alianza, b: Alianza) => {
+          const dir = query.sortDir === "desc" ? -1 : 1
+          const va = query.sortBy === "nombre" ? a.nombre : a.comisionDegravamen
+          const vb = query.sortBy === "nombre" ? b.nombre : b.comisionDegravamen
+          return (va > vb ? 1 : va < vb ? -1 : 0) * dir
+        })
+      }
+      
+      const page = query?.page ?? 1
+      const pageSize = query?.pageSize ?? 10
+      const total = rows.length
+      const start = (page - 1) * pageSize
+      const items = rows.slice(start, start + pageSize)
+      return { items, total, page, pageSize }
+    } catch (error) {
+      console.error('Error fetching partners:', error)
+      return { items: [], total: 0, page: 1, pageSize: 10 }
     }
-    if (query?.sortBy) {
-      rows.sort((a, b) => {
-        const dir = query.sortDir === "desc" ? -1 : 1
-        const va = query.sortBy === "nombre" ? a.nombre : a.comisionDegravamen
-        const vb = query.sortBy === "nombre" ? b.nombre : b.comisionDegravamen
-        return (va > vb ? 1 : va < vb ? -1 : 0) * dir
-      })
-    }
-    const page = query?.page ?? 1
-    const pageSize = query?.pageSize ?? 10
-    const total = rows.length
-    const start = (page - 1) * pageSize
-    const items = rows.slice(start, start + pageSize)
-    return { items, total, page, pageSize }
   },
 
   async create(input: unknown) {
-    await delay()
     const parsed = alianzaSchema.parse(input)
-    if (data.some((a) => a.nombre.toLowerCase() === parsed.nombre.toLowerCase())) {
-      throw new Error("Ya existe una alianza con ese nombre")
+    
+    const payload = {
+      name: parsed.nombre,
+      displayName: parsed.nombre,
+      rut: parsed.rut,
+      contactEmail: parsed.contacto.email || '',
+      contactPhone: parsed.contacto.fono || '',
+      settings: {
+        commissionRateDegravamen: parsed.comisionDegravamen,
+        commissionRateCesantia: parsed.comisionCesantia,
+        address: parsed.direccion,
+        logo: parsed.logo,
+        contractStartDate: parsed.fechaInicio.toISOString(),
+        contractEndDate: parsed.fechaTermino.toISOString(),
+      }
     }
-    const now = new Date().toISOString()
-    const nuevo: Alianza = {
-      id: idGen(),
-      nombre: parsed.nombre,
-      contacto: parsed.contacto,
-      direccion: parsed.direccion,
-      descripcion: parsed.descripcion,
-      comisionDegravamen: parsed.comisionDegravamen,
-      comisionCesantia: parsed.comisionCesantia,
-      activo: parsed.activo ?? true,
-      fechaInicio: parsed.fechaInicio.toISOString(),
-      fechaTermino: parsed.fechaTermino.toISOString(),
-      logo: parsed.logo,
-      createdAt: now,
-      updatedAt: now,
+
+    try {
+      const response = await authenticatedFetch(API_BASE, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al crear la alianza')
+      }
+      
+      const created = await response.json()
+      
+      return {
+        id: created._id || created.id,
+        nombre: created.name,
+        rut: created.rut,
+        contacto: {
+          email: created.contactEmail,
+          fono: created.contactPhone,
+        },
+        direccion: created.settings?.address || '',
+        descripcion: created.displayName,
+        comisionDegravamen: created.settings?.commissionRateDegravamen || 0,
+        comisionCesantia: created.settings?.commissionRateCesantia || 0,
+        activo: created.isActive !== false,
+        fechaInicio: created.settings?.contractStartDate || created.createdAt,
+        fechaTermino: created.settings?.contractEndDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        logo: created.settings?.logo || '',
+        createdAt: created.createdAt,
+        updatedAt: created.updatedAt,
+      }
+    } catch (error: any) {
+      throw new Error(error.message || 'Error al crear la alianza')
     }
-    data.unshift(nuevo)
-    return nuevo
   },
 
   async remove(id: string) {
-    await delay()
-    const idx = data.findIndex((a) => a.id === id)
-    if (idx === -1) throw new Error("Alianza no encontrada")
-    const [removed] = data.splice(idx, 1)
-    return removed
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/${id}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al eliminar la alianza')
+      }
+      
+      return await response.json()
+    } catch (error: any) {
+      throw new Error(error.message || 'Error al eliminar la alianza')
+    }
   },
 }
-
