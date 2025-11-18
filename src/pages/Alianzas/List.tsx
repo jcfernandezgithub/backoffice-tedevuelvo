@@ -243,9 +243,6 @@ export default function AlianzasList() {
           ) : (
             <div className="text-center py-10">
               <p className="text-muted-foreground">No hay alianzas aún.</p>
-              <div className="mt-4">
-                <CreateAlianzaButton onCreate={(v) => crearMutation.mutate(v)} loading={crearMutation.isPending} />
-              </div>
             </div>
           )}
 
