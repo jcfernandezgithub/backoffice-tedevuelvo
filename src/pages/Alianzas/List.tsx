@@ -228,9 +228,14 @@ export default function AlianzasList() {
               {listQuery.data.items.map((a, index) => (
                 <Card 
                   key={a.id} 
-                  className="group relative overflow-hidden border-l-4 hover:shadow-lg transition-all duration-300 animate-fade-in"
+                  className={cn(
+                    "group relative overflow-hidden border-l-4 hover:shadow-lg transition-all duration-300 animate-fade-in",
+                    a.activo 
+                      ? "bg-gradient-to-br from-card to-card/95" 
+                      : "bg-gradient-to-br from-muted/60 to-muted/40 opacity-75 hover:opacity-85"
+                  )}
                   style={{ 
-                    borderLeftColor: a.activo ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                    borderLeftColor: a.activo ? 'hsl(var(--primary))' : 'hsl(var(--destructive))',
                     animationDelay: `${index * 50}ms`
                   }}
                 >
@@ -238,8 +243,13 @@ export default function AlianzasList() {
                     {/* Header con nombre, estado y usuarios */}
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
-                          <Building2 className="h-5 w-5 text-primary" />
+                        <div className={cn(
+                          "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0",
+                          a.activo 
+                            ? "bg-gradient-to-br from-primary/20 to-accent/20" 
+                            : "bg-gradient-to-br from-muted to-muted/50"
+                        )}>
+                          <Building2 className={cn("h-5 w-5", a.activo ? "text-primary" : "text-muted-foreground")} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-bold text-foreground mb-0.5 truncate">{a.nombre}</h3>
@@ -254,8 +264,14 @@ export default function AlianzasList() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant={a.activo ? 'default' : 'secondary'} className="text-xs">
-                          {a.activo ? '✓ Activa' : 'Inactiva'}
+                        <Badge 
+                          variant={a.activo ? 'default' : 'destructive'} 
+                          className={cn(
+                            "text-xs font-semibold",
+                            !a.activo && "bg-destructive text-destructive-foreground"
+                          )}
+                        >
+                          {a.activo ? '✓ Activa' : '✕ Inactiva'}
                         </Badge>
                         <AllianceUserCountPill alianzaId={a.id} />
                       </div>
