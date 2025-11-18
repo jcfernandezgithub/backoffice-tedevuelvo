@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye, FileText } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye, FileText, Filter, Info } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
@@ -61,6 +61,7 @@ function AllianceUserCountPill({ alianzaId }: { alianzaId: string }) {
 
 export default function AlianzasList() {
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [viewAlianza, setViewAlianza] = useState<Alianza | null>(null)
   const [editAlianza, setEditAlianza] = useState<Alianza | null>(null)
   const [page, setPage] = useState(1)
@@ -84,7 +85,14 @@ export default function AlianzasList() {
 
   useEffect(() => {
     setPage(1)
-  }, [dSearch])
+  }, [dSearch, statusFilter])
+
+  // Filter by status
+  const filteredByStatus = listQuery.data?.items.filter(a => {
+    if (statusFilter === 'active') return a.activo
+    if (statusFilter === 'inactive') return !a.activo
+    return true
+  }) || []
 
   const toggleSort = (key: 'nombre' | 'comisionDegravamen') => {
     if (sortBy !== key) {
@@ -191,29 +199,63 @@ export default function AlianzasList() {
       {/* Filtros y búsqueda */}
       <Card className="border-l-4 border-l-primary shadow-md">
         <CardHeader className="pb-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por nombre, email, teléfono o RUT..."
-                  aria-label="Buscar alianzas"
-                  className="pl-10 h-11"
-                />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1">
+                <div className="relative">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por nombre, email, teléfono o RUT..."
+                    aria-label="Buscar alianzas"
+                    className="pl-10 h-11"
+                  />
+                </div>
+              </div>
+              {listQuery.data && listQuery.data.total > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">
+                    {filteredByStatus.length} {filteredByStatus.length === 1 ? 'alianza' : 'alianzas'}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {/* Filtro de estado */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground font-medium">Estado:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                  className="h-8"
+                >
+                  Todas
+                </Button>
+                <Button
+                  variant={statusFilter === 'active' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('active')}
+                  className="h-8"
+                >
+                  Activas
+                </Button>
+                <Button
+                  variant={statusFilter === 'inactive' ? 'destructive' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('inactive')}
+                  className="h-8"
+                >
+                  Inactivas
+                </Button>
               </div>
             </div>
-            {listQuery.data && listQuery.data.total > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/5 border border-primary/20">
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">
-                  {listQuery.data.total} {listQuery.data.total === 1 ? 'alianza' : 'alianzas'}
-                </span>
-              </div>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -223,9 +265,9 @@ export default function AlianzasList() {
                 <Skeleton key={i} className="h-40 w-full rounded-xl" />
               ))}
             </div>
-          ) : listQuery.data && listQuery.data.items.length > 0 ? (
+          ) : listQuery.data && filteredByStatus.length > 0 ? (
             <div className="space-y-4">
-              {listQuery.data.items.map((a, index) => (
+              {filteredByStatus.map((a, index) => (
                 <Card 
                   key={a.id} 
                   className={cn(
@@ -240,6 +282,16 @@ export default function AlianzasList() {
                   }}
                 >
                   <CardContent className="p-5">
+                    {/* Alerta informativa para alianzas inactivas */}
+                    {!a.activo && (
+                      <Alert className="mb-4 border-destructive/50 bg-destructive/5">
+                        <Info className="h-4 w-4 text-destructive" />
+                        <AlertDescription className="text-xs text-destructive">
+                          Esta alianza está inactiva. Los usuarios asociados no podrán acceder al sistema.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* Header con nombre, estado y usuarios */}
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -428,8 +480,18 @@ export default function AlianzasList() {
               <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
                 <Building2 className="w-12 h-12 text-muted-foreground" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">No hay alianzas registradas</h3>
-              <p className="text-muted-foreground mb-6">Comienza creando tu primera alianza comercial</p>
+              <h3 className="text-lg font-semibold mb-2">
+                {statusFilter === 'active' 
+                  ? 'No hay alianzas activas' 
+                  : statusFilter === 'inactive'
+                  ? 'No hay alianzas inactivas'
+                  : 'No hay alianzas registradas'}
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                {statusFilter === 'all' 
+                  ? 'Comienza creando tu primera alianza comercial'
+                  : 'Cambia el filtro para ver otras alianzas'}
+              </p>
             </div>
           )}
 
