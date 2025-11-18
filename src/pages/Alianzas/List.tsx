@@ -181,78 +181,72 @@ export default function AlianzasList() {
                     animationDelay: `${index * 50}ms`
                   }}
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-5">
                     {/* Header con nombre, estado y usuarios */}
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <Building2 className="h-6 w-6 text-primary" />
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0">
+                          <Building2 className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-xl font-bold text-foreground mb-1 truncate">{a.nombre}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
-                            <span className="font-mono font-semibold">{a.code}</span>
-                            <span className="text-border">•</span>
+                          <h3 className="text-lg font-bold text-foreground mb-0.5 truncate">{a.nombre}</h3>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <code className="font-mono font-semibold bg-muted px-1.5 py-0.5 rounded">{a.code}</code>
+                            <span>•</span>
                             <span className="font-mono">{a.rut}</span>
                           </div>
                           {a.descripcion && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.descripcion}</p>
+                            <p className="text-xs text-muted-foreground mt-1.5 line-clamp-1">{a.descripcion}</p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant={a.activo ? 'default' : 'secondary'} className="shadow-sm">
+                        <Badge variant={a.activo ? 'default' : 'secondary'} className="text-xs">
                           {a.activo ? '✓ Activa' : 'Inactiva'}
                         </Badge>
                         <AllianceUserCountPill alianzaId={a.id} />
                       </div>
                     </div>
 
-                    {/* Grid de información */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      {/* Contacto y dirección */}
-                      <div className="space-y-2.5">
+                    {/* Información de contacto compacta */}
+                    {(a.contacto?.email || a.contacto?.fono || a.direccion) && (
+                      <div className="space-y-1.5 mb-4">
                         {a.contacto?.email && (
-                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
-                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
-                              <Mail className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="text-sm text-foreground truncate font-medium">{a.contacto.email}</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Mail className="h-3 w-3 text-primary flex-shrink-0" />
+                            <span className="text-foreground truncate">{a.contacto.email}</span>
                           </div>
                         )}
                         {a.contacto?.fono && (
-                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
-                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
-                              <Phone className="h-4 w-4 text-primary" />
-                            </div>
-                            <span className="text-sm text-foreground truncate font-medium">{a.contacto.fono}</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <Phone className="h-3 w-3 text-primary flex-shrink-0" />
+                            <span className="text-foreground">{a.contacto.fono}</span>
                           </div>
                         )}
                         {a.direccion && (
-                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
-                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
-                              <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </div>
-                            <span className="text-sm text-foreground truncate font-medium">{a.direccion}</span>
+                          <div className="flex items-center gap-2 text-xs">
+                            <svg className="h-3 w-3 text-primary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span className="text-foreground truncate">{a.direccion}</span>
                           </div>
                         )}
                       </div>
+                    )}
 
-                      {/* Vigencia */}
-                      <div className="rounded-xl border-2 border-border bg-gradient-to-br from-background to-muted/20 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <CalendarIcon className="h-4 w-4 text-primary" />
-                          </div>
+                    {/* Grid compacto de Vigencia y Comisiones */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {/* Vigencia - Compacto */}
+                      <div className="rounded-lg border bg-muted/30 p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                           <p className="text-xs font-bold text-foreground uppercase tracking-wide">Vigencia</p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Inicio</p>
-                            <p className="text-sm font-bold text-foreground">
+                            <p className="text-[10px] text-muted-foreground">Inicio</p>
+                            <p className="text-xs font-bold text-foreground">
                               {new Date(a.fechaInicio).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -263,8 +257,8 @@ export default function AlianzasList() {
                           </div>
                           <div className="h-px bg-border" />
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Término</p>
-                            <p className="text-sm font-bold text-foreground">
+                            <p className="text-[10px] text-muted-foreground">Término</p>
+                            <p className="text-xs font-bold text-foreground">
                               {new Date(a.fechaTermino).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -276,25 +270,23 @@ export default function AlianzasList() {
                         </div>
                       </div>
 
-                      {/* Comisiones */}
-                      <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
+                      {/* Comisiones - Compacto */}
+                      <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <svg className="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
                           <p className="text-xs font-bold text-foreground uppercase tracking-wide">Comisiones</p>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Degravamen</p>
-                            <p className="text-2xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
+                            <p className="text-[10px] text-muted-foreground">Degravamen</p>
+                            <p className="text-xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
                           </div>
                           <div className="h-px bg-border/50" />
                           <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Cesantía</p>
-                            <p className="text-2xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
+                            <p className="text-[10px] text-muted-foreground">Cesantía</p>
+                            <p className="text-xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
                           </div>
                         </div>
                       </div>
