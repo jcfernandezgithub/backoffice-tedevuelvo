@@ -122,17 +122,10 @@ export const allianceUsersClient = {
       email: input.email,
       phone: input.phone,
       role: input.role,
-      state: input.sendInvitation ? 'PENDING' : 'ACTIVE',
+      state: 'ACTIVE',
       createdAt: now,
       updatedAt: now,
     };
-
-    if (input.sendInvitation) {
-      newUser.invitation = {
-        status: 'PENDING',
-        sentAt: now,
-      };
-    }
 
     users.unshift(newUser);
 
@@ -141,10 +134,9 @@ export const allianceUsersClient = {
       id: `AE-${Date.now()}`,
       allianceId: alianzaId,
       userId: newUser.id,
-      type: input.sendInvitation ? 'INVITATION_SENT' : 'USER_CREATED',
+      type: 'USER_CREATED',
       at: now,
       actor: { id: 'current-admin', name: 'Admin Actual', role: 'ADMIN' },
-      note: input.sendInvitation ? 'Invitación enviada al Portal de Alianzas' : undefined,
     };
     auditEvents.unshift(auditEvent);
 

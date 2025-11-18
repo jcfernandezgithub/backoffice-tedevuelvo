@@ -21,7 +21,6 @@ export const allianceUserSchema = z.object({
   role: z.enum(['ALIANZA_ADMIN', 'ALIANZA_OPERADOR'], {
     required_error: 'Rol es requerido',
   }),
-  sendInvitation: z.boolean().default(true),
 });
 
 export const blockUserSchema = z.object({
