@@ -237,7 +237,7 @@ export default function AlianzasList() {
 
                     {/* Grid compacto de Vigencia y Comisiones */}
                     <div className="grid grid-cols-2 gap-2.5 mb-4">
-                      {/* Vigencia - Extra Compacto */}
+                      {/* Vigencia */}
                       <div className="rounded-lg border bg-muted/30 p-2.5">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <CalendarIcon className="h-3 w-3 text-primary" />
@@ -245,8 +245,8 @@ export default function AlianzasList() {
                         </div>
                         <div className="space-y-1">
                           <div>
-                            <p className="text-[9px] text-muted-foreground leading-tight">Inicio</p>
-                            <p className="text-[11px] font-bold text-foreground leading-tight">
+                            <p className="text-[10px] text-muted-foreground leading-tight">Inicio</p>
+                            <p className="text-lg font-bold text-primary leading-tight">
                               {new Date(a.fechaInicio).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -255,10 +255,10 @@ export default function AlianzasList() {
                               })}
                             </p>
                           </div>
-                          <div className="h-px bg-border/60" />
+                          <div className="h-px bg-border/40" />
                           <div>
-                            <p className="text-[9px] text-muted-foreground leading-tight">Término</p>
-                            <p className="text-[11px] font-bold text-foreground leading-tight">
+                            <p className="text-[10px] text-muted-foreground leading-tight">Término</p>
+                            <p className="text-lg font-bold text-accent leading-tight">
                               {new Date(a.fechaTermino).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -270,7 +270,7 @@ export default function AlianzasList() {
                         </div>
                       </div>
 
-                      {/* Comisiones - Extra Compacto */}
+                      {/* Comisiones */}
                       <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <svg className="h-3 w-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,12 +280,12 @@ export default function AlianzasList() {
                         </div>
                         <div className="space-y-1">
                           <div>
-                            <p className="text-[9px] text-muted-foreground leading-tight">Degravamen</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Degravamen</p>
                             <p className="text-lg font-bold text-primary leading-tight">{fmtPct(a.comisionDegravamen)}</p>
                           </div>
                           <div className="h-px bg-border/40" />
                           <div>
-                            <p className="text-[9px] text-muted-foreground leading-tight">Cesantía</p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">Cesantía</p>
                             <p className="text-lg font-bold text-accent leading-tight">{fmtPct(a.comisionCesantia)}</p>
                           </div>
                         </div>
