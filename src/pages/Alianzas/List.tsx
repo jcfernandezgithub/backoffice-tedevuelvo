@@ -182,165 +182,166 @@ export default function AlianzasList() {
                   }}
                 >
                   <CardContent className="p-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                      {/* Columna izquierda: Info principal - 8 columnas */}
-                      <div className="lg:col-span-8 space-y-3">
-                        {/* Encabezado con nombre, código y estado */}
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
-                            <Building2 className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-lg font-bold text-foreground truncate">{a.nombre}</h3>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded">{a.code}</code>
-                                  <span className="text-xs text-muted-foreground">•</span>
-                                  <span className="text-xs text-muted-foreground">{a.rut}</span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <Badge variant={a.activo ? 'default' : 'secondary'} className="font-medium">
-                                  {a.activo ? '✓ Activa' : 'Inactiva'}
-                                </Badge>
-                                <AllianceUserCountPill alianzaId={a.id} />
-                              </div>
-                            </div>
-                            {a.descripcion && (
-                              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{a.descripcion}</p>
-                            )}
-                          </div>
+                    {/* Header con nombre, estado y usuarios */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Building2 className="h-6 w-6 text-primary" />
                         </div>
-
-                        {/* Grid de información de contacto y vigencia */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {/* Información de Contacto */}
-                          <div className="space-y-2">
-                            {a.contacto.email && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                                <span className="truncate">{a.contacto.email}</span>
-                              </div>
-                            )}
-                            {a.contacto.fono && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Phone className="h-3.5 w-3.5 text-accent flex-shrink-0" />
-                                <span>{a.contacto.fono}</span>
-                              </div>
-                            )}
-                            {a.direccion && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <svg className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span className="text-muted-foreground truncate">{a.direccion}</span>
-                              </div>
-                            )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-xl font-bold text-foreground mb-1 truncate">{a.nombre}</h3>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                            <span className="font-mono font-semibold">{a.code}</span>
+                            <span className="text-border">•</span>
+                            <span className="font-mono">{a.rut}</span>
                           </div>
-
-                          {/* Vigencia del Contrato */}
-                          <div className="rounded-lg border bg-muted/30 p-2.5 space-y-1.5">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Vigencia</p>
-                            <div className="flex items-center gap-2">
-                              <CalendarIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Inicio</p>
-                                <p className="text-sm font-semibold text-foreground">
-                                  {new Date(a.fechaInicio).toLocaleDateString('es-CL', { 
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    timeZone: 'America/Santiago' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="h-px bg-border" />
-                            <div className="flex items-center gap-2">
-                              <CalendarIcon className="h-3.5 w-3.5 text-accent flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-muted-foreground">Término</p>
-                                <p className="text-sm font-semibold text-foreground">
-                                  {new Date(a.fechaTermino).toLocaleDateString('es-CL', { 
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    timeZone: 'America/Santiago' 
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
+                          {a.descripcion && (
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{a.descripcion}</p>
+                          )}
                         </div>
                       </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge variant={a.activo ? 'default' : 'secondary'} className="shadow-sm">
+                          {a.activo ? '✓ Activa' : 'Inactiva'}
+                        </Badge>
+                        <AllianceUserCountPill alianzaId={a.id} />
+                      </div>
+                    </div>
 
-                      {/* Columna derecha: Comisiones, Vigencia y Acciones */}
-                      <div className="flex flex-col gap-4 md:w-72 shrink-0">
-                        {/* Comisiones */}
+                    {/* Grid de información */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      {/* Contacto y dirección */}
+                      <div className="space-y-2.5">
+                        {a.contacto?.email && (
+                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
+                              <Mail className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-sm text-foreground truncate font-medium">{a.contacto.email}</span>
+                          </div>
+                        )}
+                        {a.contacto?.fono && (
+                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
+                              <Phone className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-sm text-foreground truncate font-medium">{a.contacto.fono}</span>
+                          </div>
+                        )}
+                        {a.direccion && (
+                          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center flex-shrink-0">
+                              <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <span className="text-sm text-foreground truncate font-medium">{a.direccion}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Vigencia */}
+                      <div className="rounded-xl border-2 border-border bg-gradient-to-br from-background to-muted/20 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <CalendarIcon className="h-4 w-4 text-primary" />
+                          </div>
+                          <p className="text-xs font-bold text-foreground uppercase tracking-wide">Vigencia</p>
+                        </div>
                         <div className="space-y-2">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comisiones</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="relative overflow-hidden rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
-                              <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-full -mr-8 -mt-8" />
-                              <p className="text-xs text-primary font-medium mb-1">Degravamen</p>
-                              <p className="text-2xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
-                            </div>
-                            <div className="relative overflow-hidden rounded-lg border border-accent/20 bg-gradient-to-br from-accent/5 to-transparent p-3">
-                              <div className="absolute top-0 right-0 w-16 h-16 bg-accent/10 rounded-full -mr-8 -mt-8" />
-                              <p className="text-xs text-accent font-medium mb-1">Cesantía</p>
-                              <p className="text-2xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
-                            </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Inicio</p>
+                            <p className="text-sm font-bold text-foreground">
+                              {new Date(a.fechaInicio).toLocaleDateString('es-CL', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                timeZone: 'America/Santiago'
+                              })}
+                            </p>
+                          </div>
+                          <div className="h-px bg-border" />
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Término</p>
+                            <p className="text-sm font-bold text-foreground">
+                              {new Date(a.fechaTermino).toLocaleDateString('es-CL', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                timeZone: 'America/Santiago'
+                              })}
+                            </p>
                           </div>
                         </div>
-
-
-                        {/* Acciones */}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setViewAlianza(a)}
-                            className="flex-1 hover:bg-primary/5 hover:border-primary/30"
-                          >
-                            <Eye className="h-4 w-4 mr-1.5" />
-                            Ver
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditAlianza(a)}
-                            className="flex-1 hover:bg-accent/5 hover:border-accent/30"
-                          >
-                            <Pencil className="h-4 w-4 mr-1.5" />
-                            Editar
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className="px-2">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuItem asChild>
-                                <Link to={`/alianzas/${a.id}#usuarios`} className="flex items-center">
-                                  <Users className="mr-2 h-4 w-4" />
-                                  Gestionar usuarios
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => removeMutation.mutate(a.id)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Eliminar alianza
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
                       </div>
+
+                      {/* Comisiones */}
+                      <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <p className="text-xs font-bold text-foreground uppercase tracking-wide">Comisiones</p>
+                        </div>
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Degravamen</p>
+                            <p className="text-2xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
+                          </div>
+                          <div className="h-px bg-border/50" />
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-0.5">Cesantía</p>
+                            <p className="text-2xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
+                          </div>
+                        </div>
+                    </div>
+
+                    {/* Botones de acción */}
+                    <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewAlianza(a)}
+                        className="flex-1 hover:bg-primary/5 hover:border-primary/30"
+                      >
+                        <Eye className="h-4 w-4 mr-1.5" />
+                        Ver
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditAlianza(a)}
+                        className="flex-1 hover:bg-accent/5 hover:border-accent/30"
+                      >
+                        <Pencil className="h-4 w-4 mr-1.5" />
+                        Editar
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className="px-2">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/alianzas/${a.id}#usuarios`} className="flex items-center">
+                              <Users className="mr-2 h-4 w-4" />
+                              Gestionar usuarios
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => removeMutation.mutate(a.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar alianza
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>
