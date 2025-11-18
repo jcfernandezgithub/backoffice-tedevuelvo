@@ -1705,54 +1705,154 @@ function EditAlianzaDialog({
 
       {/* Diálogo de confirmación */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Actualización de Alianza</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-primary-foreground" />
+              </div>
+              Confirmar Actualización de Alianza
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
               Se actualizará la alianza con los siguientes datos:
             </AlertDialogDescription>
           </AlertDialogHeader>
           
           {pendingData && (
-            <div className="space-y-2 my-4 p-4 rounded-lg bg-muted/50 border">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="font-medium">Nombre:</span>
-                  <p className="text-muted-foreground">{pendingData.nombre}</p>
-                </div>
-                <div>
-                  <span className="font-medium">Código:</span>
-                  <p className="text-muted-foreground">{pendingData.code}</p>
-                </div>
-                <div>
-                  <span className="font-medium">RUT:</span>
-                  <p className="text-muted-foreground">{pendingData.rut}</p>
-                </div>
-                <div>
-                  <span className="font-medium">Comisión Degravamen:</span>
-                  <p className="text-muted-foreground">{pendingData.comisionDegravamen}%</p>
-                </div>
-                <div>
-                  <span className="font-medium">Comisión Cesantía:</span>
-                  <p className="text-muted-foreground">{pendingData.comisionCesantia}%</p>
-                </div>
-                {pendingData.contacto.email && (
-                  <div>
-                    <span className="font-medium">Email:</span>
-                    <p className="text-muted-foreground">{pendingData.contacto.email}</p>
+            <div className="space-y-4 my-2">
+              {/* Información Principal */}
+              <div className="rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-primary" />
                   </div>
-                )}
-                {pendingData.contacto.fono && (
-                  <div>
-                    <span className="font-medium">Teléfono:</span>
-                    <p className="text-muted-foreground">{pendingData.contacto.fono}</p>
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Información Principal</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Nombre</p>
+                    <p className="text-sm font-bold text-foreground">{pendingData.nombre}</p>
                   </div>
-                )}
-                <div>
-                  <span className="font-medium">Estado:</span>
-                  <p className="text-muted-foreground">{pendingData.activo ? 'Activa' : 'Inactiva'}</p>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Código</p>
+                    <p className="text-sm font-bold font-mono text-foreground">{pendingData.code}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">RUT</p>
+                    <p className="text-sm font-bold font-mono text-foreground">{pendingData.rut}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Estado</p>
+                    <Badge variant={pendingData.activo ? 'default' : 'secondary'} className="w-fit">
+                      {pendingData.activo ? '✓ Activa' : 'Inactiva'}
+                    </Badge>
+                  </div>
                 </div>
               </div>
+
+              {/* Comisiones */}
+              <div className="rounded-xl border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-transparent p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <svg className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Comisiones</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Degravamen</p>
+                    <p className="text-2xl font-bold text-primary">{pendingData.comisionDegravamen}%</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cesantía</p>
+                    <p className="text-2xl font-bold text-accent">{pendingData.comisionCesantia}%</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contacto y Dirección */}
+              {(pendingData.contacto.email || pendingData.contacto.fono || pendingData.direccion) && (
+                <div className="rounded-xl border-2 border-border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-foreground" />
+                    </div>
+                    <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Contacto</h3>
+                  </div>
+                  <div className="space-y-2">
+                    {pendingData.contacto.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-sm text-foreground">{pendingData.contacto.email}</span>
+                      </div>
+                    )}
+                    {pendingData.contacto.fono && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-sm text-foreground">{pendingData.contacto.fono}</span>
+                      </div>
+                    )}
+                    {pendingData.direccion && (
+                      <div className="flex items-center gap-2">
+                        <svg className="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="text-sm text-foreground">{pendingData.direccion}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Vigencia del Contrato */}
+              <div className="rounded-xl border-2 border-border bg-gradient-to-br from-background to-muted/10 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                  </div>
+                  <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Vigencia del Contrato</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Fecha de Inicio</p>
+                    <p className="text-sm font-bold text-foreground">
+                      {pendingData.fechaInicio.toLocaleDateString('es-CL', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Fecha de Término</p>
+                    <p className="text-sm font-bold text-foreground">
+                      {pendingData.fechaTermino.toLocaleDateString('es-CL', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Descripción */}
+              {pendingData.descripcion && (
+                <div className="rounded-xl border-2 border-border bg-muted/10 p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center">
+                      <svg className="h-4 w-4 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                      </svg>
+                    </div>
+                    <h3 className="font-bold text-sm uppercase tracking-wide text-foreground">Descripción</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{pendingData.descripcion}</p>
+                </div>
+              )}
             </div>
           )}
           
