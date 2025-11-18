@@ -21,7 +21,6 @@ export const alianzaSchema = z.object({
   activo: z.boolean().default(true),
   fechaInicio: z.date({ required_error: 'Fecha de inicio es requerida' }),
   fechaTermino: z.date({ required_error: 'Fecha de término es requerida' }),
-  logo: z.string().optional(),
 }).refine((data) => data.fechaTermino > data.fechaInicio, {
   message: 'La fecha de término debe ser posterior a la fecha de inicio',
   path: ['fechaTermino'],
