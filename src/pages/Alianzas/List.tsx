@@ -283,6 +283,7 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     resolver: zodResolver(alianzaSchema),
     defaultValues: { 
       nombre: '',
+      code: '',
       rut: '',
       contacto: { fono: '', email: '' }, 
       direccion: '',
@@ -290,6 +291,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
       comisionDegravamen: 0, 
       comisionCesantia: 0,
       activo: true,
+      fechaInicio: new Date(),
+      fechaTermino: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       logo: '' 
     },
     mode: 'onSubmit',
@@ -355,8 +358,8 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              {/* Fila 1: Nombre, RUT y Descripción */}
-              <div className="grid grid-cols-3 gap-4">
+              {/* Información Básica */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="nombre"
@@ -365,6 +368,19 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                       <FormLabel>Nombre *</FormLabel>
                       <FormControl>
                         <Input placeholder="Ej: Sindicato XYZ" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ej: SIN-001" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -383,23 +399,23 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="descripcion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descripción</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Información relevante sobre la alianza"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
+              <FormField
+                control={form.control}
+                name="descripcion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Información relevante sobre la alianza"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Fila 2: Comisiones */}
               <div className="grid grid-cols-2 gap-4">
@@ -674,6 +690,10 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
               <div>
                 <span className="font-medium">Nombre:</span>
                 <p className="text-muted-foreground">{pendingData.nombre}</p>
+              </div>
+              <div>
+                <span className="font-medium">Código:</span>
+                <p className="text-muted-foreground">{pendingData.code}</p>
               </div>
               <div>
                 <span className="font-medium">RUT:</span>

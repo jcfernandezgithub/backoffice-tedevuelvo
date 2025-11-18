@@ -73,18 +73,17 @@ export const alianzasService = {
     
     const payload = {
       name: parsed.nombre,
-      displayName: parsed.nombre,
+      code: parsed.code,
+      status: parsed.activo ? 'ACTIVE' : 'INACTIVE',
       rut: parsed.rut,
-      contactEmail: parsed.contacto.email || '',
-      contactPhone: parsed.contacto.fono || '',
-      settings: {
-        commissionRateDegravamen: parsed.comisionDegravamen,
-        commissionRateCesantia: parsed.comisionCesantia,
-        address: parsed.direccion,
-        logo: parsed.logo,
-        contractStartDate: parsed.fechaInicio.toISOString(),
-        contractEndDate: parsed.fechaTermino.toISOString(),
-      }
+      descripcion: parsed.descripcion,
+      degravamen: parsed.comisionDegravamen,
+      cesantia: parsed.comisionCesantia,
+      telefono: parsed.contacto.fono || undefined,
+      direccion: parsed.direccion || undefined,
+      inicioVigencia: parsed.fechaInicio.toISOString(),
+      terminoVigencia: parsed.fechaTermino.toISOString(),
+      contactEmail: parsed.contacto.email || undefined,
     }
 
     try {
