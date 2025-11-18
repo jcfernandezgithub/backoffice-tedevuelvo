@@ -710,35 +710,49 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Inicio *</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Seleccionar fecha</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                value={field.value ? format(field.value, "dd/MM/yyyy") : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Intentar parsear la fecha en formato dd/mm/yyyy
+                                  const parts = value.split('/');
+                                  if (parts.length === 3) {
+                                    const [day, month, year] = parts;
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    if (!isNaN(date.getTime())) {
+                                      field.onChange(date);
+                                    }
+                                  }
+                                }}
+                                className="flex-1"
                               />
-                            </PopoverContent>
-                          </Popover>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0"
+                                    type="button"
+                                  >
+                                    <CalendarIcon className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -749,35 +763,49 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Término *</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Seleccionar fecha</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                value={field.value ? format(field.value, "dd/MM/yyyy") : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Intentar parsear la fecha en formato dd/mm/yyyy
+                                  const parts = value.split('/');
+                                  if (parts.length === 3) {
+                                    const [day, month, year] = parts;
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    if (!isNaN(date.getTime())) {
+                                      field.onChange(date);
+                                    }
+                                  }
+                                }}
+                                className="flex-1"
                               />
-                            </PopoverContent>
-                          </Popover>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0"
+                                    type="button"
+                                  >
+                                    <CalendarIcon className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1501,35 +1529,49 @@ function EditAlianzaDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Inicio *</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Seleccionar fecha</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                value={field.value ? format(field.value, "dd/MM/yyyy") : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Intentar parsear la fecha en formato dd/mm/yyyy
+                                  const parts = value.split('/');
+                                  if (parts.length === 3) {
+                                    const [day, month, year] = parts;
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    if (!isNaN(date.getTime())) {
+                                      field.onChange(date);
+                                    }
+                                  }
+                                }}
+                                className="flex-1"
                               />
-                            </PopoverContent>
-                          </Popover>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0"
+                                    type="button"
+                                  >
+                                    <CalendarIcon className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1540,35 +1582,49 @@ function EditAlianzaDialog({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Término *</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "dd/MM/yyyy")
-                                  ) : (
-                                    <span>Seleccionar fecha</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                                className={cn("p-3 pointer-events-auto")}
+                          <FormControl>
+                            <div className="flex gap-2">
+                              <Input
+                                type="text"
+                                placeholder="dd/mm/aaaa"
+                                value={field.value ? format(field.value, "dd/MM/yyyy") : ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Intentar parsear la fecha en formato dd/mm/yyyy
+                                  const parts = value.split('/');
+                                  if (parts.length === 3) {
+                                    const [day, month, year] = parts;
+                                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                                    if (!isNaN(date.getTime())) {
+                                      field.onChange(date);
+                                    }
+                                  }
+                                }}
+                                className="flex-1"
                               />
-                            </PopoverContent>
-                          </Popover>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0"
+                                    type="button"
+                                  >
+                                    <CalendarIcon className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={field.onChange}
+                                    initialFocus
+                                    className={cn("p-3 pointer-events-auto")}
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
