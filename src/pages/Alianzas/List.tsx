@@ -236,17 +236,17 @@ export default function AlianzasList() {
                     )}
 
                     {/* Grid compacto de Vigencia y Comisiones */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {/* Vigencia - Compacto */}
-                      <div className="rounded-lg border bg-muted/30 p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                          <p className="text-xs font-bold text-foreground uppercase tracking-wide">Vigencia</p>
+                    <div className="grid grid-cols-2 gap-2.5 mb-4">
+                      {/* Vigencia - Extra Compacto */}
+                      <div className="rounded-lg border bg-muted/30 p-2.5">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <CalendarIcon className="h-3 w-3 text-primary" />
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-wide">Vigencia</p>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Inicio</p>
-                            <p className="text-xs font-bold text-foreground">
+                            <p className="text-[9px] text-muted-foreground leading-tight">Inicio</p>
+                            <p className="text-[11px] font-bold text-foreground leading-tight">
                               {new Date(a.fechaInicio).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -255,10 +255,10 @@ export default function AlianzasList() {
                               })}
                             </p>
                           </div>
-                          <div className="h-px bg-border" />
+                          <div className="h-px bg-border/60" />
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Término</p>
-                            <p className="text-xs font-bold text-foreground">
+                            <p className="text-[9px] text-muted-foreground leading-tight">Término</p>
+                            <p className="text-[11px] font-bold text-foreground leading-tight">
                               {new Date(a.fechaTermino).toLocaleDateString('es-CL', {
                                 day: '2-digit',
                                 month: 'short',
@@ -270,23 +270,23 @@ export default function AlianzasList() {
                         </div>
                       </div>
 
-                      {/* Comisiones - Compacto */}
-                      <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-3">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <svg className="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {/* Comisiones - Extra Compacto */}
+                      <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-2.5">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <svg className="h-3 w-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <p className="text-xs font-bold text-foreground uppercase tracking-wide">Comisiones</p>
+                          <p className="text-[10px] font-bold text-foreground uppercase tracking-wide">Comisiones</p>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1">
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Degravamen</p>
-                            <p className="text-xl font-bold text-primary">{fmtPct(a.comisionDegravamen)}</p>
+                            <p className="text-[9px] text-muted-foreground leading-tight">Degravamen</p>
+                            <p className="text-lg font-bold text-primary leading-tight">{fmtPct(a.comisionDegravamen)}</p>
                           </div>
-                          <div className="h-px bg-border/50" />
+                          <div className="h-px bg-border/40" />
                           <div>
-                            <p className="text-[10px] text-muted-foreground">Cesantía</p>
-                            <p className="text-xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
+                            <p className="text-[9px] text-muted-foreground leading-tight">Cesantía</p>
+                            <p className="text-lg font-bold text-accent leading-tight">{fmtPct(a.comisionCesantia)}</p>
                           </div>
                         </div>
                       </div>
