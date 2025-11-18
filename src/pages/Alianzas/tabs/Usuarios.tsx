@@ -18,30 +18,19 @@ import {
 } from '../hooks/useAllianceUsers';
 import type { AllianceUserListParams } from '../types/allianceUserTypes';
 
+import type { Alianza } from '@/types/alianzas';
+
 interface UsuariosTabProps {
   alianceName: string;
+  alianzaData: Alianza;
 }
 
-export function UsuariosTab({ alianceName }: UsuariosTabProps) {
+export function UsuariosTab({ alianceName, alianzaData }: UsuariosTabProps) {
   const { id: alianzaId } = useParams<{ id: string }>();
   const [params, setParams] = useState<AllianceUserListParams>({
     page: 1,
     pageSize: 10,
   });
-
-  // Mock alliance data - in real app this would come from API
-  const alianza = {
-    id: alianzaId,
-    nombre: alianzaId === 'AL-001' ? 'Sindicato Financiero Andes' : 'Broker Pacífico',
-    descripcion: alianzaId === 'AL-001' ? 'Alianza estratégica con sindicato del sector financiero' : 'Broker especializado en seguros comerciales',
-    contacto: { email: 'contacto@alianza.cl', fono: '+56 2 2345 6789' },
-    direccion: 'Av. Apoquindo 1234, Las Condes',
-    comisionDegravamen: 12.5,
-    comisionCesantia: 25,
-    activo: true,
-    fechaInicio: new Date('2024-01-01'),
-    fechaTermino: new Date('2025-12-31'),
-  };
 
   const { data, isLoading } = useAllianceUsers(alianzaId!, params);
   const createMutation = useCreateAllianceUser(alianzaId!);
@@ -89,17 +78,17 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
                 <Building2 className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">{alianza.nombre}</h2>
-                {alianza.descripcion && (
-                  <p className="text-sm text-muted-foreground mt-1">{alianza.descripcion}</p>
+                <h2 className="text-2xl font-bold text-foreground">{alianzaData.nombre}</h2>
+                {alianzaData.descripcion && (
+                  <p className="text-sm text-muted-foreground mt-1">{alianzaData.descripcion}</p>
                 )}
               </div>
             </div>
             <Badge 
-              variant={alianza.activo ? 'default' : 'destructive'} 
+              variant={alianzaData.activo ? 'default' : 'destructive'} 
               className="text-sm px-3 py-1"
             >
-              {alianza.activo ? '✓ Activa' : '✕ Inactiva'}
+              {alianzaData.activo ? '✓ Activa' : '✕ Inactiva'}
             </Badge>
           </div>
 
@@ -111,7 +100,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <Mail className="h-5 w-5 text-primary mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</p>
-                <p className="text-sm font-medium text-foreground truncate">{alianza.contacto.email}</p>
+                <p className="text-sm font-medium text-foreground truncate">{alianzaData.contacto.email || 'N/A'}</p>
               </div>
             </div>
 
@@ -119,7 +108,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <Phone className="h-5 w-5 text-primary mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Teléfono</p>
-                <p className="text-sm font-medium text-foreground">{alianza.contacto.fono}</p>
+                <p className="text-sm font-medium text-foreground">{alianzaData.contacto.fono || 'N/A'}</p>
               </div>
             </div>
 
@@ -127,7 +116,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <MapPin className="h-5 w-5 text-primary mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Dirección</p>
-                <p className="text-sm font-medium text-foreground">{alianza.direccion}</p>
+                <p className="text-sm font-medium text-foreground">{alianzaData.direccion || 'N/A'}</p>
               </div>
             </div>
 
@@ -135,7 +124,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <Percent className="h-5 w-5 text-accent mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Comisión Degravamen</p>
-                <p className="text-sm font-bold text-accent">{alianza.comisionDegravamen}%</p>
+                <p className="text-sm font-bold text-accent">{alianzaData.comisionDegravamen}%</p>
               </div>
             </div>
 
@@ -143,7 +132,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <Percent className="h-5 w-5 text-accent mt-0.5 shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Comisión Cesantía</p>
-                <p className="text-sm font-bold text-accent">{alianza.comisionCesantia}%</p>
+                <p className="text-sm font-bold text-accent">{alianzaData.comisionCesantia}%</p>
               </div>
             </div>
 
@@ -152,7 +141,7 @@ export function UsuariosTab({ alianceName }: UsuariosTabProps) {
               <div className="min-w-0">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Vigencia</p>
                 <p className="text-sm font-medium text-foreground">
-                  {new Date(alianza.fechaInicio).toLocaleDateString('es-CL')} - {new Date(alianza.fechaTermino).toLocaleDateString('es-CL')}
+                  {new Date(alianzaData.fechaInicio).toLocaleDateString('es-CL')} - {new Date(alianzaData.fechaTermino).toLocaleDateString('es-CL')}
                 </p>
               </div>
             </div>
