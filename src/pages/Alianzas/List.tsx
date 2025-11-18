@@ -770,141 +770,249 @@ function ViewAlianzaDialog({ alianza, open, onOpenChange }: { alianza: Alianza |
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Detalles de la Alianza</DialogTitle>
-          <DialogDescription>Información completa de la alianza comercial</DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          {/* Logo y Estado */}
-          {alianza.logo && (
-            <div className="flex justify-center">
-              <div className="w-32 h-32 rounded border border-border overflow-hidden bg-muted flex items-center justify-center">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4 border-b">
+          <div className="flex items-start gap-4">
+            {alianza.logo ? (
+              <div className="w-16 h-16 rounded-lg border-2 border-primary/20 overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center flex-shrink-0">
                 <img 
                   src={alianza.logo} 
                   alt={`Logo ${alianza.nombre}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-1"
                 />
               </div>
-            </div>
-          )}
-
-          {/* Información Básica */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información Básica</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Nombre</label>
-                <p className="text-sm mt-1">{alianza.nombre}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Código</label>
-                <p className="text-sm mt-1">{alianza.code}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">RUT</label>
-                <p className="text-sm mt-1">{alianza.rut}</p>
-              </div>
-            </div>
-            {alianza.descripcion && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Descripción</label>
-                <p className="text-sm mt-1">{alianza.descripcion}</p>
+            ) : (
+              <div className="w-16 h-16 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
+                <Building2 className="w-8 h-8 text-primary" />
               </div>
             )}
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-2xl font-bold text-foreground">{alianza.nombre}</DialogTitle>
+              <DialogDescription className="text-base mt-1 flex items-center gap-2">
+                <span className="font-mono text-muted-foreground">{alianza.code}</span>
+                <span className="text-muted-foreground">•</span>
+                <Badge variant={alianza.activo ? 'default' : 'secondary'} className="font-medium">
+                  {alianza.activo ? 'Activa' : 'Inactiva'}
+                </Badge>
+              </DialogDescription>
+            </div>
           </div>
-
-          <Separator />
+        </DialogHeader>
+        
+        <div className="space-y-6 py-4">
+          {/* Información Básica */}
+          <Card className="border-l-4 border-l-primary shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-4 w-4 text-primary" />
+                </div>
+                Información Básica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre Comercial</label>
+                  <p className="text-sm font-medium text-foreground">{alianza.nombre}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código</label>
+                  <p className="text-sm font-mono font-medium text-foreground bg-muted/50 px-2 py-1 rounded inline-block">{alianza.code}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">RUT</label>
+                  <p className="text-sm font-medium text-foreground">{alianza.rut}</p>
+                </div>
+              </div>
+              {alianza.descripcion && (
+                <div className="space-y-1 pt-2 border-t">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Descripción</label>
+                  <p className="text-sm text-foreground leading-relaxed">{alianza.descripcion}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Comisiones */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Comisiones</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg">
-                <label className="text-sm font-medium text-muted-foreground">Seguro de Degravamen</label>
-                <p className="text-2xl font-bold mt-2">{fmtPct(alianza.comisionDegravamen)}</p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <label className="text-sm font-medium text-muted-foreground">Seguro de Cesantía</label>
-                <p className="text-2xl font-bold mt-2">{fmtPct(alianza.comisionCesantia)}</p>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Información de Contacto */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información de Contacto</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {alianza.contacto.email && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </label>
-                  <p className="text-sm mt-1">{alianza.contacto.email}</p>
+          <Card className="border-l-4 border-l-accent shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <svg className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-              )}
-              {alianza.contacto.fono && (
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-                    <Phone className="h-4 w-4" />
-                    Teléfono
-                  </label>
-                  <p className="text-sm mt-1">{alianza.contacto.fono}</p>
+                Estructura de Comisiones
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="relative overflow-hidden rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent p-6">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full -mr-12 -mt-12" />
+                  <label className="text-xs font-semibold text-primary uppercase tracking-wide block mb-2">Seguro de Degravamen</label>
+                  <p className="text-4xl font-bold text-primary">{fmtPct(alianza.comisionDegravamen)}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Comisión por producto</p>
                 </div>
-              )}
-            </div>
-            {alianza.direccion && (
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Dirección</label>
-                <p className="text-sm mt-1">{alianza.direccion}</p>
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Vigencia */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Vigencia del Contrato</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Inicio</label>
-                <p className="text-sm mt-1">{new Date(alianza.fechaInicio).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Término</label>
-                <p className="text-sm mt-1">{new Date(alianza.fechaTermino).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Estado</label>
-                <div className="mt-1">
-                  <Badge variant={alianza.activo ? 'default' : 'secondary'}>
-                    {alianza.activo ? 'Activo' : 'Inactivo'}
-                  </Badge>
+                <div className="relative overflow-hidden rounded-xl border-2 border-accent/20 bg-gradient-to-br from-accent/5 via-accent/3 to-transparent p-6">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-accent/10 rounded-full -mr-12 -mt-12" />
+                  <label className="text-xs font-semibold text-accent uppercase tracking-wide block mb-2">Seguro de Cesantía</label>
+                  <p className="text-4xl font-bold text-accent">{fmtPct(alianza.comisionCesantia)}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Comisión por producto</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <Separator />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información de Contacto */}
+            <Card className="border-l-4 border-l-primary shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-primary" />
+                  </div>
+                  Contacto
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {alianza.contacto.email ? (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Email</label>
+                      <p className="text-sm font-medium text-foreground break-all">{alianza.contacto.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">Sin email registrado</p>
+                  </div>
+                )}
+                {alianza.contacto.fono ? (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Phone className="h-4 w-4 text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Teléfono</label>
+                      <p className="text-sm font-medium text-foreground">{alianza.contacto.fono}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-muted/30 text-center">
+                    <p className="text-xs text-muted-foreground">Sin teléfono registrado</p>
+                  </div>
+                )}
+                {alianza.direccion && (
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">Dirección</label>
+                      <p className="text-sm font-medium text-foreground">{alianza.direccion}</p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Vigencia del Contrato */}
+            <Card className="border-l-4 border-l-accent shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <CalendarIcon className="h-4 w-4 text-accent" />
+                  </div>
+                  Vigencia del Contrato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary/5 to-transparent border border-primary/20">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <CalendarIcon className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="text-xs font-semibold text-primary uppercase tracking-wide block">Fecha de Inicio</label>
+                    <p className="text-base font-bold text-foreground mt-0.5">
+                      {new Date(alianza.fechaInicio).toLocaleDateString('es-CL', { 
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'America/Santiago' 
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-accent/5 to-transparent border border-accent/20">
+                  <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+                    <CalendarIcon className="h-5 w-5 text-accent-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="text-xs font-semibold text-accent uppercase tracking-wide block">Fecha de Término</label>
+                    <p className="text-base font-bold text-foreground mt-0.5">
+                      {new Date(alianza.fechaTermino).toLocaleDateString('es-CL', { 
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        timeZone: 'America/Santiago' 
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Metadatos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
-            <div>
-              <span className="font-medium">Creado:</span> {new Date(alianza.createdAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
-            </div>
-            <div>
-              <span className="font-medium">Actualizado:</span> {new Date(alianza.updatedAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
-            </div>
-          </div>
+          <Card className="bg-muted/30 border-dashed">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <svg className="h-3 w-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground">Creado:</span>
+                    <span className="ml-1 text-foreground font-medium">
+                      {new Date(alianza.createdAt).toLocaleString('es-CL', { 
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                        timeZone: 'America/Santiago' 
+                      })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-accent/10 flex items-center justify-center flex-shrink-0">
+                    <Pencil className="h-3 w-3 text-accent" />
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground">Actualizado:</span>
+                    <span className="ml-1 text-foreground font-medium">
+                      {new Date(alianza.updatedAt).toLocaleString('es-CL', { 
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                        timeZone: 'America/Santiago' 
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="border-t pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="min-w-32">
             Cerrar
           </Button>
         </DialogFooter>
