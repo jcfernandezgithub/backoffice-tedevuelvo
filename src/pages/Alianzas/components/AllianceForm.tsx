@@ -79,7 +79,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
             <Plus className="h-4 w-4" /> Crear Alianza
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[98vw] lg:max-w-[90vw] max-h-[92vh] overflow-hidden flex flex-col p-0" aria-describedby="form-desc">
+        <DialogContent className="max-w-[98vw] lg:max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col p-0" aria-describedby="form-desc">
           <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -99,7 +99,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                   {/* Columna Izquierda */}
                   <div className="space-y-4">
                     {/* Información Básica */}
-                    <Card className="border-l-4 border-l-primary h-[280px] flex flex-col">
+                    <Card className="border-l-4 border-l-primary min-h-[320px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -108,7 +108,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Información Básica
                       </CardTitle>
                     </CardHeader>
-                      <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1">
                       <div className="grid grid-cols-2 gap-3">
                         <FormField
                           control={form.control}
@@ -167,7 +167,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                   </Card>
 
                   {/* Comisiones */}
-                  <Card className="border-l-4 border-l-accent h-[280px] flex flex-col">
+                  <Card className="border-l-4 border-l-accent min-h-[320px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -176,7 +176,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Comisiones por Producto
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1">
                       <FormField
                         control={form.control}
                         name="comisionDegravamen"
@@ -246,7 +246,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                 {/* Columna Derecha */}
                 <div className="space-y-4">
                   {/* Datos de Contacto */}
-                  <Card className="border-l-4 border-l-blue-500 h-[280px] flex flex-col">
+                  <Card className="border-l-4 border-l-blue-500 min-h-[320px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -255,7 +255,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Datos de Contacto
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1">
                       <FormField
                         control={form.control}
                         name="contacto.email"
@@ -299,7 +299,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                   </Card>
 
                   {/* Vigencia del Contrato */}
-                  <Card className="border-l-4 border-l-purple-500 h-[280px] flex flex-col">
+                  <Card className="border-l-4 border-l-purple-500 min-h-[320px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -308,7 +308,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Vigencia del Contrato
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1">
                       <FormField
                         control={form.control}
                         name="fechaInicio"
