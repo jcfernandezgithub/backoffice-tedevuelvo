@@ -11,8 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Select, 
   SelectContent, 
@@ -28,7 +26,9 @@ import {
   FormLabel, 
   FormMessage 
 } from '@/components/ui/form';
-import { Loader2, UserPlus, Mail } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Loader2, UserPlus, Mail, Phone, Shield } from 'lucide-react';
 import { allianceUserSchema, type AllianceUserInput } from '../schemas/allianceUserSchema';
 import type { AllianceUser } from '../types/allianceUserTypes';
 
@@ -58,7 +58,6 @@ export function AllianceUserForm({
       email: user?.email || '',
       phone: user?.phone || '',
       role: user?.role || 'ALIANZA_OPERADOR',
-      sendInvitation: !isEditing,
     },
   });
 
@@ -72,10 +71,12 @@ export function AllianceUserForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <UserPlus className="h-5 w-5 text-primary" />
+            </div>
             {title || (isEditing ? 'Editar Usuario' : 'Nuevo Usuario de Alianza')}
           </DialogTitle>
           <DialogDescription>
@@ -87,144 +88,156 @@ export function AllianceUserForm({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre completo</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Ej: Juan Pérez García" 
-                      {...field}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email"
-                      placeholder="usuario@alianza.com" 
-                      {...field}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Teléfono</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="+56 9 1234 5678" 
-                      {...field}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="role"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rol en la alianza</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un rol" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ALIANZA_ADMIN">
-                        <div className="flex flex-col">
-                          <span className="font-medium">Administrador</span>
-                          <span className="text-sm text-muted-foreground">
-                            Gestión completa de solicitudes y usuarios
-                          </span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="ALIANZA_OPERADOR">
-                        <div className="flex flex-col">
-                          <span className="font-medium">Operador</span>
-                          <span className="text-sm text-muted-foreground">
-                            Gestión de solicitudes únicamente
-                          </span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {!isEditing && (
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Información Personal */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <UserPlus className="h-4 w-4" />
+                <span>Información Personal</span>
+              </div>
+              
               <FormField
                 control={form.control}
-                name="sendInvitation"
+                name="name"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Nombre completo</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input 
+                        placeholder="Ej: Juan Pérez García" 
+                        {...field}
                         disabled={loading}
+                        className="h-11"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Enviar invitación por correo
-                      </FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        El usuario recibirá un email para activar su cuenta en el Portal de Alianzas.
-                        Si no está marcado, el usuario se creará como activo.
-                      </p>
-                    </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
-
-            <div className="bg-muted/50 p-3 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>Acceso:</strong> Portal de Alianzas únicamente
-                <br />
-                Los usuarios de alianza no pueden acceder al backoffice.
-              </p>
             </div>
 
-            <DialogFooter>
+            <Separator />
+
+            {/* Datos de Contacto */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                <span>Datos de Contacto</span>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="usuario@alianza.com" 
+                        {...field}
+                        disabled={loading}
+                        className="h-11"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Teléfono</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="+56 9 1234 5678" 
+                          {...field}
+                          disabled={loading}
+                          className="h-11 pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Permisos y Acceso */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Shield className="h-4 w-4" />
+                <span>Permisos y Acceso</span>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Rol en la alianza</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                      <FormControl>
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Selecciona un rol" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ALIANZA_ADMIN">
+                          <div className="flex flex-col py-1">
+                            <span className="font-medium">Administrador</span>
+                            <span className="text-xs text-muted-foreground">
+                              Gestión completa de solicitudes y usuarios
+                            </span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="ALIANZA_OPERADOR">
+                          <div className="flex flex-col py-1">
+                            <span className="font-medium">Operador</span>
+                            <span className="text-xs text-muted-foreground">
+                              Gestión de solicitudes únicamente
+                            </span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Alert className="border-primary/20 bg-primary/5">
+                <Mail className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-sm">
+                  El usuario recibirá un correo de bienvenida con instrucciones para acceder al Portal de Alianzas.
+                </AlertDescription>
+              </Alert>
+
+              <Alert>
+                <AlertDescription className="text-xs text-muted-foreground">
+                  <strong>Acceso:</strong> Portal de Alianzas únicamente. Los usuarios de alianza no pueden acceder al backoffice.
+                </AlertDescription>
+              </Alert>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
+                className="h-11"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} className="h-11">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Guardar cambios' : 'Crear usuario'}
               </Button>
