@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Pencil, Building2, DollarSign, Mail, CalendarIcon, AlertTriangle, Info } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { Alianza } from '@/types/alianzas'
@@ -382,6 +383,29 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
                                   </Popover>
                                 </div>
                               </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="activo"
+                          render={({ field }) => (
+                            <FormItem>
+                              <div className="flex items-center justify-between rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent p-3">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-sm font-semibold">Estado de la Alianza</FormLabel>
+                                  <p className="text-xs text-muted-foreground">
+                                    {field.value ? 'La alianza está activa' : 'La alianza está inactiva'}
+                                  </p>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}
