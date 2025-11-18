@@ -249,26 +249,26 @@ export function AllianceUserForm({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="ALIANZA_ADMIN" className="cursor-pointer">
+                            <SelectItem value="ALIANZA_ADMIN" className="cursor-pointer focus:bg-primary/10">
                               <div className="flex items-center gap-2.5 py-1.5">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                                   <UserCog className="h-3.5 w-3.5 text-primary" />
                                 </div>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="font-semibold text-sm">Administrador</span>
+                                  <span className="font-semibold text-sm text-foreground">Administrador</span>
                                   <span className="text-xs text-muted-foreground">
                                     Gestión completa
                                   </span>
                                 </div>
                               </div>
                             </SelectItem>
-                            <SelectItem value="ALIANZA_OPERADOR" className="cursor-pointer">
+                            <SelectItem value="ALIANZA_OPERADOR" className="cursor-pointer focus:bg-muted">
                               <div className="flex items-center gap-2.5 py-1.5">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
                                   <Shield className="h-3.5 w-3.5 text-muted-foreground" />
                                 </div>
                                 <div className="flex flex-col gap-0.5">
-                                  <span className="font-semibold text-sm">Operador</span>
+                                  <span className="font-semibold text-sm text-foreground">Operador</span>
                                   <span className="text-xs text-muted-foreground">
                                     Solo solicitudes
                                   </span>
