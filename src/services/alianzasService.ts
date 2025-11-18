@@ -143,7 +143,7 @@ export const alianzasService = {
 
     try {
       const response = await authenticatedFetch(`${API_BASE}/${id}`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify(payload),
       })
       
