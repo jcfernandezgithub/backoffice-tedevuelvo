@@ -469,11 +469,11 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
                 </div>
               </div>
 
-              <div className="border-t bg-background px-6 py-4 flex justify-end gap-3 shrink-0">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              <div className="border-t bg-background/95 backdrop-blur-sm px-6 py-4 flex justify-end gap-3 shrink-0 shadow-lg">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="min-w-[100px]">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="min-w-[140px]">
+                <Button type="submit" disabled={loading} className="min-w-[150px] shadow-md">
                   {loading ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
               </div>
