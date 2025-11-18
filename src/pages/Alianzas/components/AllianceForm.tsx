@@ -180,7 +180,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                       <FormField
                         control={form.control}
                         name="comisionDegravamen"
-                        render={({ field }) => (
+                        render={({ field: { value, onChange, ...fieldProps } }) => (
                           <FormItem>
                             <FormLabel className="text-xs">Seguro de Degravamen *</FormLabel>
                             <div className="relative">
@@ -188,10 +188,16 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                                 <Input
                                   type="number"
                                   step="0.01"
+                                  min="0"
+                                  max="100"
                                   placeholder="0.00"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  value={value === 0 ? '' : value}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    onChange(val === '' ? 0 : parseFloat(val))
+                                  }}
                                   className="pr-8"
+                                  {...fieldProps}
                                 />
                               </FormControl>
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
@@ -211,7 +217,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                       <FormField
                         control={form.control}
                         name="comisionCesantia"
-                        render={({ field }) => (
+                        render={({ field: { value, onChange, ...fieldProps } }) => (
                           <FormItem>
                             <FormLabel className="text-xs">Seguro de Cesantía *</FormLabel>
                             <div className="relative">
@@ -219,10 +225,16 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                                 <Input
                                   type="number"
                                   step="0.01"
+                                  min="0"
+                                  max="100"
                                   placeholder="0.00"
-                                  {...field}
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                  value={value === 0 ? '' : value}
+                                  onChange={(e) => {
+                                    const val = e.target.value
+                                    onChange(val === '' ? 0 : parseFloat(val))
+                                  }}
                                   className="pr-8"
+                                  {...fieldProps}
                                 />
                               </FormControl>
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
