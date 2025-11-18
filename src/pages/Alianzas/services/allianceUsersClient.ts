@@ -119,6 +119,7 @@ export const allianceUsersClient = {
       id: generateId(),
       alianzaId,
       name: input.name,
+      rut: input.rut,
       email: input.email,
       phone: input.phone,
       role: input.role,

@@ -10,6 +10,7 @@ export const allianceUsersMock: AllianceUser[] = [
     id: 'AU-001',
     alianzaId: 'AL-001',
     name: 'María García López',
+    rut: '18.234.567-8',
     email: 'maria.garcia@sindicatoandes.cl',
     phone: '+56 9 8765 4321',
     role: 'ALIANZA_ADMIN',
@@ -23,6 +24,7 @@ export const allianceUsersMock: AllianceUser[] = [
     id: 'AU-002',
     alianzaId: 'AL-001',
     name: 'Carlos Mendoza Ruiz',
+    rut: '19.456.789-0',
     email: 'carlos.mendoza@sindicatoandes.cl',
     phone: '+56 9 7654 3210',
     role: 'ALIANZA_OPERADOR',
@@ -36,6 +38,7 @@ export const allianceUsersMock: AllianceUser[] = [
     id: 'AU-003',
     alianzaId: 'AL-001',
     name: 'Ana Silva Torres',
+    rut: '17.890.123-4',
     email: 'ana.silva@sindicatoandes.cl',
     phone: '+56 9 6543 2109',
     role: 'ALIANZA_OPERADOR',
@@ -52,6 +55,7 @@ export const allianceUsersMock: AllianceUser[] = [
     id: 'AU-004',
     alianzaId: 'AL-002',
     name: 'Roberto Fernández Castro',
+    rut: '20.123.456-7',
     email: 'roberto.fernandez@brokerpacifico.cl',
     phone: '+56 2 2345 6789',
     role: 'ALIANZA_ADMIN',
@@ -65,6 +69,7 @@ export const allianceUsersMock: AllianceUser[] = [
     id: 'AU-005',
     alianzaId: 'AL-002',
     name: 'Patricia González Morales',
+    rut: '16.789.012-3',
     email: 'patricia.gonzalez@brokerpacifico.cl',
     phone: '+56 9 5432 1098',
     role: 'ALIANZA_OPERADOR',
@@ -87,10 +92,15 @@ function generateAllianceUsers(count: number): AllianceUser[] {
     const baseDate = new Date('2024-06-01');
     const createdAt = new Date(baseDate.getTime() + (i * 24 * 60 * 60 * 1000)).toISOString();
     
+    // Generate random RUT
+    const rutNumber = Math.floor(Math.random() * 15000000) + 10000000;
+    const rutFormatted = `${Math.floor(rutNumber / 1000000)}.${Math.floor((rutNumber % 1000000) / 1000)}.${rutNumber % 1000}-${Math.floor(Math.random() * 10)}`;
+    
     const user: AllianceUser = {
       id: `AU-${String(i + 6).padStart(3, '0')}`,
       alianzaId,
       name: `Usuario Test ${i + 1}`,
+      rut: rutFormatted,
       email: `usuario${i + 1}@alianza.com`,
       phone: `+56 9 ${String(Math.floor(Math.random() * 9000) + 1000)} ${String(Math.floor(Math.random() * 9000) + 1000)}`,
       role,
@@ -126,10 +136,13 @@ function generateAllianceUsers(count: number): AllianceUser[] {
   return users;
 }
 
-// Combine seed data with generated data
-export const allAllianceUsers = [...allianceUsersMock, ...generateAllianceUsers(20)];
+// Export all users including generated ones
+export const allAllianceUsers: AllianceUser[] = [
+  ...allianceUsersMock,
+  ...generateAllianceUsers(0), // Set to 0 to not generate additional users by default
+];
 
-// Audit events mock
+// Audit events mock data
 export const allianceUserAuditEventsMock: AllianceUserAuditEvent[] = [
   {
     id: 'AE-001',
@@ -137,7 +150,7 @@ export const allianceUserAuditEventsMock: AllianceUserAuditEvent[] = [
     userId: 'AU-001',
     type: 'USER_CREATED',
     at: '2025-06-10T10:00:00Z',
-    actor: { id: 'admin-1', name: 'Sistema Admin', role: 'ADMIN' },
+    actor: { id: 'ADM-001', name: 'Admin Sistema', role: 'ADMIN' },
   },
   {
     id: 'AE-002',
@@ -145,16 +158,7 @@ export const allianceUserAuditEventsMock: AllianceUserAuditEvent[] = [
     userId: 'AU-003',
     type: 'INVITATION_SENT',
     at: '2025-01-10T12:00:00Z',
-    actor: { id: 'admin-1', name: 'Sistema Admin', role: 'ADMIN' },
-    note: 'Invitación enviada por correo',
-  },
-  {
-    id: 'AE-003',
-    allianceId: 'AL-002',
-    userId: 'AU-005',
-    type: 'BLOCK',
-    at: '2025-01-05T13:45:00Z',
-    actor: { id: 'admin-2', name: 'Juan Pérez', role: 'ADMIN' },
-    note: 'Usuario bloqueado por inactividad',
+    actor: { id: 'ADM-001', name: 'Admin Sistema', role: 'ADMIN' },
+    note: 'Invitación inicial enviada',
   },
 ];
