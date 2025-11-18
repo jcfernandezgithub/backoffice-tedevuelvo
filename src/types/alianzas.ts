@@ -14,21 +14,3 @@ export interface Alianza {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface AlianzaHistoryEntry {
-  id: string;
-  alianzaId: string;
-  changedBy: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  changedAt: string;
-  changes: {
-    field: string;
-    fieldLabel: string;
-    oldValue: string;
-    newValue: string;
-  }[];
-  changeType: 'created' | 'updated' | 'status_changed';
-}
