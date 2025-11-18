@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 const phoneRegex = /^(\+56\s?)?([2-9]\d{8}|9\d{8})$/;
-const rutRegex = /^[0-9]{1,2}\.[0-9]{3}\.[0-9]{3}-[0-9kK]$/;
+// RUT puede ser con puntos (12.345.678-9) o sin puntos (12345678-9)
+const rutRegex = /^(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])$/;
 
 // Función para validar dígito verificador del RUT chileno
 function validateRutDigit(rut: string): boolean {
@@ -12,6 +13,9 @@ function validateRutDigit(rut: string): boolean {
   
   const rutNumber = cleanRut.slice(0, -1);
   const digit = cleanRut.slice(-1).toUpperCase();
+  
+  // Validar que la parte numérica solo contenga dígitos
+  if (!/^\d+$/.test(rutNumber)) return false;
   
   // Calcular dígito verificador
   let sum = 0;
@@ -39,7 +43,7 @@ export const allianceUserSchema = z.object({
   rut: z
     .string()
     .min(1, 'RUT es requerido')
-    .refine((val) => rutRegex.test(val), 'Formato de RUT inválido (XX.XXX.XXX-X)')
+    .refine((val) => rutRegex.test(val), 'Formato de RUT inválido. Use: 12345678-9 o 12.345.678-9')
     .refine((val) => validateRutDigit(val), 'Dígito verificador del RUT es inválido'),
   email: z
     .string()
