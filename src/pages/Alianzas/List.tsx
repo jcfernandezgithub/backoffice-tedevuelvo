@@ -156,7 +156,6 @@ export default function AlianzasList() {
               <Table role="table" aria-label="Tabla de alianzas">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[60px]">Logo</TableHead>
                     <TableHead>
                       <button className="inline-flex items-center gap-1" onClick={() => toggleSort('nombre')} aria-label="Ordenar por nombre">
                         Nombre <ArrowUpDown className="h-4 w-4" />
@@ -177,11 +176,6 @@ export default function AlianzasList() {
                 <TableBody>
                   {listQuery.data.items.map((a) => (
                     <TableRow key={a.id} tabIndex={0}>
-                      <TableCell>
-                        <div className="w-10 h-10 rounded border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                          <Building2 className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      </TableCell>
                       <TableCell className="font-medium">{a.nombre}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3 text-sm">
