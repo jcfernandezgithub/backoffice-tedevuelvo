@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye, FileText } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
@@ -68,6 +68,7 @@ export default function AlianzasList() {
   const [sortBy, setSortBy] = useState<'nombre' | 'comisionDegravamen' | undefined>('nombre')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
   const dSearch = useDebounce(search)
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const { toast } = useToast()
 
@@ -358,6 +359,15 @@ export default function AlianzasList() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => navigate(`/solicitudes?alianzaId=${a.id}`)}
+                        className="flex-1 hover:bg-accent/5 hover:border-accent/30"
+                      >
+                        <FileText className="h-4 w-4 mr-1.5" />
+                        Solicitudes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setEditAlianza(a)}
                         className="flex-1 hover:bg-accent/5 hover:border-accent/30"
                       >
@@ -371,6 +381,11 @@ export default function AlianzasList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => navigate(`/solicitudes?alianzaId=${a.id}`)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Ver solicitudes
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
                             <Link to={`/alianzas/${a.id}#usuarios`} className="flex items-center">
                               <Users className="mr-2 h-4 w-4" />

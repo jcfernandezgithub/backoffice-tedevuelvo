@@ -3,16 +3,24 @@ import { solicitudesService } from '@/services/solicitudesService'
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
 import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
+import { useMemo } from 'react'
 
 export default function SolicitudesList() {
+  const [searchParams] = useSearchParams()
+  const alianzaIdFilter = searchParams.get('alianzaId')
   const { data = [], isLoading } = useQuery({ queryKey: ['solicitudes'], queryFn: () => solicitudesService.list() })
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { toast } = useToast()
+
+  const filteredData = useMemo(() => {
+    if (!alianzaIdFilter) return data
+    return data.filter(s => s.alianzaId === alianzaIdFilter)
+  }, [data, alianzaIdFilter])
 
   const columns: Column<any>[] = [
     { key: 'id', header: 'ID', sortable: true },
@@ -41,10 +49,19 @@ export default function SolicitudesList() {
 
   return (
     <main className="p-4 space-y-4">
-      <h1 className="text-2xl font-semibold">Solicitudes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Solicitudes</h1>
+        {alianzaIdFilter && (
+          <Button variant="outline" size="sm" onClick={() => navigate('/solicitudes')}>
+            Ver todas
+          </Button>
+        )}
+      </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Listado maestro</CardTitle>
+          <CardTitle>
+            {alianzaIdFilter ? `Solicitudes de alianza ${alianzaIdFilter}` : 'Listado maestro'}
+          </CardTitle>
           <div className="flex gap-2">
             <Button variant="soft" onClick={exportarCSV}>Exportar CSV</Button>
             <Button variant="soft" onClick={exportarXLSX}>Exportar XLSX</Button>
@@ -52,7 +69,7 @@ export default function SolicitudesList() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? 'Cargando...' : <DataGrid data={data} columns={columns} />}
+          {isLoading ? 'Cargando...' : <DataGrid data={filteredData} columns={columns} />}
         </CardContent>
       </Card>
     </main>
