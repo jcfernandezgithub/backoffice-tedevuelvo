@@ -94,7 +94,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto px-6 py-4">
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-4 pb-16">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Columna Izquierda */}
                   <div className="space-y-4">
