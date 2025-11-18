@@ -79,7 +79,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
             <Plus className="h-4 w-4" /> Crear Alianza
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[98vw] lg:max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col p-0" aria-describedby="form-desc">
+        <DialogContent className="max-w-[98vw] lg:max-w-[95vw] h-[92vh] overflow-hidden flex flex-col p-0" aria-describedby="form-desc">
           <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -427,11 +427,11 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                 </div>
               </div>
 
-              <div className="border-t bg-background px-6 py-4 flex justify-end gap-3 shrink-0">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
+              <div className="border-t bg-card px-6 py-4 flex justify-end gap-3 shrink-0">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading} size="lg" className="min-w-[120px]">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="min-w-[140px]">
+                <Button type="submit" disabled={loading} size="lg" className="min-w-[160px]">
                   {loading ? 'Creando...' : 'Crear Alianza'}
                 </Button>
               </div>

@@ -98,7 +98,7 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
   return (
     <>
       <Dialog open={open && !confirmOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[98vw] lg:max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col p-0" aria-describedby="edit-form-desc">
+        <DialogContent className="max-w-[98vw] lg:max-w-[95vw] h-[92vh] overflow-hidden flex flex-col p-0" aria-describedby="edit-form-desc">
           <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -469,11 +469,11 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
                 </div>
               </div>
 
-              <div className="border-t bg-background/95 backdrop-blur-sm px-6 py-4 flex justify-end gap-3 shrink-0 shadow-lg">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading} className="min-w-[100px]">
+              <div className="border-t bg-card px-6 py-4 flex justify-end gap-3 shrink-0">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading} size="lg" className="min-w-[120px]">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="min-w-[150px] shadow-md">
+                <Button type="submit" disabled={loading} size="lg" className="min-w-[160px]">
                   {loading ? 'Guardando...' : 'Guardar Cambios'}
                 </Button>
               </div>
