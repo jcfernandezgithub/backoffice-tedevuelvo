@@ -181,67 +181,98 @@ export default function AlianzasList() {
                     animationDelay: `${index * 50}ms`
                   }}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                      {/* Columna izquierda: Info principal */}
-                      <div className="flex-1 space-y-4">
-                        {/* Nombre y código */}
-                        <div className="space-y-2">
-                          <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                              <Building2 className="w-6 h-6 text-primary" />
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      {/* Columna izquierda: Info principal - 8 columnas */}
+                      <div className="lg:col-span-8 space-y-3">
+                        {/* Encabezado con nombre, código y estado */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
+                            <Building2 className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-lg font-bold text-foreground truncate">{a.nombre}</h3>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <code className="text-xs font-mono bg-muted px-2 py-0.5 rounded">{a.code}</code>
+                                  <span className="text-xs text-muted-foreground">•</span>
+                                  <span className="text-xs text-muted-foreground">{a.rut}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Badge variant={a.activo ? 'default' : 'secondary'} className="font-medium">
+                                  {a.activo ? '✓ Activa' : 'Inactiva'}
+                                </Badge>
+                                <AllianceUserCountPill alianzaId={a.id} />
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-xl font-bold text-foreground truncate">{a.nombre}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <code className="text-xs font-mono bg-muted px-2 py-1 rounded">{a.code}</code>
-                                <span className="text-xs text-muted-foreground">•</span>
-                                <span className="text-xs text-muted-foreground">{a.rut}</span>
+                            {a.descripcion && (
+                              <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{a.descripcion}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Grid de información de contacto y vigencia */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Información de Contacto */}
+                          <div className="space-y-2">
+                            {a.contacto.email && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Mail className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                                <span className="truncate">{a.contacto.email}</span>
+                              </div>
+                            )}
+                            {a.contacto.fono && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Phone className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+                                <span>{a.contacto.fono}</span>
+                              </div>
+                            )}
+                            {a.direccion && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <svg className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="text-muted-foreground truncate">{a.direccion}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Vigencia del Contrato */}
+                          <div className="rounded-lg border bg-muted/30 p-2.5 space-y-1.5">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Vigencia</p>
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground">Inicio</p>
+                                <p className="text-sm font-semibold text-foreground">
+                                  {new Date(a.fechaInicio).toLocaleDateString('es-CL', { 
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    timeZone: 'America/Santiago' 
+                                  })}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="h-px bg-border" />
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-3.5 w-3.5 text-accent flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-muted-foreground">Término</p>
+                                <p className="text-sm font-semibold text-foreground">
+                                  {new Date(a.fechaTermino).toLocaleDateString('es-CL', { 
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    timeZone: 'America/Santiago' 
+                                  })}
+                                </p>
                               </div>
                             </div>
                           </div>
-                          {a.descripcion && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 ml-15">{a.descripcion}</p>
-                          )}
-                        </div>
-
-                        {/* Contacto */}
-                        <div className="flex flex-wrap gap-3">
-                          {a.contacto.email && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                              <Mail className="h-3.5 w-3.5 text-primary" />
-                              <span className="text-xs font-medium">{a.contacto.email}</span>
-                            </div>
-                          )}
-                          {a.contacto.fono && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                              <Phone className="h-3.5 w-3.5 text-accent" />
-                              <span className="text-xs font-medium">{a.contacto.fono}</span>
-                            </div>
-                          )}
-                          {a.direccion && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                              <svg className="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span className="text-xs text-muted-foreground truncate max-w-[200px]">{a.direccion}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Estado y usuarios */}
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant={a.activo ? 'default' : 'secondary'}
-                            className="font-medium"
-                          >
-                            {a.activo ? '✓ Activa' : 'Inactiva'}
-                          </Badge>
-                          <AllianceUserCountPill alianzaId={a.id} />
-                          <span className="text-xs text-muted-foreground">
-                            Creada: {new Date(a.createdAt).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}
-                          </span>
                         </div>
                       </div>
 
