@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
@@ -28,7 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Mail, Phone, Shield, UserCog, CreditCard } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Phone, Shield, UserCog, CheckCircle2 } from 'lucide-react';
 import { allianceUserSchema, type AllianceUserInput } from '../schemas/allianceUserSchema';
 import type { AllianceUser } from '../types/allianceUserTypes';
 
@@ -72,15 +71,15 @@ export function AllianceUserForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <UserPlus className="h-5 w-5 text-primary-foreground" />
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-3 border-b">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <UserPlus className="h-4 w-4 text-primary-foreground" />
             </div>
             {title || (isEditing ? 'Editar Usuario de Alianza' : 'Nuevo Usuario de Alianza')}
           </DialogTitle>
-          <DialogDescription className="text-base">
+          <DialogDescription className="text-sm">
             {isEditing 
               ? 'Modifica los datos del usuario de la alianza.'
               : 'Completa la información para crear un nuevo usuario que accederá al Portal de Alianzas.'
@@ -89,19 +88,19 @@ export function AllianceUserForm({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6 py-4">
-            {/* Sección 1: Información Personal */}
-            <Card className="border-l-4 border-l-primary">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <UserPlus className="h-4 w-4 text-primary" />
-                  </div>
-                  Información Personal
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Sección 1: Información Personal */}
+              <Card className="border-l-4 border-l-primary">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <UserPlus className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    Información Personal
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <FormField
                     control={form.control}
                     name="name"
@@ -115,7 +114,7 @@ export function AllianceUserForm({
                             placeholder="Ej: Juan Pérez García" 
                             {...field}
                             disabled={loading}
-                            className="font-medium"
+                            className="font-medium h-10"
                           />
                         </FormControl>
                         <FormMessage />
@@ -132,33 +131,41 @@ export function AllianceUserForm({
                           RUT *
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="12.345.678-9" 
-                            {...field}
-                            disabled={loading}
-                            className="font-medium"
-                          />
+                          <div className="relative">
+                            <Input 
+                              placeholder="12.345.678-9" 
+                              {...field}
+                              disabled={loading}
+                              className="font-medium h-10"
+                              onChange={(e) => {
+                                field.onChange(e);
+                                // Trigger validation on change
+                                form.trigger('rut');
+                              }}
+                            />
+                            {field.value && !form.formState.errors.rut && field.value.length >= 11 && (
+                              <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                            )}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Sección 2: Datos de Contacto */}
-            <Card className="border-l-4 border-l-primary">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Mail className="h-4 w-4 text-primary" />
-                  </div>
-                  Datos de Contacto
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sección 2: Datos de Contacto */}
+              <Card className="border-l-4 border-l-primary">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    Datos de Contacto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
                   <FormField
                     control={form.control}
                     name="email"
@@ -173,7 +180,7 @@ export function AllianceUserForm({
                             placeholder="usuario@alianza.com" 
                             {...field}
                             disabled={loading}
-                            className="font-medium"
+                            className="font-medium h-10"
                           />
                         </FormControl>
                         <FormMessage />
@@ -194,114 +201,117 @@ export function AllianceUserForm({
                             placeholder="+56 9 1234 5678" 
                             {...field}
                             disabled={loading}
-                            className="font-medium"
+                            className="font-medium h-10"
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Sección 3: Permisos y Acceso */}
-            <Card className="border-l-4 border-l-primary">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Shield className="h-4 w-4 text-primary" />
-                  </div>
-                  Permisos y Acceso
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Rol en la Alianza *
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
-                        <FormControl>
-                          <SelectTrigger className="h-auto min-h-[44px]">
-                            <SelectValue placeholder="Selecciona un rol">
-                              {field.value === 'ALIANZA_ADMIN' ? (
-                                <div className="flex items-center gap-2 py-1">
-                                  <UserCog className="h-4 w-4" />
-                                  <span className="font-medium">Administrador</span>
+              {/* Sección 3: Permisos y Acceso */}
+              <Card className="border-l-4 border-l-primary">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    Permisos y Acceso
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Rol en la Alianza *
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                          <FormControl>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Selecciona un rol">
+                                {field.value === 'ALIANZA_ADMIN' ? (
+                                  <div className="flex items-center gap-2">
+                                    <UserCog className="h-3.5 w-3.5" />
+                                    <span className="font-medium text-sm">Administrador</span>
+                                  </div>
+                                ) : field.value === 'ALIANZA_OPERADOR' ? (
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="h-3.5 w-3.5" />
+                                    <span className="font-medium text-sm">Operador</span>
+                                  </div>
+                                ) : null}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="ALIANZA_ADMIN" className="cursor-pointer">
+                              <div className="flex items-center gap-2.5 py-1.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                                  <UserCog className="h-3.5 w-3.5 text-primary" />
                                 </div>
-                              ) : field.value === 'ALIANZA_OPERADOR' ? (
-                                <div className="flex items-center gap-2 py-1">
-                                  <Shield className="h-4 w-4" />
-                                  <span className="font-medium">Operador</span>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-semibold text-sm">Administrador</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    Gestión completa
+                                  </span>
                                 </div>
-                              ) : null}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="ALIANZA_ADMIN" className="cursor-pointer">
-                            <div className="flex items-center gap-3 py-2">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                                <UserCog className="h-4 w-4 text-primary" />
                               </div>
-                              <div className="flex flex-col gap-0.5 flex-1">
-                                <span className="font-semibold text-sm">Administrador</span>
-                                <span className="text-xs text-muted-foreground">
-                                  Gestión completa de solicitudes y usuarios
-                                </span>
+                            </SelectItem>
+                            <SelectItem value="ALIANZA_OPERADOR" className="cursor-pointer">
+                              <div className="flex items-center gap-2.5 py-1.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted shrink-0">
+                                  <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+                                </div>
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-semibold text-sm">Operador</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    Solo solicitudes
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="ALIANZA_OPERADOR" className="cursor-pointer">
-                            <div className="flex items-center gap-3 py-2">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
-                                <Shield className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                              <div className="flex flex-col gap-0.5 flex-1">
-                                <span className="font-semibold text-sm">Operador</span>
-                                <span className="text-xs text-muted-foreground">
-                                  Gestión de solicitudes únicamente
-                                </span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
 
-                <Alert className="border-primary/20 bg-primary/5">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <AlertDescription className="text-sm">
-                    <strong>Notificación automática:</strong> El usuario recibirá un correo de bienvenida con instrucciones para acceder al Portal de Alianzas.
-                  </AlertDescription>
-                </Alert>
+            {/* Alertas Informativas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Alert className="border-primary/20 bg-primary/5">
+                <Mail className="h-4 w-4 text-primary" />
+                <AlertDescription className="text-xs">
+                  <strong>Notificación:</strong> Se enviará correo de bienvenida automáticamente.
+                </AlertDescription>
+              </Alert>
 
-                <Alert className="border-muted">
-                  <AlertDescription className="text-xs text-muted-foreground">
-                    <strong>Nota:</strong> Los usuarios de alianza solo pueden acceder al Portal de Alianzas. No tienen permisos para acceder al backoffice administrativo.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+              <Alert className="border-muted">
+                <AlertDescription className="text-xs text-muted-foreground">
+                  <strong>Acceso:</strong> Portal de Alianzas únicamente (no backoffice).
+                </AlertDescription>
+              </Alert>
+            </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
                 disabled={loading}
-                className="h-11"
+                className="h-10"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading} className="h-11">
+              <Button type="submit" disabled={loading} className="h-10">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isEditing ? 'Guardar Cambios' : 'Crear Usuario'}
               </Button>
