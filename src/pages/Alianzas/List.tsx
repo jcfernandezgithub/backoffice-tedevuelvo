@@ -104,9 +104,61 @@ export default function AlianzasList() {
   })
 
   const actualizarMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: NuevaAlianzaInput }) => alianzasService.update(id, input),
+    mutationFn: ({ id, input, original }: { id: string; input: NuevaAlianzaInput; original?: Alianza }) => {
+      // Detectar campos modificados
+      if (original) {
+        const changes: string[] = []
+        
+        if (input.nombre !== original.nombre) changes.push(`Nombre: "${original.nombre}" → "${input.nombre}"`)
+        if (input.code !== original.code) changes.push(`Código: "${original.code}" → "${input.code}"`)
+        if (input.rut !== original.rut) changes.push(`RUT: "${original.rut}" → "${input.rut}"`)
+        if (input.descripcion !== original.descripcion) changes.push(`Descripción actualizada`)
+        if (input.comisionDegravamen !== original.comisionDegravamen) changes.push(`Comisión Degravamen: ${original.comisionDegravamen}% → ${input.comisionDegravamen}%`)
+        if (input.comisionCesantia !== original.comisionCesantia) changes.push(`Comisión Cesantía: ${original.comisionCesantia}% → ${input.comisionCesantia}%`)
+        if (input.contacto.email !== original.contacto.email) changes.push(`Email: "${original.contacto.email}" → "${input.contacto.email}"`)
+        if (input.contacto.fono !== original.contacto.fono) changes.push(`Teléfono: "${original.contacto.fono}" → "${input.contacto.fono}"`)
+        if (input.direccion !== original.direccion) changes.push(`Dirección actualizada`)
+        if (input.activo !== original.activo) changes.push(`Estado: ${original.activo ? 'Activa' : 'Inactiva'} → ${input.activo ? 'Activa' : 'Inactiva'}`)
+        if (input.fechaInicio.toISOString() !== new Date(original.fechaInicio).toISOString()) changes.push(`Fecha de inicio actualizada`)
+        if (input.fechaTermino.toISOString() !== new Date(original.fechaTermino).toISOString()) changes.push(`Fecha de término actualizada`)
+        
+        // Guardar los cambios para mostrarlos después
+        sessionStorage.setItem('lastUpdateChanges', JSON.stringify(changes))
+      }
+      
+      return alianzasService.update(id, input)
+    },
     onSuccess: () => {
-      toast({ title: 'Alianza actualizada' })
+      const changesStr = sessionStorage.getItem('lastUpdateChanges')
+      sessionStorage.removeItem('lastUpdateChanges')
+      
+      if (changesStr) {
+        const changes = JSON.parse(changesStr)
+        if (changes.length > 0) {
+          toast({ 
+            title: '✅ Alianza actualizada exitosamente',
+            description: (
+              <div className="mt-2 space-y-1">
+                <p className="font-semibold text-xs">Campos modificados:</p>
+                <ul className="text-xs space-y-0.5">
+                  {changes.slice(0, 5).map((change: string, i: number) => (
+                    <li key={i} className="text-muted-foreground">• {change}</li>
+                  ))}
+                  {changes.length > 5 && (
+                    <li className="text-muted-foreground">• y {changes.length - 5} cambio(s) más...</li>
+                  )}
+                </ul>
+              </div>
+            ),
+            duration: 5000,
+          })
+        } else {
+          toast({ title: 'Alianza actualizada', description: 'Sin cambios detectados' })
+        }
+      } else {
+        toast({ title: 'Alianza actualizada' })
+      }
+      
       qc.invalidateQueries({ queryKey: ['alianzas'] })
       setEditAlianza(null)
     },
@@ -407,7 +459,7 @@ export default function AlianzasList() {
         alianza={editAlianza} 
         open={!!editAlianza} 
         onOpenChange={(open) => !open && setEditAlianza(null)}
-        onUpdate={(input) => editAlianza && actualizarMutation.mutate({ id: editAlianza.id, input })}
+        onUpdate={(input) => editAlianza && actualizarMutation.mutate({ id: editAlianza.id, input, original: editAlianza })}
         loading={actualizarMutation.isPending}
       />
     </main>
