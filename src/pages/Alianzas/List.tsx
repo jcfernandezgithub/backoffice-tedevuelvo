@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye, Clock } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
@@ -25,7 +25,7 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea'
-import type { Alianza } from '@/types/alianzas'
+import type { Alianza, AlianzaHistoryEntry } from '@/types/alianzas'
 import { useAllianceUserCount } from './hooks/useAllianceUsers'
 
 function useDebounce<T>(value: T, delay = 300) {
@@ -1240,6 +1240,93 @@ function ViewAlianzaDialog({ alianza, open, onOpenChange }: { alianza: Alianza |
                       })}
                     </span>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Historial de Cambios */}
+          <Card className="border-l-4 border-l-accent shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-accent" />
+                </div>
+                Historial de Cambios
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Registro de modificaciones realizadas a esta alianza
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Placeholder - Requiere implementación en backend */}
+              <div className="space-y-3">
+                <Alert className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                  <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>Funcionalidad en desarrollo:</strong> El historial de cambios requiere que el backend implemente un endpoint para obtener el registro de modificaciones.
+                  </AlertDescription>
+                </Alert>
+                
+                {/* Vista previa de cómo se verá el historial */}
+                <div className="space-y-3 opacity-50">
+                  <div className="relative pl-6 pb-4 border-l-2 border-border">
+                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-primary border-2 border-background" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-foreground">Usuario Admin</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">{new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <span className="text-muted-foreground">a las</span>
+                        <span className="text-muted-foreground">{new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <Badge variant="outline" className="text-xs mb-2">Actualización</Badge>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-start gap-2">
+                            <span className="text-muted-foreground">Teléfono:</span>
+                            <div className="flex-1">
+                              <span className="line-through text-muted-foreground">+5698778521</span>
+                              <span className="mx-1">→</span>
+                              <span className="font-medium text-foreground">+56978785124</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-muted-foreground">Comisión Degravamen:</span>
+                            <div className="flex-1">
+                              <span className="line-through text-muted-foreground">1%</span>
+                              <span className="mx-1">→</span>
+                              <span className="font-medium text-foreground">2%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="relative pl-6">
+                    <div className="absolute -left-2 top-0 w-4 h-4 rounded-full bg-muted border-2 border-background" />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-foreground">Sistema</span>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="text-muted-foreground">{new Date(alianza.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                      <div className="mt-2 text-sm">
+                        <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/20 border-green-200">Creación</Badge>
+                        <p className="text-xs text-muted-foreground mt-1">Alianza creada en el sistema</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-dashed">
+                  <p className="text-xs text-muted-foreground text-center">
+                    <strong>Endpoint requerido:</strong> <code className="text-xs bg-muted px-1 py-0.5 rounded">GET /api/v1/partners/{"{id}"}/history</code>
+                  </p>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Debe retornar un array de objetos con: changedBy, changedAt, changes[], changeType
+                  </p>
                 </div>
               </div>
             </CardContent>
