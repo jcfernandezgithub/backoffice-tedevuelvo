@@ -95,10 +95,10 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
-              <div className="flex-1 overflow-hidden px-6 py-4">
+              <div className="flex-1 overflow-hidden px-6 pt-4 pb-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full">
                   {/* Columna Izquierda */}
-                  <div className="space-y-3 h-full overflow-y-auto pr-2">
+                  <div className="space-y-3 h-full overflow-y-auto pr-2 pb-4">
                     {/* Información Básica */}
                     <Card className="border-l-4 border-l-primary flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
