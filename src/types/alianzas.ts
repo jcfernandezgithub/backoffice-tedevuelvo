@@ -11,7 +11,6 @@ export interface Alianza {
   activo: boolean;
   fechaInicio: string;
   fechaTermino: string;
-  logo?: string;
   createdAt: string;
   updatedAt: string;
 }

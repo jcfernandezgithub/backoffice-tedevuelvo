@@ -32,7 +32,6 @@ export const alianzasService = {
         activo: p.status === 'ACTIVE',
         fechaInicio: p.inicioVigencia || p.createdAt,
         fechaTermino: p.terminoVigencia || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        logo: p.logo || '',
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
       }))
@@ -116,7 +115,6 @@ export const alianzasService = {
         activo: created.status === 'ACTIVE',
         fechaInicio: created.inicioVigencia || created.createdAt,
         fechaTermino: created.terminoVigencia || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        logo: created.logo || '',
         createdAt: created.createdAt,
         updatedAt: created.updatedAt,
       }

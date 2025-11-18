@@ -168,15 +168,7 @@ export default function AlianzasList() {
                     <TableRow key={a.id} tabIndex={0}>
                       <TableCell>
                         <div className="w-10 h-10 rounded border border-border overflow-hidden bg-muted flex items-center justify-center shrink-0">
-                          {a.logo ? (
-                            <img 
-                              src={a.logo} 
-                              alt={`Logo ${a.nombre}`}
-                              className="w-full h-full object-contain"
-                            />
-                          ) : (
-                            <Building2 className="w-5 h-5 text-muted-foreground" />
-                          )}
+                          <Building2 className="w-5 h-5 text-muted-foreground" />
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">{a.nombre}</TableCell>
@@ -301,7 +293,6 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
       activo: true,
       fechaInicio: new Date(),
       fechaTermino: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-      logo: '' 
     },
     mode: 'onSubmit',
     reValidateMode: 'onChange',
@@ -309,7 +300,6 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
   const [open, setOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingData, setPendingData] = useState<NuevaAlianzaInput | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
   
   const comisionDegravamenValue = form.watch('comisionDegravamen')
   const comisionCesantiaValue = form.watch('comisionCesantia')
@@ -317,19 +307,6 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     (comisionDegravamenValue < 1 || comisionDegravamenValue > 10) && comisionDegravamenValue >= 0 && comisionDegravamenValue <= 100
   const showCesantiaWarning = comisionCesantiaValue !== undefined && comisionCesantiaValue !== null && 
     (comisionCesantiaValue < 1 || comisionCesantiaValue > 50) && comisionCesantiaValue >= 0 && comisionCesantiaValue <= 100
-
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64String = reader.result as string
-        setLogoPreview(base64String)
-        form.setValue('logo', base64String)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
 
   const handleFormSubmit = (v: NuevaAlianzaInput) => {
     setPendingData(v)
@@ -346,7 +323,6 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
       setConfirmOpen(false)
       setOpen(false)
       form.reset()
-      setLogoPreview(null)
       setPendingData(null)
     }
   }
@@ -359,327 +335,380 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
             <Plus className="h-4 w-4" /> Crear Alianza
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto" aria-describedby="form-desc">
-          <DialogHeader>
-            <DialogTitle>Nueva Alianza</DialogTitle>
-            <DialogDescription id="form-desc">Completa la información de la alianza comercial.</DialogDescription>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="form-desc">
+          <DialogHeader className="pb-4 border-b">
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Plus className="h-5 w-5 text-primary-foreground" />
+              </div>
+              Nueva Alianza Comercial
+            </DialogTitle>
+            <DialogDescription id="form-desc" className="text-base">
+              Completa la información para registrar una nueva alianza en el sistema.
+            </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              {/* Información Básica */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="nombre"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nombre *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: Sindicato XYZ" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: SIN-001" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="rut"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>RUT *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="12.345.678-9" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="descripcion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Información relevante sobre la alianza"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Fila 2: Comisiones */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="comisionDegravamen"
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormItem>
-                      <FormLabel>Seguro de Degravamen *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            type="number" 
-                            step="0.01" 
-                            min={0} 
-                            max={100} 
-                            placeholder="0.00"
-                            className="pr-8"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-                            {...field} 
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                        </div>
-                      </FormControl>
-                      {showDegravamenWarning && (
-                        <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                          <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                            Comisión de degravamen fuera del rango típico (1% - 10%). Verifica que el valor sea correcto.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="comisionCesantia"
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormItem>
-                      <FormLabel>Seguro de Cesantía *</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input 
-                            type="number" 
-                            step="0.01" 
-                            min={0} 
-                            max={100} 
-                            placeholder="0.00"
-                            className="pr-8"
-                            value={value || ''}
-                            onChange={(e) => onChange(e.target.valueAsNumber || 0)}
-                            {...field} 
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                        </div>
-                      </FormControl>
-                      {showCesantiaWarning && (
-                        <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
-                          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                          <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
-                            Comisión de cesantía fuera del rango típico (1% - 50%). Verifica que el valor sea correcto.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-            {/* Fila 3: Contacto y Dirección */}
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="contacto.email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="contacto@empresa.cl" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="contacto.fono"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Teléfono</FormLabel>
-                    <FormControl>
-                      <Input placeholder="+56 9 1234 5678" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="direccion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dirección</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Calle, comuna, ciudad" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Fila 4: Fechas de Vigencia */}
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="fechaInicio"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Inicio de Vigencia *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fechaTermino"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Término de Vigencia *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Fila 5: Logo y Estado */}
-            <div className="grid grid-cols-2 gap-4 items-start">
-              <FormField
-                control={form.control}
-                name="logo"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Logo de la Alianza</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoChange}
-                        {...field}
-                      />
-                    </FormControl>
-                    {logoPreview && (
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 mt-2">
-                        <img src={logoPreview} alt="Vista previa" className="h-10 w-10 object-contain rounded" />
-                        <span className="text-xs text-muted-foreground">Imagen seleccionada</span>
-                      </div>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="activo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado</FormLabel>
-                    <div className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="text-sm font-medium">Alianza Activa</span>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 py-4">
+              {/* Sección 1: Información Básica */}
+              <Card className="border-l-4 border-l-primary">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-primary" />
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    Información Básica
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="nombre"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre Comercial *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej: Sindicato Financiero XYZ" {...field} className="font-medium" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Código Único *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej: SFX-001" {...field} className="font-mono font-medium" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="rut"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">RUT *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="12.345.678-9" {...field} className="font-medium" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="descripcion"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Descripción</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Información relevante sobre la alianza comercial..."
+                            {...field} 
+                            rows={3}
+                            className="resize-none"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Creando...' : 'Crear Alianza'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              {/* Sección 2: Estructura de Comisiones */}
+              <Card className="border-l-4 border-l-accent">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <svg className="h-4 w-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    Comisiones por Producto
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="comisionDegravamen"
+                      render={({ field: { value, onChange, ...field } }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-primary uppercase tracking-wide">Seguro de Degravamen *</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                min={0} 
+                                max={100} 
+                                placeholder="0.00"
+                                className="pr-12 text-lg font-bold"
+                                value={value || ''}
+                                onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                                {...field} 
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-bold text-primary">%</span>
+                            </div>
+                          </FormControl>
+                          {showDegravamenWarning && (
+                            <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                              <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                                Comisión fuera del rango típico (1-10%). Verifica que sea correcta.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="comisionCesantia"
+                      render={({ field: { value, onChange, ...field } }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-accent uppercase tracking-wide">Seguro de Cesantía *</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                min={0} 
+                                max={100} 
+                                placeholder="0.00"
+                                className="pr-12 text-lg font-bold"
+                                value={value || ''}
+                                onChange={(e) => onChange(e.target.valueAsNumber || 0)}
+                                {...field} 
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-lg font-bold text-accent">%</span>
+                            </div>
+                          </FormControl>
+                          {showCesantiaWarning && (
+                            <Alert variant="default" className="mt-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                              <AlertDescription className="text-xs text-amber-800 dark:text-amber-400">
+                                Comisión fuera del rango típico (1-50%). Verifica que sea correcta.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Sección 3: Información de Contacto */}
+                <Card className="border-l-4 border-l-primary">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Mail className="h-4 w-4 text-primary" />
+                      </div>
+                      Datos de Contacto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="contacto.email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input 
+                                type="email" 
+                                placeholder="contacto@alianza.cl" 
+                                {...field} 
+                                className="pl-10"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contacto.fono"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Teléfono</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input 
+                                type="tel" 
+                                placeholder="+56 9 1234 5678" 
+                                {...field} 
+                                className="pl-10"
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="direccion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dirección</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Av. Principal 1234, Comuna, Ciudad"
+                              {...field} 
+                              rows={2}
+                              className="resize-none"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Sección 4: Vigencia del Contrato */}
+                <Card className="border-l-4 border-l-accent">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
+                        <CalendarIcon className="h-4 w-4 text-accent" />
+                      </div>
+                      Vigencia del Contrato
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="fechaInicio"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Inicio *</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "dd/MM/yyyy")
+                                  ) : (
+                                    <span>Seleccionar fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="fechaTermino"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Fecha de Término *</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "dd/MM/yyyy")
+                                  ) : (
+                                    <span>Seleccionar fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="activo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between rounded-lg border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent p-4">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-sm font-semibold">Estado de la Alianza</FormLabel>
+                              <p className="text-xs text-muted-foreground">
+                                {field.value ? 'La alianza estará activa inmediatamente' : 'La alianza estará inactiva'}
+                              </p>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} className="min-w-32">
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading} className="min-w-32">
+                  {loading ? 'Creando...' : 'Crear Alianza'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
       </DialogContent>
     </Dialog>
 
@@ -773,19 +802,9 @@ function ViewAlianzaDialog({ alianza, open, onOpenChange }: { alianza: Alianza |
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4 border-b">
           <div className="flex items-start gap-4">
-            {alianza.logo ? (
-              <div className="w-16 h-16 rounded-lg border-2 border-primary/20 overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center flex-shrink-0">
-                <img 
-                  src={alianza.logo} 
-                  alt={`Logo ${alianza.nombre}`}
-                  className="w-full h-full object-contain p-1"
-                />
-              </div>
-            ) : (
-              <div className="w-16 h-16 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-8 h-8 text-primary" />
-              </div>
-            )}
+            <div className="w-16 h-16 rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-8 h-8 text-primary" />
+            </div>
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-2xl font-bold text-foreground">{alianza.nombre}</DialogTitle>
               <DialogDescription className="text-base mt-1 flex items-center gap-2">
