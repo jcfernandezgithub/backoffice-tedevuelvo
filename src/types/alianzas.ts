@@ -1,6 +1,7 @@
 export interface Alianza {
   id: string;
   nombre: string;
+  rut: string;
   contacto: { fono?: string; email?: string };
   direccion?: string;
   descripcion?: string;

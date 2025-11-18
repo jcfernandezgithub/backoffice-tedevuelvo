@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export const alianzaSchema = z.object({
   nombre: z.string().min(3, 'Mínimo 3 caracteres').max(120, 'Máximo 120 caracteres'),
+  rut: z.string().min(8, 'RUT inválido').max(12, 'RUT inválido'),
   contacto: z.object({
     fono: z.string().optional(),
     email: z.string().email('Email inválido').optional(),
