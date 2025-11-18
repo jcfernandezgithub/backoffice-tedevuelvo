@@ -123,6 +123,61 @@ export const alianzasService = {
     }
   },
 
+  async update(id: string, input: unknown) {
+    const parsed = alianzaSchema.parse(input)
+    
+    const payload = {
+      name: parsed.nombre,
+      code: parsed.code,
+      status: parsed.activo ? 'ACTIVE' : 'INACTIVE',
+      rut: parsed.rut,
+      descripcion: parsed.descripcion,
+      degravamen: parsed.comisionDegravamen,
+      cesantia: parsed.comisionCesantia,
+      telefono: parsed.contacto.fono || undefined,
+      direccion: parsed.direccion || undefined,
+      inicioVigencia: parsed.fechaInicio.toISOString(),
+      terminoVigencia: parsed.fechaTermino.toISOString(),
+      contactEmail: parsed.contacto.email || undefined,
+    }
+
+    try {
+      const response = await authenticatedFetch(`${API_BASE}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al actualizar la alianza')
+      }
+      
+      const updated = await response.json()
+      
+      return {
+        id: updated._id || updated.id,
+        nombre: updated.name,
+        code: updated.code,
+        rut: updated.rut,
+        contacto: {
+          email: updated.contactEmail,
+          fono: updated.telefono,
+        },
+        direccion: updated.direccion || '',
+        descripcion: updated.descripcion || updated.name,
+        comisionDegravamen: updated.degravamen || 0,
+        comisionCesantia: updated.cesantia || 0,
+        activo: updated.status === 'ACTIVE',
+        fechaInicio: updated.inicioVigencia || updated.createdAt,
+        fechaTermino: updated.terminoVigencia || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      }
+    } catch (error: any) {
+      throw new Error(error.message || 'Error al actualizar la alianza')
+    }
+  },
+
   async remove(id: string) {
     try {
       const response = await authenticatedFetch(`${API_BASE}/${id}`, {
