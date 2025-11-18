@@ -23,7 +23,7 @@ export const alianzasService = {
         rut: p.rut,
         contacto: {
           email: p.contactEmail,
-          fono: p.contactPhone,
+          fono: p.telefono,
         },
         direccion: p.direccion || '',
         descripcion: p.descripcion || p.displayName || p.name,
