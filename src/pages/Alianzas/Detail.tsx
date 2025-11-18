@@ -1,9 +1,10 @@
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, ArrowLeft } from 'lucide-react';
 import { UsuariosTab } from './tabs/Usuarios';
 import { useAllianceUserCount } from './hooks/useAllianceUsers';
 import { alianzasService } from '@/services/alianzasService';
@@ -13,6 +14,7 @@ import type { Alianza } from '@/types/alianzas';
 export default function AlianzaDetail() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { data: userCount = 0 } = useAllianceUserCount(id!);
   const [activeTab, setActiveTab] = useState('resumen');
 
@@ -36,6 +38,16 @@ export default function AlianzaDetail() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        onClick={() => navigate('/alianzas')}
+        className="gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Volver a Alianzas
+      </Button>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
