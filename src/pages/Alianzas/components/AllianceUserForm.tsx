@@ -28,7 +28,8 @@ import {
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, UserPlus, Mail, Phone, Shield } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, UserPlus, Mail, Phone, Shield, UserCog } from 'lucide-react';
 import { allianceUserSchema, type AllianceUserInput } from '../schemas/allianceUserSchema';
 import type { AllianceUser } from '../types/allianceUserTypes';
 
@@ -91,9 +92,13 @@ export function AllianceUserForm({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Información Personal */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <UserPlus className="h-4 w-4" />
-                <span>Información Personal</span>
+              <div className="flex items-center gap-2 pb-2">
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                  Información Personal
+                </h3>
               </div>
               
               <FormField
@@ -116,13 +121,17 @@ export function AllianceUserForm({
               />
             </div>
 
-            <Separator />
+            <Separator className="my-6" />
 
             {/* Datos de Contacto */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>Datos de Contacto</span>
+              <div className="flex items-center gap-2 pb-2">
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <Mail className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                  Datos de Contacto
+                </h3>
               </div>
 
               <FormField
@@ -168,13 +177,17 @@ export function AllianceUserForm({
               />
             </div>
 
-            <Separator />
+            <Separator className="my-6" />
 
             {/* Permisos y Acceso */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Shield className="h-4 w-4" />
-                <span>Permisos y Acceso</span>
+              <div className="flex items-center gap-2 pb-2">
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <Shield className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                  Permisos y Acceso
+                </h3>
               </div>
 
               <FormField
@@ -185,25 +198,41 @@ export function AllianceUserForm({
                     <FormLabel className="text-sm font-medium">Rol en la alianza</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                       <FormControl>
-                        <SelectTrigger className="h-11">
+                        <SelectTrigger className="h-12">
                           <SelectValue placeholder="Selecciona un rol" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="ALIANZA_ADMIN">
-                          <div className="flex flex-col py-1">
-                            <span className="font-medium">Administrador</span>
-                            <span className="text-xs text-muted-foreground">
-                              Gestión completa de solicitudes y usuarios
-                            </span>
+                        <SelectItem value="ALIANZA_ADMIN" className="py-3">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-md bg-primary/10 mt-0.5">
+                              <UserCog className="h-4 w-4 text-primary" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-base">Administrador</span>
+                                <Badge variant="secondary" className="text-xs">Admin</Badge>
+                              </div>
+                              <span className="text-xs text-muted-foreground leading-relaxed">
+                                Gestión completa de solicitudes y usuarios
+                              </span>
+                            </div>
                           </div>
                         </SelectItem>
-                        <SelectItem value="ALIANZA_OPERADOR">
-                          <div className="flex flex-col py-1">
-                            <span className="font-medium">Operador</span>
-                            <span className="text-xs text-muted-foreground">
-                              Gestión de solicitudes únicamente
-                            </span>
+                        <SelectItem value="ALIANZA_OPERADOR" className="py-3">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-md bg-muted">
+                              <Shield className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-base">Operador</span>
+                                <Badge variant="outline" className="text-xs">Operador</Badge>
+                              </div>
+                              <span className="text-xs text-muted-foreground leading-relaxed">
+                                Gestión de solicitudes únicamente
+                              </span>
+                            </div>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -227,7 +256,7 @@ export function AllianceUserForm({
               </Alert>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="gap-2 sm:gap-0 pt-4">
               <Button
                 type="button"
                 variant="outline"
