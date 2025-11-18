@@ -198,38 +198,42 @@ export function AllianceUserForm({
                     <FormLabel className="text-sm font-medium">Rol en la alianza</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
                       <FormControl>
-                        <SelectTrigger className="h-12">
+                        <SelectTrigger className="h-12 bg-background">
                           <SelectValue placeholder="Selecciona un rol" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ALIANZA_ADMIN" className="py-3">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-md bg-primary/10 mt-0.5">
+                      <SelectContent className="bg-background">
+                        <SelectItem value="ALIANZA_ADMIN" className="cursor-pointer focus:bg-accent">
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                               <UserCog className="h-4 w-4 text-primary" />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-base">Administrador</span>
-                                <Badge variant="secondary" className="text-xs">Admin</Badge>
+                                <span className="font-semibold text-sm text-foreground">Administrador</span>
+                                <Badge variant="secondary" className="h-5 text-[10px] px-1.5 bg-primary/10 text-primary border-0">
+                                  ADMIN
+                                </Badge>
                               </div>
-                              <span className="text-xs text-muted-foreground leading-relaxed">
+                              <span className="text-xs text-muted-foreground">
                                 Gestión completa de solicitudes y usuarios
                               </span>
                             </div>
                           </div>
                         </SelectItem>
-                        <SelectItem value="ALIANZA_OPERADOR" className="py-3">
-                          <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-md bg-muted">
+                        <SelectItem value="ALIANZA_OPERADOR" className="cursor-pointer focus:bg-accent">
+                          <div className="flex items-center gap-3 py-2">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
                               <Shield className="h-4 w-4 text-muted-foreground" />
                             </div>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-base">Operador</span>
-                                <Badge variant="outline" className="text-xs">Operador</Badge>
+                                <span className="font-semibold text-sm text-foreground">Operador</span>
+                                <Badge variant="outline" className="h-5 text-[10px] px-1.5">
+                                  OPERADOR
+                                </Badge>
                               </div>
-                              <span className="text-xs text-muted-foreground leading-relaxed">
+                              <span className="text-xs text-muted-foreground">
                                 Gestión de solicitudes únicamente
                               </span>
                             </div>
