@@ -71,20 +71,23 @@ export const alianzasService = {
   async create(input: unknown) {
     const parsed = alianzaSchema.parse(input)
     
+    // Mapeo completo y verificado de todos los campos
     const payload = {
       name: parsed.nombre,
       code: parsed.code,
       status: parsed.activo ? 'ACTIVE' : 'INACTIVE',
       rut: parsed.rut,
-      descripcion: parsed.descripcion,
-      degravamen: parsed.comisionDegravamen,
-      cesantia: parsed.comisionCesantia,
-      telefono: parsed.contacto.fono || undefined,
-      direccion: parsed.direccion || undefined,
+      descripcion: parsed.descripcion || '',
+      degravamen: Number(parsed.comisionDegravamen),
+      cesantia: Number(parsed.comisionCesantia),
+      telefono: parsed.contacto.fono || '',
+      direccion: parsed.direccion || '',
       inicioVigencia: parsed.fechaInicio.toISOString(),
       terminoVigencia: parsed.fechaTermino.toISOString(),
-      contactEmail: parsed.contacto.email || undefined,
+      contactEmail: parsed.contacto.email || '',
     }
+
+    console.log('Payload de creación:', payload)
 
     try {
       const response = await authenticatedFetch(API_BASE, {
@@ -98,20 +101,22 @@ export const alianzasService = {
       }
       
       const created = await response.json()
+      console.log('Respuesta del backend:', created)
       
+      // Mapeo completo de respuesta
       return {
         id: created._id || created.id,
         nombre: created.name,
         code: created.code,
         rut: created.rut,
         contacto: {
-          email: created.contactEmail,
-          fono: created.telefono,
+          email: created.contactEmail || '',
+          fono: created.telefono || '',
         },
         direccion: created.direccion || '',
-        descripcion: created.descripcion || created.name,
-        comisionDegravamen: created.degravamen || 0,
-        comisionCesantia: created.cesantia || 0,
+        descripcion: created.descripcion || created.name || '',
+        comisionDegravamen: Number(created.degravamen) || 0,
+        comisionCesantia: Number(created.cesantia) || 0,
         activo: created.status === 'ACTIVE',
         fechaInicio: created.inicioVigencia || created.createdAt,
         fechaTermino: created.terminoVigencia || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
@@ -119,6 +124,7 @@ export const alianzasService = {
         updatedAt: created.updatedAt,
       }
     } catch (error: any) {
+      console.error('Error en creación:', error)
       throw new Error(error.message || 'Error al crear la alianza')
     }
   },
@@ -126,20 +132,23 @@ export const alianzasService = {
   async update(id: string, input: unknown) {
     const parsed = alianzaSchema.parse(input)
     
+    // Mapeo completo y verificado de todos los campos
     const payload = {
       name: parsed.nombre,
       code: parsed.code,
       status: parsed.activo ? 'ACTIVE' : 'INACTIVE',
       rut: parsed.rut,
-      descripcion: parsed.descripcion,
-      degravamen: parsed.comisionDegravamen,
-      cesantia: parsed.comisionCesantia,
-      telefono: parsed.contacto.fono || undefined,
-      direccion: parsed.direccion || undefined,
+      descripcion: parsed.descripcion || '',
+      degravamen: Number(parsed.comisionDegravamen),
+      cesantia: Number(parsed.comisionCesantia),
+      telefono: parsed.contacto.fono || '',
+      direccion: parsed.direccion || '',
       inicioVigencia: parsed.fechaInicio.toISOString(),
       terminoVigencia: parsed.fechaTermino.toISOString(),
-      contactEmail: parsed.contacto.email || undefined,
+      contactEmail: parsed.contacto.email || '',
     }
+
+    console.log('Payload de actualización:', payload)
 
     try {
       const response = await authenticatedFetch(`${API_BASE}/${id}`, {
@@ -153,20 +162,22 @@ export const alianzasService = {
       }
       
       const updated = await response.json()
+      console.log('Respuesta del backend:', updated)
       
+      // Mapeo completo de respuesta
       return {
         id: updated._id || updated.id,
         nombre: updated.name,
         code: updated.code,
         rut: updated.rut,
         contacto: {
-          email: updated.contactEmail,
-          fono: updated.telefono,
+          email: updated.contactEmail || '',
+          fono: updated.telefono || '',
         },
         direccion: updated.direccion || '',
-        descripcion: updated.descripcion || updated.name,
-        comisionDegravamen: updated.degravamen || 0,
-        comisionCesantia: updated.cesantia || 0,
+        descripcion: updated.descripcion || updated.name || '',
+        comisionDegravamen: Number(updated.degravamen) || 0,
+        comisionCesantia: Number(updated.cesantia) || 0,
         activo: updated.status === 'ACTIVE',
         fechaInicio: updated.inicioVigencia || updated.createdAt,
         fechaTermino: updated.terminoVigencia || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
@@ -174,6 +185,7 @@ export const alianzasService = {
         updatedAt: updated.updatedAt,
       }
     } catch (error: any) {
+      console.error('Error en actualización:', error)
       throw new Error(error.message || 'Error al actualizar la alianza')
     }
   },
