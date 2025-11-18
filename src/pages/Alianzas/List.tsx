@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { alianzaSchema, type NuevaAlianzaInput } from '@/schemas/alianzaSchema'
 import { useToast } from '@/hooks/use-toast'
-import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2 } from 'lucide-react'
+import { Trash2, Plus, Mail, Phone, ArrowUpDown, Pencil, Users, MoreHorizontal, CalendarIcon, AlertTriangle, Building2, Eye } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
@@ -61,6 +61,7 @@ function AllianceUserCountPill({ alianzaId }: { alianzaId: string }) {
 
 export default function AlianzasList() {
   const [search, setSearch] = useState('')
+  const [viewAlianza, setViewAlianza] = useState<Alianza | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sortBy, setSortBy] = useState<'nombre' | 'comisionDegravamen' | undefined>('nombre')
@@ -212,6 +213,10 @@ export default function AlianzasList() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => setViewAlianza(a)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Ver detalles
+                              </DropdownMenuItem>
                               <DropdownMenuItem disabled>
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Editar alianza
@@ -274,6 +279,9 @@ export default function AlianzasList() {
           )}
         </CardContent>
       </Card>
+
+      {/* Diálogo de Ver Detalles */}
+      <ViewAlianzaDialog alianza={viewAlianza} open={!!viewAlianza} onOpenChange={(open) => !open && setViewAlianza(null)} />
     </main>
   )
 }
@@ -755,4 +763,152 @@ function CreateAlianzaButton({ onCreate, loading }: { onCreate: (v: NuevaAlianza
     </AlertDialog>
     </>
   )
+}
+
+function ViewAlianzaDialog({ alianza, open, onOpenChange }: { alianza: Alianza | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+  if (!alianza) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Detalles de la Alianza</DialogTitle>
+          <DialogDescription>Información completa de la alianza comercial</DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-6">
+          {/* Logo y Estado */}
+          {alianza.logo && (
+            <div className="flex justify-center">
+              <div className="w-32 h-32 rounded border border-border overflow-hidden bg-muted flex items-center justify-center">
+                <img 
+                  src={alianza.logo} 
+                  alt={`Logo ${alianza.nombre}`}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Información Básica */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información Básica</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Nombre</label>
+                <p className="text-sm mt-1">{alianza.nombre}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Código</label>
+                <p className="text-sm mt-1">{alianza.code}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">RUT</label>
+                <p className="text-sm mt-1">{alianza.rut}</p>
+              </div>
+            </div>
+            {alianza.descripcion && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Descripción</label>
+                <p className="text-sm mt-1">{alianza.descripcion}</p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Comisiones */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Comisiones</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg">
+                <label className="text-sm font-medium text-muted-foreground">Seguro de Degravamen</label>
+                <p className="text-2xl font-bold mt-2">{fmtPct(alianza.comisionDegravamen)}</p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <label className="text-sm font-medium text-muted-foreground">Seguro de Cesantía</label>
+                <p className="text-2xl font-bold mt-2">{fmtPct(alianza.comisionCesantia)}</p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Información de Contacto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información de Contacto</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {alianza.contacto.email && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </label>
+                  <p className="text-sm mt-1">{alianza.contacto.email}</p>
+                </div>
+              )}
+              {alianza.contacto.fono && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-4 w-4" />
+                    Teléfono
+                  </label>
+                  <p className="text-sm mt-1">{alianza.contacto.fono}</p>
+                </div>
+              )}
+            </div>
+            {alianza.direccion && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Dirección</label>
+                <p className="text-sm mt-1">{alianza.direccion}</p>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Vigencia */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Vigencia del Contrato</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Inicio</label>
+                <p className="text-sm mt-1">{new Date(alianza.fechaInicio).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Término</label>
+                <p className="text-sm mt-1">{new Date(alianza.fechaTermino).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Estado</label>
+                <div className="mt-1">
+                  <Badge variant={alianza.activo ? 'default' : 'secondary'}>
+                    {alianza.activo ? 'Activo' : 'Inactivo'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Metadatos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
+            <div>
+              <span className="font-medium">Creado:</span> {new Date(alianza.createdAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
+            </div>
+            <div>
+              <span className="font-medium">Actualizado:</span> {new Date(alianza.updatedAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cerrar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
