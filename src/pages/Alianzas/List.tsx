@@ -297,6 +297,7 @@ export default function AlianzasList() {
                             <p className="text-2xl font-bold text-accent">{fmtPct(a.comisionCesantia)}</p>
                           </div>
                         </div>
+                      </div>
                     </div>
 
                     {/* Botones de acción */}
