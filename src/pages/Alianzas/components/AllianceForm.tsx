@@ -93,12 +93,13 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex-1 overflow-y-auto px-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 py-4">
-                {/* Columna Izquierda */}
-                <div className="space-y-4">
-                  {/* Información Básica */}
-                  <Card className="border-l-4 border-l-primary">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Columna Izquierda */}
+                  <div className="space-y-4">
+                    {/* Información Básica */}
+                    <Card className="border-l-4 border-l-primary h-[280px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -107,7 +108,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Información Básica
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4">
+                      <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
                       <div className="grid grid-cols-2 gap-3">
                         <FormField
                           control={form.control}
@@ -166,7 +167,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                   </Card>
 
                   {/* Comisiones */}
-                  <Card className="border-l-4 border-l-accent">
+                  <Card className="border-l-4 border-l-accent h-[280px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-accent/10 flex items-center justify-center">
@@ -175,7 +176,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Comisiones por Producto
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
                       <FormField
                         control={form.control}
                         name="comisionDegravamen"
@@ -196,12 +197,12 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                             </div>
                             {showDegravamenWarning && (
-                              <Alert variant="default" className="mt-2 py-2">
-                                <AlertTriangle className="h-3.5 w-3.5" />
-                                <AlertDescription className="text-xs">
+                              <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-xs text-amber-800 dark:text-amber-300">
                                   Comisión fuera del rango típico (1-10%). Verifica que sea correcta.
-                                </AlertDescription>
-                              </Alert>
+                                </p>
+                              </div>
                             )}
                             <FormMessage />
                           </FormItem>
@@ -227,12 +228,12 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                             </div>
                             {showCesantiaWarning && (
-                              <Alert variant="default" className="mt-2 py-2">
-                                <AlertTriangle className="h-3.5 w-3.5" />
-                                <AlertDescription className="text-xs">
+                              <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5 shrink-0" />
+                                <p className="text-xs text-amber-800 dark:text-amber-300">
                                   Comisión fuera del rango típico (1-50%). Verifica que sea correcta.
-                                </AlertDescription>
-                              </Alert>
+                                </p>
+                              </div>
                             )}
                             <FormMessage />
                           </FormItem>
@@ -245,7 +246,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                 {/* Columna Derecha */}
                 <div className="space-y-4">
                   {/* Datos de Contacto */}
-                  <Card className="border-l-4 border-l-blue-500">
+                  <Card className="border-l-4 border-l-blue-500 h-[280px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -254,7 +255,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Datos de Contacto
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
                       <FormField
                         control={form.control}
                         name="contacto.email"
@@ -298,7 +299,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                   </Card>
 
                   {/* Vigencia del Contrato */}
-                  <Card className="border-l-4 border-l-purple-500">
+                  <Card className="border-l-4 border-l-purple-500 h-[280px] flex flex-col">
                     <CardHeader className="pb-2 px-4 pt-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -307,7 +308,7 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                         Vigencia del Contrato
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3 px-4 pb-4">
+                    <CardContent className="space-y-3 px-4 pb-4 flex-1 overflow-y-auto">
                       <FormField
                         control={form.control}
                         name="fechaInicio"
@@ -402,25 +403,26 @@ export function CreateAllianceButton({ onCreate, loading }: AllianceFormProps) {
                           </FormItem>
                         )}
                       />
-                      <Alert className="py-2">
-                        <Info className="h-3.5 w-3.5" />
-                        <AlertDescription className="text-xs">
+                      <div className="flex items-start gap-2 p-2 rounded-md bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-500 mt-0.5 shrink-0" />
+                        <p className="text-xs text-blue-800 dark:text-blue-300">
                           El sistema validará las fechas de inicio y término del contrato.
-                        </AlertDescription>
-                      </Alert>
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
+                  </div>
                 </div>
               </div>
 
-              <DialogFooter className="px-0 pb-4 pt-2">
+              <div className="border-t bg-background px-6 py-4 flex justify-end gap-3 shrink-0">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="min-w-[120px]">
+                <Button type="submit" disabled={loading} className="min-w-[140px]">
                   {loading ? 'Creando...' : 'Crear Alianza'}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
           </Form>
         </DialogContent>
