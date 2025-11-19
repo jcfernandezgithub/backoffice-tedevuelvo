@@ -27,10 +27,11 @@ import {
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Mail, Shield, UserCog, CheckCircle2, Key } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Shield, UserCog, CheckCircle2, Key, RefreshCw, Copy } from 'lucide-react';
 import { allianceUserSchema, type AllianceUserInput } from '../schemas/allianceUserSchema';
 import type { AllianceUser } from '../types/allianceUserTypes';
 import { generateSecurePassword } from '@/lib/passwordGenerator';
+import { useToast } from '@/hooks/use-toast';
 
 interface AllianceUserFormProps {
   open: boolean;
@@ -50,6 +51,7 @@ export function AllianceUserForm({
   title
 }: AllianceUserFormProps) {
   const isEditing = !!user;
+  const { toast } = useToast();
   
   const form = useForm<AllianceUserInput>({
     resolver: zodResolver(allianceUserSchema),
@@ -67,6 +69,32 @@ export function AllianceUserForm({
     if (!loading) {
       form.reset();
       onOpenChange(false);
+    }
+  };
+
+  const handleRegeneratePassword = () => {
+    const newPassword = generateSecurePassword();
+    form.setValue('password', newPassword);
+    toast({
+      title: 'Contraseña regenerada',
+      description: 'Se ha generado una nueva contraseña segura.',
+    });
+  };
+
+  const handleCopyPassword = async () => {
+    const password = form.getValues('password');
+    try {
+      await navigator.clipboard.writeText(password);
+      toast({
+        title: 'Contraseña copiada',
+        description: 'La contraseña se copió al portapapeles.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error al copiar',
+        description: 'No se pudo copiar la contraseña al portapapeles.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -198,15 +226,41 @@ export function AllianceUserForm({
                           Contraseña *
                         </FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type="text"
-                              placeholder="Contraseña generada automáticamente" 
-                              {...field}
-                              disabled={loading}
-                              className="font-medium h-10 font-mono text-sm"
-                            />
-                            <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <Input 
+                                type="text"
+                                placeholder="Contraseña generada automáticamente" 
+                                {...field}
+                                disabled={loading}
+                                className="font-medium h-10 font-mono text-sm pr-10"
+                              />
+                              <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRegeneratePassword}
+                                disabled={loading}
+                                className="flex-1 h-8 text-xs"
+                              >
+                                <RefreshCw className="h-3 w-3 mr-1.5" />
+                                Regenerar
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCopyPassword}
+                                disabled={loading}
+                                className="flex-1 h-8 text-xs"
+                              >
+                                <Copy className="h-3 w-3 mr-1.5" />
+                                Copiar
+                              </Button>
+                            </div>
                           </div>
                         </FormControl>
                         <FormMessage />
