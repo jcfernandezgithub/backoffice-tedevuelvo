@@ -166,38 +166,52 @@ export const allianceUsersClient = {
     userId: string, 
     input: Partial<AllianceUserInput>
   ): Promise<AllianceUser> {
-    await delay();
-    throwRandomError();
-
-    const userIndex = users.findIndex(user => user.id === userId && user.alianzaId === alianzaId);
-    if (userIndex === -1) {
-      throw new Error('Usuario no encontrado');
-    }
-
-    const user = users[userIndex];
-    const updatedUser = {
-      ...user,
-      ...input,
-      updatedAt: new Date().toISOString(),
-    };
-
-    users[userIndex] = updatedUser;
-
-    // Add audit event if role changed
-    if (input.role && input.role !== user.role) {
-      const auditEvent: AllianceUserAuditEvent = {
-        id: `AE-${Date.now()}`,
-        allianceId: alianzaId,
-        userId,
-        type: 'ROLE_CHANGED',
-        at: new Date().toISOString(),
-        actor: { id: 'current-admin', name: 'Admin Actual', role: 'ADMIN' },
-        note: `Rol cambiado de ${user.role} a ${input.role}`,
+    try {
+      // Build payload - only include fields that are provided
+      const payload: any = {
+        partnerId: alianzaId,
       };
-      auditEvents.unshift(auditEvent);
-    }
 
-    return updatedUser;
+      if (input.name) payload.name = input.name;
+      if (input.email) payload.email = input.email;
+      if (input.rut) payload.rut = input.rut;
+      
+      // Map frontend role to backend role if provided
+      if (input.role) {
+        payload.role = input.role === 'ALIANZA_ADMIN' ? 'PARTNER_ADMIN' : 'PARTNER_AGENT';
+      }
+
+      const response = await authenticatedFetch(`/partner-users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al actualizar usuario de alianza');
+      }
+
+      const data = await response.json();
+      
+      // Map backend response to frontend format
+      const updatedUser: AllianceUser = {
+        id: data._id || data.publicId,
+        alianzaId,
+        name: data.name,
+        rut: data.rut || '',
+        email: data.email,
+        role: data.role === 'PARTNER_ADMIN' ? 'ALIANZA_ADMIN' : 'ALIANZA_OPERADOR',
+        state: data.status === 'ACTIVE' ? 'ACTIVE' : data.status === 'DISABLED' ? 'BLOCKED' : 'BLOCKED',
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || new Date().toISOString(),
+        passwordLastChangedAt: data.passwordLastChangedAt,
+      };
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating alliance user:', error);
+      throw error;
+    }
   },
 
   async blockAllianceUser(alianzaId: string, userId: string, note?: string): Promise<void> {
