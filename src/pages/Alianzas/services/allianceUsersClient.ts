@@ -350,40 +350,19 @@ export const allianceUsersClient = {
   },
 
   async deleteAllianceUser(alianzaId: string, userId: string): Promise<void> {
-    await delay();
-    throwRandomError();
+    try {
+      const response = await authenticatedFetch(`/partner-users/${userId}`, {
+        method: 'DELETE',
+      });
 
-    const userIndex = users.findIndex(user => user.id === userId && user.alianzaId === alianzaId);
-    if (userIndex === -1) {
-      throw new Error('Usuario no encontrado');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al eliminar usuario de alianza');
+      }
+    } catch (error) {
+      console.error('Error deleting alliance user:', error);
+      throw error;
     }
-
-    const user = users[userIndex];
-
-    // Check if it's the last admin
-    const admins = users.filter(user => 
-      user.alianzaId === alianzaId && 
-      user.role === 'ALIANZA_ADMIN' && 
-      user.state === 'ACTIVE'
-    );
-    
-    if (admins.length === 1 && admins[0].id === userId) {
-      throw new Error('No se puede eliminar al último administrador de la alianza');
-    }
-
-    users.splice(userIndex, 1);
-
-    // Add audit event
-    const auditEvent: AllianceUserAuditEvent = {
-      id: `AE-${Date.now()}`,
-      allianceId: alianzaId,
-      userId,
-      type: 'USER_DELETED',
-      at: new Date().toISOString(),
-      actor: { id: 'current-admin', name: 'Admin Actual', role: 'ADMIN' },
-      note: `Usuario ${user.name} eliminado`,
-    };
-    auditEvents.unshift(auditEvent);
   },
 
   async getAllianceUserAudit(alianzaId: string, userId: string): Promise<AllianceUserAuditEvent[]> {
