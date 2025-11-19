@@ -7,7 +7,6 @@ export interface AllianceUser {
   name: string;
   rut: string;
   email: string;
-  phone: string;
   role: AllianceRole;
   state: AllianceUserState;
   lastPortalLoginAt?: string;

@@ -112,11 +112,6 @@ export function AllianceUserDetailsDrawer({
                     <span>{user.email}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Teléfono:</span>
-                    <span>{user.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     <span className="font-medium">Rol:</span>
                     <span>{getRoleDisplay(user.role)}</span>

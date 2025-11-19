@@ -46,11 +46,10 @@ export function UsuariosTab({ alianceName, alianzaData }: UsuariosTabProps) {
     if (!data?.users) return;
     
     const csvContent = [
-      'Nombre,Email,Teléfono,Rol,Estado,Último Acceso,Creación',
+      'Nombre,Email,Rol,Estado,Último Acceso,Creación',
       ...data.users.map(user => [
         user.name,
         user.email,
-        user.phone,
         user.role === 'ALIANZA_ADMIN' ? 'Administrador' : 'Operador',
         user.state === 'ACTIVE' ? 'Activo' : user.state === 'BLOCKED' ? 'Bloqueado' : 'Pendiente',
         user.lastPortalLoginAt || 'Nunca',

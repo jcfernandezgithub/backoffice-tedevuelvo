@@ -49,10 +49,13 @@ export const allianceUserSchema = z.object({
     .string()
     .min(1, 'Email es requerido')
     .email('Email inválido'),
-  phone: z
+  password: z
     .string()
-    .min(1, 'Teléfono es requerido')
-    .refine((val) => phoneRegex.test(val), 'Formato de teléfono chileno inválido'),
+    .min(8, 'Mínimo 8 caracteres')
+    .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
+    .regex(/[a-z]/, 'Debe contener al menos una minúscula')
+    .regex(/[0-9]/, 'Debe contener al menos un número')
+    .regex(/[^A-Za-z0-9]/, 'Debe contener al menos un carácter especial'),
   role: z.enum(['ALIANZA_ADMIN', 'ALIANZA_OPERADOR'], {
     required_error: 'Rol es requerido',
   }),

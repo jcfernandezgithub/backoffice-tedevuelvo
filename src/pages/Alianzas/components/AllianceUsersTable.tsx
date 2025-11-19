@@ -296,7 +296,6 @@ export function AllianceUsersTable({
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.phone}</TableCell>
                     <TableCell>{getRoleDisplay(user.role)}</TableCell>
                     <TableCell>{getStateDisplay(user.state)}</TableCell>
                     <TableCell>{formatDate(user.lastPortalLoginAt)}</TableCell>
