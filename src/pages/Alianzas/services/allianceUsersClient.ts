@@ -27,74 +27,74 @@ export const allianceUsersClient = {
     alianzaId: string, 
     params: AllianceUserListParams = {}
   ): Promise<AllianceUserListResponse> {
-    await delay();
-    throwRandomError();
-
-    let filteredUsers = users.filter(user => user.alianzaId === alianzaId);
-
-    // Apply search filter
-    if (params.search) {
-      const searchTerm = params.search.toLowerCase();
-      filteredUsers = filteredUsers.filter(user =>
-        user.name.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    // Apply role filter
-    if (params.role && params.role.length > 0) {
-      filteredUsers = filteredUsers.filter(user => params.role!.includes(user.role));
-    }
-
-    // Apply state filter
-    if (params.state && params.state.length > 0) {
-      filteredUsers = filteredUsers.filter(user => params.state!.includes(user.state));
-    }
-
-    // Apply date filters
-    if (params.createdFrom) {
-      filteredUsers = filteredUsers.filter(user => 
-        new Date(user.createdAt) >= new Date(params.createdFrom!)
-      );
-    }
-    if (params.createdTo) {
-      filteredUsers = filteredUsers.filter(user => 
-        new Date(user.createdAt) <= new Date(params.createdTo!)
-      );
-    }
-
-    // Apply sorting
-    if (params.sortBy) {
-      filteredUsers.sort((a, b) => {
-        const aValue = a[params.sortBy!];
-        const bValue = b[params.sortBy!];
-        const direction = params.sortDir === 'desc' ? -1 : 1;
-
-        if (aValue === undefined && bValue === undefined) return 0;
-        if (aValue === undefined) return direction;
-        if (bValue === undefined) return -direction;
-
-        if (aValue < bValue) return -direction;
-        if (aValue > bValue) return direction;
-        return 0;
+    try {
+      const queryParams = new URLSearchParams({
+        partnerId: alianzaId,
       });
+
+      const response = await authenticatedFetch(`/partner-users?${queryParams}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al obtener usuarios de alianza');
+      }
+
+      const data = await response.json();
+      
+      // Map backend response to frontend format
+      const mappedUsers: AllianceUser[] = (data || []).map((user: any) => ({
+        id: user._id || user.publicId,
+        alianzaId,
+        name: user.name,
+        rut: user.rut,
+        email: user.email,
+        role: user.role === 'PARTNER_ADMIN' ? 'ALIANZA_ADMIN' : 'ALIANZA_OPERADOR',
+        state: user.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
+        createdAt: user.createdAt || new Date().toISOString(),
+        updatedAt: user.updatedAt || new Date().toISOString(),
+        passwordLastChangedAt: user.passwordLastChangedAt,
+      }));
+
+      // Apply client-side filtering
+      let filteredUsers = mappedUsers;
+
+      if (params.search) {
+        const searchTerm = params.search.toLowerCase();
+        filteredUsers = filteredUsers.filter(user =>
+          user.name.toLowerCase().includes(searchTerm) ||
+          user.email.toLowerCase().includes(searchTerm)
+        );
+      }
+
+      if (params.role && params.role.length > 0) {
+        filteredUsers = filteredUsers.filter(user => params.role!.includes(user.role));
+      }
+
+      if (params.state && params.state.length > 0) {
+        filteredUsers = filteredUsers.filter(user => params.state!.includes(user.state));
+      }
+
+      // Apply pagination
+      const page = params.page || 1;
+      const pageSize = params.pageSize || 10;
+      const total = filteredUsers.length;
+      const totalPages = Math.ceil(total / pageSize);
+      const startIndex = (page - 1) * pageSize;
+      const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
+
+      return {
+        users: paginatedUsers,
+        total,
+        page,
+        pageSize,
+        totalPages,
+      };
+    } catch (error) {
+      console.error('Error listing alliance users:', error);
+      throw error;
     }
-
-    // Apply pagination
-    const page = params.page || 1;
-    const pageSize = params.pageSize || 10;
-    const total = filteredUsers.length;
-    const totalPages = Math.ceil(total / pageSize);
-    const startIndex = (page - 1) * pageSize;
-    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
-
-    return {
-      users: paginatedUsers,
-      total,
-      page,
-      pageSize,
-      totalPages,
-    };
   },
 
   async countAllianceUsers(alianzaId: string): Promise<number> {
