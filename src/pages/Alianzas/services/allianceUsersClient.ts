@@ -28,7 +28,26 @@ export const allianceUsersClient = {
     params: AllianceUserListParams = {}
   ): Promise<AllianceUserListResponse> {
     try {
-      const response = await authenticatedFetch('/partner-users', {
+      const queryParams = new URLSearchParams({
+        partnerId: alianzaId,
+      });
+
+      // Add optional query parameters
+      if (params.search) queryParams.set('q', params.search);
+      if (params.page) queryParams.set('page', params.page.toString());
+      if (params.pageSize) queryParams.set('limit', params.pageSize.toString());
+      if (params.sortBy) {
+        const sortDir = params.sortDir === 'desc' ? '-' : '';
+        queryParams.set('sort', `${sortDir}${params.sortBy}`);
+      }
+      if (params.role && params.role.length > 0) {
+        queryParams.set('role', params.role.join(','));
+      }
+      if (params.state && params.state.length > 0) {
+        queryParams.set('status', params.state.join(','));
+      }
+
+      const response = await authenticatedFetch(`/partner-users?${queryParams}`, {
         method: 'GET',
       });
 
@@ -53,35 +72,14 @@ export const allianceUsersClient = {
         passwordLastChangedAt: user.passwordLastChangedAt,
       }));
 
-      // Apply client-side filtering
-      let filteredUsers = mappedUsers;
-
-      if (params.search) {
-        const searchTerm = params.search.toLowerCase();
-        filteredUsers = filteredUsers.filter(user =>
-          user.name.toLowerCase().includes(searchTerm) ||
-          user.email.toLowerCase().includes(searchTerm)
-        );
-      }
-
-      if (params.role && params.role.length > 0) {
-        filteredUsers = filteredUsers.filter(user => params.role!.includes(user.role));
-      }
-
-      if (params.state && params.state.length > 0) {
-        filteredUsers = filteredUsers.filter(user => params.state!.includes(user.state));
-      }
-
-      // Apply pagination
+      // Calculate pagination info from response
       const page = params.page || 1;
-      const pageSize = params.pageSize || 10;
-      const total = filteredUsers.length;
+      const pageSize = params.pageSize || 20;
+      const total = mappedUsers.length;
       const totalPages = Math.ceil(total / pageSize);
-      const startIndex = (page - 1) * pageSize;
-      const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
 
       return {
-        users: paginatedUsers,
+        users: mappedUsers,
         total,
         page,
         pageSize,
