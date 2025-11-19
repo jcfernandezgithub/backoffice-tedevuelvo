@@ -6,6 +6,7 @@ import type {
   AllianceUserAuditEvent 
 } from '../types/allianceUserTypes';
 import type { AllianceUserInput } from '../schemas/allianceUserSchema';
+import { authenticatedFetch } from '@/services/apiClient';
 
 let users: AllianceUser[] = [...allAllianceUsers];
 let auditEvents: AllianceUserAuditEvent[] = [...allianceUserAuditEventsMock];
@@ -102,44 +103,48 @@ export const allianceUsersClient = {
   },
 
   async createAllianceUser(alianzaId: string, input: AllianceUserInput): Promise<AllianceUser> {
-    await delay();
-    throwRandomError();
+    try {
+      // Map frontend role to backend role
+      const backendRole = input.role === 'ALIANZA_ADMIN' ? 'PARTNER_ADMIN' : 'PARTNER_AGENT';
+      
+      const payload = {
+        rut: input.rut,
+        email: input.email,
+        name: input.name,
+        role: backendRole,
+        password: input.password,
+      };
 
-    // Check for duplicate email within the alliance
-    const existingUser = users.find(user => 
-      user.alianzaId === alianzaId && user.email.toLowerCase() === input.email.toLowerCase()
-    );
-    if (existingUser) {
-      throw new Error('Ya existe un usuario con este email en la alianza');
+      const response = await authenticatedFetch('/partners-users', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al crear usuario de alianza');
+      }
+
+      const data = await response.json();
+      
+      // Map backend response to frontend format
+      const newUser: AllianceUser = {
+        id: data.id || data.publicId,
+        alianzaId,
+        name: data.name,
+        rut: data.rut,
+        email: data.email,
+        role: data.role === 'PARTNER_ADMIN' ? 'ALIANZA_ADMIN' : 'ALIANZA_OPERADOR',
+        state: data.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
+        createdAt: data.createdAt || new Date().toISOString(),
+        updatedAt: data.updatedAt || new Date().toISOString(),
+      };
+
+      return newUser;
+    } catch (error) {
+      console.error('Error creating alliance user:', error);
+      throw error;
     }
-
-    const now = new Date().toISOString();
-    const newUser: AllianceUser = {
-      id: generateId(),
-      alianzaId,
-      name: input.name,
-      rut: input.rut,
-      email: input.email,
-      role: input.role,
-      state: 'ACTIVE',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    users.unshift(newUser);
-
-    // Add audit event
-    const auditEvent: AllianceUserAuditEvent = {
-      id: `AE-${Date.now()}`,
-      allianceId: alianzaId,
-      userId: newUser.id,
-      type: 'USER_CREATED',
-      at: now,
-      actor: { id: 'current-admin', name: 'Admin Actual', role: 'ADMIN' },
-    };
-    auditEvents.unshift(auditEvent);
-
-    return newUser;
   },
 
   async updateAllianceUser(
