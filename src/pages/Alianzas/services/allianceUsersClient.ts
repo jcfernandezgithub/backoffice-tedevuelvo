@@ -115,7 +115,7 @@ export const allianceUsersClient = {
         password: input.password,
       };
 
-      const response = await authenticatedFetch('/partners-users', {
+      const response = await authenticatedFetch('/partner-users', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
