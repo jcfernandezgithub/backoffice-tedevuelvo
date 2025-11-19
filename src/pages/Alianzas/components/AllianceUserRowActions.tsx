@@ -7,7 +7,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   MoreHorizontal,
   Edit,
@@ -80,40 +79,20 @@ export function AllianceUserRowActions({
     setShowDetailsDrawer(true);
   };
 
-  const getStateDisplay = (state: AllianceUser['state']) => {
-    switch (state) {
-      case 'ACTIVE':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Activo</Badge>;
-      case 'BLOCKED':
-        return <Badge variant="destructive">Bloqueado</Badge>;
-      case 'PENDING':
-        return <Badge variant="secondary">Pendiente</Badge>;
-      default:
-        return <Badge variant="outline">{state}</Badge>;
-    }
-  };
-
-  const getRoleDisplay = (role: AllianceUser['role']) => {
-    return role === 'ALIANZA_ADMIN' ? 'Administrador' : 'Operador';
-  };
-
   return (
     <>
-      <div className="flex items-center gap-2">
-        {getStateDisplay(user.state)}
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={loading}
-              aria-label={`Acciones para ${user.name}`}
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            disabled={loading}
+            aria-label={`Acciones para ${user.name}`}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={handleViewDetails}>
               <Eye className="mr-2 h-4 w-4" />
@@ -170,7 +149,6 @@ export function AllianceUserRowActions({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
 
       <AllianceUserForm
         open={showEditDialog}
