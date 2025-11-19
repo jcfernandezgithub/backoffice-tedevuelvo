@@ -50,7 +50,6 @@ interface AllianceUsersTableProps {
   onResetPassword: (userId: string) => void;
   onResendInvitation: (userId: string) => void;
   onRevokeSessions: (userId: string) => void;
-  onDeleteUser: (userId: string) => Promise<void>;
   onExport: () => void;
   loading?: boolean;
   alianceName: string;
@@ -71,7 +70,6 @@ export function AllianceUsersTable({
   onResetPassword,
   onResendInvitation,
   onRevokeSessions,
-  onDeleteUser,
   onExport,
   loading = false,
   alianceName
