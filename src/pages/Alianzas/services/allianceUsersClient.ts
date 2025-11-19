@@ -36,8 +36,7 @@ export const allianceUsersClient = {
       const searchTerm = params.search.toLowerCase();
       filteredUsers = filteredUsers.filter(user =>
         user.name.toLowerCase().includes(searchTerm) ||
-        user.email.toLowerCase().includes(searchTerm) ||
-        user.phone.toLowerCase().includes(searchTerm)
+        user.email.toLowerCase().includes(searchTerm)
       );
     }
 
@@ -121,7 +120,6 @@ export const allianceUsersClient = {
       name: input.name,
       rut: input.rut,
       email: input.email,
-      phone: input.phone,
       role: input.role,
       state: 'ACTIVE',
       createdAt: now,

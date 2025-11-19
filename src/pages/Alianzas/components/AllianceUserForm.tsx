@@ -27,9 +27,10 @@ import {
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, UserPlus, Mail, Phone, Shield, UserCog, CheckCircle2 } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Shield, UserCog, CheckCircle2, Key } from 'lucide-react';
 import { allianceUserSchema, type AllianceUserInput } from '../schemas/allianceUserSchema';
 import type { AllianceUser } from '../types/allianceUserTypes';
+import { generateSecurePassword } from '@/lib/passwordGenerator';
 
 interface AllianceUserFormProps {
   open: boolean;
@@ -56,7 +57,7 @@ export function AllianceUserForm({
       name: user?.name || '',
       rut: user?.rut || '',
       email: user?.email || '',
-      phone: user?.phone || '',
+      password: generateSecurePassword(),
       role: user?.role || 'ALIANZA_OPERADOR',
     },
   });
@@ -190,19 +191,23 @@ export function AllianceUserForm({
 
                   <FormField
                     control={form.control}
-                    name="phone"
+                    name="password"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Teléfono *
+                          Contraseña *
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="+56 9 1234 5678" 
-                            {...field}
-                            disabled={loading}
-                            className="font-medium h-10"
-                          />
+                          <div className="relative">
+                            <Input 
+                              type="text"
+                              placeholder="Contraseña generada automáticamente" 
+                              {...field}
+                              disabled={loading}
+                              className="font-medium h-10 font-mono text-sm"
+                            />
+                            <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
