@@ -59,13 +59,17 @@ export function AllianceUserForm({
       name: user?.name || '',
       rut: user?.rut || '',
       email: user?.email || '',
-      password: generateSecurePassword(),
+      password: isEditing ? '' : generateSecurePassword(),
       role: user?.role || 'ALIANZA_OPERADOR',
     },
   });
 
   const handleSubmit = (data: AllianceUserInput) => {
-    onSubmit(data);
+    // Remove password from data when editing
+    const submitData = isEditing 
+      ? { ...data, password: undefined }
+      : data;
+    onSubmit(submitData);
     if (!loading) {
       form.reset();
       onOpenChange(false);
@@ -217,56 +221,59 @@ export function AllianceUserForm({
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Contraseña *
-                        </FormLabel>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <div className="relative">
-                              <Input 
-                                type="text"
-                                placeholder="Contraseña generada automáticamente" 
-                                {...field}
-                                disabled={loading}
-                                className="font-medium h-10 font-mono text-sm pr-10"
-                              />
-                              <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  {/* Password field - only shown when creating */}
+                  {!isEditing && (
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            Contraseña *
+                          </FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <Input 
+                                  type="text"
+                                  placeholder="Contraseña generada automáticamente" 
+                                  {...field}
+                                  disabled={loading}
+                                  className="font-medium h-10 font-mono text-sm pr-10"
+                                />
+                                <Key className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleRegeneratePassword}
+                                  disabled={loading}
+                                  className="flex-1 h-8 text-xs"
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1.5" />
+                                  Regenerar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={handleCopyPassword}
+                                  disabled={loading}
+                                  className="flex-1 h-8 text-xs"
+                                >
+                                  <Copy className="h-3 w-3 mr-1.5" />
+                                  Copiar
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleRegeneratePassword}
-                                disabled={loading}
-                                className="flex-1 h-8 text-xs"
-                              >
-                                <RefreshCw className="h-3 w-3 mr-1.5" />
-                                Regenerar
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={handleCopyPassword}
-                                disabled={loading}
-                                className="flex-1 h-8 text-xs"
-                              >
-                                <Copy className="h-3 w-3 mr-1.5" />
-                                Copiar
-                              </Button>
-                            </div>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
