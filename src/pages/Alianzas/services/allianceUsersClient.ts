@@ -113,6 +113,7 @@ export const allianceUsersClient = {
         name: input.name,
         role: backendRole,
         password: input.password,
+        partnerId: alianzaId,
       };
 
       const response = await authenticatedFetch('/partner-users', {
