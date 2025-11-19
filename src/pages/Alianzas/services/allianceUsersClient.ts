@@ -28,11 +28,7 @@ export const allianceUsersClient = {
     params: AllianceUserListParams = {}
   ): Promise<AllianceUserListResponse> {
     try {
-      const queryParams = new URLSearchParams({
-        partnerId: alianzaId,
-      });
-
-      const response = await authenticatedFetch(`/partner-users?${queryParams}`, {
+      const response = await authenticatedFetch('/partner-users', {
         method: 'GET',
       });
 
