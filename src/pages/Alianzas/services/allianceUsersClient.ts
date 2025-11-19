@@ -59,11 +59,11 @@ export const allianceUsersClient = {
       const data = await response.json();
       
       // Map backend response to frontend format
-      const mappedUsers: AllianceUser[] = (data || []).map((user: any) => ({
+      const mappedUsers: AllianceUser[] = (data.items || []).map((user: any) => ({
         id: user._id || user.publicId,
         alianzaId,
         name: user.name,
-        rut: user.rut,
+        rut: user.rut || '',
         email: user.email,
         role: user.role === 'PARTNER_ADMIN' ? 'ALIANZA_ADMIN' : 'ALIANZA_OPERADOR',
         state: user.status === 'ACTIVE' ? 'ACTIVE' : 'BLOCKED',
@@ -72,10 +72,10 @@ export const allianceUsersClient = {
         passwordLastChangedAt: user.passwordLastChangedAt,
       }));
 
-      // Calculate pagination info from response
+      // Use pagination info from response
       const page = params.page || 1;
       const pageSize = params.pageSize || 20;
-      const total = mappedUsers.length;
+      const total = data.total || 0;
       const totalPages = Math.ceil(total / pageSize);
 
       return {
