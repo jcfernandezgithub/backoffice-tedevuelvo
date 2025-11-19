@@ -163,7 +163,7 @@ export function UsuariosTab({ alianceName, alianzaData }: UsuariosTabProps) {
       onResetPassword={resetPasswordMutation.mutate}
       onResendInvitation={resendInvitationMutation.mutate}
       onRevokeSessions={revokeSessionsMutation.mutate}
-      onDeleteUser={deleteMutation.mutate}
+      onDeleteUser={deleteMutation.mutateAsync}
       onExport={handleExport}
       loading={isLoading}
       alianceName={alianceName}

@@ -49,7 +49,7 @@ interface AllianceUsersTableProps {
   onResetPassword: (userId: string) => void;
   onResendInvitation: (userId: string) => void;
   onRevokeSessions: (userId: string) => void;
-  onDeleteUser: (userId: string) => void;
+  onDeleteUser: (userId: string) => Promise<void>;
   onExport: () => void;
   loading?: boolean;
   alianceName: string;

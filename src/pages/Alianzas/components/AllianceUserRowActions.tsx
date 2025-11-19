@@ -32,7 +32,7 @@ interface AllianceUserRowActionsProps {
   onResetPassword: (userId: string) => void;
   onResendInvitation: (userId: string) => void;
   onRevokeSessions: (userId: string) => void;
-  onDelete: (userId: string) => void;
+  onDelete: (userId: string) => Promise<void>;
   onViewDetails: (userId: string) => void;
   loading?: boolean;
 }
@@ -53,6 +53,7 @@ export function AllianceUserRowActions({
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const canBlock = user.state === 'ACTIVE';
   const canUnblock = user.state === 'BLOCKED';
@@ -69,9 +70,13 @@ export function AllianceUserRowActions({
     setShowBlockDialog(false);
   };
 
-  const handleDelete = () => {
-    onDelete(user.id);
-    setShowDeleteDialog(false);
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await onDelete(user.id);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleViewDetails = () => {
@@ -171,6 +176,7 @@ export function AllianceUserRowActions({
         onOpenChange={setShowDeleteDialog}
         onConfirm={handleDelete}
         userName={user.name}
+        loading={isDeleting}
       />
 
       <AllianceUserDetailsDrawer
