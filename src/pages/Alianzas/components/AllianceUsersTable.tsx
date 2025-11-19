@@ -44,6 +44,7 @@ interface AllianceUsersTableProps {
   onParamsChange: (params: AllianceUserListParams) => void;
   onCreateUser: (data: AllianceUserInput) => void;
   onEditUser: (userId: string, data: any) => void;
+  onDisableUser: (userId: string) => Promise<void>;
   onBlockUser: (userId: string, note?: string) => void;
   onUnblockUser: (userId: string) => void;
   onResetPassword: (userId: string) => void;
@@ -64,6 +65,7 @@ export function AllianceUsersTable({
   onParamsChange,
   onCreateUser,
   onEditUser,
+  onDisableUser,
   onBlockUser,
   onUnblockUser,
   onResetPassword,
@@ -308,7 +310,7 @@ export function AllianceUsersTable({
                         onResetPassword={onResetPassword}
                         onResendInvitation={onResendInvitation}
                         onRevokeSessions={onRevokeSessions}
-                        onDelete={onDeleteUser}
+                        onDisable={onDisableUser}
                         onViewDetails={handleViewDetails}
                         loading={loading}
                       />

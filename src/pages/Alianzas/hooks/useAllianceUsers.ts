@@ -216,6 +216,31 @@ export function useDeleteAllianceUser(alianzaId: string) {
   });
 }
 
+export const useDisableAllianceUser = (alianzaId: string) => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (userId: string) => 
+      allianceUsersClient.deleteAllianceUser(alianzaId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allianceUsers', alianzaId] });
+      queryClient.invalidateQueries({ queryKey: ['allianceUserCount', alianzaId] });
+      toast({
+        title: 'Usuario deshabilitado',
+        description: 'El usuario ha sido deshabilitado exitosamente',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error al deshabilitar usuario',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
 export function useAllianceUserAudit(alianzaId: string, userId: string) {
   return useQuery({
     queryKey: ['allianceUserAudit', alianzaId, userId],

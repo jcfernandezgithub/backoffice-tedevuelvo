@@ -21,7 +21,7 @@ import {
 import type { AllianceUser } from '../types/allianceUserTypes';
 import { AllianceUserForm } from './AllianceUserForm';
 import { BlockUserDialog } from './BlockUserDialog';
-import { DeleteUserDialog } from './DeleteUserDialog';
+import { DisableUserDialog } from './DisableUserDialog';
 import { AllianceUserDetailsDrawer } from './AllianceUserDetailsDrawer';
 
 interface AllianceUserRowActionsProps {
@@ -32,7 +32,7 @@ interface AllianceUserRowActionsProps {
   onResetPassword: (userId: string) => void;
   onResendInvitation: (userId: string) => void;
   onRevokeSessions: (userId: string) => void;
-  onDelete: (userId: string) => Promise<void>;
+  onDisable: (userId: string) => Promise<void>;
   onViewDetails: (userId: string) => void;
   loading?: boolean;
 }
@@ -45,20 +45,20 @@ export function AllianceUserRowActions({
   onResetPassword,
   onResendInvitation,
   onRevokeSessions,
-  onDelete,
+  onDisable,
   onViewDetails,
   loading = false
 }: AllianceUserRowActionsProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
   const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDisabling, setIsDisabling] = useState(false);
 
   const canBlock = user.state === 'ACTIVE';
   const canUnblock = user.state === 'BLOCKED';
   const canResendInvitation = user.state === 'PENDING';
-  const canDelete = user.state !== 'ACTIVE' || user.role !== 'ALIANZA_ADMIN';
+  const canDisable = user.state === 'ACTIVE' && user.role !== 'ALIANZA_ADMIN';
 
   const handleEdit = (data: any) => {
     onEdit(user.id, data);
@@ -70,12 +70,12 @@ export function AllianceUserRowActions({
     setShowBlockDialog(false);
   };
 
-  const handleDelete = async () => {
+  const handleDisable = async () => {
+    setIsDisabling(true);
     try {
-      setIsDeleting(true);
-      await onDelete(user.id);
+      await onDisable(user.id);
     } finally {
-      setIsDeleting(false);
+      setIsDisabling(false);
     }
   };
 
@@ -144,14 +144,15 @@ export function AllianceUserRowActions({
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem 
-              onClick={() => setShowDeleteDialog(true)}
-              className="text-destructive focus:text-destructive"
-              disabled={!canDelete}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar usuario
-            </DropdownMenuItem>
+            {canDisable && (
+              <DropdownMenuItem 
+                onClick={() => setShowDisableDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Deshabilitar usuario
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -171,12 +172,12 @@ export function AllianceUserRowActions({
         userName={user.name}
       />
 
-      <DeleteUserDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onConfirm={handleDelete}
+      <DisableUserDialog
+        open={showDisableDialog}
+        onOpenChange={setShowDisableDialog}
+        onConfirm={handleDisable}
         userName={user.name}
-        loading={isDeleting}
+        loading={isDisabling}
       />
 
       <AllianceUserDetailsDrawer

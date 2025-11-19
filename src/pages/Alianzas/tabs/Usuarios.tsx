@@ -5,16 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Building2, Mail, Phone, MapPin, Percent, Calendar, Users } from 'lucide-react';
 import { AllianceUsersTable } from '../components/AllianceUsersTable';
-import { 
+import {
   useAllianceUsers,
   useCreateAllianceUser,
   useUpdateAllianceUser,
+  useDisableAllianceUser,
   useBlockAllianceUser,
   useUnblockAllianceUser,
   useResetAllianceUserPassword,
   useResendAllianceInvitation,
   useRevokeAlliancePortalSessions,
-  useDeleteAllianceUser
 } from '../hooks/useAllianceUsers';
 import type { AllianceUserListParams } from '../types/allianceUserTypes';
 
@@ -40,7 +40,7 @@ export function UsuariosTab({ alianceName, alianzaData }: UsuariosTabProps) {
   const resetPasswordMutation = useResetAllianceUserPassword(alianzaId!);
   const resendInvitationMutation = useResendAllianceInvitation(alianzaId!);
   const revokeSessionsMutation = useRevokeAlliancePortalSessions(alianzaId!);
-  const deleteMutation = useDeleteAllianceUser(alianzaId!);
+  const disableMutation = useDisableAllianceUser(alianzaId!);
 
   const handleExport = () => {
     if (!data?.users) return;
@@ -158,6 +158,7 @@ export function UsuariosTab({ alianceName, alianzaData }: UsuariosTabProps) {
       onParamsChange={setParams}
       onCreateUser={createMutation.mutate}
       onEditUser={(userId, data) => updateMutation.mutate({ userId, input: data })}
+      onDisableUser={disableMutation.mutateAsync}
       onBlockUser={(userId, note) => blockMutation.mutate({ userId, note })}
       onUnblockUser={unblockMutation.mutate}
       onResetPassword={resetPasswordMutation.mutate}
