@@ -92,8 +92,27 @@ export const allianceUsersClient = {
   },
 
   async countAllianceUsers(alianzaId: string): Promise<number> {
-    await delay(100);
-    return users.filter(user => user.alianzaId === alianzaId).length;
+    try {
+      const queryParams = new URLSearchParams({
+        partnerId: alianzaId,
+        page: '1',
+        limit: '1', // Solo necesitamos el total
+      });
+
+      const response = await authenticatedFetch(`/partner-users?${queryParams}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener conteo de usuarios');
+      }
+
+      const data = await response.json();
+      return data.total || 0;
+    } catch (error) {
+      console.error('Error counting alliance users:', error);
+      return 0;
+    }
   },
 
   async createAllianceUser(alianzaId: string, input: AllianceUserInput): Promise<AllianceUser> {
