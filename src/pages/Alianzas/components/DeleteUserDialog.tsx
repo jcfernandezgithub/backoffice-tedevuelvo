@@ -15,22 +15,24 @@ import { Trash2 } from 'lucide-react';
 interface DeleteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   userName: string;
+  loading?: boolean;
 }
 
 export function DeleteUserDialog({
   open,
   onOpenChange,
   onConfirm,
-  userName
+  userName,
+  loading = false
 }: DeleteUserDialogProps) {
   const [confirmText, setConfirmText] = useState('');
   const canDelete = confirmText === userName;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (canDelete) {
-      onConfirm();
+      await onConfirm();
       setConfirmText('');
       onOpenChange(false);
     }
@@ -88,9 +90,9 @@ export function DeleteUserDialog({
           <Button 
             variant="destructive" 
             onClick={handleConfirm}
-            disabled={!canDelete}
+            disabled={!canDelete || loading}
           >
-            Eliminar permanentemente
+            {loading ? 'Eliminando...' : 'Eliminar permanentemente'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
