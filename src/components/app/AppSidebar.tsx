@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 const items = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false },
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true },
-  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'dev' as const, adminOnly: false },
+  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'cert' as const, adminOnly: false },
   { title: 'Certificados', url: '/certificados', icon: FileCheck2, status: 'dev' as const, adminOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false },
