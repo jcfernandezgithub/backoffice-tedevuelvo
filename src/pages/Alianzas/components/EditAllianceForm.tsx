@@ -136,7 +136,7 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
                               <FormItem>
                                 <FormLabel className="text-xs">Nombre Comercial *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Ej: Sindicato Financiero XYZ" {...field} />
+                                  <Input placeholder="Ej: Sindicato Financiero XYZ" {...field} disabled className="bg-muted cursor-not-allowed" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -149,7 +149,7 @@ export function EditAllianceForm({ alianza, open, onOpenChange, onUpdate, loadin
                               <FormItem>
                                 <FormLabel className="text-xs">Código Único *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Ej: SFX-001" {...field} className="font-mono" />
+                                  <Input placeholder="Ej: SFX-001" {...field} className="font-mono bg-muted cursor-not-allowed" disabled />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
