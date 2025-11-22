@@ -72,9 +72,3 @@ export interface Comision {
   updatedAt: string
 }
 
-export interface Certificado {
-  id: string
-  solicitudId: string
-  url: string
-  createdAt: string
-}

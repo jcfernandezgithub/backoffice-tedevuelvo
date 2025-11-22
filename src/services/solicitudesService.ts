@@ -1,6 +1,6 @@
 import { db } from "./db"
 import { uid } from "./storage"
-import { Alianza, Certificado, Comision, EstadoSolicitud, Solicitud } from "@/types/domain"
+import { Alianza, Comision, EstadoSolicitud, Solicitud } from "@/types/domain"
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -102,9 +102,8 @@ export const solicitudesService = {
     }
 
     if (nuevo === 'CERTIFICADO_EMITIDO') {
-      const cert: Certificado = { id: uid('cf-'), solicitudId: id, url: '#', createdAt: now }
-      // guardar certificado en storage simple (reutilizamos comisiones key? mejor su propia, pero por simplicidad omitimos persistencia)
-      updated.certificadoId = cert.id
+      // Certificado emitido - guardar solo el ID
+      updated.certificadoId = uid('cf-')
     }
 
     arr[idx] = updated
