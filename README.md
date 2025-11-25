@@ -1,8 +1,27 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.5
+## Versión 1.1.6
 
 ## Changelog
+
+### Versión 1.1.6 - 2025-11-25
+
+#### Limpieza del Módulo
+- **Eliminación del módulo Certificados**: Removido completamente el módulo de certificados del sistema.
+  - Eliminada opción "Certificados" del menú lateral de navegación.
+  - Eliminadas todas las rutas relacionadas con `/certificados`.
+  - Eliminados componentes, mocks y tipos relacionados con certificados.
+  - Actualizado `domain.ts` para remover la interfaz `Certificado`.
+  - Limpieza en `solicitudesService.ts` de referencias a certificados.
+
+#### Mejoras en Alianzas Comerciales
+- **Protección de datos inmutables en edición de alianzas**: Los campos críticos ahora no son editables.
+  - Campo "Nombre Comercial" ahora es de solo lectura en el formulario de edición.
+  - Campo "Código Único" ahora es de solo lectura en el formulario de edición.
+  - Indicadores visuales (fondo gris y cursor no permitido) para campos no editables.
+  - Prevención de modificaciones accidentales de identificadores únicos de alianzas.
+
+---
 
 ### Versión 1.1.5 - 2025-11-11
 
