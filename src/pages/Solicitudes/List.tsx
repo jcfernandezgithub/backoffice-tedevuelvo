@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { solicitudesService } from '@/services/solicitudesService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,25 +13,51 @@ import { useMemo } from 'react'
 export default function SolicitudesList() {
   const [searchParams] = useSearchParams()
   const alianzaIdFilter = searchParams.get('alianzaId')
-  const { data = [], isLoading } = useQuery({ queryKey: ['solicitudes'], queryFn: () => solicitudesService.list() })
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { toast } = useToast()
 
-  const filteredData = useMemo(() => {
-    if (!alianzaIdFilter) return data
-    return data.filter(s => s.alianzaId === alianzaIdFilter)
-  }, [data, alianzaIdFilter])
+  // Si hay partnerId, usar el endpoint real, sino usar mock local
+  const { data: partnerData = [], isLoading: isLoadingPartner } = useQuery({
+    queryKey: ['partner-solicitudes', alianzaIdFilter],
+    queryFn: () => refundAdminApi.listByPartner(alianzaIdFilter!),
+    enabled: !!alianzaIdFilter,
+  })
 
-  const columns: Column<any>[] = [
-    { key: 'id', header: 'ID', sortable: true },
-    { key: 'cliente', header: 'Cliente', render: (r) => r.cliente?.nombre, sortable: true },
-    { key: 'estado', header: 'Estado', sortable: true },
-    { key: 'alianzaId', header: 'Alianza', sortable: true },
-    { key: 'montoADevolverEstimado', header: 'Estimado', render: (r) => <Money value={r.montoADevolverEstimado} />, sortable: true },
-    { key: 'updatedAt', header: 'Actualizado', render: (r) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
-    { key: 'acciones', header: 'Acciones', render: (r) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
-  ]
+  const { data: mockData = [], isLoading: isLoadingMock } = useQuery({
+    queryKey: ['solicitudes'],
+    queryFn: () => solicitudesService.list(),
+    enabled: !alianzaIdFilter,
+  })
+
+  const data = alianzaIdFilter ? partnerData : mockData
+  const isLoading = alianzaIdFilter ? isLoadingPartner : isLoadingMock
+
+  const columns: Column<any>[] = useMemo(() => {
+    if (alianzaIdFilter) {
+      // Columnas para datos del API real (partner refunds)
+      return [
+        { key: 'publicId', header: 'ID', sortable: true },
+        { key: 'fullName', header: 'Cliente', sortable: true },
+        { key: 'status', header: 'Estado', sortable: true },
+        { key: 'institutionId', header: 'Institución', sortable: true },
+        { key: 'estimatedAmountCLP', header: 'Estimado', render: (r: any) => <Money value={r.estimatedAmountCLP} />, sortable: true },
+        { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
+        { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
+      ]
+    } else {
+      // Columnas para datos mock locales
+      return [
+        { key: 'id', header: 'ID', sortable: true },
+        { key: 'cliente', header: 'Cliente', render: (r: any) => r.cliente?.nombre, sortable: true },
+        { key: 'estado', header: 'Estado', sortable: true },
+        { key: 'alianzaId', header: 'Alianza', sortable: true },
+        { key: 'montoADevolverEstimado', header: 'Estimado', render: (r: any) => <Money value={r.montoADevolverEstimado} />, sortable: true },
+        { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
+        { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
+      ]
+    }
+  }, [alianzaIdFilter, navigate])
 
   const crear = async () => {
     const base = {
@@ -44,8 +71,8 @@ export default function SolicitudesList() {
     qc.invalidateQueries({ queryKey: ['solicitudes'] })
   }
 
-  const exportarCSV = () => exportCSV(data, 'solicitudes.csv')
-  const exportarXLSX = () => exportXLSX(data, 'solicitudes.xlsx')
+  const exportarCSV = () => exportCSV(data as any, 'solicitudes.csv')
+  const exportarXLSX = () => exportXLSX(data as any, 'solicitudes.xlsx')
 
   return (
     <main className="p-4 space-y-4">
@@ -69,7 +96,7 @@ export default function SolicitudesList() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? 'Cargando...' : <DataGrid data={filteredData} columns={columns} />}
+          {isLoading ? 'Cargando...' : <DataGrid data={data} columns={columns} />}
         </CardContent>
       </Card>
     </main>
