@@ -162,6 +162,33 @@ class RefundAdminApiClient {
     const authUrl = token ? `${url}?token=${encodeURIComponent(token)}` : url
     window.open(authUrl, '_blank')
   }
+
+  async listByPartner(partnerId: string): Promise<RefundRequest[]> {
+    const response = await fetch(`${API_BASE_URL}/partner-refunds/partner/${partnerId}`, {
+      headers: await this.getAuthHeaders(),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cargar solicitudes del partner' }))
+      throw new Error(error.message || 'Error al cargar solicitudes del partner')
+    }
+
+    const data = await response.json()
+    
+    // Normalizar los estados en la respuesta
+    if (Array.isArray(data)) {
+      return data.map(item => ({
+        ...item,
+        status: normalizeStatus(item.status)
+      }))
+    }
+    
+    return data
+  }
 }
 
 export const refundAdminApi = new RefundAdminApiClient()
