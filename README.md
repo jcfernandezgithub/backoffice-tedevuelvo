@@ -1,8 +1,22 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.6
+## Versión 1.1.7
 
 ## Changelog
+
+### Versión 1.1.7 - 2025-11-26
+
+#### Integración con API Real
+- **Solicitudes por Alianza**: Implementada integración con el endpoint real de solicitudes filtradas por alianza.
+  - Nuevo método `listByPartner(partnerId: string)` en `refundAdminApi.ts` para consultar solicitudes de una alianza específica.
+  - Endpoint integrado: `GET /api/v1/partner-refunds/partner/:partnerId`.
+  - La vista de Solicitudes (`/solicitudes`) ahora carga datos reales cuando se proporciona el parámetro `alianzaIdFilter` en la URL.
+  - Normalización automática de estados desde el backend a formato consistente.
+  - Manejo de errores y validación de respuestas del servicio.
+  - Columnas de la tabla adaptadas dinámicamente según la fuente de datos (API real vs mock).
+  - Preservación de funcionalidad con datos mock cuando no hay filtro de alianza.
+
+---
 
 ### Versión 1.1.6 - 2025-11-25
 
