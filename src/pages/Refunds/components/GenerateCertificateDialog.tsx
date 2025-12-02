@@ -97,221 +97,760 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
     try {
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
+      const margin = 15
+      const contentWidth = pageWidth - margin * 2
       let y = 15
 
+      // Helper functions
+      const addTitle = (text: string, size: number = 11) => {
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(size)
+        doc.text(text, margin, y)
+        y += size * 0.5
+      }
+
+      const addText = (text: string, size: number = 9) => {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(size)
+        const lines = doc.splitTextToSize(text, contentWidth)
+        doc.text(lines, margin, y)
+        y += lines.length * (size * 0.4) + 2
+      }
+
+      const addLabelValue = (label: string, value: string, x: number = margin, width: number = 60) => {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(8)
+        doc.text(label, x, y)
+        doc.setFont('helvetica', 'bold')
+        doc.text(value, x + width, y)
+      }
+
+      const drawLine = () => {
+        doc.setDrawColor(200)
+        doc.line(margin, y, pageWidth - margin, y)
+        y += 3
+      }
+
+      const drawBox = (x: number, yPos: number, w: number, h: number, filled: boolean = false): void => {
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.3)
+        if (filled) {
+          doc.setFillColor(0, 0, 0)
+          doc.rect(x, yPos - 2.5, w, h, 'F')
+        } else {
+          doc.rect(x, yPos - 2.5, w, h, 'S')
+        }
+      }
+
+      // ===================== PAGE 1 =====================
       // Header
-      doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
       doc.text('SOLICITUD DE INCORPORACIÓN, PROPUESTA Y CERTIFICADO DE COBERTURA INMEDIATA', pageWidth / 2, y, { align: 'center' })
       y += 6
+      doc.setFontSize(10)
       doc.text('SEGURO DE DESGRAVAMEN', pageWidth / 2, y, { align: 'center' })
       y += 8
 
-      // Fecha, Folio, Póliza
-      doc.setFontSize(9)
+      // Fecha, Folio, Póliza row
       doc.setFont('helvetica', 'normal')
-      doc.text(`Fecha: ${getTodayFormatted()}`, 15, y)
-      doc.text(`Folio: ${formData.folio}`, 80, y)
+      doc.setFontSize(9)
+      doc.text(`Fecha: ${getTodayFormatted()}`, margin, y)
+      doc.text(`Folio: ${formData.folio || '____________'}`, 70, y)
       doc.text('Nro. Póliza: 342', 140, y)
-      y += 10
+      y += 8
 
       // Certificado de Cobertura
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.text('Certificado de Cobertura', 15, y)
+      doc.setFontSize(10)
+      doc.setFillColor(220, 220, 220)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Certificado de Cobertura', margin + 2, y)
       y += 8
 
       // Identificación del Asegurado Titular
-      doc.setFontSize(10)
-      doc.text('Identificación del Asegurado Titular', 15, y)
-      y += 6
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      
-      // Nombre y RUT
-      doc.text(`Nombre: ${refund.fullName}`, 15, y)
-      doc.text(`RUT: ${refund.rut}`, 120, y)
-      doc.text(`Fecha Nacimiento: ${formatDate(refund.calculationSnapshot?.birthDate)}`, 160, y)
-      y += 5
-
-      // Dirección
-      doc.text(`Dirección: ${formData.direccion}`, 15, y)
-      doc.text(`N°: ${formData.numero}`, 120, y)
-      doc.text(`Depto/Block: ${formData.depto}`, 155, y)
-      y += 5
-
-      // Ciudad, Comuna, Teléfono
-      doc.text(`Ciudad: ${formData.ciudad}`, 15, y)
-      doc.text(`Comuna: ${formData.comuna}`, 60, y)
-      doc.text(`Teléfono: ${refund.phone || '-'}`, 110, y)
-      doc.text(`Celular: ${formData.celular}`, 155, y)
-      y += 5
-
-      // Sexo
-      doc.text(`Sexo: ${formData.sexo === 'M' ? '[X] M    [ ] F' : '[ ] M    [X] F'}`, 15, y)
-      y += 5
-
-      // Email
-      doc.text(`Correo Electrónico: ${refund.email}`, 15, y)
-      y += 5
-      doc.setFontSize(7)
-      doc.text('Autorizo que toda comunicación y notificación que diga relación con el presente seguro me sea enviada al correo electrónico señalado.', 15, y)
-      y += 4
-      doc.setFontSize(9)
-      doc.text(`${formData.autorizaEmail === 'SI' ? '[X] SI    [ ] NO' : '[ ] SI    [X] NO'}`, 15, y)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Identificación del Asegurado Titular', margin + 2, y)
       y += 8
+
+      // Row 1: Nombre, RUT, Fecha Nacimiento
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('Nombre:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(refund.fullName || '', margin + 18, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('RUT:', 115, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(refund.rut || '', 125, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Fecha Nacimiento:', 155, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formatDate(refund.calculationSnapshot?.birthDate), 180, y)
+      y += 5
+
+      // Row 2: Dirección, N°, Depto
+      doc.setFont('helvetica', 'normal')
+      doc.text('Dirección:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.direccion || '', margin + 22, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('N°:', 115, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.numero || '', 122, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Depto/Block:', 145, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.depto || '', 168, y)
+      y += 5
+
+      // Row 3: Ciudad, Comuna, Teléfono, Celular
+      doc.setFont('helvetica', 'normal')
+      doc.text('Ciudad:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.ciudad || '', margin + 16, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Comuna:', 60, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.comuna || '', 78, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Teléfono:', 115, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(refund.phone || '-', 133, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Celular:', 160, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.celular || '', 178, y)
+      y += 5
+
+      // Row 4: Sexo
+      doc.setFont('helvetica', 'normal')
+      doc.text('Sexo:', margin, y)
+      drawBox(margin + 15, y, 3, 3, formData.sexo === 'M')
+      doc.text('M', margin + 20, y)
+      drawBox(margin + 35, y, 3, 3, formData.sexo === 'F')
+      doc.text('F', margin + 40, y)
+      y += 5
+
+      // Row 5: Email
+      doc.text('Correo Electrónico:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(refund.email || '', margin + 38, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('Autorizo que toda comunicación y notificación que diga relación con el presente seguro me sea enviada al correo electrónico señalado en esta Solicitud de Incorporación.', margin, y)
+      y += 4
+      doc.setFontSize(8)
+      drawBox(margin, y, 3, 3, formData.autorizaEmail === 'SI')
+      doc.text('SI', margin + 5, y)
+      drawBox(margin + 20, y, 3, 3, formData.autorizaEmail === 'NO')
+      doc.text('NO', margin + 25, y)
+      y += 7
 
       // Antecedentes de la Compañía Aseguradora
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Antecedentes de la Compañía Aseguradora', 15, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      doc.text('Augustar Seguros de Vida S.A.', 15, y)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Antecedentes de la Compañía Aseguradora', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('Augustar Seguros de Vida S.A.', margin, y)
       doc.text('RUT: 76.632.384-7', 120, y)
       y += 6
 
       // Antecedentes del Contratante y Recaudador
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Antecedentes del Contratante y Recaudador', 15, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      doc.text('TDV SERVICIOS SPA', 15, y)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Antecedentes del Contratante y Recaudador', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('TDV SERVICIOS SPA', margin, y)
       doc.text('RUT: 78.168.126-1', 120, y)
       y += 6
 
       // Antecedentes del Corredor
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Antecedentes del Corredor', 15, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      doc.text('Prime Corredores de Seguro SPA.', 15, y)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Antecedentes del Corredor', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('Prime Corredores de Seguro SPA.', margin, y)
       doc.text('RUT: 76.196.802-5', 120, y)
       y += 8
 
       // Datos del Seguro
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Datos del Seguro', 15, y)
-      y += 6
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Datos del Seguro', margin + 2, y)
+      y += 7
 
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
+      doc.setFontSize(8)
       const montoCredito = refund.calculationSnapshot?.totalAmount || 0
-      doc.text(`Monto Inicial del Crédito*: $${montoCredito.toLocaleString('es-CL')} CLP`, 15, y)
-      doc.text(`Nro. Operación: ${formData.nroOperacion}`, 120, y)
+      doc.text('Monto Inicial del Crédito*:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`$${montoCredito.toLocaleString('es-CL')}`, margin + 45, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Nro. Operación:', 120, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.nroOperacion || '', 150, y)
       y += 5
 
-      doc.text(`Fecha Inicio del Crédito: ${formData.fechaInicioCredito}`, 15, y)
-      doc.text(`Fecha Fin del Crédito**: ${formData.fechaFinCredito}`, 120, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Fecha Inicio del Crédito:', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.fechaInicioCredito || '', margin + 42, y)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Fecha Fin del Crédito**:', 120, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(formData.fechaFinCredito || '', 158, y)
       y += 6
 
       const primaUnica = calculatePrimaUnica()
-      doc.text(`Prima Única del Seguro (Exenta de IVA): $${primaUnica.toLocaleString('es-CL')} CLP`, 15, y)
-      y += 8
+      doc.setFont('helvetica', 'normal')
+      doc.text('Prima Única del Seguro (Exenta de IVA):', margin, y)
+      doc.setFont('helvetica', 'bold')
+      doc.text(`$${primaUnica.toLocaleString('es-CL')}`, margin + 68, y)
+      y += 5
 
-      // Fórmula
-      doc.setFontSize(8)
-      doc.text('Donde: SI = Saldo insoluto inicial, TBM = Tasa Bruta Mensual, Nper = plazo de duración del crédito en meses', 15, y)
-      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('Fórmula: Saldo insoluto Inicial * TBM * nper', margin, y)
+      y += 4
+      doc.text('Donde:', margin, y)
+      y += 3
+      doc.text('• SI: Saldo insoluto inicial', margin + 5, y)
+      y += 3
+      doc.text('• TBM: Tasa Bruta Mensual', margin + 5, y)
+      y += 3
+      doc.text('• Nper: plazo de duración del crédito, en meses', margin + 5, y)
+      y += 5
+
+      doc.setFontSize(7)
+      doc.text('La Tasa Bruta Mensual dependerá de la edad del asegurado, al momento de la emisión del certificado, de acuerdo con la siguiente tabla:', margin, y)
+      y += 5
 
       // Tabla de tasas
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Rangos de Edad de Emisión', 15, y)
-      doc.text('Tasa Bruta mensual (por mil)', 100, y)
-      y += 4
-      doc.setFont('helvetica', 'normal')
-      doc.text('18 – 55 años', 15, y)
-      doc.text('0,2970', 100, y)
-      y += 4
-      doc.text('56 – 65 años', 15, y)
-      doc.text('0,3733', 100, y)
-      y += 8
-
-      // Edad del asegurado indicador
-      const age = refund.calculationSnapshot?.age || 0
-      const tasaAplicada = getTasaBrutaMensual(age)
       doc.setFontSize(8)
-      doc.setFont('helvetica', 'italic')
-      doc.text(`Edad del asegurado: ${age} años - Tasa aplicada: ${tasaAplicada.toFixed(4)} por mil`, 15, y)
-      y += 10
+      doc.setFont('helvetica', 'bold')
+      doc.setFillColor(230, 230, 230)
+      doc.rect(margin, y - 3, 70, 5, 'F')
+      doc.rect(margin + 70, y - 3, 50, 5, 'F')
+      doc.text('Rangos de Edad de Emisión', margin + 2, y)
+      doc.text('Tasa Bruta mensual (por mil)', margin + 72, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.rect(margin, y - 3, 70, 5, 'S')
+      doc.rect(margin + 70, y - 3, 50, 5, 'S')
+      doc.text('18 – 55 años', margin + 2, y)
+      doc.text('0,2970', margin + 72, y)
+      y += 5
+      doc.rect(margin, y - 3, 70, 5, 'S')
+      doc.rect(margin + 70, y - 3, 50, 5, 'S')
+      doc.text('56 – 65 años', margin + 2, y)
+      doc.text('0,3733', margin + 72, y)
+      y += 7
 
-      // Page 2
+      // Asegurados section
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Asegurados', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('Personas naturales que mantenga un crédito de consumo o automotriz vigente con un acreedor financiero, y que cumplan los requisitos de Asegurabilidad.', margin, y)
+      y += 5
+      doc.setFont('helvetica', 'bold')
+      doc.text('IMPORTANTE:', margin, y)
+      doc.setFont('helvetica', 'normal')
+      const importanteText = 'Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA, directamente con Augustar Seguros de Vida S.A.'
+      const importanteLines = doc.splitTextToSize(importanteText, contentWidth - 20)
+      doc.text(importanteLines, margin + 22, y)
+      y += importanteLines.length * 3 + 4
+
+      // Detalle de Coberturas
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Detalle de Coberturas', margin + 2, y)
+      y += 6
+
+      // Tabla de coberturas
+      doc.setFontSize(8)
+      doc.setFillColor(230, 230, 230)
+      doc.rect(margin, y - 3, 90, 5, 'F')
+      doc.rect(margin + 90, y - 3, 50, 5, 'F')
+      doc.text('Coberturas', margin + 2, y)
+      doc.text('Código C.M.F.', margin + 92, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.rect(margin, y - 3, 90, 5, 'S')
+      doc.rect(margin + 90, y - 3, 50, 5, 'S')
+      doc.text('Cobertura de Fallecimiento', margin + 2, y)
+      doc.text('POL 220150573', margin + 92, y)
+      y += 6
+
+      doc.setFontSize(7)
+      doc.text('El presente contrato no cuenta con Sello SERNAC conforme al Artículo 55, Ley 20.555', margin, y)
+
+      // ===================== PAGE 2 =====================
       doc.addPage()
       y = 15
 
-      // Coberturas
+      // Descripción de Coberturas y Condiciones
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(10)
-      doc.text('Detalle de Coberturas', 15, y)
-      y += 6
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.text('Cobertura de Fallecimiento', 15, y)
-      doc.text('Código C.M.F.: POL 220150573', 100, y)
+      doc.setFillColor(220, 220, 220)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Descripción de Coberturas y Condiciones de Asegurabilidad', margin + 2, y)
       y += 8
 
-      doc.setFontSize(8)
-      doc.text('El presente contrato no cuenta con Sello SERNAC conforme al Artículo 55, Ley 20.555', 15, y)
-      y += 10
-
-      // Condiciones
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Condiciones de Asegurabilidad', 15, y)
-      y += 6
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      const condicionesText = 'Acreditado el fallecimiento del asegurado, la compañía de seguros pagará el total del saldo insoluto del crédito de consumo o automotriz del asegurado con tope de $20.000.000, al momento de ocurrir el siniestro, cualquiera sea la época y lugar donde ocurra, siempre que el certificado se encuentre vigente.'
-      const splitCondiciones = doc.splitTextToSize(condicionesText, pageWidth - 30)
-      doc.text(splitCondiciones, 15, y)
-      y += splitCondiciones.length * 4 + 6
-
-      doc.setFont('helvetica', 'bold')
+      // Materia y Capital Asegurado
       doc.setFontSize(9)
-      doc.text('Capital máximo: $20.000.000 CLP', 15, y)
-      y += 8
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Materia y Capital Asegurado', margin + 2, y)
+      y += 7
 
-      // Requisitos
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Requisitos de Asegurabilidad', 15, y)
-      y += 6
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.text('• Edad Mínima de Ingreso: 18 años', 15, y)
+      doc.setFontSize(8)
+      doc.text('Condiciones de Asegurabilidad', margin, y)
       y += 4
-      doc.text('• Edad Máxima de Ingreso: 64 años y 364 días', 15, y)
-      y += 4
-      doc.text('• Edad máxima de Permanencia: 69 años y 364 días', 15, y)
-      y += 8
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const condText = 'Acreditado el fallecimiento del asegurado, la compañía de seguros pagará el total del saldo insoluto del crédito de consumo o automotriz del asegurado con tope de $20.000.000, al momento de ocurrir el siniestro, cualquiera sea la época y lugar donde ocurra, siempre que el certificado se encuentre vigente.'
+      const condLines = doc.splitTextToSize(condText, contentWidth)
+      doc.text(condLines, margin, y)
+      y += condLines.length * 3 + 4
 
+      doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
-      doc.text('La edad del asegurado al inicio del crédito más el plazo del crédito, no deberá superar la edad máxima de permanencia.', 15, y)
-      y += 10
+      doc.text('Capitales', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.text('$20.000.000', margin, y)
+      y += 5
+
+      doc.setFont('helvetica', 'bold')
+      doc.text('Interés Asegurable', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('El interés asegurable por parte del asegurado corresponde a saldo insoluto de la deuda.', margin, y)
+      y += 5
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.text('Asegurados', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const aseguradosText = 'Son asegurados los titulares que firmen el contrato de término de condiciones y mantengan un crédito de consumo o automotriz vigente con un acreedor financiero, que cumplan con la edad de permanencia establecida para este producto a la fecha del siniestro y con los demás requisitos de asegurabilidad, siempre que este ocurra dentro del período de vigencia de la correspondiente cobertura.'
+      const aseguradosLines = doc.splitTextToSize(aseguradosText, contentWidth)
+      doc.text(aseguradosLines, margin, y)
+      y += aseguradosLines.length * 3 + 4
+
+      // Requisitos de Asegurabilidad
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Requisitos de Asegurabilidad', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('• Edad Mínima de Ingreso: 18 años', margin, y)
+      y += 4
+      doc.text('• Edad Máxima de Ingreso: 64 años y 364 días', margin, y)
+      y += 4
+      doc.text('• Edad máxima de Permanencia: 69 años y 364 días', margin, y)
+      y += 5
+      doc.setFontSize(7)
+      doc.text('La edad del asegurado al inicio del crédito más el plazo del crédito, no deberá superar la edad máxima de permanencia.', margin, y)
+      y += 6
 
       // Beneficiarios
       doc.setFont('helvetica', 'bold')
-      doc.setFontSize(10)
-      doc.text('Beneficiarios', 15, y)
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Beneficiarios', margin + 2, y)
       y += 6
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.text('El acreedor financiero del crédito de consumo o automotriz del asegurado, respecto del saldo insoluto de la deuda.', 15, y)
-      y += 10
-
-      // Footer
       doc.setFontSize(7)
-      doc.setTextColor(128)
-      doc.text('Documento generado automáticamente por TeDevuelvo Backoffice', pageWidth / 2, 280, { align: 'center' })
-      doc.text(`Fecha de generación: ${getTodayFormatted()}`, pageWidth / 2, 284, { align: 'center' })
+      doc.text('El beneficiario para la cobertura de Desgravamen es el acreedor del crédito de consumo o automotriz.', margin, y)
+      y += 6
+
+      // Cobertura de Desgravamen
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Cobertura de Desgravamen (POL220150573)', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const coberturaText1 = 'Conforme a los términos de la presente póliza y en sus condiciones particulares, la Compañía Aseguradora asegura la vida de los deudores asegurados que se hayan incorporado a la póliza, pagado la prima correspondiente, cumpliendo con los demás requisitos de asegurabilidad.'
+      const coberturaLines1 = doc.splitTextToSize(coberturaText1, contentWidth)
+      doc.text(coberturaLines1, margin, y)
+      y += coberturaLines1.length * 3 + 3
+
+      const coberturaText2 = 'De acuerdo a lo anterior, la indemnización correspondiente al capital asegurado de un Deudor-Asegurado según lo indicado en las Condiciones Particulares de la póliza, será pagado por la Compañía Aseguradora al acreedor Beneficiario de esta póliza, inmediatamente después de haberse comprobado por ésta que el fallecimiento del Asegurado ocurrió durante la vigencia de la cobertura para dicho Asegurado, y que no se produjo bajo algunas de las exclusiones señaladas en el artículo 4° las Condiciones Generales. Si el Asegurado sobrevive a la fecha de vencimiento de la cobertura otorgada por esta póliza, no habrá derecho a indemnización alguna.'
+      const coberturaLines2 = doc.splitTextToSize(coberturaText2, contentWidth)
+      doc.text(coberturaLines2, margin, y)
+      y += coberturaLines2.length * 3 + 5
+
+      // Prima del Seguro
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Prima del Seguro', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('La prima bruta de este seguro es única, y corresponde a una tasa multiplicada por el monto de cada crédito.', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'bold')
+      doc.text('Prima = Saldo insoluto Inicial * TBM * nper', margin, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.text('Donde:', margin, y)
+      y += 3
+      doc.text('• SI: Saldo insoluto inicial', margin + 5, y)
+      y += 3
+      doc.text('• TBM: Tasa Bruta Mensual', margin + 5, y)
+      y += 3
+      doc.text('• Nper: plazo de duración del crédito, en meses', margin + 5, y)
+      y += 5
+
+      // Tabla de tasas (repetida)
+      doc.setFontSize(7)
+      doc.text('La Tasa Bruta Mensual dependerá de la edad del asegurado, al momento de la emisión del certificado:', margin, y)
+      y += 4
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'bold')
+      doc.setFillColor(230, 230, 230)
+      doc.rect(margin, y - 3, 70, 5, 'F')
+      doc.rect(margin + 70, y - 3, 50, 5, 'F')
+      doc.text('Rangos de Edad de Emisión', margin + 2, y)
+      doc.text('Tasa Bruta mensual (por mil)', margin + 72, y)
+      y += 5
+      doc.setFont('helvetica', 'normal')
+      doc.rect(margin, y - 3, 70, 5, 'S')
+      doc.rect(margin + 70, y - 3, 50, 5, 'S')
+      doc.text('18 – 55 años', margin + 2, y)
+      doc.text('0,2970', margin + 72, y)
+      y += 5
+      doc.rect(margin, y - 3, 70, 5, 'S')
+      doc.rect(margin + 70, y - 3, 50, 5, 'S')
+      doc.text('56 – 65 años', margin + 2, y)
+      doc.text('0,3733', margin + 72, y)
+      y += 8
+
+      // ===================== PAGE 3 =====================
+      doc.addPage()
+      y = 15
+
+      // Exclusiones
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Exclusiones Cobertura de Desgravamen (POL220150573, Artículo N°4)', margin + 2, y)
+      y += 7
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('Este seguro no cubre el riesgo de muerte si el fallecimiento del Asegurado fuere causado por:', margin, y)
+      y += 4
+      doc.text('a) Guerra, terrorismo o cualquier conflicto armado.', margin + 5, y)
+      y += 3
+      const exclusionB = 'b) Suicidio. No obstante, esta exclusión cesará si hubieren transcurrido 2 años completos e ininterrumpidos de cobertura desde la contratación.'
+      const exclusionBLines = doc.splitTextToSize(exclusionB, contentWidth - 10)
+      doc.text(exclusionBLines, margin + 5, y)
+      y += exclusionBLines.length * 3
+      doc.text('c) Acto delictivo cometido, en calidad de autor o cómplice, por el asegurado.', margin + 5, y)
+      y += 3
+      doc.text('d) Energía atómica o nuclear.', margin + 5, y)
+      y += 6
+
+      // Procedimiento de Denuncia
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Procedimiento de Denuncia de Siniestro', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const denunciaText = 'En caso de consultas, reclamos y denuncias de siniestro, el asegurado se deberá comunicar al teléfono 600 600 4490. En todos los casos la compañía se reserva el derecho de pedir mayores antecedentes para la liquidación del siniestro. En todas las denuncias deberá dejarse constancia del nombre, dirección y teléfono de la persona denunciante para posteriores contactos que sean necesarios.'
+      const denunciaLines = doc.splitTextToSize(denunciaText, contentWidth)
+      doc.text(denunciaLines, margin, y)
+      y += denunciaLines.length * 3 + 3
+
+      doc.text('Para efectuar el denuncio de un siniestro, se deberá presentar al asegurador los siguientes antecedentes junto al formulario "Denuncio de Siniestros":', margin, y)
+      y += 5
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.text('Cobertura Fallecimiento', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      doc.text('• Certificado de defunción original con causa de muerte.', margin + 5, y)
+      y += 3
+      doc.text('• Formulario de denuncio de siniestro', margin + 5, y)
+      y += 3
+      doc.text('• Fotocopia de la cédula de identidad del asegurado.', margin + 5, y)
+      y += 3
+      doc.text('• En caso de muerte presunta, ésta deberá acreditarse de conformidad a la ley.', margin + 5, y)
+      y += 3
+      doc.text('• Certificado de saldo de la deuda, emitido por la entidad contratante a la fecha de fallecimiento del deudor.', margin + 5, y)
+      y += 3
+      doc.text('• Otros antecedentes que se estimen convenientes y necesarios para la evaluación del siniestro.', margin + 5, y)
+      y += 6
+
+      // Plazo de Pago
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Plazo de Pago de Siniestros', margin + 2, y)
+      y += 6
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const plazoText = 'El período de liquidación y pago de siniestro, a contar de la fecha de recepción conforme a todos los antecedentes indicados en la póliza, no podrá exceder de 15 días hábiles. Tratándose de siniestros que no vengan acompañados de la documentación pertinente o en que se requiera de un mayor análisis, la Compañía se reserva el derecho de contabilizar este plazo desde que se reciban tales antecedentes o los exigidos en forma excepcional. En este último evento, la Compañía deberá informar al Corredor a más tardar dentro de los 15 días hábiles siguientes a la presentación del siniestro.'
+      const plazoLines = doc.splitTextToSize(plazoText, contentWidth)
+      doc.text(plazoLines, margin, y)
+      y += plazoLines.length * 3 + 5
+
+      // Comisiones
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Comisiones', margin + 2, y)
+      y += 6
+
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.text('Recaudador:', margin, y)
+      doc.text('TDV SERVICIOS SPA, Rut: 78.168.126-1', margin + 40, y)
+      y += 4
+      doc.text('Comisión de Cobranza:', margin, y)
+      doc.text('35% + IVA sobre la prima recaudada', margin + 40, y)
+      y += 4
+      doc.text('Corredor:', margin, y)
+      doc.text('PRIME CORREDORES DE SEGUROS SPA, Rut: 76.196.802-5', margin + 40, y)
+      y += 4
+      doc.text('Comisión de Intermediación:', margin, y)
+      doc.text('15% + IVA sobre la prima recaudada', margin + 40, y)
+      y += 4
+      doc.text('Comisión CEF:', margin, y)
+      doc.text('Se calculará de acuerdo con la siguiente fórmula.', margin + 40, y)
+      y += 6
+
+      doc.setFont('helvetica', 'bold')
+      doc.text('Primero:', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(6)
+      doc.text('Resultado AUG Pre CEFt = Prima Cliente Brutat - Comisión de Recaudación Brutat - Comisión de Intermediación Brutat – Siniestrost – IBNRt - Costos de Liq. de Siniestrost – Costos Fijost', margin, y)
+      y += 3
+      doc.text('Resultado AUG tras CEFt = Resultado AUG Pre CEFt x 10%', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(7)
+      doc.text('Segundo:', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(6)
+      doc.text('CEFt = Resultado Bruto Pre CEFt × 10% - Pérdida Acarreadat-1', margin, y)
+
+      // ===================== PAGE 4 =====================
+      doc.addPage()
+      y = 15
+
+      // Notas Importantes
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Notas Importantes', margin + 2, y)
+      y += 7
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      
+      doc.text('1. El asegurado declara:', margin, y)
+      y += 4
+      const nota1a = 'a) Conocer, haber sido previa y completamente informado y aceptar las condiciones señaladas en esta Solicitud de Incorporación y Certificado de Cobertura que suscribe en manifestación de su voluntad libre y espontánea de contratar el seguro.'
+      const nota1aLines = doc.splitTextToSize(nota1a, contentWidth - 10)
+      doc.text(nota1aLines, margin + 5, y)
+      y += nota1aLines.length * 3
+
+      doc.text('b) Haber tomado conocimiento del derecho a decidir sobre la contratación voluntaria del seguro y la libre elección de la compañía aseguradora.', margin + 5, y)
+      y += 6
+
+      doc.text('c) Que el contratante colectivo de la Póliza N°342 es TDV SERVICIOS SPA.', margin + 5, y)
+      y += 4
+
+      const nota1d = 'd) Que las coberturas tendrán vigencia desde la firma de esta solicitud de incorporación por parte del asegurado. En este caso la presente solicitud hará las veces de certificado de cobertura conforme a la circular N° 2123 de la Comisión Para el Mercado Financiero.'
+      const nota1dLines = doc.splitTextToSize(nota1d, contentWidth - 10)
+      doc.text(nota1dLines, margin + 5, y)
+      y += nota1dLines.length * 3 + 2
+
+      const nota2 = '2. La presente Solicitud de Incorporación, Propuesta y Certificado de Cobertura es un resumen con la descripción general del seguro, sus coberturas y el procedimiento a seguir en caso de siniestro. El resumen de los seguros es parcial y no reemplaza a las condiciones particulares ni generales de las respectivas pólizas y sólo tienen un carácter informativo. En caso de requerir una copia de las Condiciones Generales y Particulares del seguro, el cliente debe solicitarlas al contratante colectivo de la póliza.'
+      const nota2Lines = doc.splitTextToSize(nota2, contentWidth - 5)
+      doc.text(nota2Lines, margin, y)
+      y += nota2Lines.length * 3 + 2
+
+      const nota3 = '3. Vigencia de la Póliza Colectiva: La póliza colectiva tendrá vigencia desde el 01 de octubre de 2025 hasta el 30 de septiembre de 2028 y se renovará tácita y sucesivamente en los mismos términos, por periodos de 1 año cada uno, salvo voluntad en contrario dada por el contratante o la aseguradora, según corresponda, por medio de carta certificada notarial enviado al domicilio de la parte correspondiente.'
+      const nota3Lines = doc.splitTextToSize(nota3, contentWidth - 5)
+      doc.text(nota3Lines, margin, y)
+      y += nota3Lines.length * 3 + 2
+
+      const nota4 = '4. Vigencia de la Póliza Individual: Para aquellas personas que cumplan con los requisitos de asegurabilidad, la cobertura comenzará a regir a partir de la fecha de firma de la Solicitud de Incorporación y se mantendrá vigente hasta la extinción del crédito de consumo que le fue otorgado por TDV SERVICIOS SPA.'
+      const nota4Lines = doc.splitTextToSize(nota4, contentWidth - 5)
+      doc.text(nota4Lines, margin, y)
+      y += nota4Lines.length * 3 + 2
+
+      doc.text('5. Término Anticipado: Las coberturas de esta póliza terminarán anticipadamente respecto de un asegurado, en los siguientes casos:', margin, y)
+      y += 4
+      doc.text('a) En caso de renegociación, anulación o prepago del crédito de consumo.', margin + 5, y)
+      y += 3
+      const nota5b = 'b) El no pago de la respectiva prima por parte del asegurado una vez vencido el periodo de gracia señalado en el artículo 13 de las condiciones particulares.'
+      const nota5bLines = doc.splitTextToSize(nota5b, contentWidth - 10)
+      doc.text(nota5bLines, margin + 5, y)
+      y += nota5bLines.length * 3
+      const nota5c = 'c) Al momento que el asegurado cumpla la edad máxima de permanencia establecida en las condiciones particulares de esta póliza. Asimismo, la cobertura individual de esta póliza terminará inmediatamente respecto de un Asegurado, en el instante en que éste deje de ser deudor del Acreedor.'
+      const nota5cLines = doc.splitTextToSize(nota5c, contentWidth - 10)
+      doc.text(nota5cLines, margin + 5, y)
+      y += nota5cLines.length * 3
+      doc.text('d) Por la pérdida de la calidad de asegurado de conformidad a lo establecido en las condiciones particulares.', margin + 5, y)
+      y += 5
+
+      const nota6 = '6. La contratación de estos seguros es de carácter voluntario. Usted puede retractarse si la contratación la efectuó por un medio a distancia. Además, usted puede terminar los seguros voluntarios anticipadamente en cualquier momento, independiente del medio utilizado para su contratación.'
+      const nota6Lines = doc.splitTextToSize(nota6, contentWidth - 5)
+      doc.text(nota6Lines, margin, y)
+      y += nota6Lines.length * 3 + 5
+
+      // ===================== PAGE 5 =====================
+      doc.addPage()
+      y = 15
+
+      // Disposiciones Finales
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Disposiciones Finales', margin + 2, y)
+      y += 7
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.text('Código de Autorregulación', margin, y)
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const autoregText = 'La compañía de seguros Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente al código de autorregulación y al compendio de buenas prácticas de las compañías de seguros, cuyo propósito es propender al desarrollo del mercado de los seguros, en consonancia con los principios de libre competencia y buena fe que debe existir entre las empresas, y entre éstas y sus clientes. Copia del compendio de buenas prácticas corporativas de las compañías de seguros, se encuentra a disposición de los interesados en las oficinas de Augustar Seguros de Vida S.A. y en www.aach.cl.'
+      const autoregLines = doc.splitTextToSize(autoregText, contentWidth)
+      doc.text(autoregLines, margin, y)
+      y += autoregLines.length * 3 + 3
+
+      const defensorText = 'Asimismo, Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente a la institución del Defensor del Asegurado dependiente del Consejo de Autorregulación de las Compañías de Seguros, y cuya finalidad es velar por el desarrollo del mercado de seguros bajo el principio de buena fe, debiendo conforme a sus estatutos conocer y resolver los conflictos y/o reclamos que pudieran producirse entre las Compañías y sus clientes. Para más información, ésta se encuentra disponible en www.ddachile.cl; teléfono 800 646 232, desde celulares 22 234 3583, o bien En Augusto Leguía Sur N° 79, oficina 1210, Las Condes.'
+      const defensorLines = doc.splitTextToSize(defensorText, contentWidth)
+      doc.text(defensorLines, margin, y)
+      y += defensorLines.length * 3 + 6
+
+      // Información sobre atención de clientes
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Información sobre atención de clientes y presentación de consultas y reclamos', margin + 2, y)
+      y += 7
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const atencionText1 = 'En virtud de la circular nro. 2.131 de 28 de noviembre de 2013, las compañías de seguros, corredores de seguros y liquidadores de siniestros, deberán recibir, registrar y responder todas las presentaciones, consultas o reclamos que se les presenten directamente por el contratante, asegurado, beneficiarios o legítimos interesados o sus mandatarios.'
+      const atencionLines1 = doc.splitTextToSize(atencionText1, contentWidth)
+      doc.text(atencionLines1, margin, y)
+      y += atencionLines1.length * 3 + 2
+
+      doc.text('Las presentaciones pueden ser efectuadas en todas las oficinas de las entidades que se atienda público, presencialmente, por correo postal, medios electrónicos, o telefónicamente, sin formalidades, en el horario normal de atención.', margin, y)
+      y += 8
+
+      const contactoText = 'En caso de consultas y/o reclamos y, el Asegurado debe comunicarse con el Servicio de Atención al Cliente de Augustar Seguros de Vida S.A., número 600 600 4490 o correo electrónico svida@augustarseguros.cl. El Asegurado también puede enviar su consulta o solicitud al Servicio de Atención al Cliente TDV SERVICIOS SPA. al correo electrónico contacto@tedevuelvo.cl o llamando a los números 228404900 - 228404905.'
+      const contactoLines = doc.splitTextToSize(contactoText, contentWidth)
+      doc.text(contactoLines, margin, y)
+      y += contactoLines.length * 3 + 2
+
+      doc.text('Recibida una presentación, consulta o reclamo, ésa deberá ser respondida en el plazo más breve posible, el que no podrá exceder de 20 días hábiles contados desde su recepción.', margin, y)
+      y += 6
+
+      const cmfText = 'Interesado, en caso de disconformidad respecto de lo informado, o bien cuando exista demora injustificada de la respuesta, podrá recurrir a la Comisión Para el Mercado Financiero, área de protección al inversionista y asegurado, cuyas oficinas se encuentran ubicadas en avda. Libertador Bernardo O\'Higgins 1449 piso 1, Santiago, o a través del sitio web www.cmfchile.cl.'
+      const cmfLines = doc.splitTextToSize(cmfText, contentWidth)
+      doc.text(cmfLines, margin, y)
+      y += cmfLines.length * 3 + 6
+
+      // Autorización para el Tratamiento de Datos Personales
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Autorización para el Tratamiento de Datos Personales', margin + 2, y)
+      y += 7
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const datosText = 'Por este acto, y según lo dispuesto en la Ley N°19.628 sobre protección de la vida privada y sus modificaciones, doy mi consentimiento y autorización expresa a Augustar Seguros de Vida S.A. y sus representantes, sucesores y cesionarios puedan proceder a la transmisión o transferencia de todos o parte de los datos personales e información que declaro haber entregado voluntariamente a esta y/o puesto voluntariamente a su disposición, a cualesquiera terceros prestadores de servicios que estuvieren ubicados dentro o fuera de chile, para efectos del presente contrato de seguro y, en particular, para poder hacer efectivo el (los) beneficio (s) que pudieren estar asociados al seguro contratado.'
+      const datosLines = doc.splitTextToSize(datosText, contentWidth)
+      doc.text(datosLines, margin, y)
+      y += datosLines.length * 3 + 6
+
+      // Mandato y Autorización
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setFillColor(240, 240, 240)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
+      doc.text('Mandato y Autorización', margin + 2, y)
+      y += 7
+
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7)
+      const mandatoText = 'Conforme a lo dispuesto en el Artículo 13 y 3 del Contrato de Crédito, por medio del presente mandato, faculto a TDV SERVICIOS SPA. para incorporarme a la Póliza Colectiva Nº 342 emitida por Augustar Seguros de Vida S.A., cuyas condiciones de cobertura, monto de prima única a pagar, vigencia, exclusiones y condiciones de asegurabilidad conozco a cabalidad y las cuales acepto voluntaria e informadamente. El mandatario rendirá cuenta de este encargo junto con la entrega o envío del presente documento. Asimismo, autorizo a TDV SERVICIOS SPA., en caso de término del seguro suscrito, excepto por siniestralidad, para cobrar y percibir en mi nombre y representación de Augustar Seguros de Vida S.A. la prima no consumida en conformidad a lo dispuesto en la Circular 2114 de la Comisión para el Mercado Financiero, debiendo rendir cuenta de su gestión de acuerdo con lo estipulado en el contrato de crédito.'
+      const mandatoLines = doc.splitTextToSize(mandatoText, contentWidth)
+      doc.text(mandatoLines, margin, y)
+      y += mandatoLines.length * 3 + 10
+
+      // Firmas
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'bold')
+      doc.text('TDV SERVICIOS SPA', margin + 10, y)
+      doc.text('AuguStar Seguros de Vida S.A.', pageWidth / 2 - 15, y)
+      doc.text('Asegurado', pageWidth - margin - 30, y)
+      y += 15
+
+      // Líneas para firmas
+      doc.line(margin, y, margin + 45, y)
+      doc.line(pageWidth / 2 - 25, y, pageWidth / 2 + 25, y)
+      doc.line(pageWidth - margin - 45, y, pageWidth - margin, y)
 
       // Download
       const fileName = `Certificado_Cobertura_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
