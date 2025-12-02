@@ -59,13 +59,18 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     }
   }, [publicId, clientToken])
 
+  const getFileName = (key: string) => {
+    const parts = key.split('/')
+    return parts[parts.length - 1]
+  }
+
   const handleDownload = async (doc: DocumentMeta) => {
     try {
       const blob = await publicFilesApi.getRefundDocumentBlob(publicId, doc.id)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${doc.kind}-${doc.id}.pdf`
+      a.download = getFileName(doc.key)
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -109,7 +114,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
               <TableBody>
                 {attachments.map((doc) => (
                   <TableRow key={doc.id}>
-                    <TableCell className="font-mono text-xs">{doc.id}</TableCell>
+                    <TableCell className="font-mono text-xs break-all">{getFileName(doc.key)}</TableCell>
                     <TableCell>{formatBytes(doc.size)}</TableCell>
                     <TableCell>{format(new Date(doc.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
                     <TableCell className="text-right space-x-2">
