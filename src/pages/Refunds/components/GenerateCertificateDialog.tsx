@@ -1053,27 +1053,30 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
 
               {/* Sección: Datos Personales (con búsqueda RUT) */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    Datos Personales del Cliente
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchRutInfo}
-                    disabled={isLoadingRut}
-                    className="gap-2"
-                  >
-                    <Search className="h-4 w-4" />
-                    {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
-                  </Button>
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Datos Personales del Cliente
                 </div>
                 
                 <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-4">
-                  <div className="grid grid-cols-6 gap-4">
-                    <div className="space-y-2 col-span-4">
+                  {/* Botón buscar información dentro del panel */}
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchRutInfo}
+                      disabled={isLoadingRut}
+                      className="gap-2"
+                    >
+                      <Search className="h-4 w-4" />
+                      {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
+                    </Button>
+                  </div>
+
+                  {/* Fila 1: Dirección completa */}
+                  <div className="grid grid-cols-12 gap-3">
+                    <div className="space-y-2 col-span-7">
                       <Label>Dirección</Label>
                       <Input
                         value={formData.direccion}
@@ -1081,7 +1084,7 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                         placeholder="Calle o avenida"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-2">
                       <Label>Número</Label>
                       <Input
                         value={formData.numero}
@@ -1089,7 +1092,7 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                         placeholder="N°"
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 col-span-3">
                       <Label>Depto/Block</Label>
                       <Input
                         value={formData.depto}
@@ -1099,7 +1102,8 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Fila 2: Ciudad, Comuna, Celular, Sexo */}
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-2">
                       <Label>Ciudad</Label>
                       <Input
@@ -1138,7 +1142,8 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Fila 3: Autoriza email */}
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-2">
                       <Label>Autoriza comunicación por email</Label>
                       <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
