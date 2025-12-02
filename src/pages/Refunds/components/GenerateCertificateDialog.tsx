@@ -1102,8 +1102,8 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                     </div>
                   </div>
 
-                  {/* Fila 2: Ciudad, Comuna, Celular, Sexo */}
-                  <div className="grid grid-cols-4 gap-3">
+                  {/* Fila 2: Ciudad, Comuna, Celular, Sexo, Autoriza email */}
+                  <div className="grid grid-cols-5 gap-3">
                     <div className="space-y-2">
                       <Label>Ciudad</Label>
                       <Input
@@ -1140,12 +1140,8 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
-
-                  {/* Fila 3: Autoriza email */}
-                  <div className="grid grid-cols-4 gap-3">
                     <div className="space-y-2">
-                      <Label>Autoriza comunicación por email</Label>
+                      <Label>Autoriza email</Label>
                       <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
                         <SelectTrigger>
                           <SelectValue />
