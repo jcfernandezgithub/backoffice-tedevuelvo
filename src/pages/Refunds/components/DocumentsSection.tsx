@@ -100,8 +100,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>Nombre del Archivo</TableHead>
                   <TableHead>Tamaño</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -110,8 +109,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
               <TableBody>
                 {attachments.map((doc) => (
                   <TableRow key={doc.id}>
-                    <TableCell className="font-mono text-xs">{doc.id.slice(0, 8)}...</TableCell>
-                    <TableCell>{doc.kind}</TableCell>
+                    <TableCell className="font-mono text-xs">{doc.id}</TableCell>
                     <TableCell>{formatBytes(doc.size)}</TableCell>
                     <TableCell>{format(new Date(doc.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
                     <TableCell className="text-right space-x-2">
