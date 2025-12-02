@@ -20,6 +20,15 @@
 
 ### Versión 1.1.6 - 2025-11-25
 
+#### Optimización de Documentos Públicos
+- **Mejora en visualización de adjuntos**: Optimizada la sección de documentos públicos en solicitudes.
+  - Eliminada llamada redundante al API al hacer clic en la solapa "Documentos Públicos".
+  - Los documentos ahora se reutilizan de la consulta inicial del componente padre.
+  - Nombre del archivo extraído correctamente de la propiedad `key` del API.
+  - Tamaño del archivo mostrado usando la propiedad `size` del API.
+  - Removida columna "Tipo" de la tabla de documentos públicos.
+  - Mejorado formato de descarga usando el nombre real del archivo con su extensión.
+
 #### Limpieza del Módulo
 - **Eliminación del módulo Certificados**: Removido completamente el módulo de certificados del sistema.
   - Eliminada opción "Certificados" del menú lateral de navegación.
