@@ -1053,85 +1053,89 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
 
               {/* Sección: Datos Personales (con búsqueda RUT) */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  Datos Personales del Cliente
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Datos Personales del Cliente
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchRutInfo}
+                    disabled={isLoadingRut}
+                    className="gap-2"
+                  >
+                    <Search className="h-4 w-4" />
+                    {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
+                  </Button>
                 </div>
                 
-                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-4">
-                  {/* Botón buscar información dentro del panel */}
-                  <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={fetchRutInfo}
-                      disabled={isLoadingRut}
-                      className="gap-2"
-                    >
-                      <Search className="h-4 w-4" />
-                      {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
-                    </Button>
-                  </div>
-
+                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-3">
                   {/* Fila 1: Dirección completa */}
                   <div className="grid grid-cols-12 gap-3">
-                    <div className="space-y-2 col-span-7">
-                      <Label>Dirección</Label>
+                    <div className="space-y-1.5 col-span-7">
+                      <Label className="text-xs">Dirección</Label>
                       <Input
                         value={formData.direccion}
                         onChange={(e) => handleChange('direccion', e.target.value)}
                         placeholder="Calle o avenida"
+                        className="h-9"
                       />
                     </div>
-                    <div className="space-y-2 col-span-2">
-                      <Label>Número</Label>
+                    <div className="space-y-1.5 col-span-2">
+                      <Label className="text-xs">Número</Label>
                       <Input
                         value={formData.numero}
                         onChange={(e) => handleChange('numero', e.target.value)}
                         placeholder="N°"
+                        className="h-9"
                       />
                     </div>
-                    <div className="space-y-2 col-span-3">
-                      <Label>Depto/Block</Label>
+                    <div className="space-y-1.5 col-span-3">
+                      <Label className="text-xs">Depto/Block</Label>
                       <Input
                         value={formData.depto}
                         onChange={(e) => handleChange('depto', e.target.value)}
                         placeholder="Depto"
+                        className="h-9"
                       />
                     </div>
                   </div>
 
                   {/* Fila 2: Ciudad, Comuna, Celular, Sexo, Autoriza email */}
                   <div className="grid grid-cols-5 gap-3">
-                    <div className="space-y-2">
-                      <Label>Ciudad</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Ciudad</Label>
                       <Input
                         value={formData.ciudad}
                         onChange={(e) => handleChange('ciudad', e.target.value)}
                         placeholder="Ciudad"
+                        className="h-9"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Comuna</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Comuna</Label>
                       <Input
                         value={formData.comuna}
                         onChange={(e) => handleChange('comuna', e.target.value)}
                         placeholder="Comuna"
+                        className="h-9"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Celular</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Celular</Label>
                       <Input
                         value={formData.celular}
                         onChange={(e) => handleChange('celular', e.target.value)}
                         placeholder="+56 9..."
+                        className="h-9"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Sexo</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Sexo</Label>
                       <Select value={formData.sexo} onValueChange={(v) => handleChange('sexo', v)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1140,10 +1144,10 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Autoriza email</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Autoriza email</Label>
                       <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
