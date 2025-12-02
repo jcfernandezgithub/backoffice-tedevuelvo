@@ -951,13 +951,13 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
       <DialogTrigger asChild>
         <Button variant="outline">
           <FileText className="h-4 w-4 mr-2" />
-          Generar Certificado de Cobertura
+          Certificado de Cobertura
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {step === 'form' ? 'Generar Certificado de Cobertura' : 'Previsualización del Certificado'}
+            {step === 'form' ? 'Certificado de Cobertura' : 'Previsualización del Certificado'}
           </DialogTitle>
         </DialogHeader>
         
