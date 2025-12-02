@@ -27,6 +27,7 @@ import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCir
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
+import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { Money } from '@/components/common/Money'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -255,6 +256,7 @@ export default function RefundDetail() {
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
+          <GenerateCertificateDialog refund={refund} />
           <GenerateCorteDialog refund={refund} />
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
