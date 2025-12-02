@@ -1,8 +1,25 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.7
+## Versión 1.1.8
 
 ## Changelog
+
+### Versión 1.1.8 - 2025-12-02
+
+#### Mejoras en Generación de Documentos
+- **Validación de mandato firmado**: Los botones "Certificado de Cobertura" y "Carta de Corte" ahora requieren que el mandato esté firmado para habilitarse.
+  - Botones deshabilitados con tooltip explicativo cuando el mandato no está firmado.
+  - Validación integrada con el estado `experianStatus.hasSignedPdf` de la solicitud.
+  - Mejora en la prevención de generación de documentos sin autorización del cliente.
+
+- **Renombre de botones de documentos**: 
+  - "Generar Certificado de Cobertura" → "Certificado de Cobertura".
+  - "Generar Carta de Corte" → "Carta de Corte".
+
+#### Mejoras en Navegación
+- **Estado de Alianzas actualizado**: El módulo de Alianzas ahora aparece como "Productiva" en el menú lateral (anteriormente "En certificación").
+
+---
 
 ### Versión 1.1.7 - 2025-11-26
 
