@@ -16,10 +16,12 @@ import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
 
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
+  isMandateSigned?: boolean
 }
 
 interface CertificateData {
@@ -65,7 +67,7 @@ const getTasaBrutaMensual = (age?: number): number => {
   return 0.297
 }
 
-export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogProps) {
+export function GenerateCertificateDialog({ refund, isMandateSigned = false }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -948,12 +950,25 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <FileText className="h-4 w-4 mr-2" />
-          Certificado de Cobertura
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <DialogTrigger asChild>
+                <Button variant="outline" disabled={!isMandateSigned}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Certificado de Cobertura
+                </Button>
+              </DialogTrigger>
+            </span>
+          </TooltipTrigger>
+          {!isMandateSigned && (
+            <TooltipContent>
+              <p>El mandato debe estar firmado</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>

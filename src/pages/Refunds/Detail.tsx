@@ -256,8 +256,8 @@ export default function RefundDetail() {
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
-          <GenerateCertificateDialog refund={refund} />
-          <GenerateCorteDialog refund={refund} />
+          <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+          <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
               <Button>

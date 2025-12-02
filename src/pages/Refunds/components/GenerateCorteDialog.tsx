@@ -9,9 +9,11 @@ import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import firmaImg from '@/assets/firma-cng.jpeg'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
+  isMandateSigned?: boolean
 }
 
 interface CorteFormData {
@@ -31,7 +33,7 @@ const FIXED_ACCOUNT_DATA = {
   contactPhone: '+569 84295935',
 }
 
-export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
+export function GenerateCorteDialog({ refund, isMandateSigned = false }: GenerateCorteDialogProps) {
   const [open, setOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
@@ -206,12 +208,25 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <FileText className="h-4 w-4 mr-2" />
-          Carta de Corte
-        </Button>
-      </DialogTrigger>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span>
+              <DialogTrigger asChild>
+                <Button variant="outline" disabled={!isMandateSigned}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Carta de Corte
+                </Button>
+              </DialogTrigger>
+            </span>
+          </TooltipTrigger>
+          {!isMandateSigned && (
+            <TooltipContent>
+              <p>El mandato debe estar firmado</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Generar Carta de Renuncia y Término Anticipado de Seguro</DialogTitle>
