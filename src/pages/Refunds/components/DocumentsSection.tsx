@@ -20,8 +20,8 @@ export function DocumentsSection({ publicId, clientToken }: DocumentsSectionProp
   const [idImages, setIdImages] = useState<{ front?: string; back?: string }>({})
 
   const { data: attachments = [], isLoading: loadingAttachments } = useQuery({
-    queryKey: ['refund-documents', publicId, 'attachments'],
-    queryFn: () => publicFilesApi.listRefundDocuments(publicId, ['attachment']),
+    queryKey: ['refund-documents', publicId],
+    queryFn: () => publicFilesApi.listRefundDocuments(publicId),
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
@@ -84,7 +84,7 @@ export function DocumentsSection({ publicId, clientToken }: DocumentsSectionProp
       {/* Adjuntos */}
       <Card>
         <CardHeader>
-          <CardTitle>Documentos Adjuntos</CardTitle>
+          <CardTitle>Documentos</CardTitle>
         </CardHeader>
         <CardContent>
           {loadingAttachments ? (
