@@ -209,7 +209,7 @@ export function GenerateCorteDialog({ refund }: GenerateCorteDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline">
           <FileText className="h-4 w-4 mr-2" />
-          Generar Carta de Corte
+          Carta de Corte
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
