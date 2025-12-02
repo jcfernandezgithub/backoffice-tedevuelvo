@@ -6,13 +6,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
+import { authService } from '@/services/authService'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import jsPDF from 'jspdf'
 
 interface GenerateCertificateDialogProps {
@@ -27,7 +30,7 @@ interface CertificateData {
   ciudad: string
   comuna: string
   celular: string
-  sexo: 'M' | 'F'
+  sexo: 'M' | 'F' | ''
   autorizaEmail: 'SI' | 'NO'
   nroOperacion: string
   fechaInicioCredito: string
@@ -65,6 +68,7 @@ const getTasaBrutaMensual = (age?: number): number => {
 export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [formData, setFormData] = useState<CertificateData>({
     folio: '',
     direccion: '',
@@ -73,7 +77,7 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
     ciudad: '',
     comuna: '',
     celular: refund.phone || '',
-    sexo: 'M',
+    sexo: '',
     autorizaEmail: 'SI',
     nroOperacion: '',
     fechaInicioCredito: '',
@@ -82,6 +86,59 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
 
   const handleChange = (field: keyof CertificateData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const fetchRutInfo = async () => {
+    setIsLoadingRut(true)
+    
+    try {
+      const rut = refund.rut || ''
+      const rutParts = rut.split('-')
+      const rutNumber = rutParts[0].replace(/\./g, '')
+      const rutDV = rutParts[1] || ''
+      const cleanRut = `${rutNumber}${rutDV}`
+      
+      const token = authService.getAccessToken()
+      
+      const response = await fetch(`https://rut-data-extractor-production.up.railway.app/rut/${cleanRut}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Error al consultar el servicio')
+      }
+
+      const data = await response.json()
+      
+      const genero = data.data?.genero || ''
+      const sexo = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : ''
+      const direccion = data.data?.direccion || ''
+      const comuna = data.data?.comuna || ''
+      
+      setFormData(prev => ({
+        ...prev,
+        sexo: sexo as 'M' | 'F' | '',
+        direccion,
+        comuna,
+      }))
+      
+      toast({
+        title: 'Información encontrada',
+        description: 'Se han actualizado los datos del cliente',
+      })
+    } catch (error) {
+      toast({
+        title: 'Datos no encontrados',
+        description: 'No se pudo obtener la información. Puede ingresar los datos manualmente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoadingRut(false)
+    }
   }
 
   const calculatePrimaUnica = () => {
@@ -881,168 +938,231 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
           Generar Certificado de Cobertura
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Generar Certificado de Cobertura</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          {/* Datos precargados */}
-          <div className="bg-muted p-4 rounded-lg space-y-2">
-            <h4 className="font-medium text-sm">Datos del asegurado (desde solicitud)</h4>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-muted-foreground">Nombre:</span> {refund.fullName}</div>
-              <div><span className="text-muted-foreground">RUT:</span> {refund.rut}</div>
-              <div><span className="text-muted-foreground">Email:</span> {refund.email}</div>
-              <div><span className="text-muted-foreground">Teléfono:</span> {refund.phone || 'N/A'}</div>
-              <div><span className="text-muted-foreground">Fecha Nac.:</span> {formatDate(refund.calculationSnapshot?.birthDate)}</div>
-              <div><span className="text-muted-foreground">Edad:</span> {refund.calculationSnapshot?.age || 'N/A'} años</div>
-              <div><span className="text-muted-foreground">Monto Crédito:</span> ${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</div>
-              <div><span className="text-muted-foreground">Cuotas:</span> {refund.calculationSnapshot?.originalInstallments || 'N/A'}</div>
+        
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 py-4">
+            {/* Sección: Datos del Asegurado */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <User className="h-4 w-4 text-primary" />
+                Datos del Asegurado (desde solicitud)
+              </div>
+              <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground text-xs">Nombre</span>
+                    <p className="font-medium truncate">{refund.fullName}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">RUT</span>
+                    <p className="font-medium">{refund.rut}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Email</span>
+                    <p className="font-medium truncate">{refund.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Teléfono</span>
+                    <p className="font-medium">{refund.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Fecha Nacimiento</span>
+                    <p className="font-medium">{formatDate(refund.calculationSnapshot?.birthDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Edad</span>
+                    <p className="font-medium">{refund.calculationSnapshot?.age || 'N/A'} años</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Monto Crédito</span>
+                    <p className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-xs">Cuotas</span>
+                    <p className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Datos del Certificado */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CreditCard className="h-4 w-4 text-primary" />
+                Datos del Certificado
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-2">
+                  <Label>Folio</Label>
+                  <Input
+                    value={formData.folio}
+                    onChange={(e) => handleChange('folio', e.target.value)}
+                    placeholder="Número de folio"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nro. Operación</Label>
+                  <Input
+                    value={formData.nroOperacion}
+                    onChange={(e) => handleChange('nroOperacion', e.target.value)}
+                    placeholder="Nro. operación"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Inicio Crédito</Label>
+                  <Input
+                    value={formData.fechaInicioCredito}
+                    onChange={(e) => handleChange('fechaInicioCredito', e.target.value)}
+                    placeholder="DD/MM/YYYY"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fecha Fin Crédito</Label>
+                  <Input
+                    value={formData.fechaFinCredito}
+                    onChange={(e) => handleChange('fechaFinCredito', e.target.value)}
+                    placeholder="DD/MM/YYYY"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Datos Personales (con búsqueda RUT) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  Datos Personales del Cliente
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchRutInfo}
+                  disabled={isLoadingRut}
+                  className="gap-2"
+                >
+                  <Search className="h-4 w-4" />
+                  {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
+                </Button>
+              </div>
+              
+              <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-4">
+                <div className="grid grid-cols-6 gap-4">
+                  <div className="space-y-2 col-span-4">
+                    <Label>Dirección</Label>
+                    <Input
+                      value={formData.direccion}
+                      onChange={(e) => handleChange('direccion', e.target.value)}
+                      placeholder="Calle o avenida"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Número</Label>
+                    <Input
+                      value={formData.numero}
+                      onChange={(e) => handleChange('numero', e.target.value)}
+                      placeholder="N°"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Depto/Block</Label>
+                    <Input
+                      value={formData.depto}
+                      onChange={(e) => handleChange('depto', e.target.value)}
+                      placeholder="Depto"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label>Ciudad</Label>
+                    <Input
+                      value={formData.ciudad}
+                      onChange={(e) => handleChange('ciudad', e.target.value)}
+                      placeholder="Ciudad"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Comuna</Label>
+                    <Input
+                      value={formData.comuna}
+                      onChange={(e) => handleChange('comuna', e.target.value)}
+                      placeholder="Comuna"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Celular</Label>
+                    <Input
+                      value={formData.celular}
+                      onChange={(e) => handleChange('celular', e.target.value)}
+                      placeholder="+56 9..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sexo</Label>
+                    <Select value={formData.sexo} onValueChange={(v) => handleChange('sexo', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">Masculino</SelectItem>
+                        <SelectItem value="F">Femenino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Autoriza comunicación por email</Label>
+                    <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="SI">Sí</SelectItem>
+                        <SelectItem value="NO">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prima calculada */}
+            <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Prima Única del Seguro (calculada):</span>
+                <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
+              </p>
             </div>
           </div>
+        </ScrollArea>
 
-          {/* Campos a completar */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Folio</Label>
-              <Input
-                value={formData.folio}
-                onChange={(e) => handleChange('folio', e.target.value)}
-                placeholder="Número de folio"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Nro. Operación</Label>
-              <Input
-                value={formData.nroOperacion}
-                onChange={(e) => handleChange('nroOperacion', e.target.value)}
-                placeholder="Número de operación"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2 col-span-2">
-              <Label>Dirección</Label>
-              <Input
-                value={formData.direccion}
-                onChange={(e) => handleChange('direccion', e.target.value)}
-                placeholder="Calle o avenida"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Número</Label>
-              <Input
-                value={formData.numero}
-                onChange={(e) => handleChange('numero', e.target.value)}
-                placeholder="N°"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>Depto/Block</Label>
-              <Input
-                value={formData.depto}
-                onChange={(e) => handleChange('depto', e.target.value)}
-                placeholder="Depto"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ciudad</Label>
-              <Input
-                value={formData.ciudad}
-                onChange={(e) => handleChange('ciudad', e.target.value)}
-                placeholder="Ciudad"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Comuna</Label>
-              <Input
-                value={formData.comuna}
-                onChange={(e) => handleChange('comuna', e.target.value)}
-                placeholder="Comuna"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Celular</Label>
-              <Input
-                value={formData.celular}
-                onChange={(e) => handleChange('celular', e.target.value)}
-                placeholder="+56 9..."
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label>Sexo</Label>
-              <Select value={formData.sexo} onValueChange={(v) => handleChange('sexo', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Femenino</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Autoriza email</Label>
-              <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SI">Sí</SelectItem>
-                  <SelectItem value="NO">No</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Fecha Inicio Crédito</Label>
-              <Input
-                value={formData.fechaInicioCredito}
-                onChange={(e) => handleChange('fechaInicioCredito', e.target.value)}
-                placeholder="DD/MM/YYYY"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Fecha Fin Crédito</Label>
-              <Input
-                value={formData.fechaFinCredito}
-                onChange={(e) => handleChange('fechaFinCredito', e.target.value)}
-                placeholder="DD/MM/YYYY"
-              />
-            </div>
-          </div>
-
-          {/* Prima calculada */}
-          <div className="bg-primary/10 p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Prima Única del Seguro (calculada):</span>
-              <span className="text-lg font-bold">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
-            </p>
-          </div>
-
-          <Button onClick={generatePDF} className="w-full" disabled={isGenerating}>
+        <DialogFooter className="pt-4 border-t">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
             {isGenerating ? (
               'Generando...'
             ) : (
               <>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4" />
                 Descargar Certificado PDF
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
