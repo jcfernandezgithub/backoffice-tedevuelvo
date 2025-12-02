@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -67,6 +67,7 @@ const getTasaBrutaMensual = (age?: number): number => {
 
 export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
+  const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [formData, setFormData] = useState<CertificateData>({
@@ -83,6 +84,21 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
     fechaInicioCredito: '',
     fechaFinCredito: '',
   })
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+    if (!newOpen) {
+      setStep('form')
+    }
+  }
+
+  const handlePreview = () => {
+    setStep('preview')
+  }
+
+  const handleBackToEdit = () => {
+    setStep('form')
+  }
 
   const handleChange = (field: keyof CertificateData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -931,7 +947,7 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <FileText className="h-4 w-4 mr-2" />
@@ -940,228 +956,368 @@ export function GenerateCertificateDialog({ refund }: GenerateCertificateDialogP
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Generar Certificado de Cobertura</DialogTitle>
+          <DialogTitle>
+            {step === 'form' ? 'Generar Certificado de Cobertura' : 'Previsualización del Certificado'}
+          </DialogTitle>
         </DialogHeader>
         
         <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6 py-4">
-            {/* Sección: Datos del Asegurado */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <User className="h-4 w-4 text-primary" />
-                Datos del Asegurado (desde solicitud)
-              </div>
-              <div className="bg-muted/50 p-4 rounded-lg border border-border">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground text-xs">Nombre</span>
-                    <p className="font-medium truncate">{refund.fullName}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">RUT</span>
-                    <p className="font-medium">{refund.rut}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Email</span>
-                    <p className="font-medium truncate">{refund.email}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Teléfono</span>
-                    <p className="font-medium">{refund.phone || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Fecha Nacimiento</span>
-                    <p className="font-medium">{formatDate(refund.calculationSnapshot?.birthDate)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Edad</span>
-                    <p className="font-medium">{refund.calculationSnapshot?.age || 'N/A'} años</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Monto Crédito</span>
-                    <p className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Cuotas</span>
-                    <p className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sección: Datos del Certificado */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <CreditCard className="h-4 w-4 text-primary" />
-                Datos del Certificado
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label>Folio</Label>
-                  <Input
-                    value={formData.folio}
-                    onChange={(e) => handleChange('folio', e.target.value)}
-                    placeholder="Número de folio"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nro. Operación</Label>
-                  <Input
-                    value={formData.nroOperacion}
-                    onChange={(e) => handleChange('nroOperacion', e.target.value)}
-                    placeholder="Nro. operación"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha Inicio Crédito</Label>
-                  <Input
-                    value={formData.fechaInicioCredito}
-                    onChange={(e) => handleChange('fechaInicioCredito', e.target.value)}
-                    placeholder="DD/MM/YYYY"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Fecha Fin Crédito</Label>
-                  <Input
-                    value={formData.fechaFinCredito}
-                    onChange={(e) => handleChange('fechaFinCredito', e.target.value)}
-                    placeholder="DD/MM/YYYY"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Sección: Datos Personales (con búsqueda RUT) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+          {step === 'form' ? (
+            // ========== FORMULARIO ==========
+            <div className="space-y-6 py-4">
+              {/* Sección: Datos del Asegurado */}
+              <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  Datos Personales del Cliente
+                  <User className="h-4 w-4 text-primary" />
+                  Datos del Asegurado (desde solicitud)
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchRutInfo}
-                  disabled={isLoadingRut}
-                  className="gap-2"
-                >
-                  <Search className="h-4 w-4" />
-                  {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
-                </Button>
+                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground text-xs">Nombre</span>
+                      <p className="font-medium truncate">{refund.fullName}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">RUT</span>
+                      <p className="font-medium">{refund.rut}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Email</span>
+                      <p className="font-medium truncate">{refund.email}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Teléfono</span>
+                      <p className="font-medium">{refund.phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Fecha Nacimiento</span>
+                      <p className="font-medium">{formatDate(refund.calculationSnapshot?.birthDate)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Edad</span>
+                      <p className="font-medium">{refund.calculationSnapshot?.age || 'N/A'} años</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Monto Crédito</span>
+                      <p className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Cuotas</span>
+                      <p className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-4">
-                <div className="grid grid-cols-6 gap-4">
-                  <div className="space-y-2 col-span-4">
-                    <Label>Dirección</Label>
-                    <Input
-                      value={formData.direccion}
-                      onChange={(e) => handleChange('direccion', e.target.value)}
-                      placeholder="Calle o avenida"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Número</Label>
-                    <Input
-                      value={formData.numero}
-                      onChange={(e) => handleChange('numero', e.target.value)}
-                      placeholder="N°"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Depto/Block</Label>
-                    <Input
-                      value={formData.depto}
-                      onChange={(e) => handleChange('depto', e.target.value)}
-                      placeholder="Depto"
-                    />
-                  </div>
-                </div>
 
+              {/* Sección: Datos del Certificado */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                  Datos del Certificado
+                </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-2">
-                    <Label>Ciudad</Label>
+                    <Label>Folio</Label>
                     <Input
-                      value={formData.ciudad}
-                      onChange={(e) => handleChange('ciudad', e.target.value)}
-                      placeholder="Ciudad"
+                      value={formData.folio}
+                      onChange={(e) => handleChange('folio', e.target.value)}
+                      placeholder="Número de folio"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Comuna</Label>
+                    <Label>Nro. Operación</Label>
                     <Input
-                      value={formData.comuna}
-                      onChange={(e) => handleChange('comuna', e.target.value)}
-                      placeholder="Comuna"
+                      value={formData.nroOperacion}
+                      onChange={(e) => handleChange('nroOperacion', e.target.value)}
+                      placeholder="Nro. operación"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Celular</Label>
+                    <Label>Fecha Inicio Crédito</Label>
                     <Input
-                      value={formData.celular}
-                      onChange={(e) => handleChange('celular', e.target.value)}
-                      placeholder="+56 9..."
+                      value={formData.fechaInicioCredito}
+                      onChange={(e) => handleChange('fechaInicioCredito', e.target.value)}
+                      placeholder="DD/MM/YYYY"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Sexo</Label>
-                    <Select value={formData.sexo} onValueChange={(v) => handleChange('sexo', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">Masculino</SelectItem>
-                        <SelectItem value="F">Femenino</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Autoriza comunicación por email</Label>
-                    <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SI">Sí</SelectItem>
-                        <SelectItem value="NO">No</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Fecha Fin Crédito</Label>
+                    <Input
+                      value={formData.fechaFinCredito}
+                      onChange={(e) => handleChange('fechaFinCredito', e.target.value)}
+                      placeholder="DD/MM/YYYY"
+                    />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Prima calculada */}
-            <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Prima Única del Seguro (calculada):</span>
-                <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
+              {/* Sección: Datos Personales (con búsqueda RUT) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    Datos Personales del Cliente
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchRutInfo}
+                    disabled={isLoadingRut}
+                    className="gap-2"
+                  >
+                    <Search className="h-4 w-4" />
+                    {isLoadingRut ? 'Buscando...' : 'Buscar Información'}
+                  </Button>
+                </div>
+                
+                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-4">
+                  <div className="grid grid-cols-6 gap-4">
+                    <div className="space-y-2 col-span-4">
+                      <Label>Dirección</Label>
+                      <Input
+                        value={formData.direccion}
+                        onChange={(e) => handleChange('direccion', e.target.value)}
+                        placeholder="Calle o avenida"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Número</Label>
+                      <Input
+                        value={formData.numero}
+                        onChange={(e) => handleChange('numero', e.target.value)}
+                        placeholder="N°"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Depto/Block</Label>
+                      <Input
+                        value={formData.depto}
+                        onChange={(e) => handleChange('depto', e.target.value)}
+                        placeholder="Depto"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label>Ciudad</Label>
+                      <Input
+                        value={formData.ciudad}
+                        onChange={(e) => handleChange('ciudad', e.target.value)}
+                        placeholder="Ciudad"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Comuna</Label>
+                      <Input
+                        value={formData.comuna}
+                        onChange={(e) => handleChange('comuna', e.target.value)}
+                        placeholder="Comuna"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Celular</Label>
+                      <Input
+                        value={formData.celular}
+                        onChange={(e) => handleChange('celular', e.target.value)}
+                        placeholder="+56 9..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Sexo</Label>
+                      <Select value={formData.sexo} onValueChange={(v) => handleChange('sexo', v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="M">Masculino</SelectItem>
+                          <SelectItem value="F">Femenino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Autoriza comunicación por email</Label>
+                      <Select value={formData.autorizaEmail} onValueChange={(v) => handleChange('autorizaEmail', v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SI">Sí</SelectItem>
+                          <SelectItem value="NO">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
-              </p>
+
+              {/* Prima calculada */}
+              <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Prima Única del Seguro (calculada):</span>
+                  <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            // ========== PREVISUALIZACIÓN ==========
+            <div className="space-y-6 py-4">
+              {/* Resumen del Asegurado */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <User className="h-4 w-4" />
+                  Datos del Asegurado
+                </div>
+                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nombre:</span>
+                      <span className="font-medium">{refund.fullName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">RUT:</span>
+                      <span className="font-medium">{refund.rut}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Email:</span>
+                      <span className="font-medium">{refund.email}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fecha Nacimiento:</span>
+                      <span className="font-medium">{formatDate(refund.calculationSnapshot?.birthDate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Edad:</span>
+                      <span className="font-medium">{refund.calculationSnapshot?.age} años</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Sexo:</span>
+                      <span className="font-medium">{formData.sexo === 'M' ? 'Masculino' : formData.sexo === 'F' ? 'Femenino' : 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumen Dirección */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <MapPin className="h-4 w-4" />
+                  Dirección
+                </div>
+                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                    <div className="flex justify-between col-span-2">
+                      <span className="text-muted-foreground">Dirección completa:</span>
+                      <span className="font-medium">
+                        {formData.direccion || 'N/A'} {formData.numero && `N° ${formData.numero}`} {formData.depto && `Depto ${formData.depto}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ciudad:</span>
+                      <span className="font-medium">{formData.ciudad || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Comuna:</span>
+                      <span className="font-medium">{formData.comuna || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Celular:</span>
+                      <span className="font-medium">{formData.celular || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Autoriza email:</span>
+                      <span className="font-medium">{formData.autorizaEmail === 'SI' ? 'Sí' : 'No'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumen del Certificado */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                  <CreditCard className="h-4 w-4" />
+                  Datos del Certificado
+                </div>
+                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Folio:</span>
+                      <span className="font-medium">{formData.folio || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Nro. Operación:</span>
+                      <span className="font-medium">{formData.nroOperacion || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fecha Inicio Crédito:</span>
+                      <span className="font-medium">{formData.fechaInicioCredito || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Fecha Fin Crédito:</span>
+                      <span className="font-medium">{formData.fechaFinCredito || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Monto Crédito:</span>
+                      <span className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Plazo (meses):</span>
+                      <span className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prima calculada destacada */}
+              <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Prima Única del Seguro:</span>
+                  <span className="text-xl font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tasa según edad ({refund.calculationSnapshot?.age} años): {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil
+                </p>
+              </div>
+            </div>
+          )}
         </ScrollArea>
 
         <DialogFooter className="pt-4 border-t">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
-            {isGenerating ? (
-              'Generando...'
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Descargar Certificado PDF
-              </>
-            )}
-          </Button>
+          {step === 'form' ? (
+            <>
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handlePreview} className="gap-2">
+                <Eye className="h-4 w-4" />
+                Previsualizar
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleBackToEdit} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Volver a Editar
+              </Button>
+              <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
+                {isGenerating ? (
+                  'Generando...'
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Descargar PDF
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
