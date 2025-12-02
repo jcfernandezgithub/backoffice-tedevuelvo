@@ -586,7 +586,11 @@ export default function RefundDetail() {
         </TabsContent>
 
         <TabsContent value="documents">
-          <DocumentsSection publicId={refund.publicId} clientToken={refund.clientTokenHash} />
+          <DocumentsSection 
+            publicId={refund.publicId} 
+            clientToken={refund.clientTokenHash}
+            documents={documents}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -12,9 +12,10 @@ import { format } from 'date-fns'
 interface DocumentsSectionProps {
   publicId: string
   clientToken?: string
+  documents?: DocumentMeta[]
 }
 
-export function DocumentsSection({ publicId, clientToken }: DocumentsSectionProps) {
+export function DocumentsSection({ publicId, clientToken, documents: propDocuments }: DocumentsSectionProps) {
   const { toast } = useToast()
   const [viewingDoc, setViewingDoc] = useState<{ doc: DocumentMeta; title: string } | null>(null)
   const [idImages, setIdImages] = useState<{ front?: string; back?: string }>({})
@@ -22,6 +23,8 @@ export function DocumentsSection({ publicId, clientToken }: DocumentsSectionProp
   const { data: attachments = [], isLoading: loadingAttachments } = useQuery({
     queryKey: ['refund-documents', publicId],
     queryFn: () => publicFilesApi.listRefundDocuments(publicId),
+    enabled: !propDocuments,
+    initialData: propDocuments,
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
