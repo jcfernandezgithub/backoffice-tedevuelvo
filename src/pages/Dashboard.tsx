@@ -83,20 +83,20 @@ export default function Dashboard() {
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
   })
 
-  // Obtener publicIds de solicitudes en proceso para consultar estado de mandato
-  const { data: enProcesoIds } = useQuery({
-    queryKey: ['dashboard', 'en-proceso-ids', desde, hasta],
-    queryFn: () => dashboardService.getSolicitudesEnProceso(desde, hasta),
+  // Obtener publicIds de solicitudes para consultar estado de mandato
+  const { data: solicitudesIds } = useQuery({
+    queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
+    queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
   })
 
-  // Query para obtener estados de mandatos de solicitudes en proceso
+  // Query para obtener estados de mandatos de todas las solicitudes
   const { data: mandateStatuses } = useQuery({
-    queryKey: ['dashboard', 'mandate-statuses', enProcesoIds],
+    queryKey: ['dashboard', 'mandate-statuses', solicitudesIds],
     queryFn: async () => {
-      if (!enProcesoIds || enProcesoIds.length === 0) return {}
+      if (!solicitudesIds || solicitudesIds.length === 0) return {}
       const statuses: Record<string, any> = {}
       await Promise.all(
-        enProcesoIds.map(async (publicId: string) => {
+        solicitudesIds.map(async (publicId: string) => {
           try {
             const response = await fetch(
               `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
@@ -111,7 +111,7 @@ export default function Dashboard() {
       )
       return statuses
     },
-    enabled: !!enProcesoIds && enProcesoIds.length > 0,
+    enabled: !!solicitudesIds && solicitudesIds.length > 0,
   })
 
   // Conteo de solicitudes firmadas en proceso
