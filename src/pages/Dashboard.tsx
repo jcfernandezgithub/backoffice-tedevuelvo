@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
@@ -167,8 +168,20 @@ export default function Dashboard() {
 
       <section aria-label="Filtros" className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
         <Card className="lg:col-span-4">
-          <CardHeader className="p-4">
+          <CardHeader className="p-4 flex flex-row items-center justify-between">
             <CardTitle className="text-sm">Rango de fechas</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                const hoy = new Date().toISOString().split('T')[0]
+                setDesde(hoy)
+                setHasta(hoy)
+              }}
+              className="h-7 text-xs"
+            >
+              Hoy
+            </Button>
           </CardHeader>
           <CardContent className="p-4 pt-0 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
