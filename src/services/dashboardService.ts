@@ -41,24 +41,54 @@ const statusToDashboardState = (status: RefundStatus): string => {
   }
 }
 
-function inRange(fechaISO: string, desde?: string, hasta?: string) {
-  const d = dayjs.tz(fechaISO)
-  if (desde && d.isBefore(dayjs.tz(desde), 'day')) return false
-  if (hasta && d.isAfter(dayjs.tz(hasta), 'day')) return false
-  return true
+// Filtrar por fecha de creación LOCAL (mismo criterio que List.tsx)
+function filterByLocalDate(refunds: RefundRequest[], desde?: string, hasta?: string): RefundRequest[] {
+  if (!desde && !hasta) return refunds
+  
+  const parseLocalStart = (s: string) => {
+    const [y, m, d] = s.split('-').map(Number)
+    return new Date(y, (m as number) - 1, d as number, 0, 0, 0, 0)
+  }
+  const parseLocalEnd = (s: string) => {
+    const [y, m, d] = s.split('-').map(Number)
+    return new Date(y, (m as number) - 1, d as number, 23, 59, 59, 999)
+  }
+
+  return refunds.filter(r => {
+    if (!r.createdAt) return true
+    
+    const createdAt = new Date(r.createdAt)
+    const createdLocalDay = new Date(
+      createdAt.getFullYear(),
+      createdAt.getMonth(),
+      createdAt.getDate(),
+      0, 0, 0, 0
+    )
+
+    if (desde) {
+      const fromStart = parseLocalStart(desde)
+      if (createdLocalDay < fromStart) return false
+    }
+    if (hasta) {
+      const toEnd = parseLocalEnd(hasta)
+      if (createdLocalDay > toEnd) return false
+    }
+    return true
+  })
 }
 
 export const dashboardService = {
   async getSolicitudesPorEstado(desde?: string, hasta?: string) {
     try {
-      // Obtener todas las solicitudes del API
+      // Obtener todas las solicitudes del API (sin filtro de fecha en backend)
       const response = await refundAdminApi.list({
-        from: desde,
-        to: hasta,
         pageSize: 1000, // Obtener todas las solicitudes
       })
 
       const refunds = Array.isArray(response) ? response : response.items || []
+
+      // Aplicar filtro de fecha LOCAL (mismo criterio que List.tsx)
+      const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
 
       // Contar por estado mapeado
       const counts: Record<string, number> = {
@@ -73,7 +103,7 @@ export const dashboardService = {
         OTRO: 0,
       }
 
-      for (const refund of refunds as RefundRequest[]) {
+      for (const refund of filteredRefunds) {
         const estado = statusToDashboardState(refund.status)
         counts[estado] = (counts[estado] ?? 0) + 1
       }
@@ -97,17 +127,18 @@ export const dashboardService = {
 
   async getPagosClientes(desde?: string, hasta?: string) {
     try {
-      // Obtener todas las solicitudes en el rango de fechas
+      // Obtener todas las solicitudes (sin filtro de fecha en backend)
       const response = await refundAdminApi.list({
-        from: desde,
-        to: hasta,
         pageSize: 1000,
       })
 
       const refunds = Array.isArray(response) ? response : response.items || []
 
+      // Aplicar filtro de fecha LOCAL
+      const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
+
       // Filtrar solo las que están en estado paid
-      const paidRefunds = (refunds as RefundRequest[]).filter(
+      const paidRefunds = filteredRefunds.filter(
         refund => refund.status === 'paid'
       )
 
@@ -158,14 +189,15 @@ export const dashboardService = {
 
   async getSolicitudesAggregate(desde?: string, hasta?: string, by: Aggregation = 'day') {
     try {
-      // Obtener todas las solicitudes en el rango de fechas
+      // Obtener todas las solicitudes (sin filtro de fecha en backend)
       const response = await refundAdminApi.list({
-        from: desde,
-        to: hasta,
         pageSize: 1000,
       })
 
-      const refunds = Array.isArray(response) ? response : response.items || []
+      const allRefunds = Array.isArray(response) ? response : response.items || []
+
+      // Aplicar filtro de fecha LOCAL
+      const refunds = filterByLocalDate(allRefunds as RefundRequest[], desde, hasta)
 
       // Agrupar por fecha de creación
       const map = new Map<string, number>()
