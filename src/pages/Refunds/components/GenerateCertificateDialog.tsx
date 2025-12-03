@@ -1189,14 +1189,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <span className="font-medium">Prima Única del Seguro (calculada):</span>
                   <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
+                <p className="text-xs text-muted-foreground mt-2">
+                  Fórmula: ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
-                <div className="text-xs text-muted-foreground mt-2 space-y-1 border-t border-primary/10 pt-2">
-                  <p>• Saldo Insoluto: <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span></p>
-                  <p>• TBM: <span className="font-medium">{getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil</span></p>
-                  <p>• Nper (cuotas restantes): <span className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 0}</span></p>
-                </div>
               </div>
             </div>
           ) : (
@@ -1314,14 +1309,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <span className="font-medium">Prima Única del Seguro:</span>
                   <span className="text-xl font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tasa según edad ({refund.calculationSnapshot?.age} años): {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil
+                <p className="text-xs text-muted-foreground mt-2">
+                  Fórmula: ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
-                <div className="text-xs text-muted-foreground mt-2 space-y-1 border-t border-primary/10 pt-2">
-                  <p>• Saldo Insoluto: <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span></p>
-                  <p>• TBM: <span className="font-medium">{getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil</span></p>
-                  <p>• Nper (cuotas restantes): <span className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 0}</span></p>
-                </div>
               </div>
             </div>
           )}
