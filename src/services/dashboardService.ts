@@ -250,12 +250,13 @@ export const dashboardService = {
       const refunds = Array.isArray(response) ? response : response.items || []
       const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
 
-      // Filtrar solo las que están EN_PROCESO (qualifying, docs_pending, docs_received)
-      const enProceso = filteredRefunds.filter(r => 
-        ['qualifying', 'docs_pending', 'docs_received'].includes(r.status)
+      // Incluir todos los estados donde puede existir mandato firmado
+      // (todos los estados activos del flujo, excluyendo solo datos_sin_simulacion y simulated/requested que aún no firman)
+      const conPosibleMandato = filteredRefunds.filter(r => 
+        ['qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'].includes(r.status)
       )
 
-      return enProceso.map(r => r.publicId)
+      return conPosibleMandato.map(r => r.publicId)
     } catch (error) {
       console.error('Error obteniendo solicitudes en proceso:', error)
       return []

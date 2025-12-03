@@ -227,11 +227,17 @@ export default function Dashboard() {
       </section>
 
       <section className="space-y-3 sm:space-y-4" aria-label="Métricas por estado">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <h2 className="text-xs sm:text-sm font-medium text-muted-foreground">Estados en proceso</h2>
-          <Badge variant="secondary" className="text-sm font-semibold">
-            Total: {totalSolicitudes} solicitudes
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary" className="text-sm font-semibold">
+              Total: {totalSolicitudes} solicitudes
+            </Badge>
+            <Badge variant="outline" className="text-sm font-semibold flex items-center gap-1.5">
+              <FileSignature className="h-3.5 w-3.5" />
+              Mandatos firmados: {solicitudesFirmadas}
+            </Badge>
+          </div>
         </div>
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -243,7 +249,6 @@ export default function Dashboard() {
                 icon={c.icon} 
                 color={c.color} 
                 refundStatus={c.refundStatus}
-                extraInfo={c.key === 'EN_PROCESO' ? { label: 'Firmadas', value: solicitudesFirmadas, icon: FileSignature } : undefined}
               />
             ))}
           </div>
