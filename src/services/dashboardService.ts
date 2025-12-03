@@ -241,7 +241,7 @@ export const dashboardService = {
     }
   },
 
-  async getSolicitudesEnProceso(desde?: string, hasta?: string): Promise<string[]> {
+  async getSolicitudesParaMandato(desde?: string, hasta?: string): Promise<string[]> {
     try {
       const response = await refundAdminApi.list({
         pageSize: 1000,
@@ -250,15 +250,11 @@ export const dashboardService = {
       const refunds = Array.isArray(response) ? response : response.items || []
       const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
 
-      // Incluir todos los estados donde puede existir mandato firmado
-      // (todos los estados activos del flujo, excluyendo solo datos_sin_simulacion y simulated/requested que aún no firman)
-      const conPosibleMandato = filteredRefunds.filter(r => 
-        ['qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'].includes(r.status)
-      )
-
-      return conPosibleMandato.map(r => r.publicId)
+      // Retornar TODOS los publicIds del período para verificar mandatos
+      // El mandato puede estar firmado en cualquier estado
+      return filteredRefunds.map(r => r.publicId)
     } catch (error) {
-      console.error('Error obteniendo solicitudes en proceso:', error)
+      console.error('Error obteniendo solicitudes para mandato:', error)
       return []
     }
   },
