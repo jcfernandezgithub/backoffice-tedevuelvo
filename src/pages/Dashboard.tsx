@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
 import { dashboardDataMock } from '@/mocks/dashboardData'
-import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon } from 'lucide-react'
+import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon, FileSignature } from 'lucide-react'
 
 const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -82,6 +82,43 @@ export default function Dashboard() {
     queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
   })
+
+  // Obtener publicIds de solicitudes en proceso para consultar estado de mandato
+  const { data: enProcesoIds } = useQuery({
+    queryKey: ['dashboard', 'en-proceso-ids', desde, hasta],
+    queryFn: () => dashboardService.getSolicitudesEnProceso(desde, hasta),
+  })
+
+  // Query para obtener estados de mandatos de solicitudes en proceso
+  const { data: mandateStatuses } = useQuery({
+    queryKey: ['dashboard', 'mandate-statuses', enProcesoIds],
+    queryFn: async () => {
+      if (!enProcesoIds || enProcesoIds.length === 0) return {}
+      const statuses: Record<string, any> = {}
+      await Promise.all(
+        enProcesoIds.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            )
+            if (response.ok) {
+              statuses[publicId] = await response.json()
+            }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return statuses
+    },
+    enabled: !!enProcesoIds && enProcesoIds.length > 0,
+  })
+
+  // Conteo de solicitudes firmadas en proceso
+  const solicitudesFirmadas = useMemo(() => {
+    if (!mandateStatuses) return 0
+    return Object.values(mandateStatuses).filter((s: any) => s?.hasSignedPdf === true).length
+  }, [mandateStatuses])
 
   const estadoCards = useMemo(() => (
     [
@@ -199,7 +236,15 @@ export default function Dashboard() {
         <div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {estadoCards.slice(0, 4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} />
+              <Kpi 
+                key={c.key} 
+                title={c.title} 
+                value={c.value} 
+                icon={c.icon} 
+                color={c.color} 
+                refundStatus={c.refundStatus}
+                extraInfo={c.key === 'EN_PROCESO' ? { label: 'Firmadas', value: solicitudesFirmadas, icon: FileSignature } : undefined}
+              />
             ))}
           </div>
         </div>
@@ -329,12 +374,13 @@ export default function Dashboard() {
   )
 }
 
-function Kpi({ title, value, icon: Icon, color, refundStatus }: { 
+function Kpi({ title, value, icon: Icon, color, refundStatus, extraInfo }: { 
   title: string; 
   value: number | React.ReactNode; 
   icon?: LucideIcon;
   color?: string;
   refundStatus?: string;
+  extraInfo?: { label: string; value: number; icon?: LucideIcon };
 }) {
   const navigate = useNavigate()
   
@@ -352,6 +398,7 @@ function Kpi({ title, value, icon: Icon, color, refundStatus }: {
     emerald: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 hover:shadow-emerald-200/50 dark:hover:shadow-emerald-900/30',
     success: 'bg-green-100 dark:bg-green-950/30 border-green-300 dark:border-green-800/50 hover:shadow-green-300/50 dark:hover:shadow-green-800/30',
     destructive: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:shadow-red-200/50 dark:hover:shadow-red-900/30',
+    purple: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/50 hover:shadow-purple-200/50 dark:hover:shadow-purple-900/30',
   }
 
   const iconColorClasses = {
@@ -362,6 +409,7 @@ function Kpi({ title, value, icon: Icon, color, refundStatus }: {
     emerald: 'text-emerald-600 dark:text-emerald-400',
     success: 'text-green-700 dark:text-green-500',
     destructive: 'text-red-600 dark:text-red-400',
+    purple: 'text-purple-600 dark:text-purple-400',
   }
 
   const cardClass = color ? colorClasses[color as keyof typeof colorClasses] : ''
@@ -380,7 +428,15 @@ function Kpi({ title, value, icon: Icon, color, refundStatus }: {
           </div>
         )}
       </CardHeader>
-      <CardContent className="text-2xl sm:text-3xl font-bold p-3 pt-0 sm:p-4 sm:pt-0 md:p-6 md:pt-0">{typeof value === 'number' ? value : value}</CardContent>
+      <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0 md:p-6 md:pt-0">
+        <div className="text-2xl sm:text-3xl font-bold">{typeof value === 'number' ? value : value}</div>
+        {extraInfo && (
+          <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+            {extraInfo.icon && <extraInfo.icon className="h-3.5 w-3.5" />}
+            <span>{extraInfo.label}: <strong className="text-foreground">{extraInfo.value}</strong></span>
+          </div>
+        )}
+      </CardContent>
     </Card>
   )
 }

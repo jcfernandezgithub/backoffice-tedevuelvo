@@ -240,4 +240,25 @@ export const dashboardService = {
       return { total: 0, series: [] }
     }
   },
+
+  async getSolicitudesEnProceso(desde?: string, hasta?: string): Promise<string[]> {
+    try {
+      const response = await refundAdminApi.list({
+        pageSize: 1000,
+      })
+
+      const refunds = Array.isArray(response) ? response : response.items || []
+      const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
+
+      // Filtrar solo las que están EN_PROCESO (qualifying, docs_pending, docs_received)
+      const enProceso = filteredRefunds.filter(r => 
+        ['qualifying', 'docs_pending', 'docs_received'].includes(r.status)
+      )
+
+      return enProceso.map(r => r.publicId)
+    } catch (error) {
+      console.error('Error obteniendo solicitudes en proceso:', error)
+      return []
+    }
+  },
 }
