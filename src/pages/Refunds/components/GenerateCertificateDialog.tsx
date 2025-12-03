@@ -1192,6 +1192,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                 <p className="text-xs text-muted-foreground mt-1">
                   Fórmula: Saldo insoluto × TBM × Nper (Tasa según edad: {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil)
                 </p>
+                <div className="text-xs text-muted-foreground mt-2 space-y-1 border-t border-primary/10 pt-2">
+                  <p>• Saldo Insoluto: <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span></p>
+                  <p>• TBM: <span className="font-medium">{getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil</span></p>
+                  <p>• Nper (cuotas restantes): <span className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 0}</span></p>
+                </div>
               </div>
             </div>
           ) : (
@@ -1312,6 +1317,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                 <p className="text-xs text-muted-foreground mt-1">
                   Tasa según edad ({refund.calculationSnapshot?.age} años): {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil
                 </p>
+                <div className="text-xs text-muted-foreground mt-2 space-y-1 border-t border-primary/10 pt-2">
+                  <p>• Saldo Insoluto: <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span></p>
+                  <p>• TBM: <span className="font-medium">{getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil</span></p>
+                  <p>• Nper (cuotas restantes): <span className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 0}</span></p>
+                </div>
               </div>
             </div>
           )}
