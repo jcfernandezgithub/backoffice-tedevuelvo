@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
@@ -102,6 +103,11 @@ export default function Dashboard() {
     }))
   ), [counts])
 
+  const totalSolicitudes = useMemo(() => {
+    if (!counts) return 0
+    return Object.values(counts).reduce((sum, val) => sum + val, 0)
+  }, [counts])
+
   const pieChartData = useMemo(() => {
     if (!counts) return []
     const total = Object.values(counts).reduce((sum, val) => sum + val, 0)
@@ -184,8 +190,13 @@ export default function Dashboard() {
       </section>
 
       <section className="space-y-3 sm:space-y-4" aria-label="Métricas por estado">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground">Estados en proceso</h2>
+          <Badge variant="secondary" className="text-sm font-semibold">
+            Total: {totalSolicitudes} solicitudes
+          </Badge>
+        </div>
         <div>
-          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados en proceso</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {estadoCards.slice(0, 4).map((c) => (
               <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} />
