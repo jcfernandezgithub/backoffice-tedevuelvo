@@ -1190,7 +1190,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Fórmula: ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  Fórmula: Saldo insoluto × TBM × Nper
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
@@ -1310,7 +1313,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <span className="text-xl font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Fórmula: ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  Fórmula: Saldo insoluto × TBM × Nper
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
