@@ -167,23 +167,69 @@ export default function Dashboard() {
       </header>
 
       <section aria-label="Filtros" className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
-        <Card className="lg:col-span-4">
-          <CardHeader className="p-4 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm">Rango de fechas</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                const hoy = new Date().toISOString().split('T')[0]
-                setDesde(hoy)
-                setHasta(hoy)
-              }}
-              className="h-7 text-xs"
-            >
-              Hoy
-            </Button>
+        <Card className="lg:col-span-5">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <CardTitle className="text-sm">Rango de fechas</CardTitle>
+              <div className="flex flex-wrap gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const hoy = new Date().toISOString().split('T')[0]
+                    setDesde(hoy)
+                    setHasta(hoy)
+                  }}
+                  className="h-6 text-xs px-2"
+                >
+                  Hoy
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const ayer = new Date()
+                    ayer.setDate(ayer.getDate() - 1)
+                    const ayerStr = ayer.toISOString().split('T')[0]
+                    setDesde(ayerStr)
+                    setHasta(ayerStr)
+                  }}
+                  className="h-6 text-xs px-2"
+                >
+                  Ayer
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const hoy = new Date()
+                    const semanaAtras = new Date()
+                    semanaAtras.setDate(hoy.getDate() - 7)
+                    setDesde(semanaAtras.toISOString().split('T')[0])
+                    setHasta(hoy.toISOString().split('T')[0])
+                  }}
+                  className="h-6 text-xs px-2"
+                >
+                  Última semana
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const hoy = new Date()
+                    const mesAtras = new Date()
+                    mesAtras.setMonth(hoy.getMonth() - 1)
+                    setDesde(mesAtras.toISOString().split('T')[0])
+                    setHasta(hoy.toISOString().split('T')[0])
+                  }}
+                  className="h-6 text-xs px-2"
+                >
+                  Último mes
+                </Button>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="p-4 pt-0 grid grid-cols-2 gap-3">
+          <CardContent className="p-4 pt-2 grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <label htmlFor="fecha-desde" className="text-xs text-muted-foreground">Desde</label>
               <input
