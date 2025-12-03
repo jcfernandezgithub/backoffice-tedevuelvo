@@ -395,7 +395,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       doc.text(formData.fechaFinCredito || '', 158, y)
       y += 6
 
-      const primaUnica = calculatePrimaUnica()
+      // Valores para el cálculo de la prima única
+      const saldoInsoluto = refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0
+      const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
+      const ageValue = refund.calculationSnapshot?.age
+      const tbmValue = getTasaBrutaMensual(ageValue)
+      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
+
       doc.setFont('helvetica', 'normal')
       doc.text('Prima Única del Seguro (Exenta de IVA):', margin, y)
       doc.setFont('helvetica', 'bold')
@@ -404,15 +410,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(7)
-      doc.text('Fórmula: Saldo insoluto Inicial * TBM * nper', margin, y)
+      doc.text('Fórmula: Saldo insoluto × TBM × Nper', margin, y)
       y += 4
       doc.text('Donde:', margin, y)
       y += 3
-      doc.text('• SI: Saldo insoluto inicial', margin + 5, y)
+      doc.text(`• Saldo Insoluto (saldo asegurado promedio): $${saldoInsoluto.toLocaleString('es-CL')}`, margin + 5, y)
       y += 3
-      doc.text('• TBM: Tasa Bruta Mensual', margin + 5, y)
+      doc.text(`• TBM (Tasa Bruta Mensual según edad ${ageValue || '-'}): ${tbmValue.toFixed(4)} por mil`, margin + 5, y)
       y += 3
-      doc.text('• Nper: plazo de duración del crédito, en meses', margin + 5, y)
+      doc.text(`• Nper (cuotas restantes): ${nperValue}`, margin + 5, y)
       y += 5
 
       doc.setFontSize(7)
