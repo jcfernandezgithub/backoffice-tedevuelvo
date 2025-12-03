@@ -160,8 +160,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
   }
 
   const calculatePrimaUnica = () => {
-    const saldoInsoluto = refund.calculationSnapshot?.totalAmount || 0
-    const nper = refund.calculationSnapshot?.originalInstallments || 0
+    // Saldo Insoluto = Saldo asegurado promedio (monto restante por pagar)
+    const saldoInsoluto = refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0
+    // Nper = Cuotas restantes por pagar
+    const nper = refund.calculationSnapshot?.remainingInstallments || 0
     const age = refund.calculationSnapshot?.age
     const tbm = getTasaBrutaMensual(age) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
