@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.8
+## Versión 1.1.9
 
 ## Changelog
+
+### Versión 1.1.9 - 2025-12-03
+
+#### Mejoras en Certificado de Cobertura
+- **Visualización de fórmula de Prima Única**: En la pantalla de generación de certificado de cobertura se muestra ahora la fórmula completa del cálculo de la Prima Única del Seguro.
+  - Fórmula visible: "Saldo insoluto × TBM × Nper"
+  - Valores numéricos correspondientes mostrados debajo de la fórmula
+  - Mejora la transparencia y comprensión del cálculo para el usuario
+
+---
 
 ### Versión 1.1.8 - 2025-12-02
 
