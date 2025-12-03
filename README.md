@@ -12,6 +12,17 @@
   - Valores numéricos correspondientes mostrados debajo de la fórmula
   - Mejora la transparencia y comprensión del cálculo para el usuario
 
+#### Mejoras en Filtros de Fecha
+- **Filtros rápidos de fecha en Dashboard**: Agregados botones de acceso rápido para selección de rangos de fecha.
+  - Botones "Hoy", "Ayer", "Última semana" y "Último mes".
+  - Corrección de zona horaria usando función `toLocalDateString` para evitar desfases de fecha.
+  - Optimización de queries con `staleTime` y `placeholderData` para evitar parpadeos al cambiar filtros.
+
+- **Filtros rápidos de fecha en Solicitudes**: Implementada la misma funcionalidad en la página de Solicitudes (Refunds).
+  - Botones de acceso rápido integrados en la sección de filtros.
+  - Nueva función `handleDateRangeChange` para actualizar ambas fechas en una sola operación de estado.
+  - Diseño responsivo que se adapta a diferentes tamaños de pantalla.
+
 ---
 
 ### Versión 1.1.8 - 2025-12-02
