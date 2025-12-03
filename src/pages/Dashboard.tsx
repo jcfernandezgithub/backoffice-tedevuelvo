@@ -58,15 +58,23 @@ const DASHBOARD_TO_REFUND_STATUS: Record<string, string> = {
   DATOS_SIN_SIMULACION: 'datos_sin_simulacion',
 }
 
+// Helper para obtener fecha local en formato YYYY-MM-DD
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   // Rango de fechas por defecto: últimos 30 días
   const [desde, setDesde] = useState<string>(() => {
     const d = new Date()
     d.setDate(d.getDate() - 30)
-    return d.toISOString().split('T')[0]
+    return toLocalDateString(d)
   })
-  const [hasta, setHasta] = useState<string>(() => new Date().toISOString().split('T')[0])
+  const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
   const { data: counts, isLoading: isLoadingCounts } = useQuery({
@@ -186,7 +194,7 @@ export default function Dashboard() {
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    const hoy = new Date().toISOString().split('T')[0]
+                    const hoy = toLocalDateString(new Date())
                     setDesde(hoy)
                     setHasta(hoy)
                   }}
@@ -200,7 +208,7 @@ export default function Dashboard() {
                   onClick={() => {
                     const ayer = new Date()
                     ayer.setDate(ayer.getDate() - 1)
-                    const ayerStr = ayer.toISOString().split('T')[0]
+                    const ayerStr = toLocalDateString(ayer)
                     setDesde(ayerStr)
                     setHasta(ayerStr)
                   }}
@@ -215,8 +223,8 @@ export default function Dashboard() {
                     const hoy = new Date()
                     const semanaAtras = new Date()
                     semanaAtras.setDate(hoy.getDate() - 7)
-                    setDesde(semanaAtras.toISOString().split('T')[0])
-                    setHasta(hoy.toISOString().split('T')[0])
+                    setDesde(toLocalDateString(semanaAtras))
+                    setHasta(toLocalDateString(hoy))
                   }}
                   className="h-6 text-xs px-2"
                 >
@@ -229,8 +237,8 @@ export default function Dashboard() {
                     const hoy = new Date()
                     const mesAtras = new Date()
                     mesAtras.setMonth(hoy.getMonth() - 1)
-                    setDesde(mesAtras.toISOString().split('T')[0])
-                    setHasta(hoy.toISOString().split('T')[0])
+                    setDesde(toLocalDateString(mesAtras))
+                    setHasta(toLocalDateString(hoy))
                   }}
                   className="h-6 text-xs px-2"
                 >
