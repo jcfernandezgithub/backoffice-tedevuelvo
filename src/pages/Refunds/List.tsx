@@ -46,6 +46,14 @@ const statusLabels: Record<RefundStatus, string> = {
   datos_sin_simulacion: 'Datos (sin simulación)',
 }
 
+// Helper para obtener fecha local en formato YYYY-MM-DD
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const getStatusColors = (status: RefundStatus): string => {
   switch (status) {
     case 'simulated':
@@ -514,22 +522,81 @@ export default function RefundsList() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground">Desde</label>
-              <Input
-                type="date"
-                value={filters.from || ''}
-                onChange={(e) => handleFilterChange('from', e.target.value)}
-              />
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Fecha:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = toLocalDateString(new Date())
+                  handleFilterChange('from', hoy)
+                  handleFilterChange('to', hoy)
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Hoy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const ayer = new Date()
+                  ayer.setDate(ayer.getDate() - 1)
+                  const ayerStr = toLocalDateString(ayer)
+                  handleFilterChange('from', ayerStr)
+                  handleFilterChange('to', ayerStr)
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Ayer
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = new Date()
+                  const semanaAtras = new Date()
+                  semanaAtras.setDate(hoy.getDate() - 7)
+                  handleFilterChange('from', toLocalDateString(semanaAtras))
+                  handleFilterChange('to', toLocalDateString(hoy))
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Última semana
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = new Date()
+                  const mesAtras = new Date()
+                  mesAtras.setMonth(hoy.getMonth() - 1)
+                  handleFilterChange('from', toLocalDateString(mesAtras))
+                  handleFilterChange('to', toLocalDateString(hoy))
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Último mes
+              </Button>
             </div>
-            <div>
-              <label className="text-sm text-muted-foreground">Hasta</label>
-              <Input
-                type="date"
-                value={filters.to || ''}
-                onChange={(e) => handleFilterChange('to', e.target.value)}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Desde</label>
+                <Input
+                  type="date"
+                  value={filters.from || ''}
+                  onChange={(e) => handleFilterChange('from', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Hasta</label>
+                <Input
+                  type="date"
+                  value={filters.to || ''}
+                  onChange={(e) => handleFilterChange('to', e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
