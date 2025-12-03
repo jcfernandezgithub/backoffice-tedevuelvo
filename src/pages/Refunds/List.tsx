@@ -140,6 +140,17 @@ export default function RefundsList() {
     setSearchParams(params)
   }
 
+  const handleDateRangeChange = (from: string, to: string) => {
+    const newFilters = { ...filters, from, to, page: 1 }
+    setFilters(newFilters)
+    
+    const params = new URLSearchParams()
+    Object.entries(newFilters).forEach(([k, v]) => {
+      if (v) params.set(k, String(v))
+    })
+    setSearchParams(params)
+  }
+
   const handlePageChange = (newPage: number) => {
     const newFilters = { ...filters, page: newPage }
     setFilters(newFilters)
@@ -530,8 +541,7 @@ export default function RefundsList() {
                 size="sm"
                 onClick={() => {
                   const hoy = toLocalDateString(new Date())
-                  handleFilterChange('from', hoy)
-                  handleFilterChange('to', hoy)
+                  handleDateRangeChange(hoy, hoy)
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -544,8 +554,7 @@ export default function RefundsList() {
                   const ayer = new Date()
                   ayer.setDate(ayer.getDate() - 1)
                   const ayerStr = toLocalDateString(ayer)
-                  handleFilterChange('from', ayerStr)
-                  handleFilterChange('to', ayerStr)
+                  handleDateRangeChange(ayerStr, ayerStr)
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -558,8 +567,7 @@ export default function RefundsList() {
                   const hoy = new Date()
                   const semanaAtras = new Date()
                   semanaAtras.setDate(hoy.getDate() - 7)
-                  handleFilterChange('from', toLocalDateString(semanaAtras))
-                  handleFilterChange('to', toLocalDateString(hoy))
+                  handleDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy))
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -572,8 +580,7 @@ export default function RefundsList() {
                   const hoy = new Date()
                   const mesAtras = new Date()
                   mesAtras.setMonth(hoy.getMonth() - 1)
-                  handleFilterChange('from', toLocalDateString(mesAtras))
-                  handleFilterChange('to', toLocalDateString(hoy))
+                  handleDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy))
                 }}
                 className="h-7 text-xs px-2"
               >
