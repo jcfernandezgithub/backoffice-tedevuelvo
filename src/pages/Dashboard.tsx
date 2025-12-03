@@ -69,30 +69,38 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => new Date().toISOString().split('T')[0])
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  const { data: counts } = useQuery({
+  const { data: counts, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['dashboard', 'counts', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesPorEstado(desde, hasta),
+    staleTime: 30 * 1000, // 30 segundos
+    placeholderData: (previousData) => previousData,
   })
 
   const { data: pagosAgg } = useQuery({
     queryKey: ['dashboard', 'pagos-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getPagosAggregate(desde, hasta, agg),
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   const { data: solicitudesAgg } = useQuery({
     queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   // Obtener publicIds de solicitudes para consultar estado de mandato
   const { data: solicitudesIds } = useQuery({
     queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   })
 
   // Query para obtener estados de mandatos de todas las solicitudes
   const { data: mandateStatuses } = useQuery({
-    queryKey: ['dashboard', 'mandate-statuses', solicitudesIds],
+    queryKey: ['dashboard', 'mandate-statuses', solicitudesIds?.join(',')],
     queryFn: async () => {
       if (!solicitudesIds || solicitudesIds.length === 0) return {}
       const statuses: Record<string, any> = {}
@@ -113,6 +121,8 @@ export default function Dashboard() {
       return statuses
     },
     enabled: !!solicitudesIds && solicitudesIds.length > 0,
+    staleTime: 60 * 1000, // 1 minuto para mandatos
+    placeholderData: (previousData) => previousData,
   })
 
   // Conteo de solicitudes firmadas en proceso
