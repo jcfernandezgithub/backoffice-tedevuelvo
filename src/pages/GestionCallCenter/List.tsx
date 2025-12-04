@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo } from 'react'
 
-export default function GestionCallCenterList() {
+export default function CallCenterList() {
   const [searchParams] = useSearchParams()
   const alianzaIdFilter = searchParams.get('alianzaId')
   const navigate = useNavigate()
@@ -19,13 +19,13 @@ export default function GestionCallCenterList() {
 
   // Si hay partnerId, usar el endpoint real, sino usar mock local
   const { data: partnerData = [], isLoading: isLoadingPartner } = useQuery({
-    queryKey: ['partner-callcenter', alianzaIdFilter],
+    queryKey: ['partner-solicitudes', alianzaIdFilter],
     queryFn: () => refundAdminApi.listByPartner(alianzaIdFilter!),
     enabled: !!alianzaIdFilter,
   })
 
   const { data: mockData = [], isLoading: isLoadingMock } = useQuery({
-    queryKey: ['callcenter'],
+    queryKey: ['solicitudes'],
     queryFn: () => solicitudesService.list(),
     enabled: !alianzaIdFilter,
   })
@@ -67,12 +67,12 @@ export default function GestionCallCenterList() {
       montoADevolverEstimado: 50000,
     }
     await solicitudesService.create(base as any)
-    toast({ title: 'Registro creado' })
-    qc.invalidateQueries({ queryKey: ['callcenter'] })
+    toast({ title: 'Solicitud creada' })
+    qc.invalidateQueries({ queryKey: ['solicitudes'] })
   }
 
-  const exportarCSV = () => exportCSV(data as any, 'gestion-callcenter.csv')
-  const exportarXLSX = () => exportXLSX(data as any, 'gestion-callcenter.xlsx')
+  const exportarCSV = () => exportCSV(data as any, 'callcenter.csv')
+  const exportarXLSX = () => exportXLSX(data as any, 'callcenter.xlsx')
 
   return (
     <main className="p-4 space-y-4">
@@ -87,12 +87,12 @@ export default function GestionCallCenterList() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
-            {alianzaIdFilter ? `Registros de alianza ${alianzaIdFilter}` : 'Listado maestro'}
+            {alianzaIdFilter ? `Solicitudes de alianza ${alianzaIdFilter}` : 'Listado maestro'}
           </CardTitle>
           <div className="flex gap-2">
             <Button variant="soft" onClick={exportarCSV}>Exportar CSV</Button>
             <Button variant="soft" onClick={exportarXLSX}>Exportar XLSX</Button>
-            <Button variant="hero" onClick={crear}>Nuevo registro</Button>
+            <Button variant="hero" onClick={crear}>Nueva solicitud</Button>
           </div>
         </CardHeader>
         <CardContent>
