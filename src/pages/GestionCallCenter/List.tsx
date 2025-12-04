@@ -77,7 +77,7 @@ export default function GestionCallCenterList() {
   return (
     <main className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Gestión Call Center</h1>
+        <h1 className="text-2xl font-semibold">Call Center</h1>
         {alianzaIdFilter && (
           <Button variant="outline" size="sm" onClick={() => navigate('/gestion-callcenter')}>
             Ver todas
