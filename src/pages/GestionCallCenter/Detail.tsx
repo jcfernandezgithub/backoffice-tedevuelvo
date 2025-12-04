@@ -19,12 +19,12 @@ const pasos: EstadoSolicitud[] = [
   'PAGADA_CLIENTE',
 ]
 
-export default function GestionCallCenterDetail() {
+export default function CallCenterDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
   const qc = useQueryClient()
-  const { data: registro } = useQuery({ queryKey: ['callcenter', id], queryFn: () => solicitudesService.get(id!), enabled: !!id })
+  const { data: solicitud } = useQuery({ queryKey: ['solicitud', id], queryFn: () => solicitudesService.get(id!), enabled: !!id })
   const [nuevoPaso, setNuevoPaso] = useState<EstadoSolicitud | undefined>(undefined)
   const [detalle, setDetalle] = useState('')
   const [monto, setMonto] = useState<number | undefined>(undefined)
@@ -34,19 +34,19 @@ export default function GestionCallCenterDetail() {
     try {
       await solicitudesService.avanzarEstado(id, nuevoPaso, detalle, monto)
       toast({ title: 'Avance registrado' })
-      qc.invalidateQueries({ queryKey: ['callcenter', id] })
-      qc.invalidateQueries({ queryKey: ['callcenter'] })
+      qc.invalidateQueries({ queryKey: ['solicitud', id] })
+      qc.invalidateQueries({ queryKey: ['solicitudes'] })
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
     }
   }
 
-  if (!registro) return <main className="p-4">Cargando...</main>
+  if (!solicitud) return <main className="p-4">Cargando...</main>
 
   return (
     <main className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Registro {registro.id}</h1>
+        <h1 className="text-2xl font-semibold">Solicitud {solicitud.id}</h1>
         <Button variant="outline" onClick={() => navigate('/gestion-callcenter')}>Volver</Button>
       </div>
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -55,7 +55,7 @@ export default function GestionCallCenterDetail() {
             <CardTitle>Timeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <Timeline items={registro.timeline} />
+            <Timeline items={solicitud.timeline} />
           </CardContent>
         </Card>
         <Card>
