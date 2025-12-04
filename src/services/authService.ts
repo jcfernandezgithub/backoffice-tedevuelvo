@@ -1,5 +1,6 @@
 import { Usuario, Rol } from "@/types/domain"
 import { load, save } from "./storage"
+import { credencialesMock } from "@/mocks/usuarios"
 
 const AUTH_KEY = "td_auth_user"
 const ACCESS_TOKEN_KEY = "td_access_token"
@@ -23,7 +24,23 @@ const mapRoleToFrontend = (roles: string[]): Rol => {
   if (roles.includes('admin')) return 'ADMIN'
   if (roles.includes('operaciones')) return 'OPERACIONES'
   if (roles.includes('alianzas')) return 'ALIANZAS'
+  if (roles.includes('callcenter')) return 'CALLCENTER'
   return 'READONLY'
+}
+
+// Autenticación mock para usuarios de prueba
+const tryMockLogin = (email: string, password: string): Usuario | null => {
+  const mockUser = credencialesMock[email]
+  if (mockUser && mockUser.password === password) {
+    return {
+      id: mockUser.id,
+      nombre: mockUser.nombre,
+      email: email,
+      rol: mockUser.rol as Rol,
+      activo: true,
+    }
+  }
+  return null
 }
 
 export const authService = {
@@ -51,6 +68,16 @@ export const authService = {
     }
   },
   async login(email: string, password: string): Promise<LoginResult> {
+    // Primero intentar autenticación mock (para usuarios de prueba)
+    const mockUser = tryMockLogin(email, password)
+    if (mockUser) {
+      save(AUTH_KEY, mockUser)
+      save(ACCESS_TOKEN_KEY, 'mock-token')
+      save(REFRESH_TOKEN_KEY, 'mock-refresh-token')
+      return { user: mockUser }
+    }
+
+    // Si no es usuario mock, intentar con la API
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
