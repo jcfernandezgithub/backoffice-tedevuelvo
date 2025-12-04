@@ -85,7 +85,12 @@ const getStatusColors = (status: RefundStatus): string => {
   }
 }
 
-export default function RefundsList() {
+interface RefundsListProps {
+  title?: string
+  listTitle?: string
+}
+
+export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listado de Solicitudes' }: RefundsListProps) {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -433,7 +438,7 @@ export default function RefundsList() {
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h1 className="text-2xl md:text-3xl font-bold">Solicitudes</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
         <div className="flex flex-wrap gap-2">
           {!isMobile && (
             <>
@@ -612,7 +617,7 @@ export default function RefundsList() {
       <Card>
         <CardHeader>
           <CardTitle>
-            Listado de Solicitudes
+            {listTitle}
             {totalFiltered > 0 && (
               <span className="text-muted-foreground ml-2">({totalFiltered} total)</span>
             )}
