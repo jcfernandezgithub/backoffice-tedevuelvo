@@ -799,9 +799,29 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 <span className="text-xs">Firmado</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1 text-orange-600">
-                                <AlertCircle className="h-4 w-4" />
-                                <span className="text-xs">Pendiente</span>
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-orange-600">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <span className="text-xs">Pendiente</span>
+                                </div>
+                                {mandateStatuses[refund.publicId].signUrl && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopy(mandateStatuses[refund.publicId].signUrl!, `signUrl-${refund.publicId}`)
+                                    }}
+                                  >
+                                    {copiedField === `signUrl-${refund.publicId}` ? (
+                                      <Check className="h-3 w-3 text-green-600" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                    <span className="ml-1">URL</span>
+                                  </Button>
+                                )}
                               </div>
                             )
                           ) : (
@@ -887,9 +907,29 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               <span className="text-xs">Firmado</span>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 text-orange-600">
-                              <AlertCircle className="h-3 w-3" />
-                              <span className="text-xs">Pendiente</span>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 text-orange-600">
+                                <AlertCircle className="h-3 w-3" />
+                                <span className="text-xs">Pendiente</span>
+                              </div>
+                              {mandateStatuses[refund.publicId].signUrl && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCopy(mandateStatuses[refund.publicId].signUrl!, `signUrl-${refund.publicId}`)
+                                  }}
+                                >
+                                  {copiedField === `signUrl-${refund.publicId}` ? (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                  <span className="ml-1">URL</span>
+                                </Button>
+                              )}
                             </div>
                           )
                         ) : (
