@@ -46,8 +46,6 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
     queryFn: () => publicFilesApi.listRefundDocuments(publicId),
-    enabled: !propDocuments,
-    initialData: propDocuments,
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
