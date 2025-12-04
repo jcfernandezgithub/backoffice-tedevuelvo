@@ -14,6 +14,8 @@ import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
 import SolicitudesList from "@/pages/Solicitudes/List";
 import SolicitudDetail from "@/pages/Solicitudes/Detail";
+import GestionCallCenterList from "@/pages/GestionCallCenter/List";
+import GestionCallCenterDetail from "@/pages/GestionCallCenter/Detail";
 import AlianzasList from "@/pages/Alianzas/List";
 import AlianzaDetail from "@/pages/Alianzas/Detail";
 import Reportes from "@/pages/Reportes";
@@ -51,6 +53,8 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/solicitudes" element={<SolicitudesList />} />
                 <Route path="/solicitudes/:id" element={<SolicitudDetail />} />
+                <Route path="/gestion-callcenter" element={<GestionCallCenterList />} />
+                <Route path="/gestion-callcenter/:id" element={<GestionCallCenterDetail />} />
                 <Route path="/alianzas" element={<AlianzasList />} />
                 <Route path="/alianzas/:id" element={<AlianzaDetail />} />
                 
