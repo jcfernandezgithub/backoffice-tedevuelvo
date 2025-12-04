@@ -1,13 +1,28 @@
-import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useState, useEffect, useRef } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X } from 'lucide-react'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
 import { DocumentViewer } from './DocumentViewer'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
+import { authService } from '@/services/authService'
+
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+
+const DOCUMENT_KINDS = [
+  { value: 'certificado_cobertura', label: 'Certificado de Cobertura' },
+  { value: 'carta_corte', label: 'Carta de Corte' },
+  { value: 'liquidacion', label: 'Liquidación' },
+  { value: 'comprobante_pago', label: 'Comprobante de Pago' },
+  { value: 'documento_identidad', label: 'Documento de Identidad' },
+  { value: 'otro', label: 'Otro' },
+]
 
 interface DocumentsSectionProps {
   publicId: string
@@ -17,8 +32,17 @@ interface DocumentsSectionProps {
 
 export function DocumentsSection({ publicId, clientToken, documents: propDocuments }: DocumentsSectionProps) {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const [viewingDoc, setViewingDoc] = useState<{ doc: DocumentMeta; title: string } | null>(null)
   const [idImages, setIdImages] = useState<{ front?: string; back?: string }>({})
+  
+  // Upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadKind, setUploadKind] = useState<string>('')
+  const [customFileName, setCustomFileName] = useState<string>('')
+  const [isUploading, setIsUploading] = useState(false)
 
   const { data: attachments = [], isLoading: loadingAttachments } = useQuery({
     queryKey: ['refund-documents', publicId],
@@ -87,8 +111,173 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+    }
+  }
+
+  const handleClearFile = () => {
+    setSelectedFile(null)
+    setUploadKind('')
+    setCustomFileName('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile || !uploadKind) {
+      toast({ 
+        title: 'Error', 
+        description: 'Selecciona un archivo y tipo de documento', 
+        variant: 'destructive' 
+      })
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('kind', uploadKind)
+      if (customFileName.trim()) {
+        formData.append('fileName', customFileName.trim())
+      }
+
+      const token = authService.getAccessToken()
+      const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al subir archivo')
+      }
+
+      toast({ title: 'Archivo subido exitosamente' })
+      handleClearFile()
+      
+      // Refrescar lista de documentos
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
+    } catch (err: any) {
+      toast({ 
+        title: 'Error al subir archivo', 
+        description: err.message, 
+        variant: 'destructive' 
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* Subir archivo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5" />
+            Subir Documento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* File input */}
+            <div className="md:col-span-1">
+              <Label htmlFor="file-upload" className="text-sm font-medium mb-2 block">
+                Archivo
+              </Label>
+              <div className="relative">
+                <Input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="cursor-pointer"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                />
+                {selectedFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                    onClick={handleClearFile}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground mt-1 truncate">
+                  {selectedFile.name} ({formatBytes(selectedFile.size)})
+                </p>
+              )}
+            </div>
+
+            {/* Kind select */}
+            <div className="md:col-span-1">
+              <Label htmlFor="doc-kind" className="text-sm font-medium mb-2 block">
+                Tipo de documento *
+              </Label>
+              <Select value={uploadKind} onValueChange={setUploadKind}>
+                <SelectTrigger id="doc-kind">
+                  <SelectValue placeholder="Seleccionar tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_KINDS.map((kind) => (
+                    <SelectItem key={kind.value} value={kind.value}>
+                      {kind.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Custom filename (optional) */}
+            <div className="md:col-span-1">
+              <Label htmlFor="custom-filename" className="text-sm font-medium mb-2 block">
+                Nombre personalizado
+              </Label>
+              <Input
+                id="custom-filename"
+                type="text"
+                value={customFileName}
+                onChange={(e) => setCustomFileName(e.target.value)}
+                placeholder="Opcional"
+              />
+            </div>
+
+            {/* Upload button */}
+            <div className="md:col-span-1">
+              <Button
+                onClick={handleUpload}
+                disabled={!selectedFile || !uploadKind || isUploading}
+                className="w-full"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Subiendo...
+                  </>
+                ) : (
+                  <>
+                    <FileUp className="w-4 h-4 mr-2" />
+                    Subir
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Adjuntos */}
       <Card>
         <CardHeader>
