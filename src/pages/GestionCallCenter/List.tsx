@@ -1,7 +1,6 @@
-// Call Center - Clon exacto de Refunds/List
-// Re-exporta el componente RefundsList con el mismo comportamiento
+// Call Center - Usa el mismo componente RefundsList con título personalizado
 import RefundsList from '@/pages/Refunds/List'
 
 export default function CallCenterList() {
-  return <RefundsList />
+  return <RefundsList title="Call Center" listTitle="Listado Call Center" />
 }
