@@ -1,4 +1,4 @@
-export type Rol = 'ADMIN' | 'OPERACIONES' | 'ALIANZAS' | 'READONLY'
+export type Rol = 'ADMIN' | 'OPERACIONES' | 'ALIANZAS' | 'READONLY' | 'CALLCENTER'
 
 export interface Usuario {
   id: string

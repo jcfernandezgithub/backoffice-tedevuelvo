@@ -15,13 +15,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 const items = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false },
-  { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true },
-  { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'dev' as const, adminOnly: false },
-  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false },
-  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false },
-  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false },
-  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false },
+  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
+  { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'dev' as const, adminOnly: false, callCenterOnly: true },
+  { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
 ]
 
 export function AppSidebar() {
@@ -35,7 +35,15 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
 
-  const visibleItems = items.filter(item => !item.adminOnly || user?.rol === 'ADMIN')
+  // Filtrar items según rol del usuario
+  const visibleItems = items.filter(item => {
+    // Si el usuario es CALLCENTER, solo mostrar Call Center
+    if (user?.rol === 'CALLCENTER') {
+      return item.callCenterOnly
+    }
+    // Para otros roles, aplicar filtro adminOnly
+    return !item.adminOnly || user?.rol === 'ADMIN'
+  })
 
   // Cerrar sidebar en móvil al hacer clic en un enlace
   const handleLinkClick = () => {
