@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -32,7 +32,6 @@ interface DocumentsSectionProps {
 
 export function DocumentsSection({ publicId, clientToken, documents: propDocuments }: DocumentsSectionProps) {
   const { toast } = useToast()
-  const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [viewingDoc, setViewingDoc] = useState<{ doc: DocumentMeta; title: string } | null>(null)
@@ -44,7 +43,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const [customFileName, setCustomFileName] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
 
-  const { data: attachments = [], isLoading: loadingAttachments } = useQuery({
+  const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
     queryFn: () => publicFilesApi.listRefundDocuments(publicId),
     enabled: !propDocuments,
@@ -163,8 +162,8 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
       toast({ title: 'Archivo subido exitosamente' })
       handleClearFile()
       
-      // Refrescar lista de documentos
-      queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
+      // Refrescar lista de documentos inmediatamente
+      await refetchDocuments()
     } catch (err: any) {
       toast({ 
         title: 'Error al subir archivo', 
