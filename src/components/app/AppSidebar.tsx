@@ -35,13 +35,15 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
 
-  // Filtrar items según rol del usuario
+  // Filtrar items según email del usuario (restricción especial para Call Center)
+  const isCallCenterUser = user?.email === 'admin@callcenter.cl'
+  
   const visibleItems = items.filter(item => {
-    // Si el usuario es CALLCENTER, solo mostrar Call Center
-    if (user?.rol === 'CALLCENTER') {
+    // Si el usuario es admin@callcenter.cl, solo mostrar Call Center
+    if (isCallCenterUser) {
       return item.callCenterOnly
     }
-    // Para otros roles, aplicar filtro adminOnly
+    // Para otros usuarios, aplicar filtro adminOnly
     return !item.adminOnly || user?.rol === 'ADMIN'
   })
 
