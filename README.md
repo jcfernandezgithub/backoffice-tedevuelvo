@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 1.1.9
+## Versión 2.0.0
 
 ## Changelog
+
+### Versión 2.0.0 - 2025-12-05
+
+#### Nuevo Módulo Call Center
+- **Módulo Call Center completo**: Implementado nuevo módulo para gestión de solicitudes desde Call Center.
+  - Acceso restringido para usuarios con email `admin@callcenter.cl`.
+  - Vista de lista con las mismas funcionalidades que Solicitudes.
+  - Vista de detalle adaptada sin botones de "Certificado de Cobertura" ni "Carta de Corte".
+  - Badge "Vista Call Center" en el encabezado del detalle para identificación visual.
+  - Navegación independiente (rutas `/gestion-callcenter` y `/gestion-callcenter/:id`).
+
+- **Subida de archivos con Drag & Drop**: Nueva funcionalidad de carga de documentos en el detalle de solicitudes.
+  - Zona de arrastrar y soltar archivos con feedback visual.
+  - Soporte para PDF, imágenes, Word y Excel.
+  - Interfaz simplificada sin campos adicionales de tipo o nombre.
+  - Actualización automática de la lista de documentos tras subir.
+
+- **Badge de estado actualizado**: Cambiado "En construcción" por "En Certificación" con estilo amarillo/naranja.
+
+---
 
 ### Versión 1.1.9 - 2025-12-03
 
