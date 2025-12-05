@@ -62,9 +62,10 @@ const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructiv
 
 interface RefundDetailProps {
   backUrl?: string
+  showDocumentButtons?: boolean
 }
 
-export default function RefundDetail({ backUrl = '/refunds' }: RefundDetailProps) {
+export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons = true }: RefundDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -260,8 +261,12 @@ export default function RefundDetail({ backUrl = '/refunds' }: RefundDetailProps
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
-          <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
-          <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+          {showDocumentButtons && (
+            <>
+              <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+              <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+            </>
+          )}
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
