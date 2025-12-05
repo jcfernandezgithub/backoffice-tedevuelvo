@@ -42,6 +42,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const [uploadKind, setUploadKind] = useState<string>('')
   const [customFileName, setCustomFileName] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
@@ -115,6 +116,39 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     }
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx']
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+      if (allowedTypes.includes(extension)) {
+        setSelectedFile(file)
+      } else {
+        toast({
+          title: 'Tipo de archivo no permitido',
+          description: 'Solo se permiten archivos PDF, imágenes, Word y Excel',
+          variant: 'destructive'
+        })
+      }
+    }
+  }
+
   const handleClearFile = () => {
     setSelectedFile(null)
     setUploadKind('')
@@ -184,93 +218,127 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            {/* File input */}
-            <div className="md:col-span-1">
-              <Label htmlFor="file-upload" className="text-sm font-medium mb-2 block">
-                Archivo
-              </Label>
-              <div className="relative">
+          <div 
+            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragging 
+                ? 'border-primary bg-primary/5' 
+                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Drop zone overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg z-10">
+                <div className="text-center">
+                  <FileUp className="w-12 h-12 mx-auto text-primary mb-2" />
+                  <p className="text-lg font-medium text-primary">Suelta el archivo aquí</p>
+                </div>
+              </div>
+            )}
+            
+            {!selectedFile ? (
+              <div className="text-center py-4">
+                <FileUp className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Arrastra un archivo aquí o haz clic para seleccionar
+                </p>
                 <Input
                   ref={fileInputRef}
                   id="file-upload"
                   type="file"
                   onChange={handleFileSelect}
-                  className="cursor-pointer"
+                  className="hidden"
                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                 />
-                {selectedFile && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                >
+                  Seleccionar archivo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  PDF, imágenes, Word o Excel (máx. 20MB)
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Selected file info */}
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileUp className="w-8 h-8 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
+                    </div>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
                     onClick={handleClearFile}
                   >
                     <X className="w-4 h-4" />
                   </Button>
-                )}
+                </div>
+                
+                {/* Form fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="doc-kind" className="text-sm font-medium mb-2 block">
+                      Tipo de documento *
+                    </Label>
+                    <Select value={uploadKind} onValueChange={setUploadKind}>
+                      <SelectTrigger id="doc-kind">
+                        <SelectValue placeholder="Seleccionar tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DOCUMENT_KINDS.map((kind) => (
+                          <SelectItem key={kind.value} value={kind.value}>
+                            {kind.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="custom-filename" className="text-sm font-medium mb-2 block">
+                      Nombre personalizado
+                    </Label>
+                    <Input
+                      id="custom-filename"
+                      type="text"
+                      value={customFileName}
+                      onChange={(e) => setCustomFileName(e.target.value)}
+                      placeholder="Opcional"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button
+                      onClick={handleUpload}
+                      disabled={!selectedFile || !uploadKind || isUploading}
+                      className="w-full"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 mr-2" />
+                          Subir archivo
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              {selectedFile && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">
-                  {selectedFile.name} ({formatBytes(selectedFile.size)})
-                </p>
-              )}
-            </div>
-
-            {/* Kind select */}
-            <div className="md:col-span-1">
-              <Label htmlFor="doc-kind" className="text-sm font-medium mb-2 block">
-                Tipo de documento *
-              </Label>
-              <Select value={uploadKind} onValueChange={setUploadKind}>
-                <SelectTrigger id="doc-kind">
-                  <SelectValue placeholder="Seleccionar tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOCUMENT_KINDS.map((kind) => (
-                    <SelectItem key={kind.value} value={kind.value}>
-                      {kind.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Custom filename (optional) */}
-            <div className="md:col-span-1">
-              <Label htmlFor="custom-filename" className="text-sm font-medium mb-2 block">
-                Nombre personalizado
-              </Label>
-              <Input
-                id="custom-filename"
-                type="text"
-                value={customFileName}
-                onChange={(e) => setCustomFileName(e.target.value)}
-                placeholder="Opcional"
-              />
-            </div>
-
-            {/* Upload button */}
-            <div className="md:col-span-1">
-              <Button
-                onClick={handleUpload}
-                disabled={!selectedFile || !uploadKind || isUploading}
-                className="w-full"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Subiendo...
-                  </>
-                ) : (
-                  <>
-                    <FileUp className="w-4 h-4 mr-2" />
-                    Subir
-                  </>
-                )}
-              </Button>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
