@@ -84,7 +84,7 @@ export function AppSidebar() {
                           )}
                           {item.status === 'dev' && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                              En construcción
+                              En Certificación
                             </Badge>
                           )}
                         </div>
