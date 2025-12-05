@@ -4,8 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X } from 'lucide-react'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
 import { DocumentViewer } from './DocumentViewer'
@@ -14,15 +12,6 @@ import { format } from 'date-fns'
 import { authService } from '@/services/authService'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-
-const DOCUMENT_KINDS = [
-  { value: 'certificado_cobertura', label: 'Certificado de Cobertura' },
-  { value: 'carta_corte', label: 'Carta de Corte' },
-  { value: 'liquidacion', label: 'Liquidación' },
-  { value: 'comprobante_pago', label: 'Comprobante de Pago' },
-  { value: 'documento_identidad', label: 'Documento de Identidad' },
-  { value: 'otro', label: 'Otro' },
-]
 
 interface DocumentsSectionProps {
   publicId: string
@@ -39,8 +28,6 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadKind, setUploadKind] = useState<string>('')
-  const [customFileName, setCustomFileName] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -151,18 +138,16 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
 
   const handleClearFile = () => {
     setSelectedFile(null)
-    setUploadKind('')
-    setCustomFileName('')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || !uploadKind) {
+    if (!selectedFile) {
       toast({ 
         title: 'Error', 
-        description: 'Selecciona un archivo y tipo de documento', 
+        description: 'Selecciona un archivo', 
         variant: 'destructive' 
       })
       return
@@ -172,10 +157,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     try {
       const formData = new FormData()
       formData.append('file', selectedFile)
-      formData.append('kind', uploadKind)
-      if (customFileName.trim()) {
-        formData.append('fileName', customFileName.trim())
-      }
+      formData.append('kind', 'otro')
 
       const token = authService.getAccessToken()
       const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
@@ -264,16 +246,32 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Selected file info */}
-                <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <FileUp className="w-8 h-8 text-primary flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{selectedFile.name}</p>
-                      <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
-                    </div>
+              <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileUp className="w-8 h-8 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    size="sm"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Subir
+                      </>
+                    )}
+                  </Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -282,60 +280,6 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
                   >
                     <X className="w-4 h-4" />
                   </Button>
-                </div>
-                
-                {/* Form fields */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="doc-kind" className="text-sm font-medium mb-2 block">
-                      Tipo de documento *
-                    </Label>
-                    <Select value={uploadKind} onValueChange={setUploadKind}>
-                      <SelectTrigger id="doc-kind">
-                        <SelectValue placeholder="Seleccionar tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DOCUMENT_KINDS.map((kind) => (
-                          <SelectItem key={kind.value} value={kind.value}>
-                            {kind.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="custom-filename" className="text-sm font-medium mb-2 block">
-                      Nombre personalizado
-                    </Label>
-                    <Input
-                      id="custom-filename"
-                      type="text"
-                      value={customFileName}
-                      onChange={(e) => setCustomFileName(e.target.value)}
-                      placeholder="Opcional"
-                    />
-                  </div>
-
-                  <div className="flex items-end">
-                    <Button
-                      onClick={handleUpload}
-                      disabled={!selectedFile || !uploadKind || isUploading}
-                      className="w-full"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Subiendo...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Subir archivo
-                        </>
-                      )}
-                    </Button>
-                  </div>
                 </div>
               </div>
             )}
