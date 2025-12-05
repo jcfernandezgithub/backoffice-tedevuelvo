@@ -83,7 +83,7 @@ export function AppSidebar() {
                             </Badge>
                           )}
                           {item.status === 'dev' && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300">
                               En Certificación
                             </Badge>
                           )}
