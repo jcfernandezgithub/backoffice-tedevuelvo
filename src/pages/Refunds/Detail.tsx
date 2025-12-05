@@ -63,9 +63,10 @@ const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructiv
 interface RefundDetailProps {
   backUrl?: string
   showDocumentButtons?: boolean
+  contextLabel?: string
 }
 
-export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons = true }: RefundDetailProps) {
+export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons = true, contextLabel }: RefundDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -212,6 +213,11 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Button>
+        {contextLabel && (
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+            {contextLabel}
+          </Badge>
+        )}
       </div>
 
       <div className="flex items-start justify-between">

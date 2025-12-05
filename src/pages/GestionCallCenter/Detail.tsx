@@ -2,5 +2,5 @@
 import RefundDetail from '@/pages/Refunds/Detail'
 
 export default function CallCenterDetail() {
-  return <RefundDetail backUrl="/gestion-callcenter" showDocumentButtons={false} />
+  return <RefundDetail backUrl="/gestion-callcenter" showDocumentButtons={false} contextLabel="Vista Call Center" />
 }
