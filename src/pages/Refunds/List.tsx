@@ -88,9 +88,10 @@ const getStatusColors = (status: RefundStatus): string => {
 interface RefundsListProps {
   title?: string
   listTitle?: string
+  detailBasePath?: string
 }
 
-export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listado de Solicitudes' }: RefundsListProps) {
+export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listado de Solicitudes', detailBasePath = '/refunds' }: RefundsListProps) {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -842,7 +843,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`/refunds/${refund.id}`)}
+                            onClick={() => navigate(`${detailBasePath}/${refund.id}`)}
                           >
                             Ver detalle
                           </Button>
@@ -858,7 +859,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 {paginatedItems.map((refund) => (
                   <MobileCard
                     key={refund.id}
-                    onClick={() => navigate(`/refunds/${refund.id}`)}
+                    onClick={() => navigate(`${detailBasePath}/${refund.id}`)}
                     header={
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-muted-foreground">

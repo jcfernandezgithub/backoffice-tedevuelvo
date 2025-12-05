@@ -60,7 +60,11 @@ const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructiv
   datos_sin_simulacion: 'outline',
 }
 
-export default function RefundDetail() {
+interface RefundDetailProps {
+  backUrl?: string
+}
+
+export default function RefundDetail({ backUrl = '/refunds' }: RefundDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -203,7 +207,7 @@ export default function RefundDetail() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/refunds')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(backUrl)}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Button>
