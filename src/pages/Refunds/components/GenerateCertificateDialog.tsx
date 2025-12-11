@@ -16,6 +16,7 @@ import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
 
@@ -169,9 +170,399 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     return Math.round(saldoInsoluto * tbm * nper)
   }
 
+  // Check if Prime format should be used (credit > 20 million)
+  const isPrimeFormat = (refund.calculationSnapshot?.totalAmount || 0) > 20000000
+
+  const generatePrimePDF = async () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 15
+    const contentWidth = pageWidth - margin * 2
+    let y = 15
+
+    const drawCheckbox = (x: number, yPos: number, checked: boolean = false) => {
+      doc.setDrawColor(0)
+      doc.setLineWidth(0.3)
+      doc.rect(x, yPos - 2.5, 4, 4, 'S')
+      if (checked) {
+        doc.setFont('helvetica', 'bold')
+        doc.text('X', x + 0.8, yPos)
+      }
+    }
+
+    // ===================== PAGE 1 =====================
+    // Header: CÓDIGOS CMF DE LA PÓLIZA
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text('CÓDIGOS CMF DE LA PÓLIZA', margin, y)
+    doc.text('PÓLIZA N°', pageWidth - margin - 40, y)
+    y += 5
+    
+    // Boxes for CMF code and policy number
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.rect(margin, y - 3, 60, 6, 'S')
+    doc.text('POL 2 2015 0573', margin + 2, y + 1)
+    doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
+    doc.text('344', pageWidth - margin - 38, y + 1)
+    y += 12
+
+    // CONTRATANTE
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('CONTRATANTE (SI ES DISTINTO DEL ASEGURADO)', margin, y)
+    doc.text('RUT', pageWidth - margin - 40, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.rect(margin, y - 3, 90, 6, 'S')
+    doc.text('TDV SERVICIOS SPA', margin + 2, y + 1)
+    doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
+    doc.text('RUT: 78.168.126-1', pageWidth - margin - 38, y + 1)
+    y += 12
+
+    // ASEGURADO
+    doc.setFont('helvetica', 'bold')
+    doc.text('ASEGURADO', margin, y)
+    doc.text('RUT', pageWidth - margin - 40, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.rect(margin, y - 3, 90, 6, 'S')
+    doc.text(refund.fullName || '', margin + 2, y + 1)
+    doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
+    doc.text(refund.rut || '', pageWidth - margin - 38, y + 1)
+    y += 12
+
+    // TIPO DE PÓLIZA
+    doc.setFont('helvetica', 'bold')
+    doc.text('TIPO DE PÓLIZA', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, true)
+    doc.text('Póliza sin cuenta única de inversión', margin + 7, y)
+    y += 5
+    drawCheckbox(margin, y, false)
+    doc.text('Póliza con cuenta única de inversión', margin + 7, y)
+    y += 5
+    drawCheckbox(margin, y, false)
+    doc.text('Póliza con ahorro previsional voluntario APV', margin + 7, y)
+    y += 10
+
+    // PÓLIZA section with VIGENCIA and RENOVACIÓN
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('PÓLIZA', margin, y)
+    doc.text('VIGENCIA', margin + 35, y)
+    doc.text('RENOVACIÓN AUTOMÁTICA', margin + 100, y)
+    y += 5
+
+    // Table structure
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, false)
+    doc.text('Individual', margin + 7, y)
+    doc.rect(margin + 35, y - 3, 30, 5, 'S')
+    doc.text('01/12/2025', margin + 37, y)
+    doc.text('Inicio', margin + 70, y)
+    drawCheckbox(margin + 100, y, true)
+    doc.text('SI', margin + 107, y)
+    y += 6
+
+    drawCheckbox(margin, y, true)
+    doc.text('Colectiva', margin + 7, y)
+    doc.rect(margin + 35, y - 3, 30, 5, 'S')
+    doc.text('30/11/2028', margin + 37, y)
+    doc.text('Termino', margin + 70, y)
+    drawCheckbox(margin + 100, y, false)
+    doc.text('NO', margin + 107, y)
+    y += 12
+
+    // PLAN and PRIMA
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('PLAN', margin, y)
+    doc.text('PRIMA Monto', margin + 50, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, false)
+    doc.text('Plan 1', margin + 7, y)
+    doc.rect(margin + 50, y - 3, 40, 5, 'S')
+    y += 6
+    drawCheckbox(margin, y, false)
+    doc.text('Plan 2', margin + 7, y)
+    doc.rect(margin + 50, y - 3, 40, 5, 'S')
+    y += 12
+
+    // MONEDA, PERIODO DE PAGO, CONDICIONES, COMISIÓN
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('MONEDA', margin, y)
+    doc.text('PERIODO DE PAGO', margin + 30, y)
+    doc.text('CONDICIONES', margin + 75, y)
+    doc.text('COMISIÓN TOTAL CORREDOR', margin + 120, y)
+    y += 6
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    // Row 1
+    drawCheckbox(margin, y, true)
+    doc.text('UF', margin + 7, y)
+    drawCheckbox(margin + 30, y, false)
+    doc.text('Anual', margin + 37, y)
+    drawCheckbox(margin + 75, y, true)
+    doc.text('Fija', margin + 82, y)
+    doc.text('15% + IVA por prima', margin + 122, y)
+    y += 5
+    // Row 2
+    drawCheckbox(margin, y, false)
+    doc.text('Peso', margin + 7, y)
+    drawCheckbox(margin + 30, y, false)
+    doc.text('Mensual', margin + 37, y)
+    drawCheckbox(margin + 75, y, false)
+    doc.text('Ajustable Según Contrato', margin + 82, y)
+    doc.text('Monto recaudada', margin + 122, y)
+    y += 5
+    // Row 3
+    drawCheckbox(margin, y, false)
+    doc.text('Otra', margin + 7, y)
+    drawCheckbox(margin + 30, y, true)
+    doc.text('Otro', margin + 37, y)
+
+    // ===================== PAGE 2 =====================
+    doc.addPage()
+    y = 15
+
+    // COBERTURAS
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text('COBERTURAS', margin, y)
+    doc.text('MONTO / MONEDA', margin + 60, y)
+    doc.text('ART. CG', margin + 120, y)
+    doc.text('ART. CP', margin + 145, y)
+    y += 6
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    // Fallecimiento
+    drawCheckbox(margin, y, true)
+    doc.text('Fallecimiento', margin + 7, y)
+    doc.rect(margin + 60, y - 3, 35, 5, 'S')
+    doc.text('Saldo Insoluto', margin + 62, y)
+    doc.rect(margin + 98, y - 3, 15, 5, 'S')
+    doc.text('UF', margin + 100, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.text('3', margin + 126, y)
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    doc.text('4', margin + 151, y)
+    y += 6
+
+    // Invalidez
+    drawCheckbox(margin, y, false)
+    doc.text('Invalidez T&P 2/3', margin + 7, y)
+    doc.rect(margin + 60, y - 3, 35, 5, 'S')
+    doc.rect(margin + 98, y - 3, 15, 5, 'S')
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    y += 6
+
+    // Sobrevivencia
+    drawCheckbox(margin, y, false)
+    doc.text('Sobrevivencia', margin + 7, y)
+    doc.rect(margin + 60, y - 3, 35, 5, 'S')
+    doc.rect(margin + 98, y - 3, 15, 5, 'S')
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    y += 6
+
+    // Muerte Accidental
+    drawCheckbox(margin, y, false)
+    doc.text('Muerte Accidental', margin + 7, y)
+    doc.rect(margin + 60, y - 3, 35, 5, 'S')
+    doc.rect(margin + 98, y - 3, 15, 5, 'S')
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    y += 8
+
+    doc.setFontSize(7)
+    doc.text('Esta póliza contiene otras coberturas adicionales, cuyo detalle debe ser consultado en las condiciones particulares.', margin, y)
+    y += 12
+
+    // BENEFICIARIOS
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('BENEFICIARIOS EN CASO DE FALLECIMIENTO', margin, y)
+    doc.text('ART. CG', margin + 120, y)
+    doc.text('ART. CP', margin + 145, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, false)
+    doc.text('Beneficiarios designados por ley', margin + 7, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    y += 6
+    drawCheckbox(margin, y, true)
+    doc.text('Otros beneficiarios', margin + 7, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.text('2', margin + 126, y)
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    doc.text('2', margin + 151, y)
+    y += 10
+
+    // CONDICIONES ESPECIALES
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('CONDICIONES ESPECIALES DE ASEGURABILIDAD', margin, y)
+    doc.text('ART. CG', margin + 120, y)
+    doc.text('ART. CP', margin + 145, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, true)
+    doc.text('Si', margin + 7, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.text('3', margin + 126, y)
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    doc.text('5', margin + 151, y)
+    y += 6
+    drawCheckbox(margin, y, false)
+    doc.text('No', margin + 7, y)
+    y += 10
+
+    // PERIODO DE CARENCIA
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('PERIODO DE CARENCIA', margin, y)
+    doc.text('ART. CG', margin + 120, y)
+    doc.text('ART. CP', margin + 145, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.rect(margin, y - 3, 50, 5, 'S')
+    doc.text('NO APLICA', margin + 2, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    y += 10
+
+    // EXCLUSIONES
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('EXCLUSIONES', margin, y)
+    doc.text('ART. CG', margin + 120, y)
+    doc.text('ART. CP', margin + 145, y)
+    y += 6
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, true)
+    doc.text('Si', margin + 7, y)
+    doc.rect(margin + 120, y - 3, 15, 5, 'S')
+    doc.text('4', margin + 126, y)
+    doc.rect(margin + 145, y - 3, 15, 5, 'S')
+    doc.text('4', margin + 151, y)
+    y += 6
+    drawCheckbox(margin, y, true)
+    doc.text('No', margin + 7, y)
+    y += 12
+
+    // SISTEMA DE NOTIFICACIÓN
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.text('SISTEMA DE NOTIFICACIÓN', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.text('El asegurado ha autorizado a la compañía para efectuar las notificaciones asociadas a esta póliza por el siguiente medio:', margin, y)
+    y += 6
+    doc.setFontSize(8)
+    drawCheckbox(margin, y, true)
+    doc.text('e-mail al correo electrónico', margin + 7, y)
+    doc.rect(margin + 55, y - 3, 80, 5, 'S')
+    doc.text(refund.email || '', margin + 57, y)
+
+    // ===================== PAGE 3 =====================
+    doc.addPage()
+    y = 15
+
+    doc.setFontSize(7)
+    doc.text('Carta a la siguiente dirección', margin, y)
+    y += 8
+
+    doc.setFontSize(6)
+    const notaText = 'La presente carátula es un resumen de la información más relevante de la póliza y los conceptos fundamentales se encuentran definidos al reverso. Para una comprensión integral, se debe consultar las condiciones generales y particulares de la póliza. En cada punto se señala el artículo del condicionado general (CG) o condicionado particular (CP) donde puede revisarse el detalle respectivo.'
+    const notaLines = doc.splitTextToSize(notaText, contentWidth)
+    doc.text(notaLines, margin, y)
+    y += notaLines.length * 2.5 + 5
+
+    const nota1 = 'Nota 1: El asegurado tiene la obligación de entregar la información que la compañía requiera acerca de su estado de riesgo, en los casos y en la forma que determina la normativa vigente. La infracción a esta obligación puede acarrear la terminación del contrato o que no sea pagado el siniestro.'
+    const nota1Lines = doc.splitTextToSize(nota1, contentWidth)
+    doc.text(nota1Lines, margin, y)
+    y += nota1Lines.length * 2.5 + 5
+
+    const nota2 = 'Nota 2: (Para Seguros Colectivos) Importante. "Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA directamente con la compañía de seguros."'
+    const nota2Lines = doc.splitTextToSize(nota2, contentWidth)
+    doc.text(nota2Lines, margin, y)
+    y += nota2Lines.length * 2.5 + 10
+
+    // DEFINICIONES
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text('DEFINICIONES', margin, y)
+    y += 6
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6)
+
+    const definitions = [
+      { term: 'CÓDIGO CMF DE LA PÓLIZA:', desc: 'Es el Código con que la póliza fue depositada en la Comisión para el Mercado Financiero, conocido también como "código Pol". Si la póliza incluye más de uno, se incluye sólo el de la cobertura principal.' },
+      { term: 'PÓLIZA:', desc: 'Documento justificativo del seguro.' },
+      { term: 'CERTIFICADO DE COBERTURA:', desc: 'Documento que da cuenta de un seguro emitido con sujeción a los términos de una póliza de seguro colectivo.' },
+      { term: 'CONTRATANTE:', desc: 'La persona que contrata el seguro con la compañía aseguradora y sobre quien recaen, en general, las obligaciones y cargas del contrato. Puede ser una persona diferente al asegurado.' },
+      { term: 'ASEGURADO:', desc: 'La persona a quien afecta el riesgo que se transfiere a la compañía aseguradora.' },
+      { term: 'BENEFICIARIO:', desc: 'La persona que, aun sin ser asegurado, tiene derecho a la indemnización en caso de siniestro.' },
+      { term: 'VIGENCIA:', desc: 'Tiempo durante el cual se extiende la cobertura de riesgo de la póliza contratada.' },
+      { term: 'PRIMA:', desc: 'El precio que se cobra por el seguro. Éste incluye los adicionales, en su caso.' },
+      { term: 'COBERTURA:', desc: 'El tipo de riesgo cubierto por la póliza.' },
+      { term: 'CARENCIA:', desc: 'Período establecido en la póliza durante el cual no rige la cobertura del seguro.' },
+      { term: 'EXCLUSIONES:', desc: 'Aquellos riesgos especificados en la póliza que no son cubiertos por el seguro.' },
+    ]
+
+    definitions.forEach(def => {
+      doc.setFont('helvetica', 'bold')
+      doc.text(def.term, margin, y)
+      const termWidth = doc.getTextWidth(def.term)
+      doc.setFont('helvetica', 'normal')
+      const descLines = doc.splitTextToSize(def.desc, contentWidth - termWidth - 3)
+      doc.text(descLines[0], margin + termWidth + 2, y)
+      if (descLines.length > 1) {
+        y += 2.5
+        for (let i = 1; i < descLines.length; i++) {
+          doc.text(descLines[i], margin, y)
+          y += 2.5
+        }
+      }
+      y += 4
+    })
+
+    // Download
+    const fileName = `Certificado_Prime_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+    doc.save(fileName)
+  }
+
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
+      // Use Prime format for credits > 20 million
+      if (isPrimeFormat) {
+        await generatePrimePDF()
+        toast({
+          title: 'Certificado Prime generado',
+          description: 'El certificado de cobertura (Póliza 344) se descargó correctamente',
+        })
+        setOpen(false)
+        return
+      }
+
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
       const margin = 15
@@ -979,8 +1370,18 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       </TooltipProvider>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
             {step === 'form' ? 'Certificado de Cobertura' : 'Previsualización del Certificado'}
+            {isPrimeFormat && (
+              <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 border-amber-500/30">
+                Póliza 344 (Prime)
+              </Badge>
+            )}
+            {!isPrimeFormat && (
+              <Badge variant="outline" className="text-muted-foreground">
+                Póliza 342
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
         
