@@ -54,6 +54,11 @@ export default function SolicitudesList() {
         { key: 'alianzaId', header: 'Alianza', sortable: true },
         { key: 'montoADevolverEstimado', header: 'Estimado', render: (r: any) => <Money value={r.montoADevolverEstimado} />, sortable: true },
         { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
+        { key: 'origen', header: 'Origen', render: (r: any) => r.partnerId ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">Alianza</span>
+        ) : (
+          <span className="text-muted-foreground text-xs">Directo</span>
+        )},
         { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
       ]
     }

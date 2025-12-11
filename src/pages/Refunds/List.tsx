@@ -713,6 +713,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="institutionId" />
                         </div>
                       </TableHead>
+                      <TableHead>Origen</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleSort('createdAt')}
@@ -833,6 +834,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           ${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}
                         </TableCell>
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
+                        <TableCell>
+                          {refund.partnerId ? (
+                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                              Alianza
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Directo</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">
                           {refund.createdAt ? new Date(refund.createdAt).toLocaleString('es-CL', {
                             dateStyle: 'short',
@@ -898,6 +908,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       {
                         label: 'Institución',
                         value: refund.institutionId
+                      },
+                      {
+                        label: 'Origen',
+                        value: refund.partnerId ? (
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                            Alianza
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Directo</span>
+                        )
                       },
                       {
                         label: 'Mandato',
