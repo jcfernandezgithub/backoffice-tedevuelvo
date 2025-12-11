@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { alianzasService } from '@/services/alianzasService'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -134,6 +135,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
   })
+
+  // Fetch partners para mostrar nombres de alianzas
+  const { data: partnersData } = useQuery({
+    queryKey: ['partners-list'],
+    queryFn: () => alianzasService.list({ pageSize: 100 }),
+    staleTime: 30 * 60 * 1000, // 30 minutos
+  })
+
+  // Mapa de partnerId a nombre
+  const partnerNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    partnersData?.items.forEach((p: any) => {
+      map[p.id] = p.nombre
+    })
+    return map
+  }, [partnersData])
 
   const handleFilterChange = (key: keyof AdminQueryParams, value: any) => {
     const newFilters = { ...filters, [key]: value, page: 1 }
@@ -837,7 +854,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell>
                           {refund.partnerId ? (
                             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
-                              Alianza
+                              {partnerNameMap[refund.partnerId] || 'Alianza'}
                             </Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">Directo</span>
@@ -913,7 +930,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         label: 'Origen',
                         value: refund.partnerId ? (
                           <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
-                            Alianza
+                            {partnerNameMap[refund.partnerId] || 'Alianza'}
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">Directo</span>
