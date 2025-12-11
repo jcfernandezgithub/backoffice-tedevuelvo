@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { alianzasService } from '@/services/alianzasService'
+import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { RefundStatus, AdminUpdateStatusDto } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -116,6 +118,32 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
       return response.json()
     },
     enabled: !!refund?.publicId,
+  })
+
+  // Fetch partner name for origin display
+  const { data: partnerName } = useQuery({
+    queryKey: ['partner-name', refund?.partnerId],
+    queryFn: async () => {
+      const result = await alianzasService.list()
+      const partners = Array.isArray(result) ? result : (result as any).items || []
+      const partner = partners.find((p: any) => p.id === refund!.partnerId)
+      return partner?.nombre || null
+    },
+    enabled: !!refund?.partnerId,
+    staleTime: 30 * 60 * 1000,
+  })
+
+  // Fetch gestor name
+  const { data: gestorName } = useQuery({
+    queryKey: ['gestor-name', refund?.partnerId, refund?.partnerUserId],
+    queryFn: async () => {
+      const result = await allianceUsersClient.listAllianceUsers(refund!.partnerId!, { pageSize: 100 })
+      const users = (result as any).users || (result as any).items || []
+      const user = users.find((u: any) => u.id === refund!.partnerUserId)
+      return user?.name || null
+    },
+    enabled: !!refund?.partnerId && !!refund?.partnerUserId,
+    staleTime: 30 * 60 * 1000,
   })
 
   const updateMutation = useMutation({
@@ -379,6 +407,27 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
                 <p className="text-sm text-muted-foreground">Edad</p>
                 <p className="font-medium">{refund.calculationSnapshot?.age ? `${refund.calculationSnapshot.age} años` : 'N/A'}</p>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Origen</p>
+                <p className="font-medium">
+                  {refund.partnerId ? (
+                    <Link 
+                      to={`/alianzas/${refund.partnerId}`}
+                      className="text-primary hover:underline"
+                    >
+                      {partnerName || 'Alianza'}
+                    </Link>
+                  ) : (
+                    'Directo'
+                  )}
+                </p>
+              </div>
+              {refund.partnerId && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Gestor</p>
+                  <p className="font-medium">{gestorName || '-'}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
