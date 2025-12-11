@@ -40,6 +40,9 @@ export interface RefundRequest {
   signatureUrl?: string
   signedAt?: string
   clientTokenHash?: string
+  partnerId?: string | null
+  partnerUserId?: string | null
+  source?: string | null
 }
 
 export interface RefundDocument {
