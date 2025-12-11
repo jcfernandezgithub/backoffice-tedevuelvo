@@ -9,9 +9,18 @@ import { exportXLSX } from '@/services/reportesService'
 interface ExportToExcelDialogProps {
   refunds: RefundRequest[]
   totalCount: number
+  partnerNameMap?: Record<string, string>
+  gestorNameMap?: Record<string, string>
+  mandateStatuses?: Record<string, any>
 }
 
-export function ExportToExcelDialog({ refunds, totalCount }: ExportToExcelDialogProps) {
+export function ExportToExcelDialog({ 
+  refunds, 
+  totalCount, 
+  partnerNameMap = {}, 
+  gestorNameMap = {},
+  mandateStatuses = {}
+}: ExportToExcelDialogProps) {
   const [open, setOpen] = useState(false)
 
   const handleExport = () => {
@@ -42,11 +51,22 @@ export function ExportToExcelDialog({ refunds, totalCount }: ExportToExcelDialog
       
       // Institución financiera
       const institucion = calculation.financialEntity || calculation.entityName || refund.institutionId || 'N/A'
+      
+      // Mandato
+      const mandateStatus = mandateStatuses[refund.publicId]
+      const mandatoFirmado = mandateStatus?.hasSignedPdf === true ? 'Firmado' : 'Pendiente'
+      
+      // Origen y Gestor
+      const origen = refund.partnerId ? (partnerNameMap[refund.partnerId] || 'Alianza') : 'Directo'
+      const gestor = refund.partnerUserId ? (gestorNameMap[refund.partnerUserId] || 'N/A') : 'N/A'
 
       return {
         'ID Público': refund.publicId,
         'ID Interno': refund.id,
         'Estado': refund.status,
+        'Mandato': mandatoFirmado,
+        'Origen': origen,
+        'Gestor': gestor,
         'Nombre Completo': refund.fullName || 'N/A',
         'Email': refund.email || 'N/A',
         'RUT': rut,
@@ -112,7 +132,8 @@ export function ExportToExcelDialog({ refunds, totalCount }: ExportToExcelDialog
             <p className="font-medium">El archivo incluirá:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li>Datos de identificación (ID, RUT, nombre, email)</li>
-              <li>Estado de la solicitud</li>
+              <li>Estado de la solicitud y mandato</li>
+              <li>Origen (Alianza o Directo) y Gestor</li>
               <li>Información del crédito y seguro</li>
               <li>Cálculos de primas y ahorros</li>
               <li>Fechas de creación y actualización</li>

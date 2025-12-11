@@ -521,6 +521,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               <ExportToExcelDialog 
                 refunds={sortedItems as RefundRequest[]} 
                 totalCount={totalFiltered}
+                partnerNameMap={partnerNameMap}
+                gestorNameMap={gestorNameMap}
+                mandateStatuses={mandateStatuses || {}}
               />
               <GenerateExcelDialog 
                 selectedRefunds={getSelectedRefundsData()} 
