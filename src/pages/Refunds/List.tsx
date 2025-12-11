@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { alianzasService } from '@/services/alianzasService'
+import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -151,6 +152,43 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     })
     return map
   }, [partnersData])
+
+  // Obtener unique partnerIds de los items actuales para buscar gestores
+  const uniquePartnerIds = useMemo(() => {
+    if (!data) return []
+    const items = Array.isArray(data) ? data : (data as any).items || []
+    const ids = new Set<string>()
+    items.forEach((r: any) => {
+      if (r.partnerId) ids.add(r.partnerId)
+    })
+    return Array.from(ids)
+  }, [data])
+
+  // Fetch partner users para mostrar nombres de gestores
+  const { data: partnerUsersData } = useQuery({
+    queryKey: ['partner-users-for-refunds', uniquePartnerIds],
+    queryFn: async () => {
+      const allUsers: Record<string, string> = {}
+      await Promise.all(
+        uniquePartnerIds.map(async (partnerId) => {
+          try {
+            const result = await allianceUsersClient.listAllianceUsers(partnerId, { pageSize: 100 })
+            result.users.forEach((user) => {
+              allUsers[user.id] = user.name
+            })
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return allUsers
+    },
+    enabled: uniquePartnerIds.length > 0,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+  })
+
+  // Mapa de partnerUserId a nombre del gestor
+  const gestorNameMap = partnerUsersData || {}
 
   const handleFilterChange = (key: keyof AdminQueryParams, value: any) => {
     const newFilters = { ...filters, [key]: value, page: 1 }
@@ -731,6 +769,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         </div>
                       </TableHead>
                       <TableHead>Origen</TableHead>
+                      <TableHead>Gestor</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleSort('createdAt')}
@@ -868,6 +907,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           )}
                         </TableCell>
                         <TableCell className="text-sm">
+                          {refund.partnerUserId && gestorNameMap[refund.partnerUserId] ? (
+                            <span className="text-xs">{gestorNameMap[refund.partnerUserId]}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
                           {refund.createdAt ? new Date(refund.createdAt).toLocaleString('es-CL', {
                             dateStyle: 'short',
                             timeStyle: 'short'
@@ -948,6 +994,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">Directo</span>
+                        )
+                      },
+                      {
+                        label: 'Gestor',
+                        value: refund.partnerUserId && gestorNameMap[refund.partnerUserId] ? (
+                          <span className="text-xs">{gestorNameMap[refund.partnerUserId]}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
                         )
                       },
                       {
