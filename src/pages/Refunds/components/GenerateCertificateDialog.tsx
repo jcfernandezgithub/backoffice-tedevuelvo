@@ -38,6 +38,7 @@ interface CertificateData {
   nroOperacion: string
   fechaInicioCredito: string
   fechaFinCredito: string
+  saldoInsoluto: string
 }
 
 const formatDate = (dateString?: string) => {
@@ -86,6 +87,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     nroOperacion: '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
+    saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toString(),
   })
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -161,13 +163,17 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
   }
 
   const calculatePrimaUnica = () => {
-    // Saldo Insoluto = Saldo asegurado promedio (monto restante por pagar)
-    const saldoInsoluto = refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0
+    // Saldo Insoluto = Valor ingresado en el formulario o el valor por defecto
+    const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.remainingInstallments || 0
     const age = refund.calculationSnapshot?.age
     const tbm = getTasaBrutaMensual(age) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
+  }
+
+  const getSaldoInsolutoValue = () => {
+    return parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
   }
 
   // Check if Prime format should be used (credit > 20 million)
@@ -1439,7 +1445,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <CreditCard className="h-4 w-4 text-primary" />
                   Datos del Certificado
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="space-y-2">
                     <Label>Folio</Label>
                     <Input
@@ -1454,6 +1460,17 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                       value={formData.nroOperacion}
                       onChange={(e) => handleChange('nroOperacion', e.target.value)}
                       placeholder="Nro. operación"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Saldo Insoluto</Label>
+                    <Input
+                      value={formData.saldoInsoluto ? Number(formData.saldoInsoluto).toLocaleString('es-CL') : ''}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\./g, '').replace(/\D/g, '')
+                        handleChange('saldoInsoluto', value)
+                      }}
+                      placeholder="Monto saldo insoluto"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1594,7 +1611,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
