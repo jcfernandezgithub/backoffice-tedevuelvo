@@ -1,8 +1,21 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.0
+## Versión 2.0.1
 
 ## Changelog
+
+### Versión 2.0.1 - 2025-12-11
+
+#### Mejoras en Exportación Excel
+- **Exportación de columnas adicionales**: La exportación a Excel ahora incluye las columnas "Mandato", "Origen" y "Gestor".
+  - Mandato: Muestra "Firmado" o "Pendiente" según el estado del mandato.
+  - Origen: Muestra el nombre de la alianza o "Directo" para solicitudes sin alianza.
+  - Gestor: Muestra el nombre del gestor asociado a la solicitud.
+
+- **Estados en español**: La columna "Estado" ahora se exporta con las etiquetas en español tal como aparecen en pantalla.
+  - Mapeo completo: Simulado, Solicitado, En calificación, Documentos pendientes, etc.
+
+---
 
 ### Versión 2.0.0 - 2025-12-05
 
