@@ -360,12 +360,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     // Fallecimiento
+    const saldoInsolutoFormatted = `$${getSaldoInsolutoValue().toLocaleString('es-CL')}`
     drawCheckbox(margin, y, true)
     doc.text('Fallecimiento', margin + 7, y)
     doc.rect(margin + 60, y - 3, 35, 5, 'S')
-    doc.text('Saldo Insoluto', margin + 62, y)
+    doc.text(saldoInsolutoFormatted, margin + 62, y)
     doc.rect(margin + 98, y - 3, 15, 5, 'S')
-    doc.text('UF', margin + 100, y)
+    doc.text('CLP', margin + 100, y)
     doc.rect(margin + 120, y - 3, 15, 5, 'S')
     doc.text('3', margin + 126, y)
     doc.rect(margin + 145, y - 3, 15, 5, 'S')
@@ -801,8 +802,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       doc.text(formData.fechaFinCredito || '', 158, y)
       y += 6
 
-      // Valores para el cálculo de la prima única
-      const saldoInsoluto = refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0
+      // Valores para el cálculo de la prima única - usar el valor del formulario
+      const saldoInsoluto = getSaldoInsolutoValue()
       const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
       const ageValue = refund.calculationSnapshot?.age
       const tbmValue = getTasaBrutaMensual(ageValue)
@@ -1725,6 +1726,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Fecha Fin Crédito:</span>
                       <span className="font-medium">{formData.fechaFinCredito || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Saldo Insoluto:</span>
+                      <span className="font-medium">${getSaldoInsolutoValue().toLocaleString('es-CL')} CLP</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Monto Crédito:</span>
