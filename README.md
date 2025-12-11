@@ -6,6 +6,23 @@
 
 ### Versión 2.0.1 - 2025-12-11
 
+#### Mejoras en Certificado de Cobertura
+- **Formato Prime para créditos superiores a 20M**: Implementado nuevo formato de certificado (Póliza 344) para créditos que excedan $20.000.000 CLP.
+  - Detección automática del formato según monto del crédito.
+  - Badge indicador del formato en el diálogo de generación ("Póliza 342" o "Póliza 344 Prime").
+  - Estructura diferenciada con secciones de póliza, contratante, asegurado, coberturas y beneficiarios.
+
+- **Campo Saldo Insoluto editable**: Agregado campo editable en el formulario de generación.
+  - Pre-cargado con el monto estimado de la simulación.
+  - Validación para evitar valores en cero.
+  - Valor reflejado correctamente en el PDF generado.
+
+#### Mejoras en Vista de Solicitudes
+- **Visualización de origen y gestor**: Nuevas columnas en la lista de solicitudes.
+  - Columna "Origen": Badge con nombre de alianza (clickeable para navegar al detalle) o "Directo".
+  - Columna "Gestor": Nombre del usuario de alianza que creó la solicitud.
+  - Filtro por origen (Alianza/Directo) en el panel de filtros.
+
 #### Mejoras en Exportación Excel
 - **Exportación de columnas adicionales**: La exportación a Excel ahora incluye las columnas "Mandato", "Origen" y "Gestor".
   - Mandato: Muestra "Firmado" o "Pendiente" según el estado del mandato.
