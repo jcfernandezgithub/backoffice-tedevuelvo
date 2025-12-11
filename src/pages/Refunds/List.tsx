@@ -853,7 +853,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
                         <TableCell>
                           {refund.partnerId ? (
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                            <Badge 
+                              variant="outline" 
+                              className="bg-primary/10 text-primary border-primary/20 text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/alianzas/${refund.partnerId}`)
+                              }}
+                            >
                               {partnerNameMap[refund.partnerId] || 'Alianza'}
                             </Badge>
                           ) : (
@@ -929,7 +936,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       {
                         label: 'Origen',
                         value: refund.partnerId ? (
-                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                          <Badge 
+                            variant="outline" 
+                            className="bg-primary/10 text-primary border-primary/20 text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/alianzas/${refund.partnerId}`)
+                            }}
+                          >
                             {partnerNameMap[refund.partnerId] || 'Alianza'}
                           </Badge>
                         ) : (
