@@ -87,7 +87,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     nroOperacion: '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
-    saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toString(),
+    saldoInsoluto: (refund.estimatedAmountCLP || 0).toString(),
   })
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -98,6 +98,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
   }
 
   const handlePreview = () => {
+    const saldoInsolutoValue = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
+    if (saldoInsolutoValue === 0) {
+      toast({
+        title: 'Error de validación',
+        description: 'El Saldo Insoluto no puede ser cero',
+        variant: 'destructive',
+      })
+      return
+    }
     setStep('preview')
   }
 
@@ -1445,48 +1454,53 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   <CreditCard className="h-4 w-4 text-primary" />
                   Datos del Certificado
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="space-y-2">
-                    <Label>Folio</Label>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Folio</Label>
                     <Input
                       value={formData.folio}
                       onChange={(e) => handleChange('folio', e.target.value)}
-                      placeholder="Número de folio"
+                      placeholder="N° folio"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Nro. Operación</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nro. Operación</Label>
                     <Input
                       value={formData.nroOperacion}
                       onChange={(e) => handleChange('nroOperacion', e.target.value)}
-                      placeholder="Nro. operación"
+                      placeholder="N° operación"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Saldo Insoluto</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Saldo Insoluto</Label>
                     <Input
                       value={formData.saldoInsoluto ? Number(formData.saldoInsoluto).toLocaleString('es-CL') : ''}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\./g, '').replace(/\D/g, '')
                         handleChange('saldoInsoluto', value)
                       }}
-                      placeholder="Monto saldo insoluto"
+                      placeholder="Monto"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Fecha Inicio Crédito</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Fecha Inicio</Label>
                     <Input
                       value={formData.fechaInicioCredito}
                       onChange={(e) => handleChange('fechaInicioCredito', e.target.value)}
                       placeholder="DD/MM/YYYY"
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Fecha Fin Crédito</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Fecha Fin</Label>
                     <Input
                       value={formData.fechaFinCredito}
                       onChange={(e) => handleChange('fechaFinCredito', e.target.value)}
                       placeholder="DD/MM/YYYY"
+                      className="h-9"
                     />
                   </div>
                 </div>
