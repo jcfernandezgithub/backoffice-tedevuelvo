@@ -109,6 +109,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
   
   const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
+  const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
 
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -236,7 +237,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setFilters(clearedFilters)
     setSearchInput('')
     setMandateFilter('all')
+    setOriginFilter('all')
     setSearchParams(new URLSearchParams())
+  }
+  
+  const handleOriginFilterChange = (value: string) => {
+    setOriginFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('origin')
+    } else {
+      params.set('origin', value)
+    }
+    setSearchParams(params)
   }
   
   const handleMandateFilterChange = (value: string) => {
@@ -452,13 +465,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
   
   // Aplicar filtro de mandato (ahora mandateStatuses ya está disponible)
-  const filteredItems = mandateFilter === 'all' 
+  const mandateFilteredItems = mandateFilter === 'all' 
     ? statusFilteredItems
     : statusFilteredItems.filter((r: any) => {
         const status = mandateStatuses?.[r.publicId]
         const hasSigned = status?.hasSignedPdf === true
         return mandateFilter === 'signed' ? hasSigned : !hasSigned
       })
+  
+  // Aplicar filtro de origen
+  const filteredItems = originFilter === 'all'
+    ? mandateFilteredItems
+    : originFilter === 'alianza'
+      ? mandateFilteredItems.filter((r: any) => r.partnerId)
+      : mandateFilteredItems.filter((r: any) => !r.partnerId)
 
   // Aplicar ordenamiento
   const sortedItems = [...filteredItems].sort((a: any, b: any) => {
@@ -573,6 +593,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <SelectItem value="all">Todos los mandatos</SelectItem>
                 <SelectItem value="signed">Con mandato firmado</SelectItem>
                 <SelectItem value="pending">Mandato pendiente</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={originFilter}
+              onValueChange={handleOriginFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Origen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los orígenes</SelectItem>
+                <SelectItem value="alianza">Alianza</SelectItem>
+                <SelectItem value="directo">Directo</SelectItem>
               </SelectContent>
             </Select>
           </div>
