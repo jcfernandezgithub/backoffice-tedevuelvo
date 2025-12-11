@@ -5,6 +5,22 @@ import { FileSpreadsheet, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
+import { RefundStatus } from '@/types/refund'
+
+const statusLabels: Record<RefundStatus, string> = {
+  simulated: 'Simulado',
+  requested: 'Solicitado',
+  qualifying: 'En calificación',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
+}
 
 interface ExportToExcelDialogProps {
   refunds: RefundRequest[]
@@ -63,7 +79,7 @@ export function ExportToExcelDialog({
       return {
         'ID Público': refund.publicId,
         'ID Interno': refund.id,
-        'Estado': refund.status,
+        'Estado': statusLabels[refund.status as RefundStatus] || refund.status,
         'Mandato': mandatoFirmado,
         'Origen': origen,
         'Gestor': gestor,
