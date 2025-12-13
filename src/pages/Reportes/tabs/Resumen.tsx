@@ -36,31 +36,52 @@ const ESTADO_COLORS = {
   'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  'REQUESTED': 'Simulado',
-  'QUALIFYING': 'Calificando',
-  'DOCS_PENDING': 'Docs pendientes',
-  'DOCS_RECEIVED': 'Docs recibidos',
-  'SUBMITTED': 'Enviado',
-  'APPROVED': 'Aprobado',
-  'PAYMENT_SCHEDULED': 'Pago programado',
-  'PAID': 'Pagado',
-  'REJECTED': 'Rechazado',
-  'CANCELED': 'Cancelado',
+// Status labels y colores (consistente con la pantalla de Solicitudes)
+const statusLabels: Record<string, string> = {
+  simulated: 'Simulado',
+  requested: 'Solicitado',
+  qualifying: 'En calificación',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
 };
 
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  'REQUESTED': 'outline',
-  'QUALIFYING': 'secondary',
-  'DOCS_PENDING': 'secondary',
-  'DOCS_RECEIVED': 'secondary',
-  'SUBMITTED': 'default',
-  'APPROVED': 'default',
-  'PAYMENT_SCHEDULED': 'default',
-  'PAID': 'default',
-  'REJECTED': 'destructive',
-  'CANCELED': 'destructive',
-};
+const getStatusColors = (status: string): string => {
+  switch (status) {
+    case 'simulated':
+      return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+    case 'requested':
+      return 'bg-blue-400 hover:bg-blue-500 text-white border-blue-400'
+    case 'qualifying':
+      return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
+    case 'docs_pending':
+      return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
+    case 'docs_received':
+      return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
+    case 'submitted':
+      return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
+    case 'approved':
+      return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
+    case 'payment_scheduled':
+      return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
+    case 'paid':
+      return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+    case 'rejected':
+      return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+    case 'canceled':
+      return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
+    case 'datos_sin_simulacion':
+      return 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500'
+    default:
+      return 'bg-primary hover:bg-primary/90 text-white border-primary'
+  }
+}
 
 export function TabResumen() {
   const { filtros } = useFilters();
@@ -241,8 +262,8 @@ export function TabResumen() {
                         <TableCell>{refund.rut || '-'}</TableCell>
                         <TableCell>{refund.email || '-'}</TableCell>
                         <TableCell>
-                          <Badge variant={STATUS_VARIANT[refund.status] || 'outline'}>
-                            {STATUS_LABELS[refund.status] || refund.status}
+                          <Badge className={getStatusColors(refund.status)}>
+                            {statusLabels[refund.status] || refund.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
