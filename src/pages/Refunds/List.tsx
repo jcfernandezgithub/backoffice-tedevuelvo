@@ -796,6 +796,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="estimatedAmountCLP" />
                         </div>
                       </TableHead>
+                      <TableHead className="text-right">Monto Real</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleSort('institutionId')}
@@ -926,6 +927,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell className="text-right font-semibold">
                           ${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {(refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
+                            (() => {
+                              const realAmountEntry = refund.statusHistory?.slice().reverse().find(
+                                (entry: any) => (entry.to === 'payment_scheduled' || entry.to === 'paid') && entry.realAmount
+                              )
+                              return realAmountEntry?.realAmount ? (
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                  ${realAmountEntry.realAmount.toLocaleString('es-CL')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )
+                            })()
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
                         <TableCell>
                           {refund.partnerId ? (
@@ -1009,8 +1028,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         )
                       },
                       {
-                        label: 'Monto',
+                        label: 'Monto estimado',
                         value: `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                      },
+                      {
+                        label: 'Monto Real',
+                        value: (refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
+                          (() => {
+                            const realAmountEntry = refund.statusHistory?.slice().reverse().find(
+                              (entry: any) => (entry.to === 'payment_scheduled' || entry.to === 'paid') && entry.realAmount
+                            )
+                            return realAmountEntry?.realAmount ? (
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                ${realAmountEntry.realAmount.toLocaleString('es-CL')}
+                              </span>
+                            ) : '-'
+                          })()
+                        ) : '-'
                       },
                       {
                         label: 'Institución',
