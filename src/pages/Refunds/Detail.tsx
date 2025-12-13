@@ -674,6 +674,12 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
                           {entry.by && ` • por ${entry.by}`}
                         </p>
                         {entry.note && <p className="text-sm mt-2">{entry.note}</p>}
+                        {entry.realAmount && (entry.to === 'payment_scheduled' || entry.to === 'paid') && (
+                          <div className="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                            <span>Monto real:</span>
+                            <span>${entry.realAmount.toLocaleString('es-CL')} CLP</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )
