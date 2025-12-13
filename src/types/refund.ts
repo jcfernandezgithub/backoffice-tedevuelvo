@@ -79,4 +79,5 @@ export interface AdminUpdateStatusDto {
   note?: string
   by?: string
   force?: boolean
+  realAmount?: number
 }
