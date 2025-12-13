@@ -82,6 +82,7 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
     note: '',
     by: user?.email || '',
     force: false,
+    realAmount: undefined,
   })
 
   const handleCopyId = () => {
@@ -168,6 +169,15 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
   })
 
   const handleUpdateStatus = () => {
+    // Validar monto real obligatorio para pago programado
+    if (updateForm.status === 'payment_scheduled' && (!updateForm.realAmount || updateForm.realAmount <= 0)) {
+      toast({
+        title: 'Monto requerido',
+        description: 'Debes ingresar el monto real de devolución para programar el pago',
+        variant: 'destructive',
+      })
+      return
+    }
     updateMutation.mutate(updateForm)
   }
 
@@ -317,7 +327,7 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
                   <Label>Nuevo estado</Label>
                   <Select
                     value={updateForm.status}
-                    onValueChange={(v) => setUpdateForm({ ...updateForm, status: v as RefundStatus })}
+                    onValueChange={(v) => setUpdateForm({ ...updateForm, status: v as RefundStatus, realAmount: undefined })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -331,6 +341,28 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
                     </SelectContent>
                   </Select>
                 </div>
+
+                {updateForm.status === 'payment_scheduled' && (
+                  <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <Label className="text-primary font-medium">
+                      Monto real de devolución <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        type="number"
+                        value={updateForm.realAmount || ''}
+                        onChange={(e) => setUpdateForm({ ...updateForm, realAmount: e.target.value ? Number(e.target.value) : undefined })}
+                        placeholder="Ingresa el monto confirmado"
+                        className="pl-7"
+                        min={1}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Monto estimado: <span className="font-medium">${refund.estimatedAmountCLP?.toLocaleString('es-CL') || 'N/A'}</span> CLP
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label>Nota (opcional)</Label>
