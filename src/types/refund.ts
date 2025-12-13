@@ -18,6 +18,7 @@ export interface StatusHistoryEntry {
   to: RefundStatus
   note?: string
   by?: string
+  realAmount?: number
 }
 
 export interface RefundRequest {
