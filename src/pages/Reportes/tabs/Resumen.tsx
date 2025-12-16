@@ -210,7 +210,7 @@ export function TabResumen() {
         return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount;
       }
     );
-    return sum + (realAmountEntry?.realAmount || r.estimatedAmountCLP || 0);
+    return sum + (realAmountEntry?.realAmount || 0);
   }, 0);
   const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => 
     sum + (r.calculationSnapshot?.newMonthlyPremium || 0), 0
