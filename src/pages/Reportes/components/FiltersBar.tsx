@@ -53,11 +53,15 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   }, [filtros]);
 
   const handleDateChange = (field: 'fechaDesde' | 'fechaHasta', value: string) => {
-    setLocalFiltros(prev => ({ ...prev, [field]: value }));
+    const newFiltros = { ...localFiltros, [field]: value };
+    setLocalFiltros(newFiltros);
+    actualizarFiltros(newFiltros);
   };
 
   const handleDateRangeChange = (desde: string, hasta: string) => {
-    setLocalFiltros(prev => ({ ...prev, fechaDesde: desde, fechaHasta: hasta }));
+    const newFiltros = { ...localFiltros, fechaDesde: desde, fechaHasta: hasta };
+    setLocalFiltros(newFiltros);
+    actualizarFiltros(newFiltros);
   };
 
   const handleMultiSelectChange = (
@@ -81,7 +85,6 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
 
   const limpiar = () => {
     limpiarFiltros();
-    setLocalFiltros(filtros);
   };
 
   const contarFiltrosActivos = () => {
