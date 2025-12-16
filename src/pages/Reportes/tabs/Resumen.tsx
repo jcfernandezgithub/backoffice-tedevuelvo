@@ -202,7 +202,16 @@ export function TabResumen() {
 
   // Filtrar solicitudes en estado "Pagado" y calcular montos
   const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
-  const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => sum + (r.realAmountCLP || r.estimatedAmountCLP || 0), 0);
+  const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => {
+    // Buscar realAmount en statusHistory (payment_scheduled o paid)
+    const realAmountEntry = r.statusHistory?.slice().reverse().find(
+      (entry: any) => {
+        const toStatus = entry.to?.toLowerCase();
+        return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount;
+      }
+    );
+    return sum + (realAmountEntry?.realAmount || r.estimatedAmountCLP || 0);
+  }, 0);
   const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => 
     sum + (r.calculationSnapshot?.newMonthlyPremium || 0), 0
   );
