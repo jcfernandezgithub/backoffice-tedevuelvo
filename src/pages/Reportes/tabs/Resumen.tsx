@@ -273,13 +273,13 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-emerald-600">{paymentScheduledRefunds.length}</div>
-                <div className="flex gap-4 mt-3">
+                <div className="flex flex-col gap-2 mt-3">
                   <div className="flex items-center gap-2">
-                    <Badge variant="default" className="bg-emerald-500">Listo</Badge>
+                    <Badge variant="default" className="bg-emerald-500 text-xs">Con datos</Badge>
                     <span className="font-semibold">{paymentScheduledWithBank.length}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30">Pendiente</Badge>
+                    <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos</Badge>
                     <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
                   </div>
                 </div>
