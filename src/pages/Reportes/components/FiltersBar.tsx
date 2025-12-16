@@ -80,6 +80,8 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   };
 
   const aplicarFiltros = () => {
+    console.log('[FiltersBar] Aplicar filtros clicked');
+    console.log('[FiltersBar] localFiltros:', JSON.stringify(localFiltros, null, 2));
     actualizarFiltros(localFiltros);
   };
 
