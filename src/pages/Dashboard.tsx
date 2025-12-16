@@ -8,6 +8,7 @@ import { Money } from '@/components/common/Money'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { dashboardDataMock } from '@/mocks/dashboardData'
 import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon, FileSignature } from 'lucide-react'
 
@@ -132,6 +133,47 @@ export default function Dashboard() {
     staleTime: 60 * 1000, // 1 minuto para mandatos
     placeholderData: (previousData) => previousData,
   })
+
+  // Query para obtener refunds y calcular monto total pagado con realAmount
+  const { data: refundsData } = useQuery({
+    queryKey: ['dashboard', 'refunds-paid', desde, hasta],
+    queryFn: async () => {
+      const response = await refundAdminApi.list({ pageSize: 10000 })
+      return Array.isArray(response) ? response : response.items || []
+    },
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
+  })
+
+  // Calcular monto total pagado usando realAmount de statusHistory
+  const totalPaidAmount = useMemo(() => {
+    if (!refundsData) return 0
+    
+    // Filtrar por fechas
+    const filteredRefunds = refundsData.filter((r: any) => {
+      if (!r.createdAt) return false
+      const createdDate = new Date(r.createdAt)
+      const desdeDate = new Date(desde)
+      desdeDate.setHours(0, 0, 0, 0)
+      const hastaDate = new Date(hasta)
+      hastaDate.setHours(23, 59, 59, 999)
+      return createdDate >= desdeDate && createdDate <= hastaDate
+    })
+    
+    // Solo solicitudes pagadas
+    const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid')
+    
+    // Sumar realAmount de statusHistory
+    return paidRefunds.reduce((sum: number, r: any) => {
+      const realAmountEntry = r.statusHistory?.slice().reverse().find(
+        (entry: any) => {
+          const toStatus = entry.to?.toLowerCase()
+          return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+        }
+      )
+      return sum + (realAmountEntry?.realAmount || 0)
+    }, 0)
+  }, [refundsData, desde, hasta])
 
   // Conteo de solicitudes firmadas en proceso
   const solicitudesFirmadas = useMemo(() => {
@@ -298,7 +340,7 @@ export default function Dashboard() {
             <CardTitle className="text-sm">Monto total pagado a clientes (CLP)</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 text-2xl font-semibold">
-            {pagosAgg ? <Money value={pagosAgg.total} /> : '—'}
+            <Money value={totalPaidAmount} />
           </CardContent>
         </Card>
       </section>
