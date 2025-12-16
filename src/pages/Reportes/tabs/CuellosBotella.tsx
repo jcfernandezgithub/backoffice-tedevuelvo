@@ -1,20 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { FunnelChart } from '../components/FunnelChart';
 import { useFilters } from '../hooks/useFilters';
-import { useFunnelData, useSlaMetrics } from '../hooks/useReportsData';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
-// Mock data para motivos de rechazo y tiempos por etapa
-const motivosRechazo = [
-  { motivo: 'Documentación incompleta', cantidad: 45, porcentaje: 32.1 },
-  { motivo: 'Datos inconsistentes', cantidad: 38, porcentaje: 27.1 },
-  { motivo: 'No cumple criterios', cantidad: 28, porcentaje: 20.0 },
-  { motivo: 'Timeout de proceso', cantidad: 19, porcentaje: 13.6 },
-  { motivo: 'Error de sistema', cantidad: 10, porcentaje: 7.1 },
-];
+import { useFunnelData } from '../hooks/useReportsData';
 
 const tiemposPorEtapa = [
   { etapa: 'Simulación', promedio: 2.5, objetivo: 2.0, estado: 'warning' },
@@ -28,7 +17,6 @@ const tiemposPorEtapa = [
 export function TabCuellosBotella() {
   const { filtros } = useFilters();
   const { data: funnelData, isLoading: loadingFunnel } = useFunnelData(filtros);
-  const { data: slaMetrics, isLoading: loadingSla } = useSlaMetrics(filtros);
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -40,19 +28,6 @@ export function TabCuellosBotella() {
         return 'text-destructive';
       default:
         return 'text-muted-foreground';
-    }
-  };
-
-  const getEstadoBadge = (estado: string) => {
-    switch (estado) {
-      case 'green':
-        return <Badge className="bg-emerald-100 text-emerald-800">Óptimo</Badge>;
-      case 'yellow':
-        return <Badge className="bg-amber-100 text-amber-800">Regular</Badge>;
-      case 'red':
-        return <Badge className="bg-red-100 text-red-800">Crítico</Badge>;
-      default:
-        return <Badge variant="secondary">N/A</Badge>;
     }
   };
 
@@ -107,93 +82,6 @@ export function TabCuellosBotella() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top motivos de rechazo */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Principales Motivos de Rechazo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={motivosRechazo}
-                layout="horizontal"
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  type="number" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="motivo" 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  width={120}
-                />
-                <Tooltip
-                  formatter={(value: number) => [value, 'Cantidad']}
-                  labelFormatter={(label) => `${label}`}
-                />
-                <Bar dataKey="cantidad" fill="hsl(var(--destructive))" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* SLA por compañía */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
-              SLA por Compañía
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingSla ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-16 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : slaMetrics?.length ? (
-              <div className="space-y-4">
-                {slaMetrics.map((sla) => (
-                  <div key={sla.compania} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{sla.compania}</span>
-                      {getEstadoBadge(sla.estado)}
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Promedio:</span>
-                        <div className="font-semibold">{sla.promedio}d</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">P95:</span>
-                        <div className="font-semibold">{sla.p95}d</div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">P99:</span>
-                        <div className="font-semibold">{sla.p99}d</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center text-muted-foreground">
-                No hay datos disponibles
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Recomendaciones */}
       <Card>
