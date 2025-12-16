@@ -9,14 +9,17 @@ import { useQuery } from '@tanstack/react-query';
 import { refundAdminApi } from '@/services/refundAdminApi';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import type { Granularidad } from '../types/reportTypes';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { 
   ClipboardCheck, 
   FileInput, 
   CheckCircle2, 
   XCircle, 
   CalendarClock, 
-  Banknote 
+  Banknote,
+  PieChart as PieChartIcon,
+  BarChart3
 } from 'lucide-react';
 
 // Colores que coinciden con las calugas KPI
@@ -33,6 +36,7 @@ export function TabResumen() {
   const { filtros } = useFilters();
   const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
+  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
     filtros,
     granularidad,
@@ -399,38 +403,71 @@ export function TabResumen() {
 
         {/* Distribución por estado */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Distribución por Estado</CardTitle>
+            <ToggleGroup type="single" value={chartType} onValueChange={(value) => value && setChartType(value as 'pie' | 'bar')}>
+              <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-8 w-8 p-0">
+                <PieChartIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="bar" aria-label="Gráfico de barras" className="h-8 w-8 p-0">
+                <BarChart3 className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
           </CardHeader>
           <CardContent>
             {loadingRefunds ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
               <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={distribucionEstado}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="valor"
-                    nameKey="categoria"
-                  >
-                    {distribucionEstado.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
-                  />
-                  <Legend />
-                </PieChart>
+                {chartType === 'pie' ? (
+                  <PieChart>
+                    <Pie
+                      data={distribucionEstado}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="valor"
+                      nameKey="categoria"
+                    >
+                      {distribucionEstado.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
+                    />
+                    <Legend />
+                  </PieChart>
+                ) : (
+                  <BarChart data={distribucionEstado} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis 
+                      type="category" 
+                      dataKey="categoria" 
+                      stroke="hsl(var(--muted-foreground))" 
+                      fontSize={11}
+                      width={100}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
+                    />
+                    <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                      {distribucionEstado.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                )}
               </ResponsiveContainer>
             ) : (
               <div className="h-64 flex items-center justify-center text-muted-foreground">
