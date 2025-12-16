@@ -43,33 +43,45 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   const { data: alianzas = [] } = useAlianzas();
   const { data: companias = [] } = useCompanias();
   
-  // Sincronizar filtros locales con los globales cuando cambien
-  const [localFiltros, setLocalFiltros] = useState(filtros);
+  // Estado local solo para filtros avanzados (que requieren "Aplicar")
+  const [localAdvancedFiltros, setLocalAdvancedFiltros] = useState({
+    estados: filtros.estados || [],
+    alianzas: filtros.alianzas || [],
+    companias: filtros.companias || [],
+    tiposSeguro: filtros.tiposSeguro || [],
+    montoMin: filtros.montoMin,
+    montoMax: filtros.montoMax,
+  });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Actualizar filtros locales cuando cambien los globales
+  // Sincronizar filtros avanzados locales cuando cambien los globales
   useEffect(() => {
-    setLocalFiltros(filtros);
+    setLocalAdvancedFiltros({
+      estados: filtros.estados || [],
+      alianzas: filtros.alianzas || [],
+      companias: filtros.companias || [],
+      tiposSeguro: filtros.tiposSeguro || [],
+      montoMin: filtros.montoMin,
+      montoMax: filtros.montoMax,
+    });
   }, [filtros]);
 
+  // Fechas se aplican inmediatamente
   const handleDateChange = (field: 'fechaDesde' | 'fechaHasta', value: string) => {
-    const newFiltros = { ...localFiltros, [field]: value };
-    setLocalFiltros(newFiltros);
-    actualizarFiltros(newFiltros);
+    actualizarFiltros({ [field]: value });
   };
 
   const handleDateRangeChange = (desde: string, hasta: string) => {
-    const newFiltros = { ...localFiltros, fechaDesde: desde, fechaHasta: hasta };
-    setLocalFiltros(newFiltros);
-    actualizarFiltros(newFiltros);
+    actualizarFiltros({ fechaDesde: desde, fechaHasta: hasta });
   };
 
+  // Filtros avanzados se guardan localmente hasta hacer clic en "Aplicar"
   const handleMultiSelectChange = (
     field: 'estados' | 'alianzas' | 'companias' | 'tiposSeguro',
     value: string,
     checked: boolean
   ) => {
-    setLocalFiltros(prev => {
+    setLocalAdvancedFiltros(prev => {
       const currentValues = prev[field] || [];
       if (checked) {
         return { ...prev, [field]: [...currentValues, value] };
@@ -80,15 +92,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   };
 
   const aplicarFiltros = () => {
-    console.log('[FiltersBar] Aplicar filtros clicked');
-    console.log('[FiltersBar] localFiltros:', JSON.stringify(localFiltros, null, 2));
-    console.log('[FiltersBar] actualizarFiltros exists:', typeof actualizarFiltros);
-    try {
-      actualizarFiltros(localFiltros);
-      console.log('[FiltersBar] actualizarFiltros called successfully');
-    } catch (error) {
-      console.error('[FiltersBar] Error calling actualizarFiltros:', error);
-    }
+    actualizarFiltros(localAdvancedFiltros);
   };
 
   const limpiar = () => {
@@ -97,12 +101,12 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
 
   const contarFiltrosActivos = () => {
     let count = 0;
-    if (localFiltros.estados?.length) count++;
-    if (localFiltros.alianzas?.length) count++;
-    if (localFiltros.companias?.length) count++;
-    if (localFiltros.tiposSeguro?.length) count++;
-    if (localFiltros.montoMin) count++;
-    if (localFiltros.montoMax) count++;
+    if (localAdvancedFiltros.estados?.length) count++;
+    if (localAdvancedFiltros.alianzas?.length) count++;
+    if (localAdvancedFiltros.companias?.length) count++;
+    if (localAdvancedFiltros.tiposSeguro?.length) count++;
+    if (localAdvancedFiltros.montoMin) count++;
+    if (localAdvancedFiltros.montoMax) count++;
     return count;
   };
 
@@ -119,15 +123,15 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
     mesAtras.setMonth(new Date().getMonth() - 1);
     const mesAtrasStr = toLocalDateString(mesAtras);
 
-    if (localFiltros.fechaDesde === hoy && localFiltros.fechaHasta === hoy) return 'hoy';
-    if (localFiltros.fechaDesde === ayerStr && localFiltros.fechaHasta === ayerStr) return 'ayer';
-    if (localFiltros.fechaDesde === semanaAtrasStr && localFiltros.fechaHasta === hoy) return 'semana';
-    if (localFiltros.fechaDesde === mesAtrasStr && localFiltros.fechaHasta === hoy) return 'mes';
+    if (filtros.fechaDesde === hoy && filtros.fechaHasta === hoy) return 'hoy';
+    if (filtros.fechaDesde === ayerStr && filtros.fechaHasta === ayerStr) return 'ayer';
+    if (filtros.fechaDesde === semanaAtrasStr && filtros.fechaHasta === hoy) return 'semana';
+    if (filtros.fechaDesde === mesAtrasStr && filtros.fechaHasta === hoy) return 'mes';
     return null;
   };
 
   const activeQuickFilter = getActiveQuickFilter();
-  const hasDateFilter = !!(localFiltros.fechaDesde || localFiltros.fechaHasta);
+  const hasDateFilter = !!(filtros.fechaDesde || filtros.fechaHasta);
 
   return (
     <Card className="mb-6">
@@ -243,7 +247,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               <Label className="text-sm text-muted-foreground">Desde</Label>
               <Input
                 type="date"
-                value={localFiltros.fechaDesde || ''}
+                value={filtros.fechaDesde || ''}
                 onChange={(e) => handleDateChange('fechaDesde', e.target.value)}
                 className={hasDateFilter ? 'border-primary' : ''}
               />
@@ -252,7 +256,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               <Label className="text-sm text-muted-foreground">Hasta</Label>
               <Input
                 type="date"
-                value={localFiltros.fechaHasta || ''}
+                value={filtros.fechaHasta || ''}
                 onChange={(e) => handleDateChange('fechaHasta', e.target.value)}
                 className={hasDateFilter ? 'border-primary' : ''}
               />
@@ -289,7 +293,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                     <div key={estado.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`estado-${estado.value}`}
-                        checked={localFiltros.estados?.includes(estado.value) || false}
+                        checked={localAdvancedFiltros.estados?.includes(estado.value) || false}
                         onCheckedChange={(checked) =>
                           handleMultiSelectChange('estados', estado.value, checked as boolean)
                         }
@@ -313,7 +317,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                     <div key={alianza.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`alianza-${alianza.id}`}
-                        checked={localFiltros.alianzas?.includes(alianza.id) || false}
+                        checked={localAdvancedFiltros.alianzas?.includes(alianza.id) || false}
                         onCheckedChange={(checked) =>
                           handleMultiSelectChange('alianzas', alianza.id, checked as boolean)
                         }
@@ -337,7 +341,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                     <div key={compania.id} className="flex items-center space-x-2">
                       <Checkbox
                         id={`compania-${compania.id}`}
-                        checked={localFiltros.companias?.includes(compania.id) || false}
+                        checked={localAdvancedFiltros.companias?.includes(compania.id) || false}
                         onCheckedChange={(checked) =>
                           handleMultiSelectChange('companias', compania.id, checked as boolean)
                         }
@@ -361,7 +365,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                     <div key={tipo.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`tipo-${tipo.value}`}
-                        checked={localFiltros.tiposSeguro?.includes(tipo.value) || false}
+                        checked={localAdvancedFiltros.tiposSeguro?.includes(tipo.value) || false}
                         onCheckedChange={(checked) =>
                           handleMultiSelectChange('tiposSeguro', tipo.value, checked as boolean)
                         }
@@ -383,9 +387,9 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 <Input
                   type="number"
                   placeholder="100,000"
-                  value={localFiltros.montoMin || ''}
+                  value={localAdvancedFiltros.montoMin || ''}
                   onChange={(e) =>
-                    setLocalFiltros(prev => ({
+                    setLocalAdvancedFiltros(prev => ({
                       ...prev,
                       montoMin: e.target.value ? Number(e.target.value) : undefined
                     }))
@@ -398,9 +402,9 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 <Input
                   type="number"
                   placeholder="2,000,000"
-                  value={localFiltros.montoMax || ''}
+                  value={localAdvancedFiltros.montoMax || ''}
                   onChange={(e) =>
-                    setLocalFiltros(prev => ({
+                    setLocalAdvancedFiltros(prev => ({
                       ...prev,
                       montoMax: e.target.value ? Number(e.target.value) : undefined
                     }))

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import type { FiltrosReporte, EstadoSolicitud, TipoSeguro } from '../types/reportTypes';
@@ -6,8 +6,8 @@ import type { FiltrosReporte, EstadoSolicitud, TipoSeguro } from '../types/repor
 export function useFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Inicializar filtros desde URL o valores por defecto
-  const [filtros, setFiltros] = useState<FiltrosReporte>(() => {
+  // Derivar filtros directamente desde la URL (única fuente de verdad)
+  const filtros = useMemo<FiltrosReporte>(() => {
     const hoy = dayjs();
     const hace3Meses = hoy.subtract(3, 'month');
     
@@ -19,7 +19,7 @@ export function useFilters() {
     if (!fechaDesde) fechaDesde = hace3Meses.format('YYYY-MM-DD');
     if (!fechaHasta) fechaHasta = hoy.format('YYYY-MM-DD');
     
-    const filtrosIniciales = {
+    return {
       fechaDesde,
       fechaHasta,
       estados: searchParams.get('estados')?.split(',').filter(Boolean) as EstadoSolicitud[] || [],
@@ -29,17 +29,14 @@ export function useFilters() {
       montoMin: searchParams.get('montoMin') ? Number(searchParams.get('montoMin')) : undefined,
       montoMax: searchParams.get('montoMax') ? Number(searchParams.get('montoMax')) : undefined,
     };
-    
-    console.log('[useFilters] Filtros iniciales:', filtrosIniciales);
-    
-    return filtrosIniciales;
-  });
+  }, [searchParams]);
 
   const actualizarFiltros = useCallback((nuevosFiltros: Partial<FiltrosReporte>) => {
-    console.log('[useFilters] actualizarFiltros called with:', JSON.stringify(nuevosFiltros, null, 2));
+    console.log('[useFilters] actualizarFiltros called with:', nuevosFiltros);
+    
+    // Merge con los filtros actuales derivados de la URL
     const filtrosActualizados = { ...filtros, ...nuevosFiltros };
-    console.log('[useFilters] filtrosActualizados:', JSON.stringify(filtrosActualizados, null, 2));
-    setFiltros(filtrosActualizados);
+    console.log('[useFilters] filtrosActualizados:', filtrosActualizados);
     
     // Sincronizar con URL
     const newParams = new URLSearchParams();
@@ -57,22 +54,12 @@ export function useFilters() {
   }, [filtros, setSearchParams]);
 
   const limpiarFiltros = useCallback(() => {
-    const filtrosLimpios: FiltrosReporte = {
+    const filtrosLimpios = {
       fechaDesde: dayjs().subtract(3, 'month').format('YYYY-MM-DD'),
       fechaHasta: dayjs().format('YYYY-MM-DD'),
-      estados: [],
-      alianzas: [],
-      companias: [],
-      tiposSeguro: [],
-      montoMin: undefined,
-      montoMax: undefined,
     };
     
-    setFiltros(filtrosLimpios);
-    setSearchParams(new URLSearchParams({
-      fechaDesde: filtrosLimpios.fechaDesde!,
-      fechaHasta: filtrosLimpios.fechaHasta!,
-    }));
+    setSearchParams(new URLSearchParams(filtrosLimpios));
   }, [setSearchParams]);
 
   return {
