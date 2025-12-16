@@ -125,6 +125,33 @@ export function TabResumen() {
     return true;
   });
 
+  // Query para obtener estados de mandatos de todas las solicitudes filtradas
+  const allFilteredPublicIds = filteredRefunds.map((r: any) => r.publicId);
+  
+  const { data: mandateStatuses, isLoading: loadingMandates } = useQuery({
+    queryKey: ['mandate-statuses-resumen', allFilteredPublicIds],
+    queryFn: async () => {
+      const statuses: Record<string, any> = {};
+      await Promise.all(
+        allFilteredPublicIds.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            );
+            if (response.ok) {
+              statuses[publicId] = await response.json();
+            }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      );
+      return statuses;
+    },
+    enabled: allFilteredPublicIds.length > 0,
+    staleTime: 30 * 1000,
+  });
+
   // Paginación
   const totalPages = Math.ceil(filteredRefunds.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -142,16 +169,20 @@ export function TabResumen() {
     montos: serieMontos?.[index]?.valor || 0,
   })) || [];
 
-  // Filtrar solicitudes en estado de calificación
+  // Filtrar solicitudes en estado de calificación usando mandateStatuses
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
-  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus === 'SIGNED');
-  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus !== 'SIGNED');
+  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
+    mandateStatuses?.[r.publicId]?.hasSignedPdf === true
+  );
+  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => 
+    !mandateStatuses?.[r.publicId]?.hasSignedPdf
+  );
 
   return (
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {loadingRefunds ? (
+        {loadingRefunds || loadingMandates ? (
           <Card>
             <CardHeader className="pb-2">
               <Skeleton className="h-4 w-3/4" />
@@ -300,12 +331,10 @@ export function TabResumen() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {refund.mandateStatus === 'SIGNED' ? (
+                          {mandateStatuses?.[refund.publicId]?.hasSignedPdf ? (
                             <Badge variant="default" className="bg-green-600">Firmado</Badge>
-                          ) : refund.mandateStatus === 'PENDING' ? (
-                            <Badge variant="secondary">Pendiente</Badge>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <Badge variant="secondary">Pendiente</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-medium">
