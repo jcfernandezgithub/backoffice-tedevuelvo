@@ -966,7 +966,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
                             (() => {
                               const realAmountEntry = refund.statusHistory?.slice().reverse().find(
-                                (entry: any) => (entry.to === 'payment_scheduled' || entry.to === 'paid') && entry.realAmount
+                                (entry: any) => {
+                                  const toStatus = entry.to?.toLowerCase()
+                                  return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+                                }
                               )
                               return realAmountEntry?.realAmount ? (
                                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
@@ -1098,7 +1101,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         value: (refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
                           (() => {
                             const realAmountEntry = refund.statusHistory?.slice().reverse().find(
-                              (entry: any) => (entry.to === 'payment_scheduled' || entry.to === 'paid') && entry.realAmount
+                              (entry: any) => {
+                                const toStatus = entry.to?.toLowerCase()
+                                return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+                              }
                             )
                             return realAmountEntry?.realAmount ? (
                               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
