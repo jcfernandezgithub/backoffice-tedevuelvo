@@ -22,7 +22,7 @@ export interface StatusHistoryEntry {
 }
 
 export interface BankInfo {
-  bankName?: string
+  bank?: string
   accountType?: string
   accountNumber?: string
   holderName?: string
