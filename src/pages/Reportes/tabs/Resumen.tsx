@@ -236,6 +236,7 @@ export function TabResumen() {
           </>
         ) : (
           <>
+            {/* Card: Solicitudes en Calificación - con sub-filtros clickeables */}
             <Card className="border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -246,20 +247,36 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">{qualifyingRefunds.length}</div>
+                <div 
+                  className="text-3xl font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
+                  onClick={() => navigate('/solicitudes?status=qualifying')}
+                >
+                  {qualifyingRefunds.length}
+                </div>
                 <div className="flex gap-4 mt-3">
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate('/solicitudes?status=qualifying&mandate=signed')}
+                  >
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
                     <span className="font-semibold">{qualifyingWithSignature.length}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate('/solicitudes?status=qualifying&mandate=pending')}
+                  >
                     <Badge variant="secondary">Pendiente</Badge>
                     <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10">
+
+            {/* Card: Solicitudes Ingresadas */}
+            <Card 
+              className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=submitted')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -272,7 +289,12 @@ export function TabResumen() {
                 <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10">
+
+            {/* Card: Solicitudes Aprobadas */}
+            <Card 
+              className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=approved')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -285,7 +307,12 @@ export function TabResumen() {
                 <div className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10">
+
+            {/* Card: Solicitudes Rechazadas */}
+            <Card 
+              className="border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=rejected')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -298,6 +325,8 @@ export function TabResumen() {
                 <div className="text-3xl font-bold text-red-600 dark:text-red-400">{rejectedRefunds.length}</div>
               </CardContent>
             </Card>
+
+            {/* Card: Pago Programado - con sub-filtros clickeables */}
             <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -308,20 +337,36 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-cyan-700 dark:text-cyan-400">{paymentScheduledRefunds.length}</div>
+                <div 
+                  className="text-3xl font-bold text-cyan-700 dark:text-cyan-400 cursor-pointer hover:underline"
+                  onClick={() => navigate('/solicitudes?status=payment_scheduled')}
+                >
+                  {paymentScheduledRefunds.length}
+                </div>
                 <div className="flex flex-col gap-2 mt-3">
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate('/solicitudes?status=payment_scheduled&bank=ready')}
+                  >
                     <Badge variant="default" className="bg-emerald-500 text-xs">Con datos para transferencia</Badge>
                     <span className="font-semibold">{paymentScheduledWithBank.length}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate('/solicitudes?status=payment_scheduled&bank=pending')}
+                  >
                     <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos para transferencia</Badge>
                     <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/10">
+
+            {/* Card: Solicitudes Pagadas */}
+            <Card 
+              className="border-l-4 border-l-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=paid')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -334,7 +379,12 @@ export function TabResumen() {
                 <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-green-700 bg-green-50/40 dark:bg-green-950/20">
+
+            {/* Card: Monto Total Pagado */}
+            <Card 
+              className="border-l-4 border-l-green-700 bg-green-50/40 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=paid')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -353,7 +403,12 @@ export function TabResumen() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-violet-600 bg-violet-50/30 dark:bg-violet-950/10">
+
+            {/* Card: Prima Total */}
+            <Card 
+              className="border-l-4 border-l-violet-600 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate('/solicitudes?status=paid')}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
