@@ -950,7 +950,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(refund as any).bankInfo ? (
                             <div className="flex items-center justify-center">
                               <div className="relative group">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
                                   <Flag className="h-4 w-4 text-emerald-500 fill-emerald-500" />
                                   <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
                                 </div>
@@ -1077,7 +1077,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       {
                         label: 'Datos pago',
                         value: (refund as any).bankInfo ? (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
                             <Flag className="h-3 w-3 text-emerald-500 fill-emerald-500" />
                             <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
                           </div>
