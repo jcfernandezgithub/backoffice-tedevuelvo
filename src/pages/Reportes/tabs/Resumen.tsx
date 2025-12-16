@@ -200,8 +200,9 @@ export function TabResumen() {
   const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
   const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
 
-  // Filtrar solicitudes en estado "Pagado"
+  // Filtrar solicitudes en estado "Pagado" y calcular monto total
   const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
+  const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => sum + (r.realAmountCLP || r.estimatedAmountCLP || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -319,6 +320,25 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-green-700 bg-green-50/40 dark:bg-green-950/20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Monto Total Pagado
+                  </CardTitle>
+                  <Banknote className="h-5 w-5 text-green-700" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-800 dark:text-green-400">
+                  {new Intl.NumberFormat('es-CL', {
+                    style: 'currency',
+                    currency: 'CLP',
+                    maximumFractionDigits: 0
+                  }).format(totalPaidAmount)}
+                </div>
               </CardContent>
             </Card>
           </>
