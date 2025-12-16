@@ -492,16 +492,6 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
                     <p className="text-sm text-muted-foreground">Número de cuenta</p>
                     <p className="font-medium font-mono">{refund.bankInfo.accountNumber || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Titular</p>
-                    <p className="font-medium">{refund.bankInfo.holderName || 'N/A'}</p>
-                  </div>
-                  {refund.bankInfo.holderRut && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">RUT del titular</p>
-                      <p className="font-medium">{refund.bankInfo.holderRut}</p>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
