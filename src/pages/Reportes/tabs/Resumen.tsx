@@ -101,18 +101,35 @@ export function TabResumen() {
   
   // Obtener todas las solicitudes del sistema usando el mismo servicio que la página de Solicitudes
   const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
-    queryKey: ['refunds-all'],
+    queryKey: ['refunds-all', filtros],
     queryFn: async () => {
       const response = await refundAdminApi.list({ pageSize: 10000 });
       return Array.isArray(response) ? response : response.items || [];
     }
   });
 
+  // Filtrar refunds por fechas según los filtros
+  const filteredRefunds = refunds.filter((r: any) => {
+    if (!r.createdAt) return false;
+    const createdDate = new Date(r.createdAt);
+    if (filtros.fechaDesde) {
+      const desde = new Date(filtros.fechaDesde);
+      desde.setHours(0, 0, 0, 0);
+      if (createdDate < desde) return false;
+    }
+    if (filtros.fechaHasta) {
+      const hasta = new Date(filtros.fechaHasta);
+      hasta.setHours(23, 59, 59, 999);
+      if (createdDate > hasta) return false;
+    }
+    return true;
+  });
+
   // Paginación
-  const totalPages = Math.ceil(refunds.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredRefunds.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedRefunds = refunds.slice(startIndex, endIndex);
+  const paginatedRefunds = filteredRefunds.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -126,7 +143,7 @@ export function TabResumen() {
   })) || [];
 
   // Filtrar solicitudes en estado de calificación
-  const qualifyingRefunds = refunds.filter((r: any) => r.status === 'qualifying');
+  const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
   const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus === 'SIGNED');
   const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus !== 'SIGNED');
 
@@ -238,8 +255,8 @@ export function TabResumen() {
         <CardHeader>
           <CardTitle>
             Resumen Detallado
-            {refunds.length > 0 && (
-              <span className="text-muted-foreground ml-2">({refunds.length} total)</span>
+            {filteredRefunds.length > 0 && (
+              <span className="text-muted-foreground ml-2">({filteredRefunds.length} total)</span>
             )}
           </CardTitle>
         </CardHeader>
@@ -250,7 +267,7 @@ export function TabResumen() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          ) : refunds.length > 0 ? (
+          ) : filteredRefunds.length > 0 ? (
             <>
               <div className="overflow-x-auto">
                 <Table>
@@ -321,7 +338,7 @@ export function TabResumen() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, refunds.length)} de {refunds.length} solicitudes
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredRefunds.length)} de {filteredRefunds.length} solicitudes
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
