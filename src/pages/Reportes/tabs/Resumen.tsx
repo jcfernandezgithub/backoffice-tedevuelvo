@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -7,10 +7,7 @@ import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { refundAdminApi } from '@/services/refundAdminApi';
-import {
-  useSerieTemporal,
-  useDistribucionPorEstado
-} from '../hooks/useReportsData';
+import { useSerieTemporal } from '../hooks/useReportsData';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { 
@@ -22,15 +19,15 @@ import {
   Banknote 
 } from 'lucide-react';
 
-const ESTADO_COLORS = {
-  'SIMULACION_CONFIRMADA': 'hsl(221, 83%, 53%)', // blue
-  'DEVOLUCION_CONFIRMADA_COMPANIA': 'hsl(238, 56%, 58%)', // indigo  
-  'FONDOS_RECIBIDOS_TD': 'hsl(142, 71%, 45%)', // green
-  'CERTIFICADO_EMITIDO': 'hsl(160, 84%, 39%)', // emerald
-  'CLIENTE_NOTIFICADO': 'hsl(45, 93%, 47%)', // yellow
-  'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
+// Colores que coinciden con las calugas KPI
+const ESTADO_COLORS: Record<string, string> = {
+  'En Calificación': 'hsl(43, 96%, 56%)',      // amber-500
+  'Ingresadas': 'hsl(239, 84%, 67%)',          // indigo-500
+  'Aprobadas': 'hsl(142, 71%, 45%)',           // green-500
+  'Rechazadas': 'hsl(0, 84%, 60%)',            // red-500
+  'Pago Programado': 'hsl(187, 92%, 69%)',     // cyan-400
+  'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
 };
-
 
 export function TabResumen() {
   const { filtros } = useFilters();
@@ -46,7 +43,6 @@ export function TabResumen() {
     granularidad,
     'montoRecuperado'
   );
-  const { data: distribucionEstado, isLoading: loadingDistribucion } = useDistribucionPorEstado(filtros);
   
   // Obtener todas las solicitudes del sistema usando el mismo servicio que la página de Solicitudes
   const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
@@ -146,6 +142,23 @@ export function TabResumen() {
   const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => 
     sum + (r.calculationSnapshot?.newMonthlyPremium || 0), 0
   );
+
+  // Datos para el gráfico de torta basados en las mismas categorías de las calugas
+  const distribucionEstado = useMemo(() => {
+    const total = qualifyingRefunds.length + submittedRefunds.length + approvedRefunds.length + 
+                  rejectedRefunds.length + paymentScheduledRefunds.length + paidRefunds.length;
+    
+    if (total === 0) return [];
+    
+    return [
+      { categoria: 'En Calificación', valor: qualifyingRefunds.length, porcentaje: (qualifyingRefunds.length / total) * 100 },
+      { categoria: 'Ingresadas', valor: submittedRefunds.length, porcentaje: (submittedRefunds.length / total) * 100 },
+      { categoria: 'Aprobadas', valor: approvedRefunds.length, porcentaje: (approvedRefunds.length / total) * 100 },
+      { categoria: 'Rechazadas', valor: rejectedRefunds.length, porcentaje: (rejectedRefunds.length / total) * 100 },
+      { categoria: 'Pago Programado', valor: paymentScheduledRefunds.length, porcentaje: (paymentScheduledRefunds.length / total) * 100 },
+      { categoria: 'Pagadas', valor: paidRefunds.length, porcentaje: (paidRefunds.length / total) * 100 },
+    ].filter(item => item.valor > 0);
+  }, [qualifyingRefunds, submittedRefunds, approvedRefunds, rejectedRefunds, paymentScheduledRefunds, paidRefunds]);
 
   return (
     <div className="space-y-6">
@@ -390,7 +403,7 @@ export function TabResumen() {
             <CardTitle>Distribución por Estado</CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingDistribucion ? (
+            {loadingRefunds ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -404,11 +417,12 @@ export function TabResumen() {
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="valor"
+                    nameKey="categoria"
                   >
                     {distribucionEstado.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={ESTADO_COLORS[entry.categoria as keyof typeof ESTADO_COLORS] || '#8884d8'} 
+                        fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
                       />
                     ))}
                   </Pie>
