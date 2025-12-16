@@ -21,6 +21,14 @@ export interface StatusHistoryEntry {
   realAmount?: number
 }
 
+export interface BankInfo {
+  bankName?: string
+  accountType?: string
+  accountNumber?: string
+  holderName?: string
+  holderRut?: string
+}
+
 export interface RefundRequest {
   id: string
   publicId: string
@@ -44,6 +52,7 @@ export interface RefundRequest {
   partnerId?: string | null
   partnerUserId?: string | null
   source?: string | null
+  bankInfo?: BankInfo
 }
 
 export interface RefundDocument {

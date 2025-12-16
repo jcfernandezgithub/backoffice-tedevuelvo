@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
@@ -462,6 +462,50 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
               )}
             </CardContent>
           </Card>
+
+          {/* Sección de datos bancarios para Pago Programado */}
+          {(refund.status === 'payment_scheduled' || refund.status === 'paid') && refund.bankInfo && (
+            <Card className="border-emerald-500/30 bg-emerald-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-emerald-600">
+                  <Landmark className="h-5 w-5" />
+                  Datos para devolución
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700">
+                    Los datos bancarios ya fueron registrados para procesar la devolución
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Banco</p>
+                    <p className="font-medium">{refund.bankInfo.bankName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tipo de cuenta</p>
+                    <p className="font-medium">{refund.bankInfo.accountType || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Número de cuenta</p>
+                    <p className="font-medium font-mono">{refund.bankInfo.accountNumber || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Titular</p>
+                    <p className="font-medium">{refund.bankInfo.holderName || 'N/A'}</p>
+                  </div>
+                  {refund.bankInfo.holderRut && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">RUT del titular</p>
+                      <p className="font-medium">{refund.bankInfo.holderRut}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
