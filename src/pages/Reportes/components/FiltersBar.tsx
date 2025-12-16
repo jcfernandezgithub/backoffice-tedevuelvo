@@ -82,7 +82,13 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   const aplicarFiltros = () => {
     console.log('[FiltersBar] Aplicar filtros clicked');
     console.log('[FiltersBar] localFiltros:', JSON.stringify(localFiltros, null, 2));
-    actualizarFiltros(localFiltros);
+    console.log('[FiltersBar] actualizarFiltros exists:', typeof actualizarFiltros);
+    try {
+      actualizarFiltros(localFiltros);
+      console.log('[FiltersBar] actualizarFiltros called successfully');
+    } catch (error) {
+      console.error('[FiltersBar] Error calling actualizarFiltros:', error);
+    }
   };
 
   const limpiar = () => {
