@@ -25,8 +25,6 @@ export interface BankInfo {
   bank?: string
   accountType?: string
   accountNumber?: string
-  holderName?: string
-  holderRut?: string
 }
 
 export interface RefundRequest {
