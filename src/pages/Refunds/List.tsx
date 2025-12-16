@@ -110,6 +110,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   
   const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
   const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
+  const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
 
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -238,6 +239,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setSearchInput('')
     setMandateFilter('all')
     setOriginFilter('all')
+    setBankFilter('all')
     setSearchParams(new URLSearchParams())
   }
   
@@ -259,6 +261,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       params.delete('mandate')
     } else {
       params.set('mandate', value)
+    }
+    setSearchParams(params)
+  }
+  
+  const handleBankFilterChange = (value: string) => {
+    setBankFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('bank')
+    } else {
+      params.set('bank', value)
     }
     setSearchParams(params)
   }
@@ -474,11 +487,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       })
   
   // Aplicar filtro de origen
-  const filteredItems = originFilter === 'all'
+  const originFilteredItems = originFilter === 'all'
     ? mandateFilteredItems
     : originFilter === 'alianza'
       ? mandateFilteredItems.filter((r: any) => r.partnerId)
       : mandateFilteredItems.filter((r: any) => !r.partnerId)
+  
+  // Aplicar filtro de datos bancarios
+  const filteredItems = bankFilter === 'all'
+    ? originFilteredItems
+    : bankFilter === 'ready'
+      ? originFilteredItems.filter((r: any) => r.bankInfo)
+      : originFilteredItems.filter((r: any) => !r.bankInfo)
 
   // Aplicar ordenamiento
   const sortedItems = [...filteredItems].sort((a: any, b: any) => {
@@ -610,6 +630,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <SelectItem value="all">Todos los orígenes</SelectItem>
                 <SelectItem value="alianza">Alianza</SelectItem>
                 <SelectItem value="directo">Directo</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={bankFilter}
+              onValueChange={handleBankFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Datos pago" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ready">Listo para pago</SelectItem>
+                <SelectItem value="pending">Sin datos bancarios</SelectItem>
               </SelectContent>
             </Select>
           </div>
