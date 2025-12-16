@@ -950,9 +950,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(refund as any).bankInfo ? (
                             <div className="flex items-center justify-center">
                               <div className="relative group">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 animate-pulse">
-                                  <Flag className="h-4 w-4 text-amber-500 fill-amber-500" />
-                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Listo</span>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                                  <Flag className="h-4 w-4 text-emerald-500 fill-emerald-500" />
+                                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
                                 </div>
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
                                   Datos bancarios registrados
@@ -960,7 +960,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <div className="flex items-center justify-center">
+                              <div className="relative group">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30">
+                                  <Flag className="h-4 w-4 text-amber-500" />
+                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pendiente</span>
+                                </div>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+                                  Sin datos bancarios
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
@@ -1065,14 +1075,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         ) : '-'
                       },
                       {
-                        label: 'Listo para pago',
+                        label: 'Datos pago',
                         value: (refund as any).bankInfo ? (
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
-                            <Flag className="h-3 w-3 text-amber-500 fill-amber-500" />
-                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Datos listos</span>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                            <Flag className="h-3 w-3 text-emerald-500 fill-emerald-500" />
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                            <Flag className="h-3 w-3 text-amber-500" />
+                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pendiente</span>
+                          </div>
                         )
                       },
                       {
