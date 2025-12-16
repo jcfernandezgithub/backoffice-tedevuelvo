@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { useFilters } from '../hooks/useFilters';
@@ -14,16 +13,6 @@ import {
 } from '../hooks/useReportsData';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { 
   ClipboardCheck, 
   FileInput, 
@@ -42,59 +31,11 @@ const ESTADO_COLORS = {
   'PAGADA_CLIENTE': 'hsl(142, 76%, 36%)', // dark green
 };
 
-// Status labels y colores (consistente con la pantalla de Solicitudes)
-const statusLabels: Record<string, string> = {
-  simulated: 'Simulado',
-  requested: 'Solicitado',
-  qualifying: 'En calificación',
-  docs_pending: 'Documentos pendientes',
-  docs_received: 'Documentos recibidos',
-  submitted: 'Ingresado',
-  approved: 'Aprobado',
-  rejected: 'Rechazado',
-  payment_scheduled: 'Pago programado',
-  paid: 'Pagado',
-  canceled: 'Cancelado',
-  datos_sin_simulacion: 'Datos (sin simulación)',
-};
-
-const getStatusColors = (status: string): string => {
-  switch (status) {
-    case 'simulated':
-      return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
-    case 'requested':
-      return 'bg-blue-400 hover:bg-blue-500 text-white border-blue-400'
-    case 'qualifying':
-      return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
-    case 'docs_pending':
-      return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
-    case 'docs_received':
-      return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
-    case 'submitted':
-      return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
-    case 'approved':
-      return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
-    case 'payment_scheduled':
-      return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
-    case 'paid':
-      return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
-    case 'rejected':
-      return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
-    case 'canceled':
-      return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
-    case 'datos_sin_simulacion':
-      return 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500'
-    default:
-      return 'bg-primary hover:bg-primary/90 text-white border-primary'
-  }
-}
 
 export function TabResumen() {
   const { filtros } = useFilters();
   const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
     filtros,
     granularidad,
@@ -160,16 +101,6 @@ export function TabResumen() {
     staleTime: 30 * 1000,
   });
 
-  // Paginación
-  const totalPages = Math.ceil(filteredRefunds.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedRefunds = filteredRefunds.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
     fecha: punto.fecha,
@@ -496,148 +427,6 @@ export function TabResumen() {
         </Card>
       </div>
 
-      {/* Tabla resumen */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Resumen Detallado
-            {filteredRefunds.length > 0 && (
-              <span className="text-muted-foreground ml-2">({filteredRefunds.length} total)</span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingRefunds ? (
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : filteredRefunds.length > 0 ? (
-            <>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID Público</TableHead>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>RUT</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Mandato</TableHead>
-                      <TableHead className="text-right">Monto estimado</TableHead>
-                      <TableHead>Institución</TableHead>
-                      <TableHead>Creación</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedRefunds.map((refund) => (
-                      <TableRow key={refund.id}>
-                        <TableCell className="font-mono text-sm">
-                          {refund.publicId}
-                        </TableCell>
-                        <TableCell>{refund.fullName || '-'}</TableCell>
-                        <TableCell>{refund.rut || '-'}</TableCell>
-                        <TableCell>{refund.email || '-'}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColors(refund.status)}>
-                            {statusLabels[refund.status] || refund.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {mandateStatuses?.[refund.publicId]?.hasSignedPdf ? (
-                            <Badge variant="default" className="bg-green-600">Firmado</Badge>
-                          ) : (
-                            <Badge variant="secondary">Pendiente</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {new Intl.NumberFormat('es-CL', {
-                            style: 'currency',
-                            currency: 'CLP',
-                            maximumFractionDigits: 0
-                          }).format(refund.estimatedAmountCLP)}
-                        </TableCell>
-                        <TableCell>{refund.institutionId || '-'}</TableCell>
-                        <TableCell>
-                          {format(new Date(refund.createdAt), 'dd/MM/yyyy', { locale: es })}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/refunds/${refund.id}`)}
-                          >
-                            Ver detalle
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Paginación */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Mostrando {startIndex + 1} a {Math.min(endIndex, filteredRefunds.length)} de {filteredRefunds.length} solicitudes
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                    >
-                      Anterior
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNumber;
-                        if (totalPages <= 5) {
-                          pageNumber = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNumber = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNumber = totalPages - 4 + i;
-                        } else {
-                          pageNumber = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <Button
-                            key={pageNumber}
-                            variant={currentPage === pageNumber ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handlePageChange(pageNumber)}
-                            className="w-9"
-                          >
-                            {pageNumber}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="h-32 flex items-center justify-center text-muted-foreground">
-              No hay datos para mostrar
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
