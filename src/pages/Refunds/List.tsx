@@ -26,7 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -797,6 +797,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         </div>
                       </TableHead>
                       <TableHead className="text-right">Monto Real</TableHead>
+                      <TableHead className="text-center">Pago</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleSort('institutionId')}
@@ -945,6 +946,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
+                        <TableCell className="text-center">
+                          {(refund as any).bankInfo ? (
+                            <div className="flex items-center justify-center">
+                              <div className="relative group">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 animate-pulse">
+                                  <Flag className="h-4 w-4 text-amber-500 fill-amber-500" />
+                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Listo</span>
+                                </div>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+                                  Datos bancarios registrados
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-sm">{refund.institutionId}</TableCell>
                         <TableCell>
                           {refund.partnerId ? (
@@ -1045,6 +1063,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             ) : '-'
                           })()
                         ) : '-'
+                      },
+                      {
+                        label: 'Listo para pago',
+                        value: (refund as any).bankInfo ? (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                            <Flag className="h-3 w-3 text-amber-500 fill-amber-500" />
+                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Datos listos</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )
                       },
                       {
                         label: 'Institución',
