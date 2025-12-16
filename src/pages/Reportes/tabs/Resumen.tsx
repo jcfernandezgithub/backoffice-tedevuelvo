@@ -181,29 +181,29 @@ export function TabResumen() {
   // Filtrar solicitudes en estado "Ingresado"
   const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
 
+  // Filtrar solicitudes en estado "Aprobado"
+  const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
+
+  // Filtrar solicitudes en estado "Rechazado"
+  const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {loadingRefunds || loadingMandates ? (
           <>
-            <Card>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-3 w-1/2 mt-2" />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-full" />
-              </CardContent>
-            </Card>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-full" />
+                  {i === 0 && <Skeleton className="h-3 w-1/2 mt-2" />}
+                </CardContent>
+              </Card>
+            ))}
           </>
         ) : (
           <>
@@ -235,6 +235,26 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{submittedRefunds.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Solicitudes Aprobadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">{approvedRefunds.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Solicitudes Rechazadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-red-500">{rejectedRefunds.length}</div>
               </CardContent>
             </Card>
           </>
