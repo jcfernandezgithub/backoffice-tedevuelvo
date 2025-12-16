@@ -36,7 +36,9 @@ export function useFilters() {
   });
 
   const actualizarFiltros = useCallback((nuevosFiltros: Partial<FiltrosReporte>) => {
+    console.log('[useFilters] actualizarFiltros called with:', JSON.stringify(nuevosFiltros, null, 2));
     const filtrosActualizados = { ...filtros, ...nuevosFiltros };
+    console.log('[useFilters] filtrosActualizados:', JSON.stringify(filtrosActualizados, null, 2));
     setFiltros(filtrosActualizados);
     
     // Sincronizar con URL
@@ -50,6 +52,7 @@ export function useFilters() {
     if (filtrosActualizados.montoMin) newParams.set('montoMin', filtrosActualizados.montoMin.toString());
     if (filtrosActualizados.montoMax) newParams.set('montoMax', filtrosActualizados.montoMax.toString());
     
+    console.log('[useFilters] Setting URL params:', newParams.toString());
     setSearchParams(newParams);
   }, [filtros, setSearchParams]);
 
