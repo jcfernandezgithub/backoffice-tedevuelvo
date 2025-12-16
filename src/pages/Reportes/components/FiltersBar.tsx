@@ -5,17 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CalendarIcon, Filter, X, Download } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { Filter, X, Download } from 'lucide-react';
 import { useFilters } from '../hooks/useFilters';
 import { useAlianzas, useCompanias } from '../hooks/useReportsData';
 import type { EstadoSolicitud, TipoSeguro } from '../types/reportTypes';
+
+// Helper para obtener fecha local en formato YYYY-MM-DD
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const ESTADOS: { value: EstadoSolicitud; label: string }[] = [
   { value: 'SIMULACION_CONFIRMADA', label: 'Simulación confirmada' },
@@ -49,10 +52,12 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
     setLocalFiltros(filtros);
   }, [filtros]);
 
-  const handleDateChange = (field: 'fechaDesde' | 'fechaHasta', date?: Date) => {
-    if (!date) return;
-    const fechaISO = format(date, 'yyyy-MM-dd');
-    setLocalFiltros(prev => ({ ...prev, [field]: fechaISO }));
+  const handleDateChange = (field: 'fechaDesde' | 'fechaHasta', value: string) => {
+    setLocalFiltros(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDateRangeChange = (desde: string, hasta: string) => {
+    setLocalFiltros(prev => ({ ...prev, fechaDesde: desde, fechaHasta: hasta }));
   };
 
   const handleMultiSelectChange = (
@@ -140,67 +145,77 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Rango de fechas - siempre visible */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Fecha desde</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !localFiltros.fechaDesde && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {localFiltros.fechaDesde ? (
-                    format(new Date(localFiltros.fechaDesde), 'P', { locale: es })
-                  ) : (
-                    <span>Seleccionar fecha</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={localFiltros.fechaDesde ? new Date(localFiltros.fechaDesde) : undefined}
-                  onSelect={(date) => handleDateChange('fechaDesde', date)}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Fecha:</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const hoy = toLocalDateString(new Date());
+                handleDateRangeChange(hoy, hoy);
+              }}
+              className="h-7 text-xs px-2"
+            >
+              Hoy
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const ayer = new Date();
+                ayer.setDate(ayer.getDate() - 1);
+                const ayerStr = toLocalDateString(ayer);
+                handleDateRangeChange(ayerStr, ayerStr);
+              }}
+              className="h-7 text-xs px-2"
+            >
+              Ayer
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const hoy = new Date();
+                const semanaAtras = new Date();
+                semanaAtras.setDate(hoy.getDate() - 7);
+                handleDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy));
+              }}
+              className="h-7 text-xs px-2"
+            >
+              Última semana
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const hoy = new Date();
+                const mesAtras = new Date();
+                mesAtras.setMonth(hoy.getMonth() - 1);
+                handleDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy));
+              }}
+              className="h-7 text-xs px-2"
+            >
+              Último mes
+            </Button>
           </div>
-
-          <div className="space-y-2">
-            <Label>Fecha hasta</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !localFiltros.fechaHasta && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {localFiltros.fechaHasta ? (
-                    format(new Date(localFiltros.fechaHasta), 'P', { locale: es })
-                  ) : (
-                    <span>Seleccionar fecha</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={localFiltros.fechaHasta ? new Date(localFiltros.fechaHasta) : undefined}
-                  onSelect={(date) => handleDateChange('fechaHasta', date)}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">Desde</Label>
+              <Input
+                type="date"
+                value={localFiltros.fechaDesde || ''}
+                onChange={(e) => handleDateChange('fechaDesde', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground">Hasta</Label>
+              <Input
+                type="date"
+                value={localFiltros.fechaHasta || ''}
+                onChange={(e) => handleDateChange('fechaHasta', e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
