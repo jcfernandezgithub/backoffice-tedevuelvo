@@ -3,14 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { KpiCard } from '../components/KpiCard';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { refundAdminApi } from '@/services/refundAdminApi';
 import {
-  useKpisResumen,
   useSerieTemporal,
   useDistribucionPorEstado
 } from '../hooks/useReportsData';
@@ -89,8 +87,6 @@ export function TabResumen() {
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const { data: kpis, isLoading: loadingKpis } = useKpisResumen(filtros);
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
     filtros,
     granularidad,
@@ -129,26 +125,46 @@ export function TabResumen() {
     montos: serieMontos?.[index]?.valor || 0,
   })) || [];
 
+  // Filtrar solicitudes en estado de calificación
+  const qualifyingRefunds = refunds.filter((r: any) => r.status === 'qualifying');
+  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus === 'SIGNED');
+  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => r.mandateStatus !== 'SIGNED');
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {loadingKpis ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-3 w-1/2 mt-2" />
-              </CardContent>
-            </Card>
-          ))
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loadingRefunds ? (
+          <Card>
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-3/4" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-3 w-1/2 mt-2" />
+            </CardContent>
+          </Card>
         ) : (
-          kpis?.map((kpi, index) => (
-            <KpiCard key={index} data={kpi} />
-          ))
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Solicitudes en Calificación
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{qualifyingRefunds.length}</div>
+              <div className="flex gap-4 mt-3">
+                <div className="flex items-center gap-2">
+                  <Badge variant="default" className="bg-green-600">Firmado</Badge>
+                  <span className="font-semibold">{qualifyingWithSignature.length}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">Pendiente</Badge>
+                  <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
 
