@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge'
 const items = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
-  { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'dev' as const, adminOnly: false, callCenterOnly: true },
+  { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false, callCenterOnly: false },
