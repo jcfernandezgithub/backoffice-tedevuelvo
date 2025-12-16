@@ -24,6 +24,14 @@ import {
 } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { 
+  ClipboardCheck, 
+  FileInput, 
+  CheckCircle2, 
+  XCircle, 
+  CalendarClock, 
+  Banknote 
+} from 'lucide-react';
 
 const ESTADO_COLORS = {
   'SIMULACION_CONFIRMADA': 'hsl(221, 83%, 53%)', // blue
@@ -215,14 +223,17 @@ export function TabResumen() {
           </>
         ) : (
           <>
-            <Card>
+            <Card className="border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Solicitudes en Calificación
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Solicitudes en Calificación
+                  </CardTitle>
+                  <ClipboardCheck className="h-5 w-5 text-amber-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{qualifyingRefunds.length}</div>
+                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">{qualifyingRefunds.length}</div>
                 <div className="flex gap-4 mt-3">
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
@@ -235,44 +246,56 @@ export function TabResumen() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Solicitudes Ingresadas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Solicitudes Ingresadas
+                  </CardTitle>
+                  <FileInput className="h-5 w-5 text-indigo-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{submittedRefunds.length}</div>
+                <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Solicitudes Aprobadas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Solicitudes Aprobadas
+                  </CardTitle>
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-600">{approvedRefunds.length}</div>
+                <div className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Solicitudes Rechazadas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Solicitudes Rechazadas
+                  </CardTitle>
+                  <XCircle className="h-5 w-5 text-red-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-500">{rejectedRefunds.length}</div>
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{rejectedRefunds.length}</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pago Programado
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Pago Programado
+                  </CardTitle>
+                  <CalendarClock className="h-5 w-5 text-cyan-500" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-600">{paymentScheduledRefunds.length}</div>
+                <div className="text-3xl font-bold text-cyan-700 dark:text-cyan-400">{paymentScheduledRefunds.length}</div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div className="flex items-center gap-2">
                     <Badge variant="default" className="bg-emerald-500 text-xs">Con datos para transferencia</Badge>
@@ -285,14 +308,17 @@ export function TabResumen() {
                 </div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-l-4 border-l-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/10">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Solicitudes Pagadas
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Solicitudes Pagadas
+                  </CardTitle>
+                  <Banknote className="h-5 w-5 text-emerald-600" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-700">{paidRefunds.length}</div>
+                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</div>
               </CardContent>
             </Card>
           </>
