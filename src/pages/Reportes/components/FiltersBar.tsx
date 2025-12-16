@@ -95,6 +95,29 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
     return count;
   };
 
+  // Calcular qué filtro rápido está activo
+  const getActiveQuickFilter = () => {
+    const hoy = toLocalDateString(new Date());
+    const ayer = new Date();
+    ayer.setDate(ayer.getDate() - 1);
+    const ayerStr = toLocalDateString(ayer);
+    const semanaAtras = new Date();
+    semanaAtras.setDate(new Date().getDate() - 7);
+    const semanaAtrasStr = toLocalDateString(semanaAtras);
+    const mesAtras = new Date();
+    mesAtras.setMonth(new Date().getMonth() - 1);
+    const mesAtrasStr = toLocalDateString(mesAtras);
+
+    if (localFiltros.fechaDesde === hoy && localFiltros.fechaHasta === hoy) return 'hoy';
+    if (localFiltros.fechaDesde === ayerStr && localFiltros.fechaHasta === ayerStr) return 'ayer';
+    if (localFiltros.fechaDesde === semanaAtrasStr && localFiltros.fechaHasta === hoy) return 'semana';
+    if (localFiltros.fechaDesde === mesAtrasStr && localFiltros.fechaHasta === hoy) return 'mes';
+    return null;
+  };
+
+  const activeQuickFilter = getActiveQuickFilter();
+  const hasDateFilter = !!(localFiltros.fechaDesde || localFiltros.fechaHasta);
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -149,7 +172,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Fecha:</span>
             <Button
-              variant="outline"
+              variant={activeQuickFilter === 'hoy' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
                 const hoy = toLocalDateString(new Date());
@@ -160,7 +183,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               Hoy
             </Button>
             <Button
-              variant="outline"
+              variant={activeQuickFilter === 'ayer' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
                 const ayer = new Date();
@@ -173,7 +196,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               Ayer
             </Button>
             <Button
-              variant="outline"
+              variant={activeQuickFilter === 'semana' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
                 const hoy = new Date();
@@ -186,7 +209,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               Última semana
             </Button>
             <Button
-              variant="outline"
+              variant={activeQuickFilter === 'mes' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
                 const hoy = new Date();
@@ -198,6 +221,11 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
             >
               Último mes
             </Button>
+            {hasDateFilter && !activeQuickFilter && (
+              <Badge variant="secondary" className="h-7 flex items-center gap-1">
+                Rango personalizado
+              </Badge>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -206,6 +234,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 type="date"
                 value={localFiltros.fechaDesde || ''}
                 onChange={(e) => handleDateChange('fechaDesde', e.target.value)}
+                className={hasDateFilter ? 'border-primary' : ''}
               />
             </div>
             <div>
@@ -214,6 +243,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 type="date"
                 value={localFiltros.fechaHasta || ''}
                 onChange={(e) => handleDateChange('fechaHasta', e.target.value)}
+                className={hasDateFilter ? 'border-primary' : ''}
               />
             </div>
           </div>
