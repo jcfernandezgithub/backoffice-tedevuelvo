@@ -186,8 +186,11 @@ export function TabResumen() {
     !mandateStatuses?.[r.publicId]?.hasSignedPdf
   );
 
-  // Filtrar solicitudes en estado "Ingresado"
+  // Filtrar solicitudes en estado "Ingresado" y calcular prima total
   const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
+  const totalSubmittedPremium = submittedRefunds.reduce((sum: number, r: any) => 
+    sum + (r.calculationSnapshot?.newMonthlyPremium || 0), 0
+  );
 
   // Filtrar solicitudes en estado "Aprobado"
   const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
@@ -258,6 +261,25 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="border-l-4 border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Prima Total (Ingresados)
+                  </CardTitle>
+                  <FileInput className="h-5 w-5 text-violet-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-violet-700 dark:text-violet-400">
+                  {new Intl.NumberFormat('es-CL', {
+                    style: 'currency',
+                    currency: 'CLP',
+                    maximumFractionDigits: 0
+                  }).format(totalSubmittedPremium)}
+                </div>
               </CardContent>
             </Card>
             <Card className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10">
