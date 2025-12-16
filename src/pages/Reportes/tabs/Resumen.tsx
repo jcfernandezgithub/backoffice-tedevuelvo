@@ -187,13 +187,21 @@ export function TabResumen() {
   // Filtrar solicitudes en estado "Rechazado"
   const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
 
+  // Filtrar solicitudes en estado "Pago Programado"
+  const paymentScheduledRefunds = filteredRefunds.filter((r: any) => r.status === 'payment_scheduled');
+  const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
+  const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
+
+  // Filtrar solicitudes en estado "Pagado"
+  const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {loadingRefunds || loadingMandates ? (
           <>
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: 7 }).map((_, i) => (
               <Card key={i}>
                 <CardHeader className="pb-2">
                   <Skeleton className="h-4 w-3/4" />
@@ -255,6 +263,36 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-500">{rejectedRefunds.length}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Pago Programado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-emerald-600">{paymentScheduledRefunds.length}</div>
+                <div className="flex gap-4 mt-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="bg-emerald-500">Listo</Badge>
+                    <span className="font-semibold">{paymentScheduledWithBank.length}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30">Pendiente</Badge>
+                    <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Solicitudes Pagadas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-700">{paidRefunds.length}</div>
               </CardContent>
             </Card>
           </>
