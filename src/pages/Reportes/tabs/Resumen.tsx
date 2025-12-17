@@ -146,8 +146,11 @@ export function TabResumen() {
   const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => {
     const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
     const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
-    return sum + (newMonthlyPremium * remainingInstallments);
+    const primaPorSolicitud = newMonthlyPremium * remainingInstallments;
+    console.log('Prima calculada:', { publicId: r.publicId, newMonthlyPremium, remainingInstallments, primaPorSolicitud });
+    return sum + primaPorSolicitud;
   }, 0);
+  console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
   // Datos para el gráfico de torta basados en las mismas categorías de las calugas
   const distribucionEstado = useMemo(() => {
