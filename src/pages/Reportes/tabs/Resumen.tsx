@@ -143,9 +143,11 @@ export function TabResumen() {
     );
     return sum + (realAmountEntry?.realAmount || 0);
   }, 0);
-  const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => 
-    sum + (r.calculationSnapshot?.newMonthlyPremium || 0), 0
-  );
+  const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => {
+    const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
+    const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
+    return sum + (newMonthlyPremium * remainingInstallments);
+  }, 0);
 
   // Datos para el gráfico de torta basados en las mismas categorías de las calugas
   const distribucionEstado = useMemo(() => {
