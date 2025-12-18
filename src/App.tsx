@@ -18,7 +18,7 @@ import GestionCallCenterList from "@/pages/GestionCallCenter/List";
 import GestionCallCenterDetail from "@/pages/GestionCallCenter/Detail";
 import AlianzasList from "@/pages/Alianzas/List";
 import AlianzaDetail from "@/pages/Alianzas/Detail";
-import Reportes from "@/pages/Reportes";
+import Operacion from "@/pages/Operacion";
 import UsuariosPage from "@/pages/Usuarios";
 import RefundsList from "@/pages/Refunds/List";
 import RefundDetail from "@/pages/Refunds/Detail";
@@ -58,7 +58,7 @@ const App = () => (
                 <Route path="/alianzas" element={<AlianzasList />} />
                 <Route path="/alianzas/:id" element={<AlianzaDetail />} />
                 
-                <Route path="/reportes" element={<Reportes />} />
+                <Route path="/reportes" element={<Operacion />} />
                 <Route path="/usuarios" element={<UsuariosPage />} />
                 <Route path="/ajustes" element={<div className="p-4">Ajustes (en construcción)</div>} />
               </Route>

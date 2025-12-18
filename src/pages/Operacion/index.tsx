@@ -12,7 +12,7 @@ import { TabAlertas } from './tabs/Alertas';
 import { exportCSV, exportXLSX } from '@/services/reportesService';
 import { useToast } from '@/hooks/use-toast';
 
-export default function Reportes() {
+export default function Operacion() {
   const [tabActivo, setTabActivo] = useState('resumen');
   const { toast } = useToast();
 
@@ -26,7 +26,7 @@ export default function Reportes() {
       ];
 
       const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `reportes-${tabActivo}-${timestamp}`;
+      const filename = `operacion-${tabActivo}-${timestamp}`;
 
       switch (format) {
         case 'csv':
