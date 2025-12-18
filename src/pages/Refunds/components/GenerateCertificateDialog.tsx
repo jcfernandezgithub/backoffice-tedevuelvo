@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,6 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
+import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
 
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
@@ -69,11 +70,30 @@ const getTasaBrutaMensual = (age?: number): number => {
   return 0.297
 }
 
+// Helper to load image as base64
+const loadImageAsBase64 = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx?.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/jpeg'))
+    }
+    img.onerror = reject
+    img.src = src
+  })
+}
+
 export function GenerateCertificateDialog({ refund, isMandateSigned = false }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
+  const [firmaBase64, setFirmaBase64] = useState<string>('')
   const [formData, setFormData] = useState<CertificateData>({
     folio: '',
     direccion: '',
@@ -89,6 +109,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     fechaFinCredito: '',
     saldoInsoluto: (refund.estimatedAmountCLP || 0).toString(),
   })
+
+  // Load firma image on mount
+  useEffect(() => {
+    loadImageAsBase64(firmaAugustarImg).then(setFirmaBase64).catch(console.error)
+  }, [])
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
@@ -1266,6 +1291,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     doc.text('_______________________', margin, y)
     doc.text('_______________________', 75, y)
     doc.text('_______________________', 145, y)
+    
+    // Agregar firma AuguStar
+    if (firmaBase64) {
+      doc.addImage(firmaBase64, 'JPEG', 75, y - 20, 30, 18)
+    }
+    
     y += 4
     doc.setFontSize(7)
     doc.text('TDV SERVICIOS SPA', margin, y)
@@ -2422,6 +2453,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       doc.text('AuguStar Seguros de Vida S.A.', pageWidth / 2 - 15, y)
       doc.text('Asegurado', pageWidth - margin - 30, y)
       y += 15
+
+      // Agregar firma AuguStar
+      if (firmaBase64) {
+        doc.addImage(firmaBase64, 'JPEG', pageWidth / 2 - 20, y - 20, 35, 22)
+      }
 
       // Líneas para firmas
       doc.line(margin, y, margin + 45, y)
