@@ -182,8 +182,81 @@ export default function CalculadoraPage() {
       y += 15;
     }
 
-    // Disclaimer
+    // Detalle del cálculo
     y += 5;
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text("Detalle del Calculo", 20, y);
+    y += 10;
+
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+
+    if (resultado.desgravamen) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.text("Desgravamen - Tasas y parametros:", 20, y);
+      y += 6;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
+      doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+      
+      if (resultado.desgravamen.cuotasUtilizadas) {
+        doc.text(`Cuotas utilizadas para tasa: ${resultado.desgravamen.cuotasUtilizadas}`, 25, y); y += 5;
+      }
+      if (resultado.desgravamen.montoRedondeado) {
+        doc.text(`Monto redondeado: ${formatCurrency(resultado.desgravamen.montoRedondeado)}`, 25, y); y += 5;
+      }
+      
+      y += 3;
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Formula: Prima unica = Monto x Tasa", 25, y); y += 4;
+      doc.text("Seguro total = (Prima unica / Cuotas utilizadas) x Cuotas totales", 25, y); y += 4;
+      doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
+      doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
+      y += 10;
+    }
+
+    if (resultado.cesantia) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.text("Cesantia - Tasas y parametros:", 20, y);
+      y += 6;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
+      doc.text(`Tasa banco: ${(resultado.cesantia.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
+      doc.text(`Tasa preferencial: ${(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+      
+      y += 3;
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Formula: Prima restante = Monto x Tasa mensual x Cuotas pendientes", 25, y); y += 4;
+      doc.text("Devolucion = Prima banco - Prima preferencial", 25, y);
+      y += 10;
+    }
+
+    // Margen aplicado
+    doc.setFontSize(10);
+    doc.setTextColor(40);
+    doc.text("Margen de seguridad:", 20, y);
+    y += 6;
+    
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text(`Margen aplicado: 15%`, 25, y); y += 5;
+    doc.text(`Tramo etario: ${resultado.tramoUsado}`, 25, y); y += 5;
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text("El monto final incluye un margen de seguridad del 15% sobre la devolucion calculada.", 25, y);
+    y += 15;
+
+    // Disclaimer
     doc.setFontSize(8);
     doc.setTextColor(120);
     doc.text("IMPORTANTE: Este calculo es solo informativo y esta sujeto a verificacion.", 20, y);
