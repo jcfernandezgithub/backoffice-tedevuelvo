@@ -21,7 +21,7 @@ const items = [
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
 ]
 
