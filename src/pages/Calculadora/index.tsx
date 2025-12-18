@@ -330,20 +330,40 @@ export default function CalculadoraPage() {
                     ];
                     
                     const selectedDate = field.value ? new Date(field.value) : null;
-                    const selectedDay = selectedDate?.getDate() || "";
-                    const selectedMonth = selectedDate?.getMonth() ?? "";
-                    const selectedYear = selectedDate?.getFullYear() || "";
+                    const selectedDay = selectedDate?.getDate();
+                    const selectedMonth = selectedDate?.getMonth();
+                    const selectedYear = selectedDate?.getFullYear();
                     
-                    const daysInMonth = selectedMonth !== "" && selectedYear 
-                      ? new Date(Number(selectedYear), Number(selectedMonth) + 1, 0).getDate()
+                    const daysInMonth = selectedMonth !== undefined && selectedYear 
+                      ? new Date(selectedYear, selectedMonth + 1, 0).getDate()
                       : 31;
                     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
                     
-                    const updateDate = (day: number, month: number, year: number) => {
-                      if (day && month !== undefined && year) {
-                        const newDate = new Date(year, month, day);
-                        field.onChange(newDate);
-                      }
+                    const handleDayChange = (val: string) => {
+                      const day = Number(val);
+                      const month = selectedMonth ?? 0;
+                      const year = selectedYear ?? maxYear;
+                      field.onChange(new Date(year, month, day));
+                    };
+                    
+                    const handleMonthChange = (val: string) => {
+                      const month = Number(val);
+                      const day = selectedDay ?? 1;
+                      const year = selectedYear ?? maxYear;
+                      // Ajustar día si excede los días del nuevo mes
+                      const maxDays = new Date(year, month + 1, 0).getDate();
+                      const adjustedDay = Math.min(day, maxDays);
+                      field.onChange(new Date(year, month, adjustedDay));
+                    };
+                    
+                    const handleYearChange = (val: string) => {
+                      const year = Number(val);
+                      const month = selectedMonth ?? 0;
+                      const day = selectedDay ?? 1;
+                      // Ajustar día si excede los días del mes (ej. 29 feb en año no bisiesto)
+                      const maxDays = new Date(year, month + 1, 0).getDate();
+                      const adjustedDay = Math.min(day, maxDays);
+                      field.onChange(new Date(year, month, adjustedDay));
                     };
                     
                     return (
@@ -351,8 +371,8 @@ export default function CalculadoraPage() {
                         <FormLabel>Fecha de nacimiento</FormLabel>
                         <div className="grid grid-cols-3 gap-2">
                           <Select
-                            value={selectedDay.toString()}
-                            onValueChange={(val) => updateDate(Number(val), Number(selectedMonth), Number(selectedYear))}
+                            value={selectedDay?.toString() ?? ""}
+                            onValueChange={handleDayChange}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Día" />
@@ -367,8 +387,8 @@ export default function CalculadoraPage() {
                           </Select>
                           
                           <Select
-                            value={selectedMonth !== "" ? selectedMonth.toString() : ""}
-                            onValueChange={(val) => updateDate(Number(selectedDay) || 1, Number(val), Number(selectedYear))}
+                            value={selectedMonth?.toString() ?? ""}
+                            onValueChange={handleMonthChange}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Mes" />
@@ -383,8 +403,8 @@ export default function CalculadoraPage() {
                           </Select>
                           
                           <Select
-                            value={selectedYear.toString()}
-                            onValueChange={(val) => updateDate(Number(selectedDay) || 1, selectedMonth !== "" ? Number(selectedMonth) : 0, Number(val))}
+                            value={selectedYear?.toString() ?? ""}
+                            onValueChange={handleYearChange}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Año" />
