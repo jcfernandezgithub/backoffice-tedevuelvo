@@ -221,10 +221,26 @@ export default function CalculadoraPage() {
     if (resultado.desgravamen) {
       doc.setFontSize(10);
       doc.setTextColor(40);
-      doc.text("Desgravamen - Tasas y parametros:", 20, y);
+      doc.text("Desgravamen - Montos calculados:", 20, y);
       y += 6;
       
       doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text("Banco:", 25, y); y += 5;
+      doc.text(`  Prima unica: ${formatCurrency(resultado.desgravamen.primaUnicaBanco || 0)}`, 25, y); y += 5;
+      doc.text(`  Seguro total: ${formatCurrency(resultado.desgravamen.seguroTotalBanco || 0)}`, 25, y); y += 5;
+      doc.text(`  Prima mensual: ${formatCurrency(resultado.desgravamen.primaMensualBanco || 0)}`, 25, y); y += 5;
+      doc.text(`  Seguro restante: ${formatCurrency(resultado.desgravamen.seguroRestanteBanco || 0)}`, 25, y); y += 6;
+      
+      doc.text("Preferencial:", 25, y); y += 5;
+      doc.text(`  Prima unica: ${formatCurrency(resultado.desgravamen.primaUnicaPreferencial || 0)}`, 25, y); y += 5;
+      doc.text(`  Seguro total: ${formatCurrency(resultado.desgravamen.seguroTotalPreferencial || 0)}`, 25, y); y += 5;
+      doc.text(`  Prima mensual: ${formatCurrency(resultado.desgravamen.primaMensualPreferencial || 0)}`, 25, y); y += 5;
+      doc.text(`  Seguro restante: ${formatCurrency(resultado.desgravamen.seguroRestantePreferencial || 0)}`, 25, y); y += 6;
+      
+      doc.setTextColor(41, 98, 255);
+      doc.text(`Devolucion desgravamen: ${formatCurrency(resultado.desgravamen.montoDevolucion)}`, 25, y); y += 8;
+      
       doc.setTextColor(80);
       doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
       doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
@@ -249,10 +265,17 @@ export default function CalculadoraPage() {
     if (resultado.cesantia) {
       doc.setFontSize(10);
       doc.setTextColor(40);
-      doc.text("Cesantia - Tasas y parametros:", 20, y);
+      doc.text("Cesantia - Montos calculados:", 20, y);
       y += 6;
       
       doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(`Prima restante banco: ${formatCurrency(resultado.cesantia.primaRestanteBanco || resultado.cesantia.primaBanco)}`, 25, y); y += 5;
+      doc.text(`Prima restante preferencial: ${formatCurrency(resultado.cesantia.primaRestantePreferencial || resultado.cesantia.primaPreferencial)}`, 25, y); y += 6;
+      
+      doc.setTextColor(41, 98, 255);
+      doc.text(`Devolucion cesantia: ${formatCurrency(resultado.cesantia.montoDevolucion)}`, 25, y); y += 8;
+      
       doc.setTextColor(80);
       doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
       doc.text(`Tasa banco: ${(resultado.cesantia.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
@@ -824,7 +847,49 @@ export default function CalculadoraPage() {
                         {resultado.desgravamen && (
                           <div className="space-y-2">
                             <h4 className="font-medium text-muted-foreground border-b pb-1">Seguro de Desgravamen</h4>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            
+                            {/* Montos calculados */}
+                            <div className="bg-primary/5 p-3 rounded-lg space-y-2">
+                              <p className="text-xs font-medium text-primary">Montos calculados (Banco):</p>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                <span className="text-muted-foreground">Prima única:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.primaUnicaBanco || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Seguro total:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.seguroTotalBanco || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Prima mensual:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.primaMensualBanco || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Seguro restante:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.seguroRestanteBanco || 0)}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-green-500/5 p-3 rounded-lg space-y-2">
+                              <p className="text-xs font-medium text-green-600">Montos calculados (Preferencial):</p>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                <span className="text-muted-foreground">Prima única:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.primaUnicaPreferencial || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Seguro total:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.seguroTotalPreferencial || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Prima mensual:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.primaMensualPreferencial || 0)}</span>
+                                
+                                <span className="text-muted-foreground">Seguro restante:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.seguroRestantePreferencial || 0)}</span>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-primary/10 p-2 rounded text-center">
+                              <p className="text-xs text-muted-foreground">Devolución desgravamen:</p>
+                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.montoDevolucion)}</p>
+                            </div>
+                            
+                            {/* Tasas y parámetros */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2">
                               <span className="text-muted-foreground">Tasa banco:</span>
                               <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
                               
@@ -859,7 +924,26 @@ export default function CalculadoraPage() {
                         {resultado.cesantia && (
                           <div className="space-y-2">
                             <h4 className="font-medium text-muted-foreground border-b pb-1">Seguro de Cesantía</h4>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            
+                            {/* Montos calculados */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-primary/5 p-3 rounded-lg">
+                                <p className="text-xs font-medium text-primary mb-1">Prima restante (Banco):</p>
+                                <p className="font-mono text-sm">{formatCurrency(resultado.cesantia.primaRestanteBanco || resultado.cesantia.primaBanco)}</p>
+                              </div>
+                              <div className="bg-green-500/5 p-3 rounded-lg">
+                                <p className="text-xs font-medium text-green-600 mb-1">Prima restante (Preferencial):</p>
+                                <p className="font-mono text-sm">{formatCurrency(resultado.cesantia.primaRestantePreferencial || resultado.cesantia.primaPreferencial)}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-primary/10 p-2 rounded text-center">
+                              <p className="text-xs text-muted-foreground">Devolución cesantía:</p>
+                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.cesantia.montoDevolucion)}</p>
+                            </div>
+                            
+                            {/* Tasas y parámetros */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2">
                               <span className="text-muted-foreground">Tramo:</span>
                               <span className="font-mono">{resultado.cesantia.tramoUsado}</span>
                               
