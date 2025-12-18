@@ -1288,14 +1288,17 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
 
     // Firmas
     doc.setFontSize(8)
+    
+    // Agregar firma AuguStar (entre título y línea)
+    if (firmaBase64) {
+      doc.addImage(firmaBase64, 'JPEG', 78, y, 25, 15)
+    }
+    y += 18
+    
+    // Líneas de firma
     doc.text('_______________________', margin, y)
     doc.text('_______________________', 75, y)
     doc.text('_______________________', 145, y)
-    
-    // Agregar firma AuguStar
-    if (firmaBase64) {
-      doc.addImage(firmaBase64, 'JPEG', 75, y - 20, 30, 18)
-    }
     
     y += 4
     doc.setFontSize(7)
@@ -2452,12 +2455,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       doc.text('TDV SERVICIOS SPA', margin + 10, y)
       doc.text('AuguStar Seguros de Vida S.A.', pageWidth / 2 - 15, y)
       doc.text('Asegurado', pageWidth - margin - 30, y)
-      y += 15
+      y += 5
 
-      // Agregar firma AuguStar
+      // Agregar firma AuguStar (entre título y línea)
       if (firmaBase64) {
-        doc.addImage(firmaBase64, 'JPEG', pageWidth / 2 - 20, y - 20, 35, 22)
+        doc.addImage(firmaBase64, 'JPEG', pageWidth / 2 - 15, y, 30, 18)
       }
+      y += 20
 
       // Líneas para firmas
       doc.line(margin, y, margin + 45, y)
