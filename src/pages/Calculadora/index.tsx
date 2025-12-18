@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw } from "lucide-react";
+import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw, ChevronDown } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const formSchema = z.object({
   institucion: z.string().min(1, "Selecciona una institución"),
@@ -678,7 +679,95 @@ export default function CalculadoraPage() {
                   </CardContent>
                 </Card>
 
-                {/* Botones de acción */}
+                {/* Detalle del cálculo */}
+                <Collapsible>
+                  <Card className="shadow-md">
+                    <CollapsibleTrigger className="w-full">
+                      <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <CardTitle className="text-base flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <Info className="w-4 h-4 text-muted-foreground" />
+                            Detalle del cálculo
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform" />
+                        </CardTitle>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0 space-y-4 text-sm">
+                        {resultado.desgravamen && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-muted-foreground border-b pb-1">Seguro de Desgravamen</h4>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                              <span className="text-muted-foreground">Tasa banco:</span>
+                              <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
+                              
+                              <span className="text-muted-foreground">Tasa preferencial:</span>
+                              <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%</span>
+                              
+                              {resultado.desgravamen.cuotasUtilizadas && (
+                                <>
+                                  <span className="text-muted-foreground">Cuotas utilizadas:</span>
+                                  <span className="font-mono">{resultado.desgravamen.cuotasUtilizadas}</span>
+                                </>
+                              )}
+                              
+                              {resultado.desgravamen.montoRedondeado && (
+                                <>
+                                  <span className="text-muted-foreground">Monto redondeado:</span>
+                                  <span className="font-mono">{formatCurrency(resultado.desgravamen.montoRedondeado)}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
+                              <p><strong>Fórmula:</strong></p>
+                              <p className="text-muted-foreground">Prima única = Monto × Tasa</p>
+                              <p className="text-muted-foreground">Seguro total = (Prima única / Cuotas utilizadas) × Cuotas totales</p>
+                              <p className="text-muted-foreground">Prima mensual = Seguro total / Cuotas totales</p>
+                              <p className="text-muted-foreground">Seguro restante = Prima mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Devolución = Seguro restante banco - Seguro restante preferencial</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {resultado.cesantia && (
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-muted-foreground border-b pb-1">Seguro de Cesantía</h4>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                              <span className="text-muted-foreground">Tramo:</span>
+                              <span className="font-mono">{resultado.cesantia.tramoUsado}</span>
+                              
+                              <span className="text-muted-foreground">Tasa banco:</span>
+                              <span className="font-mono">{(resultado.cesantia.tasaBanco * 100).toFixed(4)}%</span>
+                              
+                              <span className="text-muted-foreground">Tasa preferencial:</span>
+                              <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
+                            </div>
+                            <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
+                              <p><strong>Fórmula:</strong></p>
+                              <p className="text-muted-foreground">Prima restante = Monto × Tasa mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Devolución = Prima banco - Prima preferencial</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-muted-foreground border-b pb-1">Margen aplicado</h4>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <span className="text-muted-foreground">Margen de seguridad:</span>
+                            <span className="font-mono">15%</span>
+                            
+                            <span className="text-muted-foreground">Tramo etario:</span>
+                            <span className="font-mono">{resultado.tramoUsado}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            El monto final se calcula aplicando un margen de seguridad del 15% sobre la devolución calculada.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
                 <div className="flex flex-col gap-2">
                   <Button 
                     onClick={exportarPDF} 
