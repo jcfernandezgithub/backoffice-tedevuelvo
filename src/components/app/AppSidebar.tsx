@@ -20,7 +20,7 @@ const items = [
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Operación', url: '/reportes', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'live' as const, adminOnly: false, callCenterOnly: false },
 ]
 
