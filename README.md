@@ -28,6 +28,24 @@
   - Espaciado interno ajustado para mostrar toda la información sin scroll.
   - Headers y footers fijos para mejor navegación.
 
+#### Mejoras en Gestión de Pagos
+- **Monto Real de Devolución**: Al cambiar el estado a "Pago Programado" se requiere ingresar el monto real de devolución.
+  - Campo obligatorio que aparece solo al seleccionar el estado "Pago Programado".
+  - Pre-cargado con el monto estimado como referencia.
+  - Validación para evitar valores vacíos o en cero.
+  - El monto real se almacena en el historial de estados (`statusHistory`) para trazabilidad.
+
+- **Visualización de Datos Bancarios**: Nueva sección para mostrar información de cuenta corriente del cliente.
+  - Se muestra cuando el estado es "Pago Programado" o "Pagado" y existen datos bancarios.
+  - Mensaje de confirmación: "Los datos bancarios ya fueron registrados para procesar la devolución".
+  - Campos mostrados: Banco, Tipo de cuenta y Número de cuenta.
+  - Diseño en card con estilo visual diferenciado (success).
+
+- **Indicador de Pago en Lista**: Nueva columna "Pago" en la lista de solicitudes.
+  - Badge "Listo" (verde con pulso) cuando existen datos bancarios.
+  - Badge "Pendiente" (amarillo) cuando faltan datos bancarios.
+  - Filtro "Datos pago" para filtrar por estado de datos bancarios.
+
 ---
 
 ### Versión 2.0.1 - 2025-12-11
