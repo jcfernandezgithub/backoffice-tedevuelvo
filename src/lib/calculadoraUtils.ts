@@ -57,6 +57,15 @@ export interface CalculationResult {
     tasaPreferencial: number;
     cuotasUtilizadas?: number;
     montoRedondeado?: number;
+    // Montos intermedios del cálculo
+    primaUnicaBanco?: number;
+    primaUnicaPreferencial?: number;
+    seguroTotalBanco?: number;
+    seguroTotalPreferencial?: number;
+    primaMensualBanco?: number;
+    primaMensualPreferencial?: number;
+    seguroRestanteBanco?: number;
+    seguroRestantePreferencial?: number;
   };
   cesantia?: {
     primaBanco: number;
@@ -65,6 +74,9 @@ export interface CalculationResult {
     tramoUsado: string;
     tasaBanco: number;
     tasaPreferencial: number;
+    // Montos intermedios del cálculo
+    primaRestanteBanco?: number;
+    primaRestantePreferencial?: number;
   };
   error?: string;
 }
@@ -206,6 +218,8 @@ const calcularCesantia = (banco: string, montoCredito: number, cuotasPendientes:
     tramoUsado: tramo,
     tasaBanco,
     tasaPreferencial,
+    primaRestanteBanco: Math.round(primaRestanteBanco),
+    primaRestantePreferencial: Math.round(primaRestantePreferencial),
   };
 };
 
@@ -281,6 +295,14 @@ export const calcularDevolucion = (
         tasaPreferencial,
         cuotasUtilizadas,
         montoRedondeado,
+        primaUnicaBanco: Math.round(primaUnicaActual),
+        primaUnicaPreferencial: Math.round(primaUnicaPreferencial),
+        seguroTotalBanco: Math.round(seguroTotalActual),
+        seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
+        primaMensualBanco: Math.round(primaMensualActual),
+        primaMensualPreferencial: Math.round(primaMensualPreferencial),
+        seguroRestanteBanco: Math.round(seguroRestanteActual),
+        seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
       };
 
       const cesantia = calcularCesantia(banco, montoCredito, cuotasPendientes);
@@ -348,6 +370,14 @@ export const calcularDevolucion = (
       tasaPreferencial,
       cuotasUtilizadas,
       montoRedondeado,
+      primaUnicaBanco: Math.round(primaUnicaActual),
+      primaUnicaPreferencial: Math.round(primaUnicaPreferencial),
+      seguroTotalBanco: Math.round(seguroTotalActual),
+      seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
+      primaMensualBanco: Math.round(primaMensualActual),
+      primaMensualPreferencial: Math.round(primaMensualPreferencial),
+      seguroRestanteBanco: Math.round(seguroRestanteActual),
+      seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
     };
 
     return {
