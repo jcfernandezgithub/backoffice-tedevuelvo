@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Calculator, TrendingDown, Shield, Info, AlertCircle, Download } from "lucide-react";
+import { CalendarIcon, Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -193,6 +193,58 @@ export default function CalculadoraPage() {
 
     // Guardar
     doc.save(`calculo-ahorro-seguros-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  };
+
+  const generarTextoCompartir = () => {
+    if (!resultado || resultado.error || !formDataSnapshot) return "";
+    
+    const edad = calcularEdad(formDataSnapshot.fechaNacimiento);
+    const tipoSeguroLabel = formDataSnapshot.tipoSeguro === "desgravamen" 
+      ? "Desgravamen" 
+      : formDataSnapshot.tipoSeguro === "cesantia" 
+        ? "Cesantia" 
+        : "Ambos seguros";
+
+    let texto = `*Calculadora de Ahorro en Seguros*\n\n`;
+    texto += `*Datos del credito:*\n`;
+    texto += `- Institucion: ${formDataSnapshot.institucion}\n`;
+    texto += `- Edad: ${edad} anos\n`;
+    texto += `- Monto: ${formatCurrency(formDataSnapshot.montoCredito)}\n`;
+    texto += `- Cuotas: ${formDataSnapshot.cuotasPendientes}/${formDataSnapshot.cuotasTotales}\n`;
+    texto += `- Tipo: ${tipoSeguroLabel}\n\n`;
+    texto += `*AHORRO ESTIMADO: ${formatCurrency(resultado.montoDevolucion)}*\n\n`;
+    
+    if (resultado.desgravamen) {
+      texto += `Desgravamen: ${formatCurrency(resultado.desgravamen.montoDevolucion)}\n`;
+    }
+    if (resultado.cesantia) {
+      texto += `Cesantia: ${formatCurrency(resultado.cesantia.montoDevolucion)}\n`;
+    }
+    if (resultado.ahorroMensual > 0) {
+      texto += `Ahorro mensual: ${formatCurrency(resultado.ahorroMensual)}/mes\n`;
+    }
+    
+    texto += `\n_Calculo estimado, sujeto a verificacion._`;
+    
+    return texto;
+  };
+
+  const compartirWhatsApp = () => {
+    const texto = generarTextoCompartir();
+    if (!texto) return;
+    
+    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
+  };
+
+  const compartirEmail = () => {
+    if (!resultado || resultado.error || !formDataSnapshot) return;
+    
+    const asunto = `Calculo de Ahorro en Seguros - ${formatCurrency(resultado.montoDevolucion)}`;
+    const cuerpo = generarTextoCompartir().replace(/\*/g, "").replace(/_/g, "");
+    
+    const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+    window.location.href = url;
   };
 
   const formatInputCurrency = (value: string) => {
@@ -542,15 +594,37 @@ export default function CalculadoraPage() {
                   </CardContent>
                 </Card>
 
-                {/* Botón exportar PDF */}
-                <Button 
-                  onClick={exportarPDF} 
-                  variant="outline" 
-                  className="w-full"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Descargar PDF
-                </Button>
+                {/* Botones de acción */}
+                <div className="flex flex-col gap-2">
+                  <Button 
+                    onClick={exportarPDF} 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Descargar PDF
+                  </Button>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      onClick={compartirWhatsApp} 
+                      variant="outline" 
+                      className="w-full text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                    
+                    <Button 
+                      onClick={compartirEmail} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Email
+                    </Button>
+                  </div>
+                </div>
 
                 {/* Disclaimer */}
                 <Alert className="bg-muted/50">
