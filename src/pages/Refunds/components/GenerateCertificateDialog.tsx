@@ -2470,8 +2470,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
           )}
         </Tooltip>
       </TooltipProvider>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center gap-2">
             {step === 'form' ? 'Certificado de Cobertura' : 'Previsualización del Certificado'}
             {isPrimeFormat && (
@@ -2487,17 +2487,17 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           {step === 'form' ? (
             // ========== FORMULARIO ==========
-            <div className="space-y-6 py-4">
+            <div className="space-y-4 py-2">
               {/* Sección: Datos del Asegurado */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <User className="h-4 w-4 text-primary" />
                   Datos del Asegurado (desde solicitud)
                 </div>
-                <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                <div className="bg-muted/50 p-3 rounded-lg border border-border">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">Nombre</span>
@@ -2536,12 +2536,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
               </div>
 
               {/* Sección: Datos del Certificado */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <CreditCard className="h-4 w-4 text-primary" />
                   Datos del Certificado
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Folio</Label>
                     <Input
@@ -2594,7 +2594,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
               </div>
 
               {/* Sección: Datos Personales (con búsqueda RUT) */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <MapPin className="h-4 w-4 text-primary" />
@@ -2613,9 +2613,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   </Button>
                 </div>
                 
-                <div className="bg-muted/30 p-4 rounded-lg border border-border space-y-3">
+                <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2">
                   {/* Fila 1: Dirección completa */}
-                  <div className="grid grid-cols-12 gap-3">
+                  <div className="grid grid-cols-12 gap-2">
                     <div className="space-y-1.5 col-span-7">
                       <Label className="text-xs">Dirección</Label>
                       <Input
@@ -2646,7 +2646,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
                   </div>
 
                   {/* Fila 2: Ciudad, Comuna, Celular, Sexo, Autoriza email */}
-                  <div className="grid grid-cols-5 gap-3">
+                  <div className="grid grid-cols-5 gap-2">
                     <div className="space-y-1.5">
                       <Label className="text-xs">Ciudad</Label>
                       <Input
@@ -2703,7 +2703,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
               </div>
 
               {/* Prima calculada */}
-              <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+              <div className="bg-primary/10 p-3 rounded-lg border border-primary/20">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Prima Única del Seguro (calculada):</span>
                   <span className="text-lg font-bold text-primary">${calculatePrimaUnica().toLocaleString('es-CL')} CLP</span>
@@ -2718,7 +2718,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
             </div>
           ) : (
             // ========== PREVISUALIZACIÓN ==========
-            <div className="space-y-6 py-4">
+            <div className="space-y-4 py-2">
               {/* Resumen del Asegurado */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -2846,7 +2846,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
           )}
         </ScrollArea>
 
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="flex-shrink-0 pt-3 border-t mt-2">
           {step === 'form' ? (
             <>
               <Button variant="outline" onClick={() => setOpen(false)}>
