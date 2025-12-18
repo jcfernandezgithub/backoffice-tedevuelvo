@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { BarChart3, Briefcase, FileText, Home, Headphones, Settings, Shield, Users } from 'lucide-react'
+import { Briefcase, FileText, Home, Headphones, Settings, Shield, Users, Activity } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import {
   Sidebar,
@@ -19,9 +19,9 @@ const items = [
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Reportes', url: '/reportes', icon: BarChart3, status: 'cert' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Operación', url: '/reportes', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'live' as const, adminOnly: false, callCenterOnly: false },
 ]
 
 export function AppSidebar() {
@@ -75,16 +75,6 @@ export function AppSidebar() {
                           {item.status === 'live' && (
                             <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1.5 py-0">
                               Productiva
-                            </Badge>
-                          )}
-                          {item.status === 'cert' && (
-                            <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white text-[10px] px-1.5 py-0">
-                              En certificación
-                            </Badge>
-                          )}
-                          {item.status === 'dev' && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-300">
-                              En Certificación
                             </Badge>
                           )}
                         </div>
