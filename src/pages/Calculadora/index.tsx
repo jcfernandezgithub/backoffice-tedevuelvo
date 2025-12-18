@@ -44,10 +44,21 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const MARGEN_DEFAULT = 15;
+const MARGENES_DISPONIBLES = [
+  { value: 0, label: "0% (Sin margen)" },
+  { value: 5, label: "5%" },
+  { value: 10, label: "10%" },
+  { value: 15, label: "15% (Te Devuelvo)", isDefault: true },
+  { value: 20, label: "20%" },
+  { value: 25, label: "25%" },
+];
+
 export default function CalculadoraPage() {
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
+  const [margenSeguridad, setMargenSeguridad] = useState(MARGEN_DEFAULT);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,6 +68,21 @@ export default function CalculadoraPage() {
   });
 
   const cuotasTotales = form.watch("cuotasTotales");
+
+  // Función para calcular monto con margen personalizado
+  // El resultado original viene con 15% de margen aplicado, lo revertimos y aplicamos el nuevo
+  const calcularConMargenPersonalizado = (montoOriginal: number): number => {
+    // Revertir el margen original (15%)
+    const montoSinMargen = montoOriginal / (1 - MARGEN_DEFAULT / 100);
+    // Aplicar nuevo margen
+    const montoConNuevoMargen = montoSinMargen * (1 - margenSeguridad / 100);
+    return Math.round(montoConNuevoMargen);
+  };
+
+  // Monto de devolución ajustado al margen seleccionado
+  const montoDevolucionAjustado = resultado && !resultado.error 
+    ? calcularConMargenPersonalizado(resultado.montoDevolucion)
+    : 0;
 
   const onSubmit = (data: FormData) => {
     setIsCalculating(true);
@@ -619,6 +645,31 @@ export default function CalculadoraPage() {
                   )}
                 />
 
+                {/* Selector de margen de seguridad */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Margen de seguridad</label>
+                  <Select
+                    value={margenSeguridad.toString()}
+                    onValueChange={(val) => setMargenSeguridad(Number(val))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MARGENES_DISPONIBLES.map((m) => (
+                        <SelectItem key={m.value} value={m.value.toString()}>
+                          {m.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {margenSeguridad === MARGEN_DEFAULT 
+                      ? "Este es el valor usado en la calculadora de Te Devuelvo" 
+                      : "Valor personalizado (el oficial es 15%)"}
+                  </p>
+                </div>
+
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1" size="lg" disabled={isCalculating}>
                     {isCalculating ? (
@@ -664,17 +715,22 @@ export default function CalculadoraPage() {
               <>
                 {/* Monto de devolución destacado */}
                 <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20 shadow-lg">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-6 pb-4">
                     <div className="text-center">
                       <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Ahorro estimado
+                        Devolución estimada
                       </p>
-                      <p className="text-4xl font-bold text-primary tracking-tight">
-                        {formatCurrency(resultado.montoDevolucion)}
+                      <p className="text-5xl font-bold text-primary tracking-tight">
+                        {formatCurrency(montoDevolucionAjustado)}
                       </p>
+                      {margenSeguridad !== MARGEN_DEFAULT && (
+                        <p className="text-xs text-amber-600 mt-2">
+                          Margen personalizado: {margenSeguridad}%
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
                         <Info className="w-3 h-3" />
-                        Monto aproximado que podrías recuperar
+                        Monto que podrías recuperar de tu seguro
                       </p>
                     </div>
                   </CardContent>
@@ -739,15 +795,12 @@ export default function CalculadoraPage() {
                     )}
 
                     {resultado.ahorroMensual > 0 && (
-                      <>
-                        <Separator />
-                        <div className="text-center py-2">
-                          <p className="text-sm text-muted-foreground">Ahorro mensual estimado</p>
-                          <p className="text-xl font-bold text-green-600">
-                            {formatCurrency(resultado.ahorroMensual)}/mes
-                          </p>
-                        </div>
-                      </>
+                      <div className="text-center pt-2 border-t border-dashed">
+                        <p className="text-xs text-muted-foreground">Ahorro mensual estimado</p>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {formatCurrency(resultado.ahorroMensual)}/mes
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
