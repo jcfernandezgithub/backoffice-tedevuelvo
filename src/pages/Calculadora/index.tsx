@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail } from "lucide-react";
+import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -545,19 +545,33 @@ export default function CalculadoraPage() {
                   )}
                 />
 
-                <Button type="submit" className="w-full" size="lg" disabled={isCalculating}>
-                  {isCalculating ? (
-                    <>
-                      <span className="animate-spin mr-2">⏳</span>
-                      Calculando...
-                    </>
-                  ) : (
-                    <>
-                      <Calculator className="w-4 h-4 mr-2" />
-                      Calcular ahorro
-                    </>
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1" size="lg" disabled={isCalculating}>
+                    {isCalculating ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Calculando...
+                      </>
+                    ) : (
+                      <>
+                        <Calculator className="w-4 h-4 mr-2" />
+                        Calcular ahorro
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="lg"
+                    onClick={() => {
+                      form.reset();
+                      setResultado(null);
+                      setFormDataSnapshot(null);
+                    }}
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                </div>
               </form>
             </Form>
           </CardContent>
