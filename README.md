@@ -1,8 +1,34 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.1
+## Versión 2.0.2
 
 ## Changelog
+
+### Versión 2.0.2 - 2025-12-18
+
+#### Renombre de Módulo Reportes a Operación
+- **Cambio de nombre completo**: El módulo "Reportes" ha sido renombrado a "Operación" en todo el sistema.
+  - Nuevo nombre en el menú lateral: "Operación" con icono Activity.
+  - Nueva URL: `/operacion` (anteriormente `/reportes`).
+  - Carpeta renombrada de `src/pages/Reportes` a `src/pages/Operacion`.
+  - Título de la página actualizado a "Operación".
+
+#### Actualización de Estados de Módulos
+- **Estados actualizados en el sidebar**:
+  - Dashboard, Solicitudes, Call Center, Alianzas y Operación: "Productiva" (verde).
+  - Usuarios y Ajustes: "En desarrollo" (amarillo).
+
+#### Mejoras en Certificado de Cobertura
+- **Firma AuguStar corregida**: Posicionamiento correcto de la firma de AuguStar en los PDFs generados.
+  - Firma ahora aparece entre el título y la línea de firma, sin superposición de texto.
+  - Aplicado tanto en formato Standard (Póliza 342) como Prime (Póliza 344).
+  
+- **Mejoras de visualización en diálogo**: Optimizado el formulario de generación de certificado.
+  - Incrementado ancho del diálogo (`max-w-4xl`) y altura máxima (`max-h-[95vh]`).
+  - Espaciado interno ajustado para mostrar toda la información sin scroll.
+  - Headers y footers fijos para mejor navegación.
+
+---
 
 ### Versión 2.0.1 - 2025-12-11
 
