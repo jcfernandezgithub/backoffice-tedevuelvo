@@ -22,6 +22,7 @@ import Operacion from "@/pages/Operacion";
 import UsuariosPage from "@/pages/Usuarios";
 import RefundsList from "@/pages/Refunds/List";
 import RefundDetail from "@/pages/Refunds/Detail";
+import CalculadoraPage from "@/pages/Calculadora";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -60,6 +61,7 @@ const App = () => (
                 
                 <Route path="/operacion" element={<Operacion />} />
                 <Route path="/usuarios" element={<UsuariosPage />} />
+                <Route path="/calculadora" element={<CalculadoraPage />} />
                 <Route path="/ajustes" element={<div className="p-4">Ajustes (en construcción)</div>} />
               </Route>
             </Route>

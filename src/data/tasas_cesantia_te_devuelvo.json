@@ -1,0 +1,9 @@
+{
+  "TE_DEVUELVO_CESANTIA": {
+    "tramo_1": { "desde": 500000, "hasta": 1000000, "tasa_mensual": 0.00288 },
+    "tramo_2": { "desde": 1000001, "hasta": 3000000, "tasa_mensual": 0.00177 },
+    "tramo_3": { "desde": 3000001, "hasta": 5000000, "tasa_mensual": 0.00157 },
+    "tramo_4": { "desde": 5000001, "hasta": 7000000, "tasa_mensual": 0.00151 },
+    "tramo_5": { "desde": 7000001, "hasta": null, "tasa_mensual": 0.00150 }
+  }
+}
