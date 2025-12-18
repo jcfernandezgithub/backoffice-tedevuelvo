@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail } from "lucide-react";
+import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -15,8 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -306,55 +304,107 @@ export default function CalculadoraPage() {
                   )}
                 />
 
-                {/* Fecha de nacimiento */}
+                {/* Fecha de nacimiento - Selectores simples */}
                 <FormField
                   control={form.control}
                   name="fechaNacimiento"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Fecha de nacimiento</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: es })
-                              ) : (
-                                <span>Selecciona tu fecha de nacimiento</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date("1959-01-01")
-                            }
-                            defaultMonth={new Date(1985, 0)}
-                            captionLayout="dropdown-buttons"
-                            fromYear={1959}
-                            toYear={2006}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormDescription>
-                        Edad entre 18 y 65 años
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const currentYear = new Date().getFullYear();
+                    const minYear = currentYear - 65;
+                    const maxYear = currentYear - 18;
+                    
+                    const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
+                    const months = [
+                      { value: 0, label: "Enero" },
+                      { value: 1, label: "Febrero" },
+                      { value: 2, label: "Marzo" },
+                      { value: 3, label: "Abril" },
+                      { value: 4, label: "Mayo" },
+                      { value: 5, label: "Junio" },
+                      { value: 6, label: "Julio" },
+                      { value: 7, label: "Agosto" },
+                      { value: 8, label: "Septiembre" },
+                      { value: 9, label: "Octubre" },
+                      { value: 10, label: "Noviembre" },
+                      { value: 11, label: "Diciembre" },
+                    ];
+                    
+                    const selectedDate = field.value ? new Date(field.value) : null;
+                    const selectedDay = selectedDate?.getDate() || "";
+                    const selectedMonth = selectedDate?.getMonth() ?? "";
+                    const selectedYear = selectedDate?.getFullYear() || "";
+                    
+                    const daysInMonth = selectedMonth !== "" && selectedYear 
+                      ? new Date(Number(selectedYear), Number(selectedMonth) + 1, 0).getDate()
+                      : 31;
+                    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                    
+                    const updateDate = (day: number, month: number, year: number) => {
+                      if (day && month !== undefined && year) {
+                        const newDate = new Date(year, month, day);
+                        field.onChange(newDate);
+                      }
+                    };
+                    
+                    return (
+                      <FormItem>
+                        <FormLabel>Fecha de nacimiento</FormLabel>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Select
+                            value={selectedDay.toString()}
+                            onValueChange={(val) => updateDate(Number(val), Number(selectedMonth), Number(selectedYear))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Día" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {days.map((day) => (
+                                <SelectItem key={day} value={day.toString()}>
+                                  {day}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select
+                            value={selectedMonth !== "" ? selectedMonth.toString() : ""}
+                            onValueChange={(val) => updateDate(Number(selectedDay) || 1, Number(val), Number(selectedYear))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Mes" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {months.map((month) => (
+                                <SelectItem key={month.value} value={month.value.toString()}>
+                                  {month.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          
+                          <Select
+                            value={selectedYear.toString()}
+                            onValueChange={(val) => updateDate(Number(selectedDay) || 1, selectedMonth !== "" ? Number(selectedMonth) : 0, Number(val))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Año" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {years.map((year) => (
+                                <SelectItem key={year} value={year.toString()}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <FormDescription>
+                          Edad entre 18 y 65 años
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {/* Monto del crédito */}
