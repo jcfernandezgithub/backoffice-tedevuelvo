@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Calculator, TrendingDown, Shield, Info, AlertCircle } from "lucide-react";
+import { CalendarIcon, Calculator, TrendingDown, Shield, Info, AlertCircle, Download } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
 import { calcularDevolucion, INSTITUCIONES_DISPONIBLES, CalculationResult } from "@/lib/calculadoraUtils";
@@ -47,6 +48,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function CalculadoraPage() {
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -82,8 +84,115 @@ export default function CalculadoraPage() {
 
     setTimeout(() => {
       setResultado(result);
+      setFormDataSnapshot(data);
       setIsCalculating(false);
     }, 500);
+  };
+
+  const exportarPDF = () => {
+    if (!resultado || resultado.error || !formDataSnapshot) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 98, 255);
+    doc.text("Calculadora de Ahorro en Seguros", pageWidth / 2, y, { align: "center" });
+    y += 10;
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generado el ${format(new Date(), "PPP", { locale: es })}`, pageWidth / 2, y, { align: "center" });
+    y += 15;
+
+    // Datos del crédito
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text("Datos del Credito", 20, y);
+    y += 8;
+
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    const edad = calcularEdad(formDataSnapshot.fechaNacimiento);
+    
+    doc.text(`Institucion: ${formDataSnapshot.institucion}`, 20, y); y += 6;
+    doc.text(`Edad: ${edad} anos`, 20, y); y += 6;
+    doc.text(`Monto del credito: ${formatCurrency(formDataSnapshot.montoCredito)}`, 20, y); y += 6;
+    doc.text(`Cuotas totales: ${formDataSnapshot.cuotasTotales}`, 20, y); y += 6;
+    doc.text(`Cuotas pendientes: ${formDataSnapshot.cuotasPendientes}`, 20, y); y += 6;
+    
+    const tipoSeguroLabel = formDataSnapshot.tipoSeguro === "desgravamen" 
+      ? "Desgravamen" 
+      : formDataSnapshot.tipoSeguro === "cesantia" 
+        ? "Cesantia" 
+        : "Ambos seguros";
+    doc.text(`Tipo de seguro: ${tipoSeguroLabel}`, 20, y);
+    y += 15;
+
+    // Resultado destacado
+    doc.setFillColor(240, 247, 255);
+    doc.roundedRect(20, y, pageWidth - 40, 25, 3, 3, "F");
+    y += 10;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text("Ahorro Estimado", pageWidth / 2, y, { align: "center" });
+    y += 8;
+    
+    doc.setFontSize(18);
+    doc.setTextColor(41, 98, 255);
+    doc.text(formatCurrency(resultado.montoDevolucion), pageWidth / 2, y, { align: "center" });
+    y += 20;
+
+    // Detalles por tipo de seguro
+    if (resultado.desgravamen) {
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      doc.text("Seguro de Desgravamen", 20, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      doc.text(`Prima banco: ${formatCurrency(resultado.desgravamen.primaBanco)}`, 25, y); y += 6;
+      doc.text(`Prima preferencial: ${formatCurrency(resultado.desgravamen.primaPreferencial)}`, 25, y); y += 6;
+      doc.text(`Devolucion: ${formatCurrency(resultado.desgravamen.montoDevolucion)}`, 25, y);
+      y += 12;
+    }
+
+    if (resultado.cesantia) {
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      doc.text("Seguro de Cesantia", 20, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      doc.setTextColor(60);
+      doc.text(`Prima banco: ${formatCurrency(resultado.cesantia.primaBanco)}`, 25, y); y += 6;
+      doc.text(`Prima preferencial: ${formatCurrency(resultado.cesantia.primaPreferencial)}`, 25, y); y += 6;
+      doc.text(`Devolucion: ${formatCurrency(resultado.cesantia.montoDevolucion)}`, 25, y);
+      y += 12;
+    }
+
+    if (resultado.ahorroMensual > 0) {
+      y += 5;
+      doc.setFontSize(11);
+      doc.setTextColor(34, 139, 34);
+      doc.text(`Ahorro mensual estimado: ${formatCurrency(resultado.ahorroMensual)}/mes`, 20, y);
+      y += 15;
+    }
+
+    // Disclaimer
+    y += 5;
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text("IMPORTANTE: Este calculo es solo informativo y esta sujeto a verificacion.", 20, y);
+    y += 5;
+    doc.text("Los montos finales pueden variar segun las condiciones especificas de tu credito.", 20, y);
+
+    // Guardar
+    doc.save(`calculo-ahorro-seguros-${format(new Date(), "yyyy-MM-dd")}.pdf`);
   };
 
   const formatInputCurrency = (value: string) => {
@@ -432,6 +541,16 @@ export default function CalculadoraPage() {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Botón exportar PDF */}
+                <Button 
+                  onClick={exportarPDF} 
+                  variant="outline" 
+                  className="w-full"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar PDF
+                </Button>
 
                 {/* Disclaimer */}
                 <Alert className="bg-muted/50">
