@@ -68,7 +68,7 @@ export function AppSidebar() {
               {visibleItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} end className={getNavCls} onClick={handleLinkClick}>
+                    <NavLink to={item.url} className={getNavCls} onClick={handleLinkClick}>
                       <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
