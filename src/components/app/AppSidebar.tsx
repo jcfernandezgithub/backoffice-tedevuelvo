@@ -40,9 +40,9 @@ export function AppSidebar() {
   const isCallCenterUser = user?.email === 'admin@callcenter.cl'
   
   const visibleItems = items.filter(item => {
-    // Si el usuario es admin@callcenter.cl, solo mostrar Call Center
+    // Si el usuario es admin@callcenter.cl, mostrar Call Center y Calculadora
     if (isCallCenterUser) {
-      return item.callCenterOnly
+      return item.callCenterOnly || item.url === '/calculadora'
     }
     // Para otros usuarios, aplicar filtro adminOnly
     return !item.adminOnly || user?.rol === 'ADMIN'
