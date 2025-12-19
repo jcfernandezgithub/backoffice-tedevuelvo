@@ -48,8 +48,8 @@ const MARGEN_DEFAULT = 10;
 const MARGENES_DISPONIBLES = [
   { value: 0, label: "0% (Sin margen)" },
   { value: 5, label: "5%" },
-  { value: 10, label: "10%" },
-  { value: 15, label: "15% (Te Devuelvo)", isDefault: true },
+  { value: 10, label: "10% (Te Devuelvo)", isDefault: true },
+  { value: 15, label: "15%" },
   { value: 20, label: "20%" },
   { value: 25, label: "25%" },
 ];
