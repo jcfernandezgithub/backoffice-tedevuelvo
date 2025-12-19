@@ -233,7 +233,7 @@ export default function CalculadoraPage() {
       doc.text(`  Seguro restante: ${formatCurrency(resultado.desgravamen.seguroRestanteBanco || 0)}`, 25, y); y += 6;
       
       doc.text("Preferencial:", 25, y); y += 5;
-      doc.text(`  Prima unica: ${formatCurrency(resultado.desgravamen.primaUnicaPreferencial || 0)}`, 25, y); y += 5;
+      doc.text(`  Monto restante credito: ${formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}`, 25, y); y += 5;
       doc.text(`  Seguro total: ${formatCurrency(resultado.desgravamen.seguroTotalPreferencial || 0)}`, 25, y); y += 5;
       doc.text(`  Prima mensual: ${formatCurrency(resultado.desgravamen.primaMensualPreferencial || 0)}`, 25, y); y += 5;
       doc.text(`  Seguro restante: ${formatCurrency(resultado.desgravamen.seguroRestantePreferencial || 0)}`, 25, y); y += 6;
@@ -869,8 +869,8 @@ export default function CalculadoraPage() {
                             <div className="bg-green-500/5 p-3 rounded-lg space-y-2">
                               <p className="text-xs font-medium text-green-600">Montos calculados (Preferencial):</p>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                <span className="text-muted-foreground">Prima única:</span>
-                                <span className="font-mono">{formatCurrency(resultado.desgravamen.primaUnicaPreferencial || 0)}</span>
+                                <span className="text-muted-foreground">Monto restante crédito:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}</span>
                                 
                                 <span className="text-muted-foreground">Seguro total:</span>
                                 <span className="font-mono">{formatCurrency(resultado.desgravamen.seguroTotalPreferencial || 0)}</span>

@@ -57,9 +57,9 @@ export interface CalculationResult {
     tasaPreferencial: number;
     cuotasUtilizadas?: number;
     montoRedondeado?: number;
+    montoRestanteCredito?: number;
     // Montos intermedios del cálculo
     primaUnicaBanco?: number;
-    primaUnicaPreferencial?: number;
     seguroTotalBanco?: number;
     seguroTotalPreferencial?: number;
     primaMensualBanco?: number;
@@ -281,8 +281,8 @@ export const calcularDevolucion = (
       const seguroTotalActual = (primaUnicaActual / cuotasUtilizadas) * cuotasTotales;
       const primaMensualActual = seguroTotalActual / cuotasTotales;
       const seguroRestanteActual = primaMensualActual * cuotasPendientes;
-      const primaUnicaPreferencial = montoCredito * tasaPreferencial;
-      const seguroTotalPreferencial = primaUnicaPreferencial * cuotasTotales;
+      const montoRestanteCredito = Math.round((montoCredito * (cuotasPendientes / cuotasTotales)));
+      const seguroTotalPreferencial = montoRestanteCredito * tasaPreferencial * cuotasTotales;
       const primaMensualPreferencial = seguroTotalPreferencial / cuotasTotales;
       const seguroRestantePreferencial = primaMensualPreferencial * cuotasPendientes;
       const devolucionDesgravamen = seguroRestanteActual - seguroRestantePreferencial;
@@ -295,8 +295,8 @@ export const calcularDevolucion = (
         tasaPreferencial,
         cuotasUtilizadas,
         montoRedondeado,
+        montoRestanteCredito,
         primaUnicaBanco: Math.round(primaUnicaActual),
-        primaUnicaPreferencial: Math.round(primaUnicaPreferencial),
         seguroTotalBanco: Math.round(seguroTotalActual),
         seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
         primaMensualBanco: Math.round(primaMensualActual),
@@ -355,8 +355,8 @@ export const calcularDevolucion = (
     const seguroTotalActual = (primaUnicaActual / cuotasUtilizadas) * cuotasTotales;
     const primaMensualActual = seguroTotalActual / cuotasTotales;
     const seguroRestanteActual = primaMensualActual * cuotasPendientes;
-    const primaUnicaPreferencial = montoCredito * tasaPreferencial;
-    const seguroTotalPreferencial = primaUnicaPreferencial * cuotasTotales;
+    const montoRestanteCredito = Math.round((montoCredito * (cuotasPendientes / cuotasTotales)));
+    const seguroTotalPreferencial = montoRestanteCredito * tasaPreferencial * cuotasTotales;
     const primaMensualPreferencial = seguroTotalPreferencial / cuotasTotales;
     const seguroRestantePreferencial = primaMensualPreferencial * cuotasPendientes;
     const devolucion = seguroRestanteActual - seguroRestantePreferencial;
@@ -370,8 +370,8 @@ export const calcularDevolucion = (
       tasaPreferencial,
       cuotasUtilizadas,
       montoRedondeado,
+      montoRestanteCredito,
       primaUnicaBanco: Math.round(primaUnicaActual),
-      primaUnicaPreferencial: Math.round(primaUnicaPreferencial),
       seguroTotalBanco: Math.round(seguroTotalActual),
       seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
       primaMensualBanco: Math.round(primaMensualActual),
