@@ -9,7 +9,7 @@ const TASA_PREFERENCIAL_DESDE_56 = 0.00039; // 0.039% mensual
 const TASA_PREFERENCIAL_HASTA_55_ALTO = 0.000344; // 0.0344% mensual
 const TASA_PREFERENCIAL_DESDE_56_ALTO = 0.000343; // 0.0343% mensual
 const UMBRAL_MONTO_ALTO = 20000000; // 20 millones
-const REFUND_MARGIN_PERCENTAGE = 15; // 15% margen
+const REFUND_MARGIN_PERCENTAGE = 10; // 10% margen
 
 // Mapeo de instituciones
 const MAPEO_INSTITUCIONES: { [key: string]: string } = {
