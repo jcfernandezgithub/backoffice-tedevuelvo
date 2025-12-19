@@ -18,6 +18,11 @@
 #### Actualización de Estados de Módulos
 - **Calculadora marcada como Productiva**: El módulo Calculadora ahora aparece con badge "Productiva" (verde) en el menú lateral.
 
+#### Acceso Call Center
+- **Acceso a Calculadora para usuario Call Center**: El usuario `admin@callcenter.cl` ahora tiene acceso a dos funcionalidades: Call Center y Calculadora.
+  - Actualizado filtro de navegación en sidebar para mostrar ambas opciones.
+  - Actualizada restricción de rutas en ProtectedRoute para permitir acceso a `/calculadora`.
+
 ---
 
 ### Versión 2.0.2 - 2025-12-18
