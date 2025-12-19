@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw, ChevronDown } from "lucide-react";
+import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw, ChevronDown, Settings } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -44,21 +44,40 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const MARGEN_DEFAULT = 10;
-const MARGENES_DISPONIBLES = [
-  { value: 0, label: "0% (Sin margen)" },
-  { value: 5, label: "5%" },
-  { value: 10, label: "10% (Te Devuelvo)", isDefault: true },
-  { value: 15, label: "15%" },
-  { value: 20, label: "20%" },
-  { value: 25, label: "25%" },
-];
+const MARGEN_TE_DEVUELVO_KEY = "margen_te_devuelvo";
+const getMargenTeDevuelvo = (): number => {
+  const saved = localStorage.getItem(MARGEN_TE_DEVUELVO_KEY);
+  return saved ? Number(saved) : 10;
+};
+
+const generarMargenes = (margenTeDevuelvo: number) => {
+  const margenes = [];
+  for (let i = 0; i <= 75; i += 5) {
+    margenes.push({
+      value: i,
+      label: i === 0 ? "0% (Sin margen)" : i === margenTeDevuelvo ? `${i}% (Te Devuelvo)` : `${i}%`,
+      isDefault: i === margenTeDevuelvo,
+    });
+  }
+  return margenes;
+};
 
 export default function CalculadoraPage() {
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
-  const [margenSeguridad, setMargenSeguridad] = useState(MARGEN_DEFAULT);
+  const [margenTeDevuelvo, setMargenTeDevuelvo] = useState(getMargenTeDevuelvo);
+  const [margenSeguridad, setMargenSeguridad] = useState(getMargenTeDevuelvo);
+  const [editandoMargenTeDevuelvo, setEditandoMargenTeDevuelvo] = useState(false);
+
+  const MARGENES_DISPONIBLES = generarMargenes(margenTeDevuelvo);
+
+  const handleCambiarMargenTeDevuelvo = (nuevoMargen: number) => {
+    localStorage.setItem(MARGEN_TE_DEVUELVO_KEY, nuevoMargen.toString());
+    setMargenTeDevuelvo(nuevoMargen);
+    setMargenSeguridad(nuevoMargen);
+    setEditandoMargenTeDevuelvo(false);
+  };
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -70,10 +89,10 @@ export default function CalculadoraPage() {
   const cuotasTotales = form.watch("cuotasTotales");
 
   // Función para calcular monto con margen personalizado
-  // El resultado original viene con 15% de margen aplicado, lo revertimos y aplicamos el nuevo
+  // El resultado original viene con el margen de Te Devuelvo aplicado, lo revertimos y aplicamos el nuevo
   const calcularConMargenPersonalizado = (montoOriginal: number): number => {
-    // Revertir el margen original (15%)
-    const montoSinMargen = montoOriginal / (1 - MARGEN_DEFAULT / 100);
+    // Revertir el margen original (el de Te Devuelvo)
+    const montoSinMargen = montoOriginal / (1 - margenTeDevuelvo / 100);
     // Aplicar nuevo margen
     const montoConNuevoMargen = montoSinMargen * (1 - margenSeguridad / 100);
     return Math.round(montoConNuevoMargen);
@@ -686,11 +705,57 @@ export default function CalculadoraPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {margenSeguridad === MARGEN_DEFAULT 
-                      ? "Este es el valor usado en la calculadora de Te Devuelvo" 
-                      : "Valor personalizado (el oficial es 10%)"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground flex-1">
+                      {margenSeguridad === margenTeDevuelvo 
+                        ? "Este es el valor usado en la calculadora de Te Devuelvo" 
+                        : `Valor personalizado (el oficial es ${margenTeDevuelvo}%)`}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-6 px-2"
+                      onClick={() => setEditandoMargenTeDevuelvo(!editandoMargenTeDevuelvo)}
+                    >
+                      <Settings className="w-3 h-3 mr-1" />
+                      Configurar
+                    </Button>
+                  </div>
+                  {editandoMargenTeDevuelvo && (
+                    <div className="mt-2 p-3 bg-muted/50 rounded-lg border space-y-2">
+                      <p className="text-xs font-medium">Cambiar margen oficial de Te Devuelvo:</p>
+                      <div className="flex gap-2">
+                        <Select
+                          value={margenTeDevuelvo.toString()}
+                          onValueChange={(val) => handleCambiarMargenTeDevuelvo(Number(val))}
+                        >
+                          <SelectTrigger className="h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 16 }, (_, i) => i * 5).map((val) => (
+                              <SelectItem key={val} value={val.toString()}>
+                                {val}%
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          onClick={() => setEditandoMargenTeDevuelvo(false)}
+                        >
+                          Cerrar
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Este valor se guardará y usará como referencia en futuros cálculos.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -746,7 +811,7 @@ export default function CalculadoraPage() {
                       <p className="text-5xl font-bold text-primary tracking-tight">
                         {formatCurrency(montoDevolucionAjustado)}
                       </p>
-                      {margenSeguridad !== MARGEN_DEFAULT && (
+                      {margenSeguridad !== margenTeDevuelvo && (
                         <p className="text-xs text-amber-600 mt-2">
                           Margen personalizado: {margenSeguridad}%
                         </p>
