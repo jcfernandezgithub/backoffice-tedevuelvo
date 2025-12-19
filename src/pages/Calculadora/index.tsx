@@ -44,7 +44,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const MARGEN_DEFAULT = 15;
+const MARGEN_DEFAULT = 10;
 const MARGENES_DISPONIBLES = [
   { value: 0, label: "0% (Sin margen)" },
   { value: 5, label: "5%" },
@@ -297,12 +297,12 @@ export default function CalculadoraPage() {
     
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text(`Margen aplicado: 15%`, 25, y); y += 5;
+    doc.text(`Margen aplicado: 10%`, 25, y); y += 5;
     doc.text(`Tramo etario: ${resultado.tramoUsado}`, 25, y); y += 5;
     
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text("El monto final incluye un margen de seguridad del 15% sobre la devolucion calculada.", 25, y);
+    doc.text("El monto final incluye un margen de seguridad del 10% sobre la devolucion calculada.", 25, y);
     y += 15;
 
     // Disclaimer
@@ -689,7 +689,7 @@ export default function CalculadoraPage() {
                   <p className="text-xs text-muted-foreground">
                     {margenSeguridad === MARGEN_DEFAULT 
                       ? "Este es el valor usado en la calculadora de Te Devuelvo" 
-                      : "Valor personalizado (el oficial es 15%)"}
+                      : "Valor personalizado (el oficial es 10%)"}
                   </p>
                 </div>
 
@@ -965,13 +965,13 @@ export default function CalculadoraPage() {
                           <h4 className="font-medium text-muted-foreground border-b pb-1">Margen aplicado</h4>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             <span className="text-muted-foreground">Margen de seguridad:</span>
-                            <span className="font-mono">15%</span>
+                                <span className="font-mono">10%</span>
                             
                             <span className="text-muted-foreground">Tramo etario:</span>
                             <span className="font-mono">{resultado.tramoUsado}</span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            El monto final se calcula aplicando un margen de seguridad del 15% sobre la devolución calculada.
+                            El monto final se calcula aplicando un margen de seguridad del 10% sobre la devolución calculada.
                           </p>
                         </div>
                       </CardContent>
