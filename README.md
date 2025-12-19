@@ -1,8 +1,24 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.2
+## Versión 2.0.3
 
 ## Changelog
+
+### Versión 2.0.3 - 2025-12-19
+
+#### Mejoras en Calculadora
+- **Margen de seguridad Te Devuelvo corregido**: El margen de seguridad de Te Devuelvo ahora es 10% (anteriormente 15%).
+- **Márgenes de seguridad ampliados**: Se agregaron opciones de margen desde 0% hasta 75% en incrementos de 5%.
+- **Margen Te Devuelvo configurable**: Nueva funcionalidad para cambiar el porcentaje de margen asociado a "Te Devuelvo".
+  - Botón "Configurar" junto a la opción de margen Te Devuelvo.
+  - Selector con todas las opciones de porcentaje disponibles.
+  - Configuración persistida en localStorage.
+  - El PDF exportado refleja el margen configurado.
+
+#### Actualización de Estados de Módulos
+- **Calculadora marcada como Productiva**: El módulo Calculadora ahora aparece con badge "Productiva" (verde) en el menú lateral.
+
+---
 
 ### Versión 2.0.2 - 2025-12-18
 
