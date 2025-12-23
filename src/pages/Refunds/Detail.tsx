@@ -305,11 +305,13 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
+          {/* Certificado de cobertura: visible para admin o call center */}
+          {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
+            <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+          )}
+          {/* Corte: solo visible para admin */}
           {showDocumentButtons && (
-            <>
-              <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
-              <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
-            </>
+            <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
           )}
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
