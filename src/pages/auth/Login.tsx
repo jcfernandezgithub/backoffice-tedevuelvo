@@ -25,7 +25,7 @@ export default function Login() {
   // Determina la ruta inicial según el email del usuario
   const getDefaultRoute = (email: string): string => {
     if (email === 'admin@tedevuelvo.cl') return '/operacion'
-    if (email === 'admin@callcenter.cl') return '/gestion-call-center'
+    if (email === 'admin@callcenter.cl') return '/gestion-callcenter'
     return '/dashboard'
   }
 
