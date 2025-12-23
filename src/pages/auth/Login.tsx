@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/state/AuthContext'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
 
 const schema = z.object({
@@ -18,17 +18,23 @@ type FormValues = z.infer<typeof schema>
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const { toast } = useToast()
-  const from = (location.state as any)?.from?.pathname || '/dashboard'
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) })
+
+  // Determina la ruta inicial según el email del usuario
+  const getDefaultRoute = (email: string): string => {
+    if (email === 'admin@tedevuelvo.cl') return '/operacion'
+    if (email === 'admin@callcenter.cl') return '/gestion-call-center'
+    return '/dashboard'
+  }
 
   const onSubmit = async (values: FormValues) => {
     try {
       await login(values.email, values.password)
       toast({ title: 'Bienvenido', description: 'Ingreso exitoso' })
-      navigate(from, { replace: true })
+      const targetRoute = getDefaultRoute(values.email)
+      navigate(targetRoute, { replace: true })
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
     }
