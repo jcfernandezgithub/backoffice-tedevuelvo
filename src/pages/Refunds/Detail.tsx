@@ -309,8 +309,8 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
             <GenerateCertificateDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
           )}
-          {/* Corte: solo visible para admin */}
-          {showDocumentButtons && (
+          {/* Corte: visible para admin o call center */}
+          {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
             <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
           )}
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
