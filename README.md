@@ -1,8 +1,27 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.3
+## Versión 2.0.4
 
 ## Changelog
+
+### Versión 2.0.4 - 2025-12-24
+
+#### Mejoras en Exportación Excel
+- **Reorganización de columnas**: Las columnas del Excel ahora están organizadas por categorías lógicas.
+  - Datos del Cliente: ID Público, ID Interno, Nombre, RUT, Email, Teléfono, Fecha de Nacimiento.
+  - Estado y Gestión: Estado, Mandato, Origen, Gestor.
+  - Datos del Crédito: Institución, Tipo de Seguro, Monto Total, Cuotas Pagadas/Restantes.
+  - Cálculos de Primas: Prima Mensual Actual, Porcentaje Prima Actual vs TDV, Prima Antigua, Prima Nueva, Prima Neta, Saldo Insoluto, Costo Nuevo Seguro TDV.
+  - Ahorros y Montos: Ahorro Mensual, Ahorro Total, Monto Estimado CLP.
+  - Fechas: Fecha de Creación, Última Actualización.
+
+- **Nuevo campo Porcentaje Prima Actual vs Prima TDV**: Cálculo porcentual que muestra la relación entre la prima nueva y la prima actual mensual.
+  - Fórmula: `(prima nueva / prima actual mensual) × 100`
+  - Incluye símbolo de porcentaje (%) en el valor exportado.
+
+- **Eliminación de duplicados**: Removida columna duplicada "Monto Estimado", conservando solo "Monto Estimado CLP".
+
+---
 
 ### Versión 2.0.3 - 2025-12-19
 
