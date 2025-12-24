@@ -77,13 +77,21 @@ export function ExportToExcelDialog({
       const gestor = refund.partnerUserId ? (gestorNameMap[refund.partnerUserId] || 'N/A') : 'N/A'
 
       // Nuevos campos solicitados
-      const primaMensualEntidadFinanciera = calculation.currentMonthlyPremium || 0
-      const montoEstimadoDevolucion = refund.estimatedAmountCLP || 0
+      const primaMensualActual = calculation.currentMonthlyPremium || 0
+      const montoEstimado = refund.estimatedAmountCLP || 0
       const nuevaPrimaMensual = calculation.newMonthlyPremium || 0
       const cuotasRestantes = calculation.remainingInstallments || 0
-      const saldoAseguradoPromedio = nuevaPrimaMensual * cuotasRestantes
-      const costoNuevoSeguroTDV = nuevaPrimaMensual
-
+      const saldoInsoluto = nuevaPrimaMensual * cuotasRestantes
+      const costoNuevoSeguroTDV = nuevaPrimaMensual * cuotasRestantes
+      
+      // Fecha de nacimiento
+      const fechaNacimiento = refund.birthdate 
+        ? new Date(refund.birthdate).toLocaleDateString('es-CL', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })
+        : 'N/A'
       return {
         'ID Público': refund.publicId,
         'ID Interno': refund.id,
@@ -100,10 +108,11 @@ export function ExportToExcelDialog({
         'Monto Total Crédito': calculation.totalAmount || 0,
         'Cuotas Pagadas': calculation.installmentsPaid || 0,
         'Cuotas Restantes': cuotasRestantes,
-        'Prima Mensual Entidad Financiera': primaMensualEntidadFinanciera,
-        'Monto Estimado Devolución': montoEstimadoDevolucion,
-        'Saldo Asegurado Promedio': saldoAseguradoPromedio,
+        'Prima Mensual Actual': primaMensualActual,
+        'Monto Estimado': montoEstimado,
+        'Saldo Insoluto': saldoInsoluto,
         'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
+        'Fecha de Nacimiento': fechaNacimiento,
         'Prima Antigua': calculation.oldMonthlyPremium || 0,
         'Prima Nueva': primaBruta,
         'Prima Neta (sin IVA)': primaNeta,
@@ -159,11 +168,12 @@ export function ExportToExcelDialog({
           <div className="bg-muted p-4 rounded-lg space-y-2 text-sm">
             <p className="font-medium">El archivo incluirá:</p>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Datos de identificación (ID, RUT, nombre, email)</li>
+              <li>Datos de identificación (ID, RUT, nombre, email, fecha de nacimiento)</li>
               <li>Estado de la solicitud y mandato</li>
               <li>Origen (Alianza o Directo) y Gestor</li>
               <li>Información del crédito y seguro</li>
-              <li>Cálculos de primas y ahorros</li>
+              <li>Prima Mensual Actual, Monto Estimado, Saldo Insoluto</li>
+              <li>Costo Nuevo Seguro TDV y cálculos de primas</li>
               <li>Fechas de creación y actualización</li>
             </ul>
           </div>
