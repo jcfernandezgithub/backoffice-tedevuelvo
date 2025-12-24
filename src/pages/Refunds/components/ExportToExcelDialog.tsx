@@ -94,32 +94,43 @@ export function ExportToExcelDialog({
           })
         : 'N/A'
       return {
+        // === DATOS DEL CLIENTE ===
         'ID Público': refund.publicId,
         'ID Interno': refund.id,
+        'Nombre Completo': refund.fullName || 'N/A',
+        'RUT': rut,
+        'Email': refund.email || 'N/A',
+        'Teléfono': refund.phone || 'N/A',
+        'Fecha de Nacimiento': fechaNacimiento,
+        
+        // === ESTADO Y GESTIÓN ===
         'Estado': statusLabels[refund.status as RefundStatus] || refund.status,
         'Mandato': mandatoFirmado,
         'Origen': origen,
         'Gestor': gestor,
-        'Nombre Completo': refund.fullName || 'N/A',
-        'Email': refund.email || 'N/A',
-        'RUT': rut,
-        'Teléfono': refund.phone || 'N/A',
+        
+        // === DATOS DEL CRÉDITO ===
         'Institución Financiera': institucion,
         'Tipo de Seguro': tipoSeguro,
         'Monto Total Crédito': calculation.totalAmount || 0,
         'Cuotas Pagadas': calculation.installmentsPaid || 0,
         'Cuotas Restantes': cuotasRestantes,
+        
+        // === CÁLCULOS DE PRIMAS Y SEGUROS ===
         'Prima Mensual Actual': primaMensualActual,
-        'Monto Estimado': montoEstimado,
-        'Saldo Insoluto': saldoInsoluto,
-        'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
-        'Fecha de Nacimiento': fechaNacimiento,
         'Prima Antigua': calculation.oldMonthlyPremium || 0,
         'Prima Nueva': primaBruta,
         'Prima Neta (sin IVA)': primaNeta,
+        'Saldo Insoluto': saldoInsoluto,
+        'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
+        
+        // === AHORROS Y MONTOS ===
         'Ahorro Mensual': calculation.savingsPerMonth || 0,
         'Ahorro Total': calculation.totalSavings || 0,
+        'Monto Estimado': montoEstimado,
         'Monto Estimado CLP': refund.estimatedAmountCLP || 0,
+        
+        // === FECHAS ===
         'Fecha de Creación': formattedCreatedAt,
         'Última Actualización': refund.updatedAt ? new Date(refund.updatedAt).toLocaleDateString('es-CL', {
           year: 'numeric',
