@@ -84,9 +84,10 @@ export function ExportToExcelDialog({
       const saldoInsoluto = nuevaPrimaMensual * cuotasRestantes
       const costoNuevoSeguroTDV = nuevaPrimaMensual * cuotasRestantes
       
-      // Fecha de nacimiento
-      const fechaNacimiento = refund.birthdate 
-        ? new Date(refund.birthdate).toLocaleDateString('es-CL', {
+      // Fecha de nacimiento - buscar en refund o en calculationSnapshot
+      const birthDateValue = refund.birthdate || calculation.birthDate || calculation.birthdate || null
+      const fechaNacimiento = birthDateValue 
+        ? new Date(birthDateValue).toLocaleDateString('es-CL', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
