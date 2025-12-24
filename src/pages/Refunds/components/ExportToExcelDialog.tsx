@@ -118,6 +118,9 @@ export function ExportToExcelDialog({
         
         // === CÁLCULOS DE PRIMAS Y SEGUROS ===
         'Prima Mensual Actual': primaMensualActual,
+        'Porcentaje Prima Actual vs Prima TDV': nuevaPrimaMensual > 0 
+          ? Math.round((primaMensualActual / nuevaPrimaMensual) * 100) 
+          : 0,
         'Prima Antigua': calculation.oldMonthlyPremium || 0,
         'Prima Nueva': primaBruta,
         'Prima Neta (sin IVA)': primaNeta,
