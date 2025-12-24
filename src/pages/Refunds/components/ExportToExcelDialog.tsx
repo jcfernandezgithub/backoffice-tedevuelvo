@@ -76,6 +76,14 @@ export function ExportToExcelDialog({
       const origen = refund.partnerId ? (partnerNameMap[refund.partnerId] || 'Alianza') : 'Directo'
       const gestor = refund.partnerUserId ? (gestorNameMap[refund.partnerUserId] || 'N/A') : 'N/A'
 
+      // Nuevos campos solicitados
+      const primaMensualEntidadFinanciera = calculation.currentMonthlyPremium || 0
+      const montoEstimadoDevolucion = refund.estimatedAmountCLP || 0
+      const nuevaPrimaMensual = calculation.newMonthlyPremium || 0
+      const cuotasRestantes = calculation.remainingInstallments || 0
+      const saldoAseguradoPromedio = nuevaPrimaMensual * cuotasRestantes
+      const costoNuevoSeguroTDV = nuevaPrimaMensual
+
       return {
         'ID Público': refund.publicId,
         'ID Interno': refund.id,
@@ -91,7 +99,11 @@ export function ExportToExcelDialog({
         'Tipo de Seguro': tipoSeguro,
         'Monto Total Crédito': calculation.totalAmount || 0,
         'Cuotas Pagadas': calculation.installmentsPaid || 0,
-        'Cuotas Restantes': calculation.remainingInstallments || 0,
+        'Cuotas Restantes': cuotasRestantes,
+        'Prima Mensual Entidad Financiera': primaMensualEntidadFinanciera,
+        'Monto Estimado Devolución': montoEstimadoDevolucion,
+        'Saldo Asegurado Promedio': saldoAseguradoPromedio,
+        'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
         'Prima Antigua': calculation.oldMonthlyPremium || 0,
         'Prima Nueva': primaBruta,
         'Prima Neta (sin IVA)': primaNeta,
