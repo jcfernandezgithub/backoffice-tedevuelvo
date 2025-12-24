@@ -76,8 +76,34 @@ export default function SolicitudesList() {
     qc.invalidateQueries({ queryKey: ['solicitudes'] })
   }
 
-  const exportarCSV = () => exportCSV(data as any, 'solicitudes.csv')
-  const exportarXLSX = () => exportXLSX(data as any, 'solicitudes.xlsx')
+  // Preparar datos para exportación con campos adicionales
+  const prepareExportData = () => {
+    return data.map((item: any) => {
+      const calc = item.calculationSnapshot || {}
+      const primaMensualActual = calc.currentMonthlyPremium || 0
+      const nuevaPrimaMensual = calc.newMonthlyPremium || 0
+      const cuotasRestantes = calc.remainingInstallments || 0
+      
+      return {
+        ID: item.publicId || item.id,
+        Cliente: item.fullName || item.cliente?.nombre || '',
+        RUT: item.rut || item.cliente?.rut || '',
+        Email: item.email || item.cliente?.email || '',
+        Estado: item.status || item.estado || '',
+        Institucion: item.institutionId || item.cliente?.banco || '',
+        'Prima Mensual Entidad Financiera': primaMensualActual,
+        'Monto Estimado Devolucion': item.estimatedAmountCLP || item.montoADevolverEstimado || 0,
+        'Saldo Asegurado Promedio': nuevaPrimaMensual * cuotasRestantes,
+        'Costo Nuevo Seguro TDV': nuevaPrimaMensual,
+        'Cuotas Restantes': cuotasRestantes,
+        'Fecha Creacion': item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-CL') : '',
+        'Fecha Actualizacion': item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('es-CL') : '',
+      }
+    })
+  }
+
+  const exportarCSV = () => exportCSV(prepareExportData(), 'solicitudes.csv')
+  const exportarXLSX = () => exportXLSX(prepareExportData(), 'solicitudes.xlsx')
 
   return (
     <main className="p-4 space-y-4">
