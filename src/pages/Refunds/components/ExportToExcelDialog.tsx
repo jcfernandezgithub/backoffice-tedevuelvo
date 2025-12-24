@@ -127,7 +127,6 @@ export function ExportToExcelDialog({
         // === AHORROS Y MONTOS ===
         'Ahorro Mensual': calculation.savingsPerMonth || 0,
         'Ahorro Total': calculation.totalSavings || 0,
-        'Monto Estimado': montoEstimado,
         'Monto Estimado CLP': refund.estimatedAmountCLP || 0,
         
         // === FECHAS ===
