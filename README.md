@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.4
+## Versión 2.0.5
 
 ## Changelog
+
+### Versión 2.0.5 - 2025-12-26
+
+#### Mejoras en Certificado de Cobertura
+- **Firma TDV Servicios SpA agregada**: Añadida la firma de TDV Servicios SpA en la sección de firmas del certificado de coberturas.
+  - Firma visible junto a las firmas de AuguStar Seguros de Vida y el Asegurado.
+  - Aplicado tanto en formato Standard (Póliza 342) como Prime (Póliza 344).
+
+---
 
 ### Versión 2.0.4 - 2025-12-24
 
