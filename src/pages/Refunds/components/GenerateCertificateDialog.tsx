@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
 import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
+import firmaTdvImg from '@/assets/firma-tdv.png'
 
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
@@ -94,6 +95,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [firmaBase64, setFirmaBase64] = useState<string>('')
+  const [firmaTdvBase64, setFirmaTdvBase64] = useState<string>('')
   const [formData, setFormData] = useState<CertificateData>({
     folio: '',
     direccion: '',
@@ -110,9 +112,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     saldoInsoluto: (refund.estimatedAmountCLP || 0).toString(),
   })
 
-  // Load firma image on mount
+  // Load firma images on mount
   useEffect(() => {
     loadImageAsBase64(firmaAugustarImg).then(setFirmaBase64).catch(console.error)
+    loadImageAsBase64(firmaTdvImg).then(setFirmaTdvBase64).catch(console.error)
   }, [])
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -1289,6 +1292,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     // Firmas
     doc.setFontSize(8)
     
+    // Agregar firma TDV
+    if (firmaTdvBase64) {
+      doc.addImage(firmaTdvBase64, 'PNG', margin + 5, y, 25, 15)
+    }
+    
     // Agregar firma AuguStar (entre título y línea)
     if (firmaBase64) {
       doc.addImage(firmaBase64, 'JPEG', 78, y, 25, 15)
@@ -2456,6 +2464,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
       doc.text('AuguStar Seguros de Vida S.A.', pageWidth / 2 - 15, y)
       doc.text('Asegurado', pageWidth - margin - 30, y)
       y += 5
+
+      // Agregar firma TDV
+      if (firmaTdvBase64) {
+        doc.addImage(firmaTdvBase64, 'PNG', margin + 10, y, 30, 18)
+      }
 
       // Agregar firma AuguStar (entre título y línea)
       if (firmaBase64) {
