@@ -392,6 +392,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     doc.text('Otra', margin + 7, y)
     drawCheckbox(margin + 30, y, true)
     doc.text('Otro', margin + 37, y)
+    doc.text('No hay comisión', margin + 122, y)
 
     // ===================== CARÁTULA - PAGE 2 =====================
     doc.addPage()
@@ -562,10 +563,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
     doc.text(nota1CaratulaLines, margin, y)
     y += nota1CaratulaLines.length * 2.5 + 5
 
-    const nota2Caratula = 'Nota 2: (Para Seguros Colectivos) Importante. "Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA directamente con la compañía de seguros."'
+    const nota2Caratula = 'Nota 2: (Para Seguros Colectivos) Importante. "Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA directamente con la compañía de seguros Augustar Seguros de Vida S.A.'
     const nota2CaratulaLines = doc.splitTextToSize(nota2Caratula, contentWidth)
     doc.text(nota2CaratulaLines, margin, y)
-    y += nota2CaratulaLines.length * 2.5 + 10
+    y += nota2CaratulaLines.length * 2.5 + 5
+
+    const nota3Caratula = 'Nota 3: Póliza es de prima única y se encuentra pagada en su totalidad a la compañía de seguros Augustar Seguros de Vida S.A.'
+    const nota3CaratulaLines = doc.splitTextToSize(nota3Caratula, contentWidth)
+    doc.text(nota3CaratulaLines, margin, y)
+    y += nota3CaratulaLines.length * 2.5 + 10
 
     // DEFINICIONES
     doc.setFont('helvetica', 'bold')
