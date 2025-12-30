@@ -6,6 +6,7 @@ import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { RefundStatus } from '@/types/refund'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -65,8 +66,8 @@ export function ExportToExcelDialog({
         ? 'Cesantía' 
         : 'N/A'
       
-      // Institución financiera
-      const institucion = calculation.financialEntity || calculation.entityName || refund.institutionId || 'N/A'
+      // Institución financiera (con homologación)
+      const institucion = getInstitutionDisplayName(calculation.financialEntity || calculation.entityName || refund.institutionId)
       
       // Mandato
       const mandateStatus = mandateStatuses[refund.publicId]
