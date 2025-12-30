@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { RefundStatus, AdminUpdateStatusDto } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -506,7 +507,7 @@ export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Institución</p>
-                <p className="font-medium">{refund.institutionId}</p>
+                <p className="font-medium">{getInstitutionDisplayName(refund.institutionId)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Monto estimado</p>

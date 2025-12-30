@@ -32,6 +32,7 @@ import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
 import { MobileCard } from '@/components/common/MobileCard'
 import { useIsMobile } from '@/hooks/use-mobile'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -1010,7 +1011,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm">{refund.institutionId}</TableCell>
+                        <TableCell className="text-sm">{getInstitutionDisplayName(refund.institutionId)}</TableCell>
                         <TableCell>
                           {refund.partnerId ? (
                             <Badge 
@@ -1130,7 +1131,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       },
                       {
                         label: 'Institución',
-                        value: refund.institutionId
+                        value: getInstitutionDisplayName(refund.institutionId)
                       },
                       {
                         label: 'Origen',

@@ -9,6 +9,7 @@ import { Money } from '@/components/common/Money'
 import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo } from 'react'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 
 export default function SolicitudesList() {
   const [searchParams] = useSearchParams()
@@ -90,7 +91,7 @@ export default function SolicitudesList() {
         RUT: item.rut || item.cliente?.rut || '',
         Email: item.email || item.cliente?.email || '',
         Estado: item.status || item.estado || '',
-        Institucion: item.institutionId || item.cliente?.banco || '',
+        Institucion: getInstitutionDisplayName(item.institutionId || item.cliente?.banco),
         'Prima Mensual Entidad Financiera': primaMensualActual,
         'Monto Estimado Devolucion': item.estimatedAmountCLP || item.montoADevolverEstimado || 0,
         'Saldo Asegurado Promedio': nuevaPrimaMensual * cuotasRestantes,

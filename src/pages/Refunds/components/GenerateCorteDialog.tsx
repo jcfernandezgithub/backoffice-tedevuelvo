@@ -10,6 +10,7 @@ import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import firmaImg from '@/assets/firma-cng.jpeg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
@@ -40,7 +41,7 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
   const [formData, setFormData] = useState<CorteFormData>({
     creditNumber: '',
     policyNumber: '',
-    bankName: refund.institutionId || '',
+    bankName: getInstitutionDisplayName(refund.institutionId),
     companyName: '',
   })
 
