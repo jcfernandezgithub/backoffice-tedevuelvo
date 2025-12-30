@@ -6,6 +6,13 @@
 
 ### Versión 2.0.6 - 2025-12-30
 
+#### Sistema de Homologación de Instituciones
+- **Nuevo sistema extensible**: Implementado sistema de homologación de nombres de instituciones financieras.
+  - Archivo `src/lib/institutionHomologation.ts` con mapeo configurable.
+  - `institutionId = "chile"` se muestra como "BANCO DE CHILE".
+  - Aplicado en: lista de solicitudes, detalle, exportación Excel y carta de corte.
+  - Preparado para agregar más instituciones fácilmente.
+
 #### Actualización de Certificados de Cobertura
 - **Póliza 342 (créditos hasta 20M)**: Actualizado certificado según documentos oficiales.
   - Código CMF corregido a formato `POL 2 2015 0573`.
