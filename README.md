@@ -1,8 +1,27 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.5
+## Versión 2.0.6
 
 ## Changelog
+
+### Versión 2.0.6 - 2025-12-30
+
+#### Actualización de Certificados de Cobertura
+- **Póliza 342 (créditos hasta 20M)**: Actualizado certificado según documentos oficiales.
+  - Código CMF corregido a formato `POL 2 2015 0573`.
+  - Fechas de vigencia actualizadas: 13/10/2025 - 12/09/2028.
+  - Agregado "No hay comisión" en fila de comisiones.
+  - Agregada "Nota 3" indicando prima única pagada a Augustar Seguros de Vida S.A.
+  - Condiciones especiales ART. CP actualizado a `5`.
+
+- **Póliza 344 Prime (créditos superiores a 20M)**: Actualizado certificado según documentos oficiales.
+  - Fechas de vigencia actualizadas: 01/12/2025 - 30/11/2028.
+  - Agregado "No hay comisión" en fila de comisiones.
+  - Actualizada "Nota 2" mencionando Augustar Seguros de Vida S.A.
+  - Agregada "Nota 3" indicando prima única pagada a Augustar Seguros de Vida S.A.
+  - Condiciones especiales ART. CP actualizado a `3`.
+
+---
 
 ### Versión 2.0.5 - 2025-12-26
 
