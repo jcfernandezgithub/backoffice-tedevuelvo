@@ -134,7 +134,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       vigenciaHastaDate.setFullYear(vigenciaHastaDate.getFullYear() + 3)
       const vigenciaHasta = vigenciaHastaDate.toLocaleDateString('es-CL')
       
-      // Fecha de nacimiento en formato dd/mm/aaaa
+      // Fecha de nacimiento en formato dd-mm-aaaa
       let fechaNacimiento = 'N/A'
       if (calculation.birthDate) {
         try {
@@ -142,28 +142,25 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           const day = String(birthDate.getDate()).padStart(2, '0')
           const month = String(birthDate.getMonth() + 1).padStart(2, '0')
           const year = birthDate.getFullYear()
-          fechaNacimiento = `${day}/${month}/${year}`
+          fechaNacimiento = `${day}-${month}-${year}`
         } catch {
           fechaNacimiento = 'N/A'
         }
       }
       
-      // Tipo de seguro
-      const tipoSeguro = calculation.insuranceToEvaluate === 'desgravamen' 
-        ? 'Desgravamen' 
-        : calculation.insuranceToEvaluate === 'cesantia' 
-        ? 'Cesantía' 
-        : 'N/A'
+      // Código de producto según monto del crédito
+      const montoCredito = calculation.totalAmount || 0
+      const codigoProducto = montoCredito < 20000000 ? '342' : '344'
       
-      const producto = calculation.insuranceToEvaluate === 'desgravamen' 
-        ? 'Fallecimiento' 
-        : 'N/A'
+      // Prima seguro = nueva prima mensual * cuotas restantes
+      const cuotasRestantes = calculation.remainingInstallments || 0
+      const primaSeguro = primaBruta * cuotasRestantes
 
       return {
         'Sponsor': 'TDV Servicios SpA.',
         'Rut Empresa': '78168126-1',
-        'Ramo comercial': tipoSeguro,
-        'Producto': producto,
+        'Ramo comercial': 'Desgravamen',
+        'Producto': 'Fallecimiento',
         'Poliza N°': data.policyNumber,
         'Número del certificado (Folio)': refund.id,
         'Rut Cliente': rutNumber,
@@ -171,15 +168,15 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Nombre_Cliente': refund.fullName,
         'Fecha_Nacimiento': fechaNacimiento,
         'Sexo': data.sexo,
-        'Codigo_producto': '342',
-        'Prima Seguro  $': primaBruta,
-        'Prima_periodo_neta_pesos': primaNeta,
-        'Prima_periodo_bruta_pesos': primaBruta,
+        'Codigo_producto': codigoProducto,
+        'Prima Seguro  $': primaSeguro,
+        'Prima_periodo_neta_pesos': primaSeguro,
+        'Prima_periodo_bruta_pesos': primaSeguro,
         'Vigencia_Desde': vigenciaDesde,
         'Vigencia_Hasta': vigenciaHasta,
-        'Plazo Meses': calculation.remainingInstallments || 0,
+        'Plazo Meses': cuotasRestantes,
         'Codigo_De_credito_o Nro de operación': data.creditCode,
-        'Capital Asegurado': calculation.totalAmount || 0,
+        'Capital Asegurado': montoCredito,
         'Corre electrónico': refund.email,
         'Dirección particular': data.direccion || 'N/A',
         'Comuna': data.comuna || 'N/A',
