@@ -82,7 +82,7 @@ export function ExportToExcelDialog({
       const montoEstimado = refund.estimatedAmountCLP || 0
       const nuevaPrimaMensual = calculation.newMonthlyPremium || 0
       const cuotasRestantes = calculation.remainingInstallments || 0
-      const saldoInsoluto = nuevaPrimaMensual * cuotasRestantes
+      const saldoInsoluto = calculation.averageInsuredBalance || 0
       const costoNuevoSeguroTDV = nuevaPrimaMensual * cuotasRestantes
       
       // Fecha de nacimiento - buscar en refund o en calculationSnapshot
