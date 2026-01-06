@@ -355,22 +355,25 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     )
   }
 
-  if (error) {
-    const errorMessage = (error as Error).message
-    if (errorMessage === 'UNAUTHORIZED') {
-      toast({
-        title: 'Sesión expirada',
-        description: 'Por favor inicia sesión nuevamente',
-        variant: 'destructive',
-      })
-    } else {
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      })
+  // Mostrar error en useEffect para evitar llamar toast durante el render
+  useEffect(() => {
+    if (error) {
+      const errorMessage = (error as Error).message
+      if (errorMessage === 'UNAUTHORIZED') {
+        toast({
+          title: 'Sesión expirada',
+          description: 'Por favor inicia sesión nuevamente',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      }
     }
-  }
+  }, [error])
 
   // Normalizar respuesta de la API - puede ser array o objeto
   const normalizedData = (() => {
