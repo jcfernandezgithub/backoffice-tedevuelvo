@@ -125,12 +125,17 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const primaBruta = calculation.newMonthlyPremium || 0
       const primaNeta = Math.round(primaBruta / 1.19)
       
-      // Fechas
-      const createdDate = new Date(refund.createdAt)
-      const vigenciaDesde = createdDate.toLocaleDateString('es-CL')
+      // Fechas - buscar fecha de cambio a payment_scheduled en statusHistory
+      const paymentScheduledEntry = refund.statusHistory?.find(
+        entry => entry.to === 'payment_scheduled'
+      )
+      const vigenciaDesdeDate = paymentScheduledEntry 
+        ? new Date(paymentScheduledEntry.at) 
+        : new Date(refund.createdAt)
+      const vigenciaDesde = vigenciaDesdeDate.toLocaleDateString('es-CL')
       
-      // Vigencia hasta: fecha de creación + 3 años
-      const vigenciaHastaDate = new Date(refund.createdAt)
+      // Vigencia hasta: fecha de vigencia desde + 3 años
+      const vigenciaHastaDate = new Date(vigenciaDesdeDate)
       vigenciaHastaDate.setFullYear(vigenciaHastaDate.getFullYear() + 3)
       const vigenciaHasta = vigenciaHastaDate.toLocaleDateString('es-CL')
       
