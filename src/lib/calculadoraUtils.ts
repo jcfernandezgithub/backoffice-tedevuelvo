@@ -283,7 +283,7 @@ export const calcularDevolucion = (
       const seguroRestanteActual = primaMensualActual * cuotasPendientes;
       const montoRestanteCredito = Math.round((montoCredito * (cuotasPendientes / cuotasTotales)));
       const seguroTotalPreferencial = montoRestanteCredito * tasaPreferencial * cuotasPendientes;
-      const primaMensualPreferencial = seguroTotalPreferencial / cuotasTotales;
+      const primaMensualPreferencial = seguroTotalPreferencial / cuotasPendientes;
       const seguroRestantePreferencial = primaMensualPreferencial * cuotasPendientes;
       const devolucionDesgravamen = seguroRestanteActual - seguroRestantePreferencial;
 
@@ -357,7 +357,7 @@ export const calcularDevolucion = (
     const seguroRestanteActual = primaMensualActual * cuotasPendientes;
     const montoRestanteCredito = Math.round((montoCredito * (cuotasPendientes / cuotasTotales)));
     const seguroTotalPreferencial = montoRestanteCredito * tasaPreferencial * cuotasPendientes;
-    const primaMensualPreferencial = seguroTotalPreferencial / cuotasTotales;
+    const primaMensualPreferencial = seguroTotalPreferencial / cuotasPendientes;
     const seguroRestantePreferencial = primaMensualPreferencial * cuotasPendientes;
     const devolucion = seguroRestanteActual - seguroRestantePreferencial;
     const devolucionConMargen = aplicarMargenDevolucion(devolucion);
