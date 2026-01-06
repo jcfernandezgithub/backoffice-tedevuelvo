@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.6
+## Versión 2.0.7
 
 ## Changelog
+
+### Versión 2.0.7 - 2026-01-06
+
+#### Mejoras en Documentos
+- **Botón "Descargar todo"**: Nueva funcionalidad para descargar todos los documentos adjuntos de una solicitud en un archivo ZIP.
+  - Botón ubicado en el header de la sección "Documentos" en la vista de detalle.
+  - Descarga en paralelo de todos los archivos para mayor velocidad.
+  - Archivo ZIP nombrado con el ID público de la solicitud.
+  - Indicador de carga mientras se procesan los archivos.
+
+#### Correcciones
+- **Fix de error al navegar entre páginas**: Corregido error "Cannot update a component while rendering" en la lista de solicitudes.
+  - Movida la llamada a `toast()` dentro de un `useEffect` para evitar actualizar estado durante el render.
+  - Mejora en la estabilidad de la navegación entre páginas.
+
+#### Mejoras en Exportación Excel
+- **Capital Asegurado corregido**: La columna "Capital Asegurado" ahora muestra el "Saldo asegurado promedio" (`averageInsuredBalance`).
+- **Formato de fechas de vigencia**: Las columnas "Vigencia Desde" y "Vigencia Hasta" ahora usan formato dd-mm-aaaa para consistencia.
+- **Cálculo de Vigencia Hasta**: Ahora se calcula sumando la cantidad de cuotas pendientes a la fecha de vigencia desde.
+
+---
 
 ### Versión 2.0.6 - 2025-12-30
 
