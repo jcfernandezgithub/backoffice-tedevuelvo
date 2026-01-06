@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X } from 'lucide-react'
+import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown } from 'lucide-react'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
 import { DocumentViewer } from './DocumentViewer'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
 import { authService } from '@/services/authService'
+import JSZip from 'jszip'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
@@ -30,6 +31,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false)
 
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
@@ -87,6 +89,48 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
       toast({ title: 'Documento descargado' })
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDownloadAll = async () => {
+    if (attachments.length === 0) {
+      toast({ title: 'Sin documentos', description: 'No hay documentos para descargar', variant: 'destructive' })
+      return
+    }
+
+    setIsDownloadingAll(true)
+    try {
+      const zip = new JSZip()
+      
+      // Descargar todos los documentos en paralelo
+      const downloadPromises = attachments.map(async (doc) => {
+        try {
+          const blob = await publicFilesApi.getRefundDocumentBlob(publicId, doc.id)
+          const fileName = getFileName(doc.key)
+          zip.file(fileName, blob)
+        } catch (err) {
+          console.error(`Error descargando ${doc.key}:`, err)
+        }
+      })
+
+      await Promise.all(downloadPromises)
+
+      // Generar el ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `documentos-${publicId}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast({ title: 'Descarga completada', description: `${attachments.length} documento(s) descargado(s)` })
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsDownloadingAll(false)
     }
   }
 
@@ -289,8 +333,28 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
 
       {/* Adjuntos */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Documentos</CardTitle>
+          {attachments.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAll}
+              disabled={isDownloadingAll}
+            >
+              {isDownloadingAll ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Descargando...
+                </>
+              ) : (
+                <>
+                  <FolderDown className="w-4 h-4 mr-2" />
+                  Descargar todo
+                </>
+              )}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {loadingAttachments ? (
