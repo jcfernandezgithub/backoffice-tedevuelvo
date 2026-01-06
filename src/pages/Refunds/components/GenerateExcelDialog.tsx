@@ -188,7 +188,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Vigencia_Hasta': vigenciaHasta,
         'Plazo Meses': cuotasRestantes,
         'Codigo_De_credito_o Nro de operación': data.creditCode,
-        'Capital Asegurado': montoCredito,
+        'Capital Asegurado': calculation.averageInsuredBalance || 0,
         'Corre electrónico': refund.email,
         'Dirección particular': data.direccion || 'N/A',
         'Comuna': data.comuna || 'N/A',
