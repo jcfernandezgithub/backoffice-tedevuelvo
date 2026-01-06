@@ -134,9 +134,10 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         : new Date(refund.createdAt)
       const vigenciaDesde = vigenciaDesdeDate.toLocaleDateString('es-CL')
       
-      // Vigencia hasta: fecha de vigencia desde + 3 años
+      // Vigencia hasta: fecha de vigencia desde + cuotas pendientes (meses)
+      const cuotasPendientes = calculation.remainingInstallments || 0
       const vigenciaHastaDate = new Date(vigenciaDesdeDate)
-      vigenciaHastaDate.setFullYear(vigenciaHastaDate.getFullYear() + 3)
+      vigenciaHastaDate.setMonth(vigenciaHastaDate.getMonth() + cuotasPendientes)
       const vigenciaHasta = vigenciaHastaDate.toLocaleDateString('es-CL')
       
       // Fecha de nacimiento en formato dd-mm-aaaa
