@@ -18,6 +18,10 @@
   - Movida la llamada a `toast()` dentro de un `useEffect` para evitar actualizar estado durante el render.
   - Mejora en la estabilidad de la navegación entre páginas.
 
+#### Mejoras en Calculadora
+- **Cálculo de prima actualizado**: El cálculo de la prima ahora utiliza las cuotas pendientes en lugar de las cuotas totales.
+  - Mejora la precisión del cálculo al reflejar el periodo real restante del crédito.
+
 #### Mejoras en Exportación Excel
 - **Capital Asegurado corregido**: La columna "Capital Asegurado" ahora muestra el "Saldo asegurado promedio" (`averageInsuredBalance`).
 - **Formato de fechas de vigencia**: Las columnas "Vigencia Desde" y "Vigencia Hasta" ahora usan formato dd-mm-aaaa para consistencia.
