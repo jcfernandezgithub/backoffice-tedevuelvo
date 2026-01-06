@@ -132,13 +132,19 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const vigenciaDesdeDate = paymentScheduledEntry 
         ? new Date(paymentScheduledEntry.at) 
         : new Date(refund.createdAt)
-      const vigenciaDesde = vigenciaDesdeDate.toLocaleDateString('es-CL')
+      const vigenciaDesdeDay = String(vigenciaDesdeDate.getDate()).padStart(2, '0')
+      const vigenciaDesdeMonth = String(vigenciaDesdeDate.getMonth() + 1).padStart(2, '0')
+      const vigenciaDesdeYear = vigenciaDesdeDate.getFullYear()
+      const vigenciaDesde = `${vigenciaDesdeDay}-${vigenciaDesdeMonth}-${vigenciaDesdeYear}`
       
       // Vigencia hasta: fecha de vigencia desde + cuotas pendientes (meses)
       const cuotasPendientes = calculation.remainingInstallments || 0
       const vigenciaHastaDate = new Date(vigenciaDesdeDate)
       vigenciaHastaDate.setMonth(vigenciaHastaDate.getMonth() + cuotasPendientes)
-      const vigenciaHasta = vigenciaHastaDate.toLocaleDateString('es-CL')
+      const vigenciaHastaDay = String(vigenciaHastaDate.getDate()).padStart(2, '0')
+      const vigenciaHastaMonth = String(vigenciaHastaDate.getMonth() + 1).padStart(2, '0')
+      const vigenciaHastaYear = vigenciaHastaDate.getFullYear()
+      const vigenciaHasta = `${vigenciaHastaDay}-${vigenciaHastaMonth}-${vigenciaHastaYear}`
       
       // Fecha de nacimiento en formato dd-mm-aaaa
       let fechaNacimiento = 'N/A'
