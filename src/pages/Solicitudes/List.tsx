@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { solicitudesService } from '@/services/solicitudesService'
 import { refundAdminApi } from '@/services/refundAdminApi'
-import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
+import { authenticatedFetch } from '@/services/apiClient'
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -119,13 +119,8 @@ export default function SolicitudesList() {
     queryFn: async () => {
       const allUsers: Record<string, string> = {}
       try {
-        const response = await fetch(
-          `https://tedevuelvo-app-be.onrender.com/api/v1/partner-users?partnerId=${alianzaIdFilter}&limit=100`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
+        const response = await authenticatedFetch(
+          `/partner-users?partnerId=${alianzaIdFilter}&limit=100`
         )
         if (response.ok) {
           const data = await response.json()
