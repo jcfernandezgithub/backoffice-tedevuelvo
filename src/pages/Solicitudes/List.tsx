@@ -4,12 +4,61 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
 import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo } from 'react'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+import { RefundStatus } from '@/types/refund'
+import { CheckCircle, AlertCircle } from 'lucide-react'
+
+const statusLabels: Record<RefundStatus, string> = {
+  simulated: 'Simulado',
+  requested: 'Solicitado',
+  qualifying: 'En calificación',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
+}
+
+const getStatusColors = (status: RefundStatus): string => {
+  switch (status) {
+    case 'simulated':
+      return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+    case 'requested':
+      return 'bg-blue-400 hover:bg-blue-500 text-white border-blue-400'
+    case 'qualifying':
+      return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
+    case 'docs_pending':
+      return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
+    case 'docs_received':
+      return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
+    case 'submitted':
+      return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
+    case 'approved':
+      return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
+    case 'payment_scheduled':
+      return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
+    case 'paid':
+      return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+    case 'rejected':
+      return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+    case 'canceled':
+      return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
+    case 'datos_sin_simulacion':
+      return 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500'
+    default:
+      return 'bg-primary hover:bg-primary/90 text-white border-primary'
+  }
+}
 
 export default function SolicitudesList() {
   const [searchParams] = useSearchParams()
@@ -34,14 +83,72 @@ export default function SolicitudesList() {
   const data = alianzaIdFilter ? partnerData : mockData
   const isLoading = alianzaIdFilter ? isLoadingPartner : isLoadingMock
 
+  // Query para obtener estados de mandatos (firma) cuando hay filtro de alianza
+  const publicIds = useMemo(() => {
+    if (!alianzaIdFilter || !partnerData.length) return []
+    return partnerData.map((r: any) => r.publicId)
+  }, [alianzaIdFilter, partnerData])
+
+  const { data: mandateStatuses } = useQuery({
+    queryKey: ['mandate-statuses-alianza', publicIds],
+    queryFn: async () => {
+      const statuses: Record<string, any> = {}
+      await Promise.all(
+        publicIds.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            )
+            if (response.ok) {
+              statuses[publicId] = await response.json()
+            }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return statuses
+    },
+    enabled: publicIds.length > 0,
+  })
+
+  // Render del estado con Badge
+  const renderStatus = (r: any) => {
+    const status = r.status as RefundStatus
+    const label = statusLabels[status] || status
+    return (
+      <Badge className={getStatusColors(status)}>
+        {label}
+      </Badge>
+    )
+  }
+
+  // Render del indicador de firma
+  const renderFirma = (r: any) => {
+    const status = mandateStatuses?.[r.publicId]
+    const hasSigned = status?.hasSignedPdf === true
+    return hasSigned ? (
+      <span className="inline-flex items-center gap-1 text-green-600" title="Mandato firmado">
+        <CheckCircle className="h-4 w-4" />
+        <span className="text-xs">Firmado</span>
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-1 text-muted-foreground" title="Pendiente de firma">
+        <AlertCircle className="h-4 w-4" />
+        <span className="text-xs">Pendiente</span>
+      </span>
+    )
+  }
+
   const columns: Column<any>[] = useMemo(() => {
     if (alianzaIdFilter) {
       // Columnas para datos del API real (partner refunds)
       return [
         { key: 'publicId', header: 'ID', sortable: true },
         { key: 'fullName', header: 'Cliente', sortable: true },
-        { key: 'status', header: 'Estado', sortable: true },
-        { key: 'institutionId', header: 'Institución', sortable: true },
+        { key: 'status', header: 'Estado', render: renderStatus, sortable: true },
+        { key: 'firma', header: 'Firma', render: renderFirma },
+        { key: 'institutionId', header: 'Institución', render: (r: any) => getInstitutionDisplayName(r.institutionId), sortable: true },
         { key: 'estimatedAmountCLP', header: 'Estimado', render: (r: any) => <Money value={r.estimatedAmountCLP} />, sortable: true },
         { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
         { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
@@ -63,7 +170,7 @@ export default function SolicitudesList() {
         { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
       ]
     }
-  }, [alianzaIdFilter, navigate])
+  }, [alianzaIdFilter, navigate, mandateStatuses])
 
   const crear = async () => {
     const base = {
