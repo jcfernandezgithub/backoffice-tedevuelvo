@@ -360,20 +360,25 @@ export default function SolicitudesList() {
     qc.invalidateQueries({ queryKey: ['solicitudes'] })
   }
 
-  // Preparar datos para exportación con campos adicionales
+  // Preparar datos para exportación con campos adicionales (usa datos filtrados)
   const prepareExportData = () => {
     return data.map((item: any) => {
       const calc = item.calculationSnapshot || {}
       const primaMensualActual = calc.currentMonthlyPremium || 0
       const nuevaPrimaMensual = calc.newMonthlyPremium || 0
       const cuotasRestantes = calc.remainingInstallments || 0
+      const hasSigned = mandateStatuses?.[item.publicId]?.hasSignedPdf === true
+      const hasBankInfo = !!(item as any).bankInfo
       
       return {
         ID: item.publicId || item.id,
         Cliente: item.fullName || item.cliente?.nombre || '',
         RUT: item.rut || item.cliente?.rut || '',
         Email: item.email || item.cliente?.email || '',
-        Estado: item.status || item.estado || '',
+        Estado: statusLabels[item.status as RefundStatus] || item.status || item.estado || '',
+        Firma: hasSigned ? 'Firmado' : 'Pendiente',
+        Pago: hasBankInfo ? 'Listo' : 'Pendiente',
+        Gestor: gestorNameMap[item.partnerUserId] || '-',
         Institucion: getInstitutionDisplayName(item.institutionId || item.cliente?.banco),
         'Prima Mensual Entidad Financiera': primaMensualActual,
         'Monto Estimado Devolucion': item.estimatedAmountCLP || item.montoADevolverEstimado || 0,
@@ -386,8 +391,14 @@ export default function SolicitudesList() {
     })
   }
 
-  const exportarCSV = () => exportCSV(prepareExportData(), 'solicitudes.csv')
-  const exportarXLSX = () => exportXLSX(prepareExportData(), 'solicitudes.xlsx')
+  const getExportFileName = (ext: string) => {
+    const base = alianzaIdFilter ? `solicitudes_alianza` : 'solicitudes'
+    const suffix = hasActiveFilters ? '_filtrado' : ''
+    return `${base}${suffix}.${ext}`
+  }
+
+  const exportarCSV = () => exportCSV(prepareExportData(), getExportFileName('csv'))
+  const exportarXLSX = () => exportXLSX(prepareExportData(), getExportFileName('xlsx'))
 
   return (
     <main className="p-4 space-y-4">
