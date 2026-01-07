@@ -47,7 +47,7 @@ export default function Login() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-50" />
         
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-primary-foreground">
-          <div className="mb-8">
+          <div className="mb-8 animate-fade-in">
             <img 
               src={logoTedevuelvo} 
               alt="Te devuelvo" 
@@ -59,7 +59,7 @@ export default function Login() {
           </div>
           
           <div className="space-y-6">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-fade-in [animation-delay:100ms] opacity-0 [animation-fill-mode:forwards]">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-1">
                 <span className="text-sm font-semibold">01</span>
               </div>
@@ -69,7 +69,7 @@ export default function Login() {
               </div>
             </div>
             
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-fade-in [animation-delay:200ms] opacity-0 [animation-fill-mode:forwards]">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-1">
                 <span className="text-sm font-semibold">02</span>
               </div>
@@ -79,7 +79,7 @@ export default function Login() {
               </div>
             </div>
             
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4 animate-fade-in [animation-delay:300ms] opacity-0 [animation-fill-mode:forwards]">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-1">
                 <span className="text-sm font-semibold">03</span>
               </div>
@@ -100,7 +100,7 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
           {/* Logo para móvil */}
-          <div className="lg:hidden text-center mb-8">
+          <div className="lg:hidden text-center mb-8 animate-fade-in">
             <img 
               src={logoTedevuelvo} 
               alt="Te devuelvo" 
@@ -109,7 +109,7 @@ export default function Login() {
             <p className="text-muted-foreground text-sm">Backoffice Administrativo</p>
           </div>
 
-          <div className="bg-card rounded-2xl shadow-xl border p-8">
+          <div className="bg-card rounded-2xl shadow-xl border p-8 animate-scale-in">
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-foreground">Bienvenido</h2>
               <p className="text-muted-foreground mt-1">Ingresa tus credenciales para continuar</p>
