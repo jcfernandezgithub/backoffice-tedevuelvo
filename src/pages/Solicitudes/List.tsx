@@ -252,6 +252,7 @@ export default function SolicitudesList() {
       return [
         { key: 'publicId', header: 'ID', render: renderCopyableId, sortable: true },
         { key: 'fullName', header: 'Cliente', sortable: true },
+        { key: 'rut', header: 'RUT', sortable: true },
         { key: 'email', header: 'Email', sortable: true },
         { key: 'status', header: 'Estado', render: renderStatus, sortable: true },
         { key: 'firma', header: 'Firma', render: renderFirma },
