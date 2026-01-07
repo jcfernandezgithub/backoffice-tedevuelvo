@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
@@ -69,13 +69,17 @@ interface RefundDetailProps {
   contextLabel?: string
 }
 
-export default function RefundDetail({ backUrl = '/refunds', showDocumentButtons = true, contextLabel }: RefundDetailProps) {
+export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDocumentButtons = true, contextLabel }: RefundDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const [copied, setCopied] = useState(false)
   const [snapshotView, setSnapshotView] = useState<'parsed' | 'raw'>('parsed')
+
+  // Usar backUrl del state de navegación si existe, sino usar prop
+  const backUrl = (location.state as any)?.backUrl || propBackUrl
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
