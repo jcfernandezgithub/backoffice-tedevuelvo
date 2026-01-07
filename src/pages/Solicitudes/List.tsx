@@ -327,7 +327,7 @@ export default function SolicitudesList() {
         { key: 'institutionId', header: 'Institución', render: (r: any) => getInstitutionDisplayName(r.institutionId), sortable: true },
         { key: 'estimatedAmountCLP', header: 'Estimado', render: (r: any) => <Money value={r.estimatedAmountCLP} />, sortable: true },
         { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
-        { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
+        { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r._id || r.id || r.publicId}`)}>Abrir</Button> },
       ]
     } else {
       // Columnas para datos mock locales
