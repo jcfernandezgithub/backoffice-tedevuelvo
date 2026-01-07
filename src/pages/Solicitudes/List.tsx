@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { solicitudesService } from '@/services/solicitudesService'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +13,7 @@ import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo } from 'react'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { RefundStatus } from '@/types/refund'
-import { CheckCircle, AlertCircle } from 'lucide-react'
+import { CheckCircle, AlertCircle, Flag } from 'lucide-react'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -112,6 +113,25 @@ export default function SolicitudesList() {
     enabled: publicIds.length > 0,
   })
 
+  // Query para obtener nombres de gestores cuando hay filtro de alianza
+  const { data: gestorNameMap = {} } = useQuery({
+    queryKey: ['gestor-names-alianza', alianzaIdFilter],
+    queryFn: async () => {
+      const allUsers: Record<string, string> = {}
+      try {
+        const result = await allianceUsersClient.listAllianceUsers(alianzaIdFilter!, { pageSize: 100 })
+        result.users.forEach((user) => {
+          allUsers[user.id] = user.name
+        })
+      } catch (error) {
+        // Silently fail
+      }
+      return allUsers
+    },
+    enabled: !!alianzaIdFilter,
+    staleTime: 30 * 60 * 1000,
+  })
+
   // Render del estado con Badge
   const renderStatus = (r: any) => {
     const status = r.status as RefundStatus
@@ -140,14 +160,55 @@ export default function SolicitudesList() {
     )
   }
 
+  // Render de datos bancarios (Pago)
+  const renderPago = (r: any) => {
+    const hasBankInfo = !!(r as any).bankInfo
+    return hasBankInfo ? (
+      <div className="flex items-center justify-center">
+        <div className="relative group">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+            <Flag className="h-4 w-4 text-emerald-500 fill-emerald-500" />
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
+          </div>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+            Datos bancarios registrados
+          </div>
+        </div>
+      </div>
+    ) : (
+      <div className="flex items-center justify-center">
+        <div className="relative group">
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30">
+            <Flag className="h-4 w-4 text-amber-500" />
+            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pendiente</span>
+          </div>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+            Sin datos bancarios
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render del gestor
+  const renderGestor = (r: any) => {
+    if (r.partnerUserId && gestorNameMap[r.partnerUserId]) {
+      return <span className="text-xs">{gestorNameMap[r.partnerUserId]}</span>
+    }
+    return <span className="text-xs text-muted-foreground">-</span>
+  }
+
   const columns: Column<any>[] = useMemo(() => {
     if (alianzaIdFilter) {
       // Columnas para datos del API real (partner refunds)
       return [
         { key: 'publicId', header: 'ID', sortable: true },
         { key: 'fullName', header: 'Cliente', sortable: true },
+        { key: 'email', header: 'Email', sortable: true },
         { key: 'status', header: 'Estado', render: renderStatus, sortable: true },
         { key: 'firma', header: 'Firma', render: renderFirma },
+        { key: 'pago', header: 'Pago', render: renderPago },
+        { key: 'gestor', header: 'Gestor', render: renderGestor },
         { key: 'institutionId', header: 'Institución', render: (r: any) => getInstitutionDisplayName(r.institutionId), sortable: true },
         { key: 'estimatedAmountCLP', header: 'Estimado', render: (r: any) => <Money value={r.estimatedAmountCLP} />, sortable: true },
         { key: 'updatedAt', header: 'Actualizado', render: (r: any) => new Date(r.updatedAt).toLocaleDateString('es-CL'), sortable: true },
@@ -170,7 +231,7 @@ export default function SolicitudesList() {
         { key: 'acciones', header: 'Acciones', render: (r: any) => <Button size="sm" variant="outline" onClick={() => navigate(`/solicitudes/${r.id}`)}>Abrir</Button> },
       ]
     }
-  }, [alianzaIdFilter, navigate, mandateStatuses])
+  }, [alianzaIdFilter, navigate, mandateStatuses, gestorNameMap])
 
   const crear = async () => {
     const base = {
