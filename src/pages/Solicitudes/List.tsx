@@ -105,24 +105,30 @@ export default function SolicitudesList() {
     toast({ title: 'Copiado', description: 'ID copiado al portapapeles' })
   }
 
-  // Render de ID con funcionalidad de copiado
-  const renderCopyableId = (r: any) => {
-    const id = r.publicId || r.id
-    const shortId = id.length > 8 ? `${id.slice(0, 8)}...` : id
+  // Render genérico para campos copiables
+  const renderCopyable = (value: string, truncate?: number) => {
+    if (!value) return <span className="text-muted-foreground">-</span>
+    const displayValue = truncate && value.length > truncate ? `${value.slice(0, truncate)}...` : value
     return (
       <button
         onClick={(e) => {
           e.stopPropagation()
-          copyToClipboard(id)
+          copyToClipboard(value)
         }}
-        className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors group"
-        title={`Copiar: ${id}`}
+        className="flex items-center gap-1 text-xs hover:text-primary transition-colors group text-left"
+        title={`Copiar: ${value}`}
       >
-        <span>{shortId}</span>
-        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <span className="truncate max-w-[150px]">{displayValue}</span>
+        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       </button>
     )
   }
+
+  // Renders específicos usando el helper genérico
+  const renderCopyableId = (r: any) => renderCopyable(r.publicId || r.id, 8)
+  const renderCopyableCliente = (r: any) => renderCopyable(r.fullName || '')
+  const renderCopyableRut = (r: any) => renderCopyable(r.rut || '')
+  const renderCopyableEmail = (r: any) => renderCopyable(r.email || '')
 
   // Query para obtener estados de mandatos (firma) cuando hay filtro de alianza
   const publicIds = useMemo(() => {
@@ -251,9 +257,9 @@ export default function SolicitudesList() {
       // Columnas para datos del API real (partner refunds)
       return [
         { key: 'publicId', header: 'ID', render: renderCopyableId, sortable: true },
-        { key: 'fullName', header: 'Cliente', sortable: true },
-        { key: 'rut', header: 'RUT', sortable: true },
-        { key: 'email', header: 'Email', sortable: true },
+        { key: 'fullName', header: 'Cliente', render: renderCopyableCliente, sortable: true },
+        { key: 'rut', header: 'RUT', render: renderCopyableRut, sortable: true },
+        { key: 'email', header: 'Email', render: renderCopyableEmail, sortable: true },
         { key: 'status', header: 'Estado', render: renderStatus, sortable: true },
         { key: 'firma', header: 'Firma', render: renderFirma },
         { key: 'pago', header: 'Pago', render: renderPago },
