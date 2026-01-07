@@ -119,10 +119,23 @@ export default function SolicitudesList() {
     queryFn: async () => {
       const allUsers: Record<string, string> = {}
       try {
-        const result = await allianceUsersClient.listAllianceUsers(alianzaIdFilter!, { pageSize: 100 })
-        result.users.forEach((user) => {
-          allUsers[user.id] = user.name
-        })
+        const response = await fetch(
+          `https://tedevuelvo-app-be.onrender.com/api/v1/partner-users?partnerId=${alianzaIdFilter}&limit=100`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          // Mapear tanto _id como publicId para cubrir diferentes formatos
+          ;(data.items || []).forEach((user: any) => {
+            if (user._id) allUsers[user._id] = user.name
+            if (user.publicId) allUsers[user.publicId] = user.name
+            if (user.id) allUsers[user.id] = user.name
+          })
+        }
       } catch (error) {
         // Silently fail
       }
