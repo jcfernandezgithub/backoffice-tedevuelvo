@@ -2,6 +2,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { solicitudesService } from '@/services/solicitudesService'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { authenticatedFetch } from '@/services/apiClient'
+
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +14,7 @@ import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo } from 'react'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { RefundStatus } from '@/types/refund'
-import { CheckCircle, AlertCircle, Flag } from 'lucide-react'
+import { CheckCircle, AlertCircle, Flag, Copy } from 'lucide-react'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -83,6 +84,45 @@ export default function SolicitudesList() {
 
   const data = alianzaIdFilter ? partnerData : mockData
   const isLoading = alianzaIdFilter ? isLoadingPartner : isLoadingMock
+
+  // Query para obtener nombre de la alianza
+  const { data: alianzaData } = useQuery({
+    queryKey: ['alianza-detail', alianzaIdFilter],
+    queryFn: async () => {
+      const response = await authenticatedFetch(`/partners/${alianzaIdFilter}`)
+      if (response.ok) {
+        const data = await response.json()
+        return { nombre: data.name || data.nombre }
+      }
+      return null
+    },
+    enabled: !!alianzaIdFilter,
+  })
+
+  // Helper para copiar al portapapeles
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast({ title: 'Copiado', description: 'ID copiado al portapapeles' })
+  }
+
+  // Render de ID con funcionalidad de copiado
+  const renderCopyableId = (r: any) => {
+    const id = r.publicId || r.id
+    const shortId = id.length > 8 ? `${id.slice(0, 8)}...` : id
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          copyToClipboard(id)
+        }}
+        className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors group"
+        title={`Copiar: ${id}`}
+      >
+        <span>{shortId}</span>
+        <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+    )
+  }
 
   // Query para obtener estados de mandatos (firma) cuando hay filtro de alianza
   const publicIds = useMemo(() => {
@@ -210,7 +250,7 @@ export default function SolicitudesList() {
     if (alianzaIdFilter) {
       // Columnas para datos del API real (partner refunds)
       return [
-        { key: 'publicId', header: 'ID', sortable: true },
+        { key: 'publicId', header: 'ID', render: renderCopyableId, sortable: true },
         { key: 'fullName', header: 'Cliente', sortable: true },
         { key: 'email', header: 'Email', sortable: true },
         { key: 'status', header: 'Estado', render: renderStatus, sortable: true },
@@ -294,8 +334,20 @@ export default function SolicitudesList() {
       </div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>
-            {alianzaIdFilter ? `Solicitudes de alianza ${alianzaIdFilter}` : 'Listado maestro'}
+          <CardTitle className="flex items-center gap-2">
+            {alianzaIdFilter ? (
+              <>
+                <span>Solicitudes de {alianzaData?.nombre || 'alianza'}</span>
+                <button
+                  onClick={() => copyToClipboard(alianzaIdFilter)}
+                  className="flex items-center gap-1 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded bg-muted/50"
+                  title={`Copiar ID: ${alianzaIdFilter}`}
+                >
+                  <span>{alianzaIdFilter.slice(0, 8)}...</span>
+                  <Copy className="h-3 w-3" />
+                </button>
+              </>
+            ) : 'Listado maestro'}
           </CardTitle>
           <div className="flex gap-2">
             <Button variant="soft" onClick={exportarCSV}>Exportar CSV</Button>
