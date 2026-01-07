@@ -6,6 +6,18 @@
 
 ### Versión 2.0.8 - 2026-01-07
 
+#### Rediseño de Página de Login
+- **Nueva interfaz profesional**: Diseño moderno con layout de dos paneles.
+  - Panel izquierdo: Branding con gradiente, logo y lista de características destacadas.
+  - Panel derecho: Formulario de login elegante y centrado.
+  - Íconos en campos de entrada (email y contraseña).
+  - Diseño completamente responsive para móvil.
+
+- **Animaciones de entrada suave**: Implementadas animaciones CSS para mejorar la experiencia de usuario.
+  - Animación fade-in en el panel de branding con delays escalonados.
+  - Animación scale-in en el formulario de login.
+  - Transiciones suaves en botones e inputs.
+
 #### Mejoras en Vista de Solicitudes por Alianza
 - **Nombre de alianza en título**: El título ahora muestra "Solicitudes de [nombre alianza]" en lugar del ID.
   - ID de alianza en formato corto con funcionalidad de copiado al portapapeles.
