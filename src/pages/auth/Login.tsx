@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/state/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
-import { Mail, Lock, ArrowRight, Shield } from 'lucide-react'
+import { Mail, Lock, ArrowRight } from 'lucide-react'
+import logoTedevuelvo from '@/assets/logo-tedevuelvo.png'
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -47,12 +48,11 @@ export default function Login() {
         
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-primary-foreground">
           <div className="mb-8">
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-6">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-4xl xl:text-5xl font-bold mb-4">
-              Te devuelvo
-            </h1>
+            <img 
+              src={logoTedevuelvo} 
+              alt="Te devuelvo" 
+              className="h-20 w-auto mb-6 brightness-0 invert"
+            />
             <p className="text-xl text-white/80 mb-8">
               Backoffice Administrativo
             </p>
@@ -101,10 +101,11 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Logo para móvil */}
           <div className="lg:hidden text-center mb-8">
-            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">Te devuelvo</h1>
+            <img 
+              src={logoTedevuelvo} 
+              alt="Te devuelvo" 
+              className="h-14 w-auto mx-auto mb-2"
+            />
             <p className="text-muted-foreground text-sm">Backoffice Administrativo</p>
           </div>
 
