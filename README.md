@@ -1,12 +1,42 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.7
+## Versión 2.0.8
 
 ## Changelog
 
-### Versión 2.0.7 - 2026-01-06
+### Versión 2.0.8 - 2026-01-07
 
-#### Mejoras en Documentos
+#### Mejoras en Vista de Solicitudes por Alianza
+- **Nombre de alianza en título**: El título ahora muestra "Solicitudes de [nombre alianza]" en lugar del ID.
+  - ID de alianza en formato corto con funcionalidad de copiado al portapapeles.
+  
+- **Columnas copiables**: Las columnas ID, Cliente, RUT y Email ahora permiten copiar su valor al hacer clic.
+  - Ícono de copiar visible al pasar el mouse.
+  - Toast de confirmación al copiar.
+
+- **Nueva columna RUT**: Agregada columna RUT en la vista de solicitudes por alianza.
+
+- **Filtros avanzados**: Nuevos filtros para la vista de solicitudes por alianza.
+  - Filtro por Estado con todos los estados disponibles.
+  - Filtro por Firma (Firmado/Pendiente).
+  - Filtro por rango de fechas (Desde/Hasta) con calendario.
+  - Contador de resultados filtrados.
+  - Botón "Limpiar" para resetear todos los filtros.
+
+- **Exportación mejorada**: La exportación Excel/CSV ahora incluye los datos filtrados.
+  - Nuevas columnas: Firma, Pago, Gestor.
+  - Nombre de archivo indica si hay filtros aplicados (`_filtrado`).
+  - Estados exportados con etiquetas en español.
+
+- **Navegación al detalle corregida**: Al abrir una solicitud desde alianza, navega correctamente a la vista de Refunds.
+  - Botón "Volver" regresa a la lista de solicitudes de la alianza.
+
+#### Correcciones
+- **Fix de $NaN en montos**: El componente Money ahora muestra $0 cuando el valor es NaN o undefined.
+
+---
+
+### Versión 2.0.7 - 2026-01-06
 - **Botón "Descargar todo"**: Nueva funcionalidad para descargar todos los documentos adjuntos de una solicitud en un archivo ZIP.
   - Botón ubicado en el header de la sección "Documentos" en la vista de detalle.
   - Descarga en paralelo de todos los archivos para mayor velocidad.
