@@ -835,6 +835,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         </div>
                       </TableHead>
                       <TableHead className="text-right">Monto Real</TableHead>
+                      <TableHead className="text-right">Valor Nueva Prima</TableHead>
                       <TableHead className="text-center">Pago</TableHead>
                       <TableHead 
                         className="cursor-pointer hover:bg-muted/50 select-none"
@@ -987,6 +988,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {(() => {
+                            const snapshot = (refund as any).calculationSnapshot
+                            const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
+                            const remainingInstallments = snapshot?.remainingInstallments || 0
+                            const valorNuevaPrima = newMonthlyPremium * remainingInstallments
+                            return valorNuevaPrima > 0 ? (
+                              <span className="font-medium text-primary">
+                                ${valorNuevaPrima.toLocaleString('es-CL')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          })()}
+                        </TableCell>
                         <TableCell className="text-center">
                           {(refund as any).bankInfo ? (
                             <div className="flex items-center justify-center">
@@ -1117,6 +1133,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             ) : '-'
                           })()
                         ) : '-'
+                      },
+                      {
+                        label: 'Valor Nueva Prima',
+                        value: (() => {
+                          const snapshot = (refund as any).calculationSnapshot
+                          const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
+                          const remainingInstallments = snapshot?.remainingInstallments || 0
+                          const valorNuevaPrima = newMonthlyPremium * remainingInstallments
+                          return valorNuevaPrima > 0 ? (
+                            <span className="font-medium text-primary">
+                              ${valorNuevaPrima.toLocaleString('es-CL')}
+                            </span>
+                          ) : '-'
+                        })()
                       },
                       {
                         label: 'Datos pago',
