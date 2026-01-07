@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.8
+## Versión 2.0.9
 
 ## Changelog
+
+### Versión 2.0.9 - 2026-01-07
+
+#### Mejoras en Lista de Solicitudes
+- **Nueva columna "Valor Nueva Prima"**: Agregada columna que muestra el valor total de la nueva prima.
+  - Cálculo: Nueva prima mensual × Cuotas pendientes.
+  - Visible tanto en vista desktop como en vista móvil.
+  - Valores extraídos del snapshot de cálculo (`calculationSnapshot`).
+
+---
 
 ### Versión 2.0.8 - 2026-01-07
 
