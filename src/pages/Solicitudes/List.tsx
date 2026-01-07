@@ -11,10 +11,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Money } from '@/components/common/Money'
 import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { RefundStatus } from '@/types/refund'
-import { CheckCircle, AlertCircle, Flag, Copy } from 'lucide-react'
+import { CheckCircle, AlertCircle, Flag, Copy, CalendarIcon, X } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { cn } from '@/lib/utils'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -69,6 +75,12 @@ export default function SolicitudesList() {
   const qc = useQueryClient()
   const { toast } = useToast()
 
+  // Estados para filtros
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [firmaFilter, setFirmaFilter] = useState<string>('all')
+  const [dateFrom, setDateFrom] = useState<Date | undefined>()
+  const [dateTo, setDateTo] = useState<Date | undefined>()
+
   // Si hay partnerId, usar el endpoint real, sino usar mock local
   const { data: partnerData = [], isLoading: isLoadingPartner } = useQuery({
     queryKey: ['partner-solicitudes', alianzaIdFilter],
@@ -82,7 +94,7 @@ export default function SolicitudesList() {
     enabled: !alianzaIdFilter,
   })
 
-  const data = alianzaIdFilter ? partnerData : mockData
+  const rawData = alianzaIdFilter ? partnerData : mockData
   const isLoading = alianzaIdFilter ? isLoadingPartner : isLoadingMock
 
   // Query para obtener nombre de la alianza
@@ -158,6 +170,54 @@ export default function SolicitudesList() {
     },
     enabled: publicIds.length > 0,
   })
+
+  // Filtrar datos según los filtros aplicados
+  const data = useMemo(() => {
+    let filtered = [...rawData]
+
+    // Filtro por estado
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((r: any) => r.status === statusFilter)
+    }
+
+    // Filtro por firma (solo si hay mandateStatuses)
+    if (firmaFilter !== 'all' && mandateStatuses) {
+      filtered = filtered.filter((r: any) => {
+        const hasSigned = mandateStatuses[r.publicId]?.hasSignedPdf === true
+        return firmaFilter === 'firmado' ? hasSigned : !hasSigned
+      })
+    }
+
+    // Filtro por fecha desde
+    if (dateFrom) {
+      filtered = filtered.filter((r: any) => {
+        const itemDate = new Date(r.updatedAt || r.createdAt)
+        return itemDate >= dateFrom
+      })
+    }
+
+    // Filtro por fecha hasta
+    if (dateTo) {
+      const endOfDay = new Date(dateTo)
+      endOfDay.setHours(23, 59, 59, 999)
+      filtered = filtered.filter((r: any) => {
+        const itemDate = new Date(r.updatedAt || r.createdAt)
+        return itemDate <= endOfDay
+      })
+    }
+
+    return filtered
+  }, [rawData, statusFilter, firmaFilter, dateFrom, dateTo, mandateStatuses])
+
+  // Limpiar filtros
+  const clearFilters = () => {
+    setStatusFilter('all')
+    setFirmaFilter('all')
+    setDateFrom(undefined)
+    setDateTo(undefined)
+  }
+
+  const hasActiveFilters = statusFilter !== 'all' || firmaFilter !== 'all' || dateFrom || dateTo
 
   // Query para obtener nombres de gestores cuando hay filtro de alianza
   const { data: gestorNameMap = {} } = useQuery({
@@ -362,7 +422,119 @@ export default function SolicitudesList() {
             <Button variant="hero" onClick={crear}>Nueva solicitud</Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Filtros - solo mostrar cuando hay filtro de alianza */}
+          {alianzaIdFilter && (
+            <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/30 rounded-lg">
+              {/* Filtro de Estado */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Estado:</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {Object.entries(statusLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro de Firma */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Firma:</span>
+                <Select value={firmaFilter} onValueChange={setFirmaFilter}>
+                  <SelectTrigger className="w-[140px] h-9">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="firmado">Firmado</SelectItem>
+                    <SelectItem value="pendiente">Pendiente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Fecha Desde */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Desde:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] h-9 justify-start text-left font-normal",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                      locale={es}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Filtro Fecha Hasta */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Hasta:</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] h-9 justify-start text-left font-normal",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "dd/MM/yyyy") : "Fecha"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                      locale={es}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Botón limpiar filtros */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-9 px-2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+
+              {/* Contador de resultados */}
+              <span className="text-sm text-muted-foreground ml-auto">
+                {data.length} de {rawData.length} solicitudes
+              </span>
+            </div>
+          )}
+
           {isLoading ? 'Cargando...' : <DataGrid data={data} columns={columns} />}
         </CardContent>
       </Card>
