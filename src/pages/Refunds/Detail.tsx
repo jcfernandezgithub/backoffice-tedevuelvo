@@ -70,6 +70,29 @@ interface RefundDetailProps {
   contextLabel?: string
 }
 
+// Helper para obtener el tipo de seguro normalizado desde calculationSnapshot
+const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' | null => {
+  if (!snapshot) return null
+  
+  // Primero buscar tipoSeguro (formato antiguo/local)
+  if (snapshot.tipoSeguro) {
+    const tipo = snapshot.tipoSeguro.toLowerCase()
+    if (tipo === 'desgravamen' || tipo === 'cesantia' || tipo === 'ambos') {
+      return tipo
+    }
+  }
+  
+  // Luego buscar insuranceToEvaluate (formato API)
+  if (snapshot.insuranceToEvaluate) {
+    const tipo = snapshot.insuranceToEvaluate.toLowerCase()
+    if (tipo === 'desgravamen') return 'desgravamen'
+    if (tipo === 'cesantia') return 'cesantia'
+    if (tipo === 'ambos') return 'ambos'
+  }
+  
+  return null
+}
+
 export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDocumentButtons = true, contextLabel }: RefundDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -290,37 +313,41 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             {statusLabels[refund.status]}
           </Badge>
           {/* Badge de tipo de seguro */}
-          {refund.calculationSnapshot?.tipoSeguro && (
-            <Badge 
-              variant="outline" 
-              className={`text-sm px-3 py-1 ${
-                refund.calculationSnapshot.tipoSeguro === 'ambos' 
-                  ? 'bg-purple-100 text-purple-700 border-purple-300' 
-                  : refund.calculationSnapshot.tipoSeguro === 'desgravamen'
-                    ? 'bg-blue-100 text-blue-700 border-blue-300'
-                    : 'bg-amber-100 text-amber-700 border-amber-300'
-              }`}
-            >
-              {refund.calculationSnapshot.tipoSeguro === 'desgravamen' && (
-                <>
-                  <Shield className="h-3 w-3 mr-1" />
-                  Desgravamen
-                </>
-              )}
-              {refund.calculationSnapshot.tipoSeguro === 'cesantia' && (
-                <>
-                  <Briefcase className="h-3 w-3 mr-1" />
-                  Cesantía
-                </>
-              )}
-              {refund.calculationSnapshot.tipoSeguro === 'ambos' && (
-                <>
-                  <Shield className="h-3 w-3 mr-1" />
-                  Desgravamen + Cesantía
-                </>
-              )}
-            </Badge>
-          )}
+          {(() => {
+            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+            if (!insuranceType) return null
+            return (
+              <Badge 
+                variant="outline" 
+                className={`text-sm px-3 py-1 ${
+                  insuranceType === 'ambos' 
+                    ? 'bg-purple-100 text-purple-700 border-purple-300' 
+                    : insuranceType === 'desgravamen'
+                      ? 'bg-blue-100 text-blue-700 border-blue-300'
+                      : 'bg-amber-100 text-amber-700 border-amber-300'
+                }`}
+              >
+                {insuranceType === 'desgravamen' && (
+                  <>
+                    <Shield className="h-3 w-3 mr-1" />
+                    Desgravamen
+                  </>
+                )}
+                {insuranceType === 'cesantia' && (
+                  <>
+                    <Briefcase className="h-3 w-3 mr-1" />
+                    Cesantía
+                  </>
+                )}
+                {insuranceType === 'ambos' && (
+                  <>
+                    <Shield className="h-3 w-3 mr-1" />
+                    Desgravamen + Cesantía
+                  </>
+                )}
+              </Badge>
+            )
+          })()}
           {experianStatus && (
             <Badge 
               variant={experianStatus.hasSignedPdf ? "default" : "destructive"}
@@ -345,76 +372,84 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           </Button>
           {/* Certificados de cobertura: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
-            <>
-              {/* Certificado Desgravamen - activo si tipoSeguro es 'desgravamen' o 'ambos' */}
-              {(!refund.calculationSnapshot?.tipoSeguro || refund.calculationSnapshot.tipoSeguro === 'cesantia') ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                        className="gap-1.5"
-                      >
-                        <Shield className="h-4 w-4" />
-                        <span className="hidden sm:inline">Cert.</span> Desgravamen
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    No aplica - Solicitud de tipo cesantía
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <GenerateCertificateDialog 
-                  refund={refund} 
-                  isMandateSigned={experianStatus?.hasSignedPdf}
-                  certificateType="desgravamen"
-                />
-              )}
+            (() => {
+              const insuranceType = getInsuranceType(refund.calculationSnapshot)
+              const showDesgravamen = insuranceType === 'desgravamen' || insuranceType === 'ambos'
+              const showCesantia = insuranceType === 'cesantia' || insuranceType === 'ambos'
               
-              {/* Certificado Cesantía - activo si tipoSeguro es 'cesantia' o 'ambos' */}
-              {(!refund.calculationSnapshot?.tipoSeguro || refund.calculationSnapshot.tipoSeguro === 'desgravamen') ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                        className="gap-1.5"
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        <span className="hidden sm:inline">Cert.</span> Cesantía
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    No aplica - Solicitud de tipo desgravamen
-                  </TooltipContent>
-                </Tooltip>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled
-                        className="gap-1.5 opacity-60"
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        <span className="hidden sm:inline">Cert.</span> Cesantía
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Próximamente disponible
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </>
+              return (
+                <>
+                  {/* Certificado Desgravamen */}
+                  {!showDesgravamen ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled
+                            className="gap-1.5"
+                          >
+                            <Shield className="h-4 w-4" />
+                            <span className="hidden sm:inline">Cert.</span> Desgravamen
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {!insuranceType ? 'Tipo de seguro no disponible' : 'No aplica - Solicitud de tipo cesantía'}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <GenerateCertificateDialog 
+                      refund={refund} 
+                      isMandateSigned={experianStatus?.hasSignedPdf}
+                      certificateType="desgravamen"
+                    />
+                  )}
+                  
+                  {/* Certificado Cesantía */}
+                  {!showCesantia ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled
+                            className="gap-1.5"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span className="hidden sm:inline">Cert.</span> Cesantía
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {!insuranceType ? 'Tipo de seguro no disponible' : 'No aplica - Solicitud de tipo desgravamen'}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled
+                            className="gap-1.5 opacity-60"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                            <span className="hidden sm:inline">Cert.</span> Cesantía
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Próximamente disponible
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </>
+              )
+            })()
           )}
           {/* Corte: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
