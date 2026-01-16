@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -25,6 +25,7 @@ import firmaTdvImg from '@/assets/firma-tdv.png'
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
   isMandateSigned?: boolean
+  certificateType?: 'desgravamen' | 'cesantia'
 }
 
 interface CertificateData {
@@ -89,7 +90,7 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
   })
 }
 
-export function GenerateCertificateDialog({ refund, isMandateSigned = false }: GenerateCertificateDialogProps) {
+export function GenerateCertificateDialog({ refund, isMandateSigned = false, certificateType = 'desgravamen' }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
@@ -2520,9 +2521,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false }: G
           <TooltipTrigger asChild>
             <span>
               <DialogTrigger asChild>
-                <Button variant="outline" disabled={!isMandateSigned}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Certificado de Cobertura
+                <Button variant="outline" size="sm" disabled={!isMandateSigned} className="gap-1.5">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Cert.</span> Desgravamen
                 </Button>
               </DialogTrigger>
             </span>
