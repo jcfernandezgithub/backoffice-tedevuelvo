@@ -112,6 +112,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
   const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
   const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
+  const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
 
   // Estado local para el input de búsqueda (para debounce)
   const [searchInput, setSearchInput] = useState(filters.search)
@@ -241,6 +242,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setMandateFilter('all')
     setOriginFilter('all')
     setBankFilter('all')
+    setInsuranceTypeFilter('all')
     setSearchParams(new URLSearchParams())
   }
   
@@ -273,6 +275,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       params.delete('bank')
     } else {
       params.set('bank', value)
+    }
+    setSearchParams(params)
+  }
+  
+  const handleInsuranceTypeFilterChange = (value: string) => {
+    setInsuranceTypeFilter(value)
+    const params = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      params.delete('insuranceType')
+    } else {
+      params.set('insuranceType', value)
     }
     setSearchParams(params)
   }
@@ -498,11 +511,28 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       : mandateFilteredItems.filter((r: any) => !r.partnerId)
   
   // Aplicar filtro de datos bancarios
-  const filteredItems = bankFilter === 'all'
+  const bankFilteredItems = bankFilter === 'all'
     ? originFilteredItems
     : bankFilter === 'ready'
       ? originFilteredItems.filter((r: any) => r.bankInfo)
       : originFilteredItems.filter((r: any) => !r.bankInfo)
+
+  // Aplicar filtro de tipo de seguro
+  const filteredItems = insuranceTypeFilter === 'all'
+    ? bankFilteredItems
+    : bankFilteredItems.filter((r: any) => {
+        const snapshot = r.calculationSnapshot
+        const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+        
+        if (insuranceTypeFilter === 'cesantia') {
+          return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
+        } else if (insuranceTypeFilter === 'desgravamen') {
+          return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
+        } else if (insuranceTypeFilter === 'ambos') {
+          return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
+        }
+        return true
+      })
 
   // Aplicar ordenamiento
   const sortedItems = [...filteredItems].sort((a: any, b: any) => {
@@ -648,6 +678,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="ready">Listo para pago</SelectItem>
                 <SelectItem value="pending">Sin datos bancarios</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={insuranceTypeFilter}
+              onValueChange={handleInsuranceTypeFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo Seguro" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="desgravamen">Desgravamen</SelectItem>
+                <SelectItem value="cesantia">Cesantía</SelectItem>
+                <SelectItem value="ambos">Ambos</SelectItem>
               </SelectContent>
             </Select>
           </div>
