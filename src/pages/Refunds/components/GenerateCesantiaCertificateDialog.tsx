@@ -98,11 +98,17 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isLoadingRut, setIsLoadingRut] = useState(false)
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
-  const nameParts = refund.fullName?.split(' ') || []
-  // Asumimos: primer(os) elemento(s) = nombres, penúltimo = apellido paterno, último = apellido materno
-  const defaultNombres = nameParts.length >= 3 ? nameParts.slice(0, nameParts.length - 2).join(' ') : (nameParts[0] || '')
-  const defaultApellidoPaterno = nameParts.length >= 2 ? nameParts[nameParts.length - 2] : (nameParts[1] || '')
-  const defaultApellidoMaterno = nameParts.length >= 1 ? nameParts[nameParts.length - 1] : ''
+  const nameParts = refund.fullName?.split(' ').filter(p => p.trim()) || []
+  // Si hay 3+ partes: nombres = todo menos los 2 últimos, penúltimo = apellido paterno, último = apellido materno
+  // Si hay 2 partes: primer = nombres, segundo = apellido paterno, sin apellido materno
+  // Si hay 1 parte: solo nombres
+  const defaultNombres = nameParts.length >= 3 
+    ? nameParts.slice(0, nameParts.length - 2).join(' ') 
+    : (nameParts[0] || '')
+  const defaultApellidoPaterno = nameParts.length >= 3 
+    ? nameParts[nameParts.length - 2] 
+    : (nameParts.length === 2 ? nameParts[1] : '')
+  const defaultApellidoMaterno = nameParts.length >= 3 ? nameParts[nameParts.length - 1] : ''
 
   const [formData, setFormData] = useState<CesantiaCertificateData>({
     correlativo: '',
@@ -644,6 +650,14 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="nombres">Nombres</Label>
+                    <Input
+                      id="nombres"
+                      value={formData.nombres}
+                      onChange={(e) => handleChange('nombres', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="apellidoPaterno">Apellido Paterno</Label>
                     <Input
                       id="apellidoPaterno"
@@ -657,14 +671,6 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
                       id="apellidoMaterno"
                       value={formData.apellidoMaterno}
                       onChange={(e) => handleChange('apellidoMaterno', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nombres">Nombres</Label>
-                    <Input
-                      id="nombres"
-                      value={formData.nombres}
-                      onChange={(e) => handleChange('nombres', e.target.value)}
                     />
                   </div>
                 </div>
