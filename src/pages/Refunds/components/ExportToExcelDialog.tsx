@@ -59,11 +59,14 @@ export function ExportToExcelDialog({
         minute: '2-digit'
       })
       
-      // Tipo de seguro
-      const tipoSeguro = calculation.insuranceToEvaluate === 'desgravamen' 
-        ? 'Desgravamen' 
-        : calculation.insuranceToEvaluate === 'cesantia' 
+      // Tipo de seguro (detectar correctamente mayúsculas/minúsculas)
+      const insuranceToEvaluate = (calculation.insuranceToEvaluate || '').toUpperCase()
+      const tipoSeguro = insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
         ? 'Cesantía' 
+        : insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
+        ? 'Desgravamen'
+        : insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
+        ? 'Ambos'
         : 'N/A'
       
       // Institución financiera (con homologación)
