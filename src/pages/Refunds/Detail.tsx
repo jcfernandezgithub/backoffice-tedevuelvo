@@ -32,6 +32,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
+import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
 import { Money } from '@/components/common/Money'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -428,24 +429,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            disabled
-                            className="gap-1.5 opacity-60"
-                          >
-                            <Briefcase className="h-4 w-4" />
-                            <span className="hidden sm:inline">Cert.</span> Cesantía
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Próximamente disponible
-                      </TooltipContent>
-                    </Tooltip>
+                    <GenerateCesantiaCertificateDialog 
+                      refund={refund} 
+                      isMandateSigned={experianStatus?.hasSignedPdf}
+                    />
                   )}
                 </>
               )
