@@ -824,6 +824,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="status" />
                         </div>
                       </TableHead>
+                      <TableHead>Tipo Seguro</TableHead>
                       <TableHead>Mandato</TableHead>
                       <TableHead 
                         className="text-right cursor-pointer hover:bg-muted/50 select-none"
@@ -926,6 +927,44 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <Badge className={getStatusColors(refund.status)}>
                             {statusLabels[refund.status]}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const snapshot = (refund as any).calculationSnapshot
+                            const hasDesgravamen = snapshot?.insuranceType === 'desgravamen' || 
+                              snapshot?.desgravamenAmount > 0 || 
+                              snapshot?.newMonthlyPremium > 0
+                            const hasCesantia = snapshot?.insuranceType === 'cesantia' || 
+                              snapshot?.cesantiaAmount > 0 ||
+                              snapshot?.tipoSeguro === 'cesantia'
+                            const hasBoth = snapshot?.insuranceType === 'ambos' ||
+                              (hasDesgravamen && hasCesantia)
+                            
+                            if (hasBoth) {
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                    Desgravamen
+                                  </Badge>
+                                  <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                    Cesantía
+                                  </Badge>
+                                </div>
+                              )
+                            } else if (hasCesantia) {
+                              return (
+                                <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                  Cesantía
+                                </Badge>
+                              )
+                            } else {
+                              return (
+                                <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                  Desgravamen
+                                </Badge>
+                              )
+                            }
+                          })()}
                         </TableCell>
                         <TableCell>
                           {mandateStatuses?.[refund.publicId] ? (
@@ -1111,6 +1150,45 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             {statusLabels[refund.status]}
                           </Badge>
                         )
+                      },
+                      {
+                        label: 'Tipo Seguro',
+                        value: (() => {
+                          const snapshot = (refund as any).calculationSnapshot
+                          const hasDesgravamen = snapshot?.insuranceType === 'desgravamen' || 
+                            snapshot?.desgravamenAmount > 0 || 
+                            snapshot?.newMonthlyPremium > 0
+                          const hasCesantia = snapshot?.insuranceType === 'cesantia' || 
+                            snapshot?.cesantiaAmount > 0 ||
+                            snapshot?.tipoSeguro === 'cesantia'
+                          const hasBoth = snapshot?.insuranceType === 'ambos' ||
+                            (hasDesgravamen && hasCesantia)
+                          
+                          if (hasBoth) {
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                  Desgravamen
+                                </Badge>
+                                <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                  Cesantía
+                                </Badge>
+                              </div>
+                            )
+                          } else if (hasCesantia) {
+                            return (
+                              <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                Cesantía
+                              </Badge>
+                            )
+                          } else {
+                            return (
+                              <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                Desgravamen
+                              </Badge>
+                            )
+                          }
+                        })()
                       },
                       {
                         label: 'Monto estimado',
