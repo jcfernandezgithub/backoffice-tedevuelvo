@@ -1,8 +1,34 @@
 # Welcome to your Lovable project
 
-## Versión 2.0.9
+## Versión 2.1.0
 
 ## Changelog
+
+### Versión 2.1.0 - 2026-01-16
+
+#### Generador de Certificado de Cesantía
+- **Nuevo certificado de cesantía**: Implementado generador de PDF para certificados de seguro de cesantía.
+  - Formato de dos páginas similar al certificado de desgravamen.
+  - Datos dinámicos del asegurado, ejecutivo y seguro.
+  - Cálculo automático de prima neta basado en monto del crédito y tasa escalonada de cesantía.
+  - Formulario de edición con campos organizados: Nombres, Apellido Paterno, Apellido Materno.
+  - Parsing inteligente del nombre completo respetando el orden correcto.
+
+#### Mejoras en Lista de Solicitudes
+- **Nueva columna "Tipo Seguro"**: Agregada columna que muestra el tipo de seguro de cada solicitud.
+  - Detección automática: Desgravamen (violeta), Cesantía (teal) o Ambos.
+  - Basado en el campo `calculationSnapshot.insuranceToEvaluate`.
+  - Visible tanto en vista desktop como en vista móvil.
+
+- **Filtro por tipo de seguro**: Nuevo filtro en la sección de filtros.
+  - Opciones: Todos, Desgravamen, Cesantía, Ambos.
+  - Persistencia en URL para compartir filtros.
+
+#### Mejoras en Exportación Excel
+- **Tipo de seguro en exports**: La columna "Tipo de Seguro" ahora detecta correctamente el formato mayúsculas de la API.
+  - Lógica case-insensitive para detectar CESANTIA, DESGRAVAMEN o AMBOS.
+
+---
 
 ### Versión 2.0.9 - 2026-01-07
 
