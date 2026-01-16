@@ -97,11 +97,12 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
 
-  // Separar nombre completo en partes
+  // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
   const nameParts = refund.fullName?.split(' ') || []
-  const defaultApellidoPaterno = nameParts.length >= 2 ? nameParts[nameParts.length - 2] : ''
+  // Asumimos: primer(os) elemento(s) = nombres, penúltimo = apellido paterno, último = apellido materno
+  const defaultNombres = nameParts.length >= 3 ? nameParts.slice(0, nameParts.length - 2).join(' ') : (nameParts[0] || '')
+  const defaultApellidoPaterno = nameParts.length >= 2 ? nameParts[nameParts.length - 2] : (nameParts[1] || '')
   const defaultApellidoMaterno = nameParts.length >= 1 ? nameParts[nameParts.length - 1] : ''
-  const defaultNombres = nameParts.slice(0, Math.max(0, nameParts.length - 2)).join(' ')
 
   const [formData, setFormData] = useState<CesantiaCertificateData>({
     correlativo: '',
