@@ -156,11 +156,38 @@ class RefundAdminApiClient {
     return response.json()
   }
 
-  downloadDoc(publicId: string, docId: string): void {
-    const token = authService.getAccessToken()
+  async downloadDoc(publicId: string, docId: string): Promise<void> {
+    const headers = await this.getAuthHeaders()
     const url = `${API_BASE_URL}/refund-requests/admin/${publicId}/refund-documents/${docId}`
-    const authUrl = token ? `${url}?token=${encodeURIComponent(token)}` : url
-    window.open(authUrl, '_blank')
+    
+    try {
+      const response = await fetch(url, { headers })
+      
+      if (!response.ok) {
+        throw new Error('Error al descargar documento')
+      }
+      
+      const blob = await response.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      
+      // Extraer nombre del archivo del header o usar ID
+      const contentDisposition = response.headers.get('Content-Disposition')
+      const filenameMatch = contentDisposition?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      const filename = filenameMatch ? filenameMatch[1].replace(/['"]/g, '') : `documento-${docId}`
+      
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Liberar memoria
+      URL.revokeObjectURL(blobUrl)
+    } catch (error) {
+      console.error('Error downloading document:', error)
+      throw error
+    }
   }
 
   async listByPartner(partnerId: string): Promise<RefundRequest[]> {
