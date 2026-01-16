@@ -931,16 +931,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell>
                           {(() => {
                             const snapshot = (refund as any).calculationSnapshot
-                            const hasDesgravamen = snapshot?.insuranceType === 'desgravamen' || 
-                              snapshot?.desgravamenAmount > 0 || 
-                              snapshot?.newMonthlyPremium > 0
-                            const hasCesantia = snapshot?.insuranceType === 'cesantia' || 
-                              snapshot?.cesantiaAmount > 0 ||
-                              snapshot?.tipoSeguro === 'cesantia'
-                            const hasBoth = snapshot?.insuranceType === 'ambos' ||
-                              (hasDesgravamen && hasCesantia)
+                            const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
                             
-                            if (hasBoth) {
+                            // Detectar cesantía: por insuranceToEvaluate o campos específicos
+                            const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
+                              insuranceToEvaluate.includes('CESANT') ||
+                              snapshot?.tipoSeguro?.toLowerCase() === 'cesantia'
+                            
+                            // Detectar desgravamen: por insuranceToEvaluate o campos específicos
+                            const isDesgravamen = insuranceToEvaluate === 'DESGRAVAMEN' || 
+                              insuranceToEvaluate.includes('DESGRAV') ||
+                              snapshot?.tipoSeguro?.toLowerCase() === 'desgravamen'
+                            
+                            // Detectar ambos
+                            const isBoth = insuranceToEvaluate === 'AMBOS' || 
+                              insuranceToEvaluate.includes('BOTH') ||
+                              (isCesantia && isDesgravamen)
+                            
+                            if (isBoth) {
                               return (
                                 <div className="flex flex-col gap-1">
                                   <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
@@ -951,7 +959,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                   </Badge>
                                 </div>
                               )
-                            } else if (hasCesantia) {
+                            } else if (isCesantia) {
                               return (
                                 <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
                                   Cesantía
@@ -1155,16 +1163,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         label: 'Tipo Seguro',
                         value: (() => {
                           const snapshot = (refund as any).calculationSnapshot
-                          const hasDesgravamen = snapshot?.insuranceType === 'desgravamen' || 
-                            snapshot?.desgravamenAmount > 0 || 
-                            snapshot?.newMonthlyPremium > 0
-                          const hasCesantia = snapshot?.insuranceType === 'cesantia' || 
-                            snapshot?.cesantiaAmount > 0 ||
-                            snapshot?.tipoSeguro === 'cesantia'
-                          const hasBoth = snapshot?.insuranceType === 'ambos' ||
-                            (hasDesgravamen && hasCesantia)
+                          const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
                           
-                          if (hasBoth) {
+                          const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
+                            insuranceToEvaluate.includes('CESANT') ||
+                            snapshot?.tipoSeguro?.toLowerCase() === 'cesantia'
+                          
+                          const isDesgravamen = insuranceToEvaluate === 'DESGRAVAMEN' || 
+                            insuranceToEvaluate.includes('DESGRAV') ||
+                            snapshot?.tipoSeguro?.toLowerCase() === 'desgravamen'
+                          
+                          const isBoth = insuranceToEvaluate === 'AMBOS' || 
+                            insuranceToEvaluate.includes('BOTH') ||
+                            (isCesantia && isDesgravamen)
+                          
+                          if (isBoth) {
                             return (
                               <div className="flex flex-wrap gap-1">
                                 <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
@@ -1175,7 +1188,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 </Badge>
                               </div>
                             )
-                          } else if (hasCesantia) {
+                          } else if (isCesantia) {
                             return (
                               <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
                                 Cesantía
