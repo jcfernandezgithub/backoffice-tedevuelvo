@@ -15,6 +15,7 @@ const REFUND_MARGIN_PERCENTAGE = 10; // 10% margen
 const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   Santander: "BANCO SANTANDER",
   BCI: "BANCO BCI",
+  "Lider BCI": "BANCO BCI",
   Scotiabank: "SCOTIABANK",
   Chile: "BANCO CHILE",
   Security: "BANCO SECURITY",
@@ -414,7 +415,8 @@ export const calcularDevolucion = (
 // Lista de instituciones disponibles
 export const INSTITUCIONES_DISPONIBLES = [
   "Santander",
-  "BCI", 
+  "BCI",
+  "Lider BCI",
   "Scotiabank",
   "Chile",
   "Security",
