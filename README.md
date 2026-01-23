@@ -4,7 +4,25 @@
 
 ## Changelog
 
-### Versión 2.1.0 - 2026-01-16
+### Versión 2.1.0 - 2026-01-23
+
+#### Mejoras en Calculadora
+- **Búsqueda en selector de institución**: El combo de instituciones financieras ahora permite buscar escribiendo el nombre del banco.
+  - Implementado con componente Combobox (Command + Popover).
+  - Filtrado en tiempo real mientras el usuario escribe.
+  - Mejora la experiencia de usuario al tener muchas instituciones.
+
+- **Nuevas instituciones financieras**: Agregadas 5 nuevas instituciones al selector.
+  - **Lider BCI**: Usa las mismas tasas que BCI (producto conjunto Lider/Walmart y BCI).
+  - **Cencosud**: Banco Cencosud Scotiabank.
+  - **Forum**: Financiera Forum.
+  - **Tanner**: Tanner Servicios Financieros.
+  - **Cooperativas**: Opción genérica para cooperativas de ahorro.
+
+- **Corrección de mapeo de instituciones**: Validación y corrección de todas las instituciones financieras.
+  - Agregado mapeo faltante para "Banco Security" en datos de cesantía.
+  - Agregado mapeo para "Itaú - Corpbanca" (BANCO ITAU-CORPBANCA).
+  - Total de 17 instituciones ahora disponibles con soporte completo para desgravamen y cesantía.
 
 #### Generador de Certificado de Cesantía
 - **Nuevo certificado de cesantía**: Implementado generador de PDF para certificados de seguro de cesantía.
