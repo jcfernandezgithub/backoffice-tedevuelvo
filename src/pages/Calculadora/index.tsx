@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw, ChevronDown, Settings } from "lucide-react";
+import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageCircle, Mail, RotateCcw, ChevronDown, Settings, ChevronsUpDown, Check } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
@@ -19,6 +19,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const formSchema = z.object({
   institucion: z.string().min(1, "Selecciona una institución"),
@@ -69,6 +71,7 @@ export default function CalculadoraPage() {
   const [margenTeDevuelvo, setMargenTeDevuelvo] = useState(getMargenTeDevuelvo);
   const [margenSeguridad, setMargenSeguridad] = useState(getMargenTeDevuelvo);
   const [editandoMargenTeDevuelvo, setEditandoMargenTeDevuelvo] = useState(false);
+  const [openInstitution, setOpenInstitution] = useState(false);
 
   const MARGENES_DISPONIBLES = generarMargenes(margenTeDevuelvo);
 
@@ -420,27 +423,59 @@ export default function CalculadoraPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                {/* Institución */}
+                {/* Institución - Combobox con búsqueda */}
                 <FormField
                   control={form.control}
                   name="institucion"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Institución financiera</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecciona tu banco o cooperativa" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {INSTITUCIONES_DISPONIBLES.map((inst) => (
-                            <SelectItem key={inst} value={inst}>
-                              {inst}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={openInstitution} onOpenChange={setOpenInstitution}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              aria-expanded={openInstitution}
+                              className={cn(
+                                "w-full justify-between font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value || "Selecciona o busca tu banco..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Buscar institución..." />
+                            <CommandList>
+                              <CommandEmpty>No se encontró la institución.</CommandEmpty>
+                              <CommandGroup>
+                                {INSTITUCIONES_DISPONIBLES.map((inst) => (
+                                  <CommandItem
+                                    key={inst}
+                                    value={inst}
+                                    onSelect={() => {
+                                      field.onChange(inst);
+                                      setOpenInstitution(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === inst ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {inst}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
