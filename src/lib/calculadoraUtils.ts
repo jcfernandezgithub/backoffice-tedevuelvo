@@ -15,7 +15,7 @@ const REFUND_MARGIN_PERCENTAGE = 10; // 10% margen
 const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   Santander: "BANCO SANTANDER",
   BCI: "BANCO BCI",
-  "Lider BCI": "BANCO BCI",
+  "Lider BCI": "LIDER-BCI",
   Scotiabank: "SCOTIABANK",
   Chile: "BANCO CHILE",
   Security: "BANCO SECURITY",
@@ -29,13 +29,14 @@ const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   Internacional: "BANCO CONSORCIO",
   Cencosud: "BANCO CENCOSUD",
   Coopeuch: "COOPEUCH",
+  Cooperativas: "COOPERATIVAS",
   Financoop: "COOPEUCH",
   Ahorrocoop: "COOPEUCH",
   Libercoop: "COOPEUCH",
   Capual: "COOPEUCH",
   Bancrece: "COOPEUCH",
   Islacoop: "COOPEUCH",
-  FORUM: "FORUM",
+  Forum: "FORUM",
   Tanner: "TANNER",
 };
 
@@ -427,4 +428,8 @@ export const INSTITUCIONES_DISPONIBLES = [
   "Falabella",
   "Consorcio",
   "Coopeuch",
+  "Cencosud",
+  "Forum",
+  "Tanner",
+  "Cooperativas",
 ];
