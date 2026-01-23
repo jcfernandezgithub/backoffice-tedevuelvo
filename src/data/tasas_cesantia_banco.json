@@ -34,6 +34,13 @@
     "tramo_4": { "desde": 5000001, "hasta": 7000000, "tasa_mensual": 0.001812 },
     "tramo_5": { "desde": 7000001, "hasta": null, "tasa_mensual": 0.0018 }
   },
+  "BANCO ITAU-CORPBANCA": {
+    "tramo_1": { "desde": 500000, "hasta": 1000000, "tasa_mensual": 0.003456 },
+    "tramo_2": { "desde": 1000001, "hasta": 3000000, "tasa_mensual": 0.002124 },
+    "tramo_3": { "desde": 3000001, "hasta": 5000000, "tasa_mensual": 0.001884 },
+    "tramo_4": { "desde": 5000001, "hasta": 7000000, "tasa_mensual": 0.001812 },
+    "tramo_5": { "desde": 7000001, "hasta": null, "tasa_mensual": 0.0018 }
+  },
   "BANCO BICE": {
     "tramo_1": { "desde": 500000, "hasta": 1000000, "tasa_mensual": 0.003456 },
     "tramo_2": { "desde": 1000001, "hasta": 3000000, "tasa_mensual": 0.002124 },
