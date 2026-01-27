@@ -139,6 +139,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryKey: ['refunds', filters],
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
+    staleTime: 30 * 1000, // Cache por 30 segundos
   })
 
   // Fetch partners para mostrar nombres de alianzas
@@ -469,21 +470,37 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     ? dateFilteredItems.filter((r: any) => r.status === filters.status)
     : dateFilteredItems
   
-  // Primero aplicamos ordenamiento y paginación SIN el filtro de mandato
+  // Primero aplicamos filtros SIN mandato, luego ordenamos y paginamos
   // para saber cuáles items están en la página actual
   const preFilteredForPagination = statusFilteredItems
   
-  // Query para obtener estados de mandatos SOLO de la página actual (máx 20 items)
-  // Esto evita hacer miles de requests HTTP
+  // Aplicar ordenamiento antes de paginar para calcular página correcta
+  const preSortedItems = [...preFilteredForPagination].sort((a: any, b: any) => {
+    let aValue = a[sortField]
+    let bValue = b[sortField]
+    if (sortField === 'createdAt') {
+      aValue = new Date(aValue).getTime()
+      bValue = new Date(bValue).getTime()
+    } else if (sortField === 'estimatedAmountCLP') {
+      aValue = Number(aValue)
+      bValue = Number(bValue)
+    } else if (typeof aValue === 'string') {
+      aValue = (aValue || '').toLowerCase()
+      bValue = (bValue || '').toLowerCase()
+    }
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+    return 0
+  })
+  
+  // Calcular items de la página actual ANTES de la query de mandatos
   const pageSize = normalizedData.pageSize
   const currentPageForQuery = filters.page || 1
   const startIdx = (currentPageForQuery - 1) * pageSize
+  const currentPageItems = preSortedItems.slice(startIdx, startIdx + pageSize)
   
-  // Si hay filtro de mandato activo, necesitamos cargar más items para filtrar
-  // pero limitamos a un máximo razonable para no saturar
-  const MAX_MANDATE_FETCH = mandateFilter !== 'all' ? 200 : pageSize
-  const idsToFetch = preFilteredForPagination
-    .slice(0, MAX_MANDATE_FETCH)
+  // SOLO cargar mandatos para los items de la página actual (máx 20)
+  const idsToFetch = currentPageItems
     .map((r: any) => r.publicId)
     .filter(Boolean)
   
@@ -491,58 +508,59 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryKey: ['mandate-statuses-page', idsToFetch],
     queryFn: async () => {
       const statuses: Record<string, any> = {}
-      // Procesar en lotes de 10 para no saturar
-      const batchSize = 10
-      for (let i = 0; i < idsToFetch.length; i += batchSize) {
-        const batch = idsToFetch.slice(i, i + batchSize)
-        await Promise.all(
-          batch.map(async (publicId: string) => {
-            try {
-              const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-              )
-              if (response.ok) {
-                statuses[publicId] = await response.json()
-              }
-            } catch (error) {
-              // Silently fail for individual requests
+      // Ejecutar todas las peticiones en paralelo (solo 20 máx)
+      await Promise.all(
+        idsToFetch.map(async (publicId: string) => {
+          try {
+            const response = await fetch(
+              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+            )
+            if (response.ok) {
+              statuses[publicId] = await response.json()
             }
-          })
-        )
-      }
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
       return statuses
     },
     enabled: idsToFetch.length > 0,
-    staleTime: 60 * 1000, // Cache por 1 minuto
+    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // Aplicar filtro de mandato (ahora mandateStatuses ya está disponible)
-  const mandateFilteredItems = mandateFilter === 'all' 
-    ? statusFilteredItems
-    : statusFilteredItems.filter((r: any) => {
+  // El filtro de mandato SOLO se aplica a los items de la página actual
+  // ya que solo tenemos datos de mandato para esos items
+  // Para filtros de mandato, mostramos los items de la página actual filtrados
+  const mandateFilteredPageItems = mandateFilter === 'all' 
+    ? currentPageItems
+    : currentPageItems.filter((r: any) => {
         const status = mandateStatuses?.[r.publicId]
         const hasSigned = status?.hasSignedPdf === true
         return mandateFilter === 'signed' ? hasSigned : !hasSigned
       })
   
-  // Aplicar filtro de origen
-  const originFilteredItems = originFilter === 'all'
-    ? mandateFilteredItems
-    : originFilter === 'alianza'
-      ? mandateFilteredItems.filter((r: any) => r.partnerId)
-      : mandateFilteredItems.filter((r: any) => !r.partnerId)
-  
-  // Aplicar filtro de datos bancarios
-  const bankFilteredItems = bankFilter === 'all'
-    ? originFilteredItems
-    : bankFilter === 'ready'
-      ? originFilteredItems.filter((r: any) => r.bankInfo)
-      : originFilteredItems.filter((r: any) => !r.bankInfo)
-
-  // Aplicar filtro de tipo de seguro
-  const filteredItems = insuranceTypeFilter === 'all'
-    ? bankFilteredItems
-    : bankFilteredItems.filter((r: any) => {
+  // Aplicar filtros adicionales que NO requieren mandato a TODO el dataset
+  const applyNonMandateFilters = (items: any[]) => {
+    let result = items
+    
+    // Filtro de origen
+    if (originFilter !== 'all') {
+      result = originFilter === 'alianza'
+        ? result.filter((r: any) => r.partnerId)
+        : result.filter((r: any) => !r.partnerId)
+    }
+    
+    // Filtro de datos bancarios
+    if (bankFilter !== 'all') {
+      result = bankFilter === 'ready'
+        ? result.filter((r: any) => r.bankInfo)
+        : result.filter((r: any) => !r.bankInfo)
+    }
+    
+    // Filtro de tipo de seguro
+    if (insuranceTypeFilter !== 'all') {
+      result = result.filter((r: any) => {
         const snapshot = r.calculationSnapshot
         const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
         
@@ -555,37 +573,30 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         }
         return true
       })
-
-  // Aplicar ordenamiento
-  const sortedItems = [...filteredItems].sort((a: any, b: any) => {
-    let aValue = a[sortField]
-    let bValue = b[sortField]
-
-    // Manejo especial para diferentes tipos de datos
-    if (sortField === 'createdAt') {
-      aValue = new Date(aValue).getTime()
-      bValue = new Date(bValue).getTime()
-    } else if (sortField === 'estimatedAmountCLP') {
-      aValue = Number(aValue)
-      bValue = Number(bValue)
-    } else if (typeof aValue === 'string') {
-      aValue = aValue.toLowerCase()
-      bValue = bValue.toLowerCase()
     }
+    
+    return result
+  }
+  
+  // Aplicar filtros no-mandato al dataset completo para conteo correcto
+  const filteredFullDataset = applyNonMandateFilters(preSortedItems)
+  
+  // Para los items de la página, aplicar filtros adicionales después del filtro de mandato
+  const paginatedItems = applyNonMandateFilters(mandateFilteredPageItems)
+  
+  // sortedItems se usa para exportar - contiene todo el dataset filtrado (sin mandato)
+  const sortedItems = filteredFullDataset
 
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-    return 0
-  })
-
-  const totalFiltered = sortedItems.length
-  const totalPages = totalFiltered > 0 
-    ? Math.ceil(totalFiltered / normalizedData.pageSize)
-    : 0
+  const totalFiltered = mandateFilter === 'all' 
+    ? filteredFullDataset.length 
+    : paginatedItems.length // Cuando hay filtro de mandato, solo contamos los de la página
+  const totalPages = mandateFilter === 'all'
+    ? Math.max(1, Math.ceil(filteredFullDataset.length / normalizedData.pageSize))
+    : 1 // Con filtro de mandato, solo mostramos una página
 
   const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * normalizedData.pageSize
-  const paginatedItems = sortedItems.slice(startIndex, startIndex + normalizedData.pageSize)
+  // paginatedItems ya está definido arriba - no redeclarar
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
