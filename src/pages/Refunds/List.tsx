@@ -390,7 +390,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }, [error])
 
   // Normalizar respuesta de la API - puede ser array o objeto
-  const normalizedData = (() => {
+  const normalizedData = useMemo(() => {
     if (!data) {
       return { total: 0, page: 1, pageSize: 20, items: [] }
     }
@@ -412,92 +412,100 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     
     // Fallback
     return { total: 0, page: 1, pageSize: 20, items: [] }
-  })()
+  }, [data, filters.page, filters.pageSize])
 
-  const searchTerm = (filters.search || '').toLowerCase().trim()
-  const textFilteredItems = searchTerm
-    ? normalizedData.items.filter((r: any) => {
-        const haystack = [
-          r.publicId,
-          r.id,
-          r.email,
-          r.rut,
-          r.fullName,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-        return haystack.includes(searchTerm)
+  // Memoizar todo el pipeline de filtrado para evitar recálculos innecesarios
+  const statusFilteredItems = useMemo(() => {
+    const items = normalizedData.items
+    
+    // Filtro de búsqueda por texto
+    const searchTerm = (filters.search || '').toLowerCase().trim()
+    let filtered = searchTerm
+      ? items.filter((r: any) => {
+          const haystack = [
+            r.publicId,
+            r.id,
+            r.email,
+            r.rut,
+            r.fullName,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+          return haystack.includes(searchTerm)
+        })
+      : items
+    
+    // Filtro por fecha de creación (interpretando las fechas como LOCAL)
+    if (filters.from || filters.to) {
+      const parseLocalStart = (s: string) => {
+        const [y, m, d] = s.split('-').map(Number)
+        return new Date(y, (m as number) - 1, d as number, 0, 0, 0, 0)
+      }
+      const parseLocalEnd = (s: string) => {
+        const [y, m, d] = s.split('-').map(Number)
+        return new Date(y, (m as number) - 1, d as number, 23, 59, 59, 999)
+      }
+      
+      filtered = filtered.filter((r: any) => {
+        if (!r.createdAt) return true
+        const createdAt = new Date(r.createdAt)
+        const createdLocalDay = new Date(
+          createdAt.getFullYear(),
+          createdAt.getMonth(),
+          createdAt.getDate(),
+          0, 0, 0, 0
+        )
+
+        if (filters.from) {
+          const fromStart = parseLocalStart(filters.from)
+          if (createdLocalDay < fromStart) return false
+        }
+        if (filters.to) {
+          const toEnd = parseLocalEnd(filters.to)
+          if (createdLocalDay > toEnd) return false
+        }
+        return true
       })
-    : normalizedData.items
+    }
+    
+    // Filtro por estado
+    if (filters.status) {
+      filtered = filtered.filter((r: any) => r.status === filters.status)
+    }
+    
+    return filtered
+  }, [normalizedData.items, filters.search, filters.from, filters.to, filters.status])
   
-  // Aplicar filtro por fecha de creación (interpretando las fechas como LOCAL)
-  const dateFilteredItems = textFilteredItems.filter((r: any) => {
-    if (!r.createdAt) return true
-
-    // Día de creación en horario local (a medianoche local)
-    const createdAt = new Date(r.createdAt)
-    const createdLocalDay = new Date(
-      createdAt.getFullYear(),
-      createdAt.getMonth(),
-      createdAt.getDate(),
-      0, 0, 0, 0
-    )
-
-    // Helpers para construir límites del día en LOCAL a partir de YYYY-MM-DD
-    const parseLocalStart = (s: string) => {
-      const [y, m, d] = s.split('-').map(Number)
-      return new Date(y, (m as number) - 1, d as number, 0, 0, 0, 0)
-    }
-    const parseLocalEnd = (s: string) => {
-      const [y, m, d] = s.split('-').map(Number)
-      return new Date(y, (m as number) - 1, d as number, 23, 59, 59, 999)
-    }
-
-    if (filters.from) {
-      const fromStart = parseLocalStart(filters.from)
-      if (createdLocalDay < fromStart) return false
-    }
-    if (filters.to) {
-      const toEnd = parseLocalEnd(filters.to)
-      if (createdLocalDay > toEnd) return false
-    }
-    return true
-  })
-  
-  // Aplicar filtro por estado
-  const statusFilteredItems = filters.status
-    ? dateFilteredItems.filter((r: any) => r.status === filters.status)
-    : dateFilteredItems
-  
-  // Primero aplicamos filtros SIN mandato, luego ordenamos y paginamos
-  // para saber cuáles items están en la página actual
-  const preFilteredForPagination = statusFilteredItems
-  
-  // Aplicar ordenamiento antes de paginar para calcular página correcta
-  const preSortedItems = [...preFilteredForPagination].sort((a: any, b: any) => {
-    let aValue = a[sortField]
-    let bValue = b[sortField]
-    if (sortField === 'createdAt') {
-      aValue = new Date(aValue).getTime()
-      bValue = new Date(bValue).getTime()
-    } else if (sortField === 'estimatedAmountCLP') {
-      aValue = Number(aValue)
-      bValue = Number(bValue)
-    } else if (typeof aValue === 'string') {
-      aValue = (aValue || '').toLowerCase()
-      bValue = (bValue || '').toLowerCase()
-    }
-    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-    return 0
-  })
+  // Memoizar ordenamiento para evitar recálculos en cada render
+  const preSortedItems = useMemo(() => {
+    return [...statusFilteredItems].sort((a: any, b: any) => {
+      let aValue = a[sortField]
+      let bValue = b[sortField]
+      if (sortField === 'createdAt') {
+        aValue = new Date(aValue).getTime()
+        bValue = new Date(bValue).getTime()
+      } else if (sortField === 'estimatedAmountCLP') {
+        aValue = Number(aValue)
+        bValue = Number(bValue)
+      } else if (typeof aValue === 'string') {
+        aValue = (aValue || '').toLowerCase()
+        bValue = (bValue || '').toLowerCase()
+      }
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [statusFilteredItems, sortField, sortDirection])
   
   // Calcular items de la página actual ANTES de la query de mandatos
   const pageSize = normalizedData.pageSize
   const currentPageForQuery = filters.page || 1
   const startIdx = (currentPageForQuery - 1) * pageSize
-  const currentPageItems = preSortedItems.slice(startIdx, startIdx + pageSize)
+  const currentPageItems = useMemo(() => 
+    preSortedItems.slice(startIdx, startIdx + pageSize),
+    [preSortedItems, startIdx, pageSize]
+  )
   
   // SOLO cargar mandatos para los items de la página actual (máx 20)
   const idsToFetch = currentPageItems
@@ -529,74 +537,80 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // El filtro de mandato SOLO se aplica a los items de la página actual
-  // ya que solo tenemos datos de mandato para esos items
-  // Para filtros de mandato, mostramos los items de la página actual filtrados
-  const mandateFilteredPageItems = mandateFilter === 'all' 
-    ? currentPageItems
-    : currentPageItems.filter((r: any) => {
-        const status = mandateStatuses?.[r.publicId]
-        const hasSigned = status?.hasSignedPdf === true
-        return mandateFilter === 'signed' ? hasSigned : !hasSigned
-      })
+  // Memoizar filtro de mandato
+  const mandateFilteredPageItems = useMemo(() => {
+    if (mandateFilter === 'all') return currentPageItems
+    return currentPageItems.filter((r: any) => {
+      const status = mandateStatuses?.[r.publicId]
+      const hasSigned = status?.hasSignedPdf === true
+      return mandateFilter === 'signed' ? hasSigned : !hasSigned
+    })
+  }, [currentPageItems, mandateFilter, mandateStatuses])
   
-  // Aplicar filtros adicionales que NO requieren mandato a TODO el dataset
-  const applyNonMandateFilters = (items: any[]) => {
-    let result = items
-    
-    // Filtro de origen
-    if (originFilter !== 'all') {
-      result = originFilter === 'alianza'
-        ? result.filter((r: any) => r.partnerId)
-        : result.filter((r: any) => !r.partnerId)
+  // Memoizar función de filtros adicionales con useCallback
+  const applyNonMandateFilters = useMemo(() => {
+    return (items: any[]) => {
+      let result = items
+      
+      // Filtro de origen
+      if (originFilter !== 'all') {
+        result = originFilter === 'alianza'
+          ? result.filter((r: any) => r.partnerId)
+          : result.filter((r: any) => !r.partnerId)
+      }
+      
+      // Filtro de datos bancarios
+      if (bankFilter !== 'all') {
+        result = bankFilter === 'ready'
+          ? result.filter((r: any) => r.bankInfo)
+          : result.filter((r: any) => !r.bankInfo)
+      }
+      
+      // Filtro de tipo de seguro
+      if (insuranceTypeFilter !== 'all') {
+        result = result.filter((r: any) => {
+          const snapshot = r.calculationSnapshot
+          const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+          
+          if (insuranceTypeFilter === 'cesantia') {
+            return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
+          } else if (insuranceTypeFilter === 'desgravamen') {
+            return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
+          } else if (insuranceTypeFilter === 'ambos') {
+            return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
+          }
+          return true
+        })
+      }
+      
+      return result
     }
-    
-    // Filtro de datos bancarios
-    if (bankFilter !== 'all') {
-      result = bankFilter === 'ready'
-        ? result.filter((r: any) => r.bankInfo)
-        : result.filter((r: any) => !r.bankInfo)
-    }
-    
-    // Filtro de tipo de seguro
-    if (insuranceTypeFilter !== 'all') {
-      result = result.filter((r: any) => {
-        const snapshot = r.calculationSnapshot
-        const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
-        
-        if (insuranceTypeFilter === 'cesantia') {
-          return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
-        } else if (insuranceTypeFilter === 'desgravamen') {
-          return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
-        } else if (insuranceTypeFilter === 'ambos') {
-          return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
-        }
-        return true
-      })
-    }
-    
-    return result
-  }
+  }, [originFilter, bankFilter, insuranceTypeFilter])
   
-  // Aplicar filtros no-mandato al dataset completo para conteo correcto
-  const filteredFullDataset = applyNonMandateFilters(preSortedItems)
+  // Memoizar dataset filtrado completo para exportación
+  const filteredFullDataset = useMemo(() => 
+    applyNonMandateFilters(preSortedItems),
+    [applyNonMandateFilters, preSortedItems]
+  )
   
-  // Para los items de la página, aplicar filtros adicionales después del filtro de mandato
-  const paginatedItems = applyNonMandateFilters(mandateFilteredPageItems)
+  // Memoizar items paginados finales
+  const paginatedItems = useMemo(() => 
+    applyNonMandateFilters(mandateFilteredPageItems),
+    [applyNonMandateFilters, mandateFilteredPageItems]
+  )
   
   // sortedItems se usa para exportar - contiene todo el dataset filtrado (sin mandato)
   const sortedItems = filteredFullDataset
 
   const totalFiltered = mandateFilter === 'all' 
     ? filteredFullDataset.length 
-    : paginatedItems.length // Cuando hay filtro de mandato, solo contamos los de la página
+    : paginatedItems.length
   const totalPages = mandateFilter === 'all'
     ? Math.max(1, Math.ceil(filteredFullDataset.length / normalizedData.pageSize))
-    : 1 // Con filtro de mandato, solo mostramos una página
+    : 1
 
   const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * normalizedData.pageSize
-  // paginatedItems ya está definido arriba - no redeclarar
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
