@@ -469,29 +469,51 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     ? dateFilteredItems.filter((r: any) => r.status === filters.status)
     : dateFilteredItems
   
-  // Query para obtener estados de mandatos de TODOS los items filtrados
-  const allPublicIds = statusFilteredItems.map((r: any) => r.publicId)
-  const { data: mandateStatuses } = useQuery({
-    queryKey: ['mandate-statuses', allPublicIds],
+  // Primero aplicamos ordenamiento y paginación SIN el filtro de mandato
+  // para saber cuáles items están en la página actual
+  const preFilteredForPagination = statusFilteredItems
+  
+  // Query para obtener estados de mandatos SOLO de la página actual (máx 20 items)
+  // Esto evita hacer miles de requests HTTP
+  const pageSize = normalizedData.pageSize
+  const currentPageForQuery = filters.page || 1
+  const startIdx = (currentPageForQuery - 1) * pageSize
+  
+  // Si hay filtro de mandato activo, necesitamos cargar más items para filtrar
+  // pero limitamos a un máximo razonable para no saturar
+  const MAX_MANDATE_FETCH = mandateFilter !== 'all' ? 200 : pageSize
+  const idsToFetch = preFilteredForPagination
+    .slice(0, MAX_MANDATE_FETCH)
+    .map((r: any) => r.publicId)
+    .filter(Boolean)
+  
+  const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
+    queryKey: ['mandate-statuses-page', idsToFetch],
     queryFn: async () => {
       const statuses: Record<string, any> = {}
-      await Promise.all(
-        allPublicIds.map(async (publicId: string) => {
-          try {
-            const response = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            )
-            if (response.ok) {
-              statuses[publicId] = await response.json()
+      // Procesar en lotes de 10 para no saturar
+      const batchSize = 10
+      for (let i = 0; i < idsToFetch.length; i += batchSize) {
+        const batch = idsToFetch.slice(i, i + batchSize)
+        await Promise.all(
+          batch.map(async (publicId: string) => {
+            try {
+              const response = await fetch(
+                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+              )
+              if (response.ok) {
+                statuses[publicId] = await response.json()
+              }
+            } catch (error) {
+              // Silently fail for individual requests
             }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
-        })
-      )
+          })
+        )
+      }
       return statuses
     },
-    enabled: allPublicIds.length > 0,
+    enabled: idsToFetch.length > 0,
+    staleTime: 60 * 1000, // Cache por 1 minuto
   })
   
   // Aplicar filtro de mandato (ahora mandateStatuses ya está disponible)
