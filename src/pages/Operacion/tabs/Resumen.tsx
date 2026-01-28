@@ -74,16 +74,14 @@ export function TabResumen() {
   const filteredRefunds = useMemo(() => {
     const filtered = refunds.filter((r: any) => {
       if (!r.createdAt) return false;
-      const createdDate = new Date(r.createdAt);
-      if (filtros.fechaDesde) {
-        const desde = new Date(filtros.fechaDesde);
-        desde.setHours(0, 0, 0, 0);
-        if (createdDate < desde) return false;
+      // Extraer solo la parte de fecha (YYYY-MM-DD) para comparar sin problemas de timezone
+      const createdDateStr = r.createdAt.split('T')[0];
+      
+      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) {
+        return false;
       }
-      if (filtros.fechaHasta) {
-        const hasta = new Date(filtros.fechaHasta);
-        hasta.setHours(23, 59, 59, 999);
-        if (createdDate > hasta) return false;
+      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) {
+        return false;
       }
       return true;
     });
