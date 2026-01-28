@@ -26,6 +26,9 @@ export interface BancoChileCertificateData {
   fechaInicioCredito: string
   fechaFinCredito: string
   saldoInsoluto: string
+  // Beneficiario Irrevocable
+  beneficiarioNombre: string
+  beneficiarioRut: string
 }
 
 // Configuración específica para Banco de Chile
@@ -366,7 +369,25 @@ export const generateBancoChilePrimePDF = async (
   doc.text('2', margin + 126, y)
   doc.rect(margin + 145, y - 3, 15, 5, 'S')
   doc.text('2', margin + 151, y)
-  y += 10
+  y += 8
+
+  // Beneficiario Irrevocable - datos ingresados por usuario
+  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.text('BENEFICIARIO IRREVOCABLE:', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    if (formData.beneficiarioNombre) {
+      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 5, y)
+      y += 4
+    }
+    if (formData.beneficiarioRut) {
+      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 5, y)
+      y += 4
+    }
+  }
+  y += 4
 
   // CONDICIONES ESPECIALES
   doc.setFont('helvetica', 'bold')
@@ -868,10 +889,28 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const beneficiariosText = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro.'
-  const beneficiariosLines = doc.splitTextToSize(beneficiariosText, contentWidth)
-  doc.text(beneficiariosLines, margin, y)
-  y += beneficiariosLines.length * 3 + 5
+  const beneficiariosText344 = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro.'
+  const beneficiariosLines344 = doc.splitTextToSize(beneficiariosText344, contentWidth)
+  doc.text(beneficiariosLines344, margin, y)
+  y += beneficiariosLines344.length * 3 + 3
+
+  // Mostrar beneficiario irrevocable específico si fue ingresado
+  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.text('Beneficiario Irrevocable Designado:', margin, y)
+    y += 4
+    doc.setFont('helvetica', 'normal')
+    if (formData.beneficiarioNombre) {
+      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 3, y)
+      y += 3
+    }
+    if (formData.beneficiarioRut) {
+      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 3, y)
+      y += 3
+    }
+  }
+  y += 3
 
   // Inalterabilidad
   doc.setFont('helvetica', 'bold')
@@ -1360,7 +1399,25 @@ export const generateBancoChileStandardPDF = async (
   doc.text('2', margin + 126, y)
   doc.rect(margin + 145, y - 3, 15, 5, 'S')
   doc.text('2', margin + 151, y)
-  y += 10
+  y += 8
+
+  // Beneficiario Irrevocable - datos ingresados por usuario (Póliza 342)
+  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.text('BENEFICIARIO IRREVOCABLE:', margin, y)
+    y += 5
+    doc.setFont('helvetica', 'normal')
+    if (formData.beneficiarioNombre) {
+      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 5, y)
+      y += 4
+    }
+    if (formData.beneficiarioRut) {
+      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 5, y)
+      y += 4
+    }
+  }
+  y += 4
 
   // CONDICIONES ESPECIALES
   doc.setFont('helvetica', 'bold')
@@ -1887,10 +1944,28 @@ export const generateBancoChileStandardPDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const beneficiariosText = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.'
-  const beneficiariosLines = doc.splitTextToSize(beneficiariosText, contentWidth)
-  doc.text(beneficiariosLines, margin, y)
-  y += beneficiariosLines.length * 3 + 5
+  const beneficiariosText342 = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.'
+  const beneficiariosLines342 = doc.splitTextToSize(beneficiariosText342, contentWidth)
+  doc.text(beneficiariosLines342, margin, y)
+  y += beneficiariosLines342.length * 3 + 3
+
+  // Mostrar beneficiario irrevocable específico si fue ingresado (Póliza 342)
+  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.text('Beneficiario Irrevocable Designado:', margin, y)
+    y += 4
+    doc.setFont('helvetica', 'normal')
+    if (formData.beneficiarioNombre) {
+      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 3, y)
+      y += 3
+    }
+    if (formData.beneficiarioRut) {
+      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 3, y)
+      y += 3
+    }
+  }
+  y += 3
 
   // Inalterabilidad
   doc.setFont('helvetica', 'bold')
