@@ -28,8 +28,8 @@ const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
   'datos_sin_simulacion': 'DATOS_SIN_SIMULACION',
 };
 
-// Fetch todas las solicitudes aplicando filtros con paginación paralela
-async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
+// Fetch base de solicitudes con paginación paralela (sin filtrar estados)
+async function fetchAllRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   console.log('[ReportsAPI] Filtros recibidos:', filtros);
   
   const PAGE_SIZE = 100;
@@ -67,7 +67,8 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   console.log('[ReportsAPI] Primeros 3 items (normalizados):', items.slice(0, 3).map(r => ({ 
     id: r.publicId, 
     createdAt: r.createdAt, 
-    status: r.status 
+    status: r.status,
+    monto: r.estimatedAmountCLP
   })));
 
   // Filtrar por rango de fechas (comparación de strings para evitar problemas de timezone)
@@ -87,10 +88,6 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
     console.log('[ReportsAPI] Items después de filtrar por fechas:', items.length);
   }
 
-  // Filtrar solo solicitudes no rechazadas/canceladas
-  items = items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
-  console.log('[ReportsAPI] Items después de filtrar rechazadas:', items.length);
-
   // Aplicar filtros adicionales en cliente
   if (filtros.estados?.length) {
     items = items.filter(r => {
@@ -107,6 +104,17 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   }
 
   return items;
+}
+
+// Fetch solicitudes excluyendo rechazadas/canceladas (para reportes de funnel/estado)
+async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
+  const items = await fetchAllRefunds(filtros);
+  
+  // Filtrar solo solicitudes no rechazadas/canceladas
+  const filtered = items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
+  console.log('[ReportsAPI] Items después de filtrar rechazadas:', filtered.length);
+  
+  return filtered;
 }
 
 function calcularKpis(refunds: RefundRequest[]): KpiData[] {
@@ -300,20 +308,35 @@ export const reportsApiClient = {
   },
 
   async getKpisSegmentos(filtros: FiltrosReporte) {
-    const refunds = await fetchRefunds(filtros);
+    // Usamos fetchAllRefunds para incluir TODAS las solicitudes (incluyendo pagadas y rechazadas)
+    const refunds = await fetchAllRefunds(filtros);
     
-    // Ticket Promedio: monto estimado promedio por solicitud
-    const totalMonto = refunds.reduce((acc, r) => acc + (r.estimatedAmountCLP || 0), 0);
-    const ticketPromedio = refunds.length > 0 ? Math.round(totalMonto / refunds.length) : 0;
+    // Solo considerar solicitudes que tienen monto estimado
+    const refundsConMonto = refunds.filter(r => r.estimatedAmountCLP && r.estimatedAmountCLP > 0);
     
-    // Monto en Pipeline: suma de montos de solicitudes activas (no pagadas ni rechazadas)
+    console.log('[KpisSegmentos] Total refunds:', refunds.length);
+    console.log('[KpisSegmentos] Refunds con monto:', refundsConMonto.length);
+    if (refundsConMonto.length > 0) {
+      console.log('[KpisSegmentos] Ejemplo:', { 
+        status: refundsConMonto[0]?.status, 
+        monto: refundsConMonto[0]?.estimatedAmountCLP 
+      });
+    }
+    
+    // Ticket Promedio: monto estimado promedio por solicitud (solo las que tienen monto)
+    const totalMonto = refundsConMonto.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
+    const ticketPromedio = refundsConMonto.length > 0 ? Math.round(totalMonto / refundsConMonto.length) : 0;
+    
+    // Monto en Pipeline: suma de montos de solicitudes activas (excluye paid, rejected, canceled)
     const estadosActivos = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled'];
-    const solicitudesActivas = refunds.filter(r => estadosActivos.includes(r.status));
-    const montoEnPipeline = solicitudesActivas.reduce((acc, r) => acc + (r.estimatedAmountCLP || 0), 0);
+    const solicitudesActivas = refundsConMonto.filter(r => estadosActivos.includes(r.status));
+    const montoEnPipeline = solicitudesActivas.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
     
-    // Tasa de Conversión: % de solicitudes que llegaron a PAID
-    const pagadas = refunds.filter(r => r.status === 'paid').length;
-    const tasaConversion = refunds.length > 0 ? (pagadas / refunds.length) * 100 : 0;
+    console.log('[KpisSegmentos] Activas:', solicitudesActivas.length, 'Pipeline:', montoEnPipeline, 'Ticket:', ticketPromedio);
+    
+    // Tasa de Conversión: % de solicitudes con monto que llegaron a PAID
+    const pagadas = refundsConMonto.filter(r => r.status === 'paid').length;
+    const tasaConversion = refundsConMonto.length > 0 ? (pagadas / refundsConMonto.length) * 100 : 0;
     
     return {
       ticketPromedio,
