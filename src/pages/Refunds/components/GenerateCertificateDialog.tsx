@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -29,6 +29,54 @@ import {
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
+
+// RUT validation regex - accepts formats: 12345678-9 or 12.345.678-9
+const rutRegex = /^(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])$/
+
+// Function to validate Chilean RUT check digit
+function validateRutDigit(rut: string): boolean {
+  // Clean the RUT (remove dots and hyphen)
+  const cleanRut = rut.replace(/\./g, '').replace(/-/g, '')
+  
+  if (cleanRut.length < 2) return false
+  
+  const rutNumber = cleanRut.slice(0, -1)
+  const digit = cleanRut.slice(-1).toUpperCase()
+  
+  // Validate that the numeric part only contains digits
+  if (!/^\d+$/.test(rutNumber)) return false
+  
+  // Calculate check digit
+  let sum = 0
+  let multiplier = 2
+  
+  for (let i = rutNumber.length - 1; i >= 0; i--) {
+    sum += parseInt(rutNumber[i]) * multiplier
+    multiplier = multiplier === 7 ? 2 : multiplier + 1
+  }
+  
+  const remainder = sum % 11
+  const calculatedDigit = remainder === 0 ? '0' : remainder === 1 ? 'K' : String(11 - remainder)
+  
+  return digit === calculatedDigit
+}
+
+// Validate RUT format and check digit
+function validateRut(rut: string): { isValid: boolean; error?: string } {
+  if (!rut || rut.trim() === '') {
+    return { isValid: true } // Empty is valid (optional field)
+  }
+  
+  if (!rutRegex.test(rut)) {
+    return { isValid: false, error: 'Formato inválido. Use: 12345678-9 o 12.345.678-9' }
+  }
+  
+  if (!validateRutDigit(rut)) {
+    return { isValid: false, error: 'Dígito verificador inválido' }
+  }
+  
+  return { isValid: true }
+}
 
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
@@ -130,6 +178,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   // Check if this refund is for Banco de Chile
   const isBancoChileRefund = isBancoChile(refund.institutionId)
 
+  // State for RUT validation error
+  const [rutError, setRutError] = useState<string | undefined>(undefined)
+
   // Load firma images on mount
   useEffect(() => {
     loadImageAsBase64(firmaAugustarImg).then(setFirmaBase64).catch(console.error)
@@ -154,6 +205,21 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       })
       return
     }
+    
+    // Validate RUT if provided (for Banco de Chile)
+    if (isBancoChileRefund && formData.beneficiarioRut) {
+      const rutValidation = validateRut(formData.beneficiarioRut)
+      if (!rutValidation.isValid) {
+        setRutError(rutValidation.error)
+        toast({
+          title: 'Error de validación',
+          description: `RUT del beneficiario: ${rutValidation.error}`,
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+    
     setStep('preview')
   }
 
@@ -163,6 +229,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
   const handleChange = (field: keyof CertificateData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    
+    // Validate RUT on change for beneficiarioRut field
+    if (field === 'beneficiarioRut') {
+      if (value.trim() === '') {
+        setRutError(undefined)
+      } else {
+        const validation = validateRut(value)
+        setRutError(validation.error)
+      }
+    }
   }
 
   const fetchRutInfo = async () => {
@@ -2736,8 +2812,14 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                           value={formData.beneficiarioRut}
                           onChange={(e) => handleChange('beneficiarioRut', e.target.value)}
                           placeholder="12.345.678-9"
-                          className="h-9"
+                          className={`h-9 ${rutError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                         />
+                        {rutError && (
+                          <div className="flex items-center gap-1 text-xs text-destructive">
+                            <AlertCircle className="h-3 w-3" />
+                            <span>{rutError}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
