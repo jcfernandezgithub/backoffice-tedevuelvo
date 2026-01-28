@@ -53,7 +53,12 @@ export function TabResumen() {
     queryKey: ['refunds-all', filtros],
     queryFn: async () => {
       const response = await refundAdminApi.list({ pageSize: 10000 });
-      return Array.isArray(response) ? response : response.items || [];
+      const items = Array.isArray(response) ? response : response.items || [];
+      // Normalizar status a minúsculas (la API puede devolver en mayúsculas)
+      return items.map((r: any) => ({
+        ...r,
+        status: r.status?.toLowerCase() || r.status
+      }));
     }
   });
 
