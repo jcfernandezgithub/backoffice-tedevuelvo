@@ -119,7 +119,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     nroOperacion: '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
-    saldoInsoluto: (refund.estimatedAmountCLP || 0).toString(),
+    saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
   })
 
   // Check if this refund is for Banco de Chile
@@ -2635,7 +2635,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Monto Crédito</span>
-                      <p className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</p>
+                      <p className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Cuotas</span>
@@ -2929,7 +2929,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Monto Crédito:</span>
-                      <span className="font-medium">${(refund.calculationSnapshot?.totalAmount || 0).toLocaleString('es-CL')}</span>
+                      <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Plazo (meses):</span>
