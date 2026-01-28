@@ -255,24 +255,22 @@ export const reportsApiClient = {
     const refunds = await fetchRefunds(filtros);
     const conteos = new Map<string, number>();
     
+    // Solo usamos institutionId - ignoramos partnerId ya que es un ObjectId
     refunds.forEach(r => {
-      // Usamos partnerId si existe, sino "Sin alianza"
-      const alianza = r.partnerId ? (r.institutionId || r.partnerId) : 'Sin alianza';
-      conteos.set(alianza, (conteos.get(alianza) || 0) + 1);
+      // Solo contamos si tiene institutionId válido (no es un ObjectId)
+      if (r.institutionId && !r.institutionId.match(/^[0-9a-fA-F]{24}$/)) {
+        conteos.set(r.institutionId, (conteos.get(r.institutionId) || 0) + 1);
+      }
     });
 
-    // Filtrar "Sin alianza" ya que no es una institución válida
-    const entradasFiltradas = Array.from(conteos.entries())
-      .filter(([nombre]) => nombre !== 'Sin alianza');
+    const total = Array.from(conteos.values()).reduce((acc, v) => acc + v, 0);
     
-    const totalFiltrado = entradasFiltradas.reduce((acc, [, cantidad]) => acc + cantidad, 0);
-    
-    return entradasFiltradas
+    return Array.from(conteos.entries())
       .map(([nombre, cantidad]) => ({
         categoria: nombre,
         name: nombre,
         valor: cantidad,
-        porcentaje: totalFiltrado > 0 ? (cantidad / totalFiltrado) * 100 : 0
+        porcentaje: total > 0 ? (cantidad / total) * 100 : 0
       }))
       .sort((a, b) => b.valor - a.valor);
   },
