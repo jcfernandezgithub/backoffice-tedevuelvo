@@ -244,10 +244,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     // Construir parámetros para el nuevo endpoint search
+    // isPartner: 1 = directo (sin partnerId), 0 = alianza (con partnerId)
+    let isPartnerValue: 0 | 1 | undefined = undefined
+    if (originFilter === 'directo') {
+      isPartnerValue = 1
+    } else if (originFilter === 'alianza') {
+      isPartnerValue = 0
+    }
+    
     const newSearchFilters: SearchParams = {
       q: localFilters.search || undefined,
       status: localFilters.status || undefined,
-      origin: originFilter !== 'all' ? originFilter : undefined,
       sort: 'recent', // Por defecto más recientes
       from: localFilters.from || undefined,
       to: localFilters.to || undefined,
@@ -255,6 +262,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       limit: filters.pageSize || 20,
       signatureStatus: signatureStatusValue,
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
+      isPartner: isPartnerValue,
     }
     
     setSearchFilters(newSearchFilters)
