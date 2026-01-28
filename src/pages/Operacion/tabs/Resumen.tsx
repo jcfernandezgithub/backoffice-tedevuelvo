@@ -52,17 +52,40 @@ export function TabResumen() {
   const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
     queryKey: ['refunds-operacion', filtros.fechaDesde, filtros.fechaHasta],
     queryFn: async () => {
-      console.log('[Resumen] Fetching refunds...');
-      const response = await refundAdminApi.list({ pageSize: 10000 });
-      const items = Array.isArray(response) ? response : response.items || [];
-      console.log('[Resumen] Items recibidos:', items.length);
-      console.log('[Resumen] Primeros 3 items:', items.slice(0, 3).map((r: any) => ({ 
+      console.log('[Resumen] Iniciando carga con paginación paralela...');
+      const PAGE_SIZE = 100;
+      
+      // Primera llamada para obtener el total
+      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
+      const total = firstPage.total || 0;
+      const totalPages = Math.ceil(total / PAGE_SIZE);
+      
+      console.log(`[Resumen] Total registros: ${total}, Páginas: ${totalPages}`);
+      
+      let allItems = [...(firstPage.items || [])];
+      
+      // Si hay más páginas, obtenerlas en paralelo
+      if (totalPages > 1) {
+        const pagePromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+          pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }));
+        }
+        
+        const additionalPages = await Promise.all(pagePromises);
+        additionalPages.forEach(pageResult => {
+          allItems = allItems.concat(pageResult.items || []);
+        });
+      }
+      
+      console.log(`[Resumen] Total items obtenidos: ${allItems.length}`);
+      console.log('[Resumen] Primeros 3 items:', allItems.slice(0, 3).map((r: any) => ({ 
         publicId: r.publicId, 
         status: r.status,
         createdAt: r.createdAt 
       })));
+      
       // Asegurar normalización a minúsculas
-      return items.map((r: any) => ({
+      return allItems.map((r: any) => ({
         ...r,
         status: r.status?.toLowerCase?.() || r.status
       }));
