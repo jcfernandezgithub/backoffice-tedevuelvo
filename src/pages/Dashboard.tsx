@@ -79,25 +79,28 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  const { data: counts, isLoading: isLoadingCounts, isFetching: isFetchingCounts } = useQuery({
+  const { data: counts, isLoading: isLoadingCounts, isFetching: isFetchingCounts, isError: isErrorCounts } = useQuery({
     queryKey: ['dashboard', 'counts', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesPorEstado(desde, hasta),
-    staleTime: 30 * 1000, // 30 segundos
-    placeholderData: (previousData) => previousData,
+    staleTime: 30 * 1000,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   const { data: pagosAgg, isFetching: isFetchingPagos } = useQuery({
     queryKey: ['dashboard', 'pagos-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getPagosAggregate(desde, hasta, agg),
     staleTime: 30 * 1000,
-    placeholderData: (previousData) => previousData,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   const { data: solicitudesAgg, isFetching: isFetchingSolicitudes } = useQuery({
     queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
     staleTime: 30 * 1000,
-    placeholderData: (previousData) => previousData,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   // Obtener publicIds de solicitudes para consultar estado de mandato
@@ -105,7 +108,8 @@ export default function Dashboard() {
     queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
     staleTime: 30 * 1000,
-    placeholderData: (previousData) => previousData,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   // Query para obtener estados de mandatos de todas las solicitudes
@@ -131,8 +135,8 @@ export default function Dashboard() {
       return statuses
     },
     enabled: !!solicitudesIds && solicitudesIds.length > 0,
-    staleTime: 60 * 1000, // 1 minuto para mandatos
-    placeholderData: (previousData) => previousData,
+    staleTime: 60 * 1000,
+    retry: 2,
   })
 
   // Query para obtener monto total pagado con paginación paralela
@@ -140,11 +144,12 @@ export default function Dashboard() {
     queryKey: ['dashboard', 'total-paid', desde, hasta],
     queryFn: () => dashboardService.getTotalPaidAmount(desde, hasta),
     staleTime: 30 * 1000,
-    placeholderData: (previousData) => previousData,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   // Estado general de carga
-  const isLoading = isLoadingCounts || (isFetchingCounts && !counts)
+  const isLoading = isLoadingCounts
   const isRefreshing = isFetchingCounts || isFetchingPagos || isFetchingSolicitudes || isFetchingIds || isFetchingMandates || isFetchingPaid
 
   // Conteo de solicitudes firmadas en proceso
