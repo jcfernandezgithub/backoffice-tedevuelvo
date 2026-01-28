@@ -276,4 +276,35 @@ export const dashboardService = {
       return []
     }
   },
+
+  async getTotalPaidAmount(desde?: string, hasta?: string): Promise<number> {
+    try {
+      // Obtener todas las solicitudes con paginación paralela
+      const refunds = await fetchAllRefunds()
+      
+      // Aplicar filtro de fecha LOCAL
+      const filteredRefunds = filterByLocalDate(refunds, desde, hasta)
+      
+      // Filtrar solo las que están en estado paid
+      const paidRefunds = filteredRefunds.filter(
+        refund => refund.status === 'paid'
+      )
+      
+      console.log(`[DashboardService] Refunds pagados en período: ${paidRefunds.length}`)
+      
+      // Sumar realAmount de statusHistory
+      return paidRefunds.reduce((sum: number, refund: any) => {
+        const realAmountEntry = refund.statusHistory?.slice().reverse().find(
+          (entry: any) => {
+            const toStatus = entry.to?.toLowerCase()
+            return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+          }
+        )
+        return sum + (realAmountEntry?.realAmount || 0)
+      }, 0)
+    } catch (error) {
+      console.error('Error calculando monto total pagado:', error)
+      return 0
+    }
+  },
 }
