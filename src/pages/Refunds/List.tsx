@@ -923,7 +923,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                   </TableHeader>
                   <TableBody>
                     {paginatedItems.map((refund) => (
-                      <TableRow key={refund.id}>
+                      <TableRow key={refund.publicId || refund.id}>
                         <TableCell className="w-12">
                           <Checkbox
                             checked={selectedRefunds.has(refund.id)}
@@ -1171,7 +1171,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`${detailBasePath}/${refund.id}`)}
+                            onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
                           >
                             Ver detalle
                           </Button>
@@ -1186,8 +1186,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               <div className="md:hidden space-y-3">
                 {paginatedItems.map((refund) => (
                   <MobileCard
-                    key={refund.id}
-                    onClick={() => navigate(`${detailBasePath}/${refund.id}`)}
+                    key={refund.publicId || refund.id}
+                    onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
                     header={
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-muted-foreground">
