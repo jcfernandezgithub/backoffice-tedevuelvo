@@ -21,6 +21,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import jsPDF from 'jspdf'
 import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
 import firmaTdvImg from '@/assets/firma-tdv.png'
+import firmaCngImg from '@/assets/firma-cng.jpeg'
+import { 
+  isBancoChile, 
+  generateBancoChilePrimePDF, 
+  generateBancoChileStandardPDF,
+  getBancoChileTasaBrutaMensual,
+  BANCO_CHILE_CONFIG
+} from './pdfGenerators/bancoChilePdfGenerator'
 
 interface GenerateCertificateDialogProps {
   refund: RefundRequest
@@ -97,6 +105,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [firmaBase64, setFirmaBase64] = useState<string>('')
   const [firmaTdvBase64, setFirmaTdvBase64] = useState<string>('')
+  const [firmaCngBase64, setFirmaCngBase64] = useState<string>('')
   const [formData, setFormData] = useState<CertificateData>({
     folio: '',
     direccion: '',
@@ -113,10 +122,14 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     saldoInsoluto: (refund.estimatedAmountCLP || 0).toString(),
   })
 
+  // Check if this refund is for Banco de Chile
+  const isBancoChileRefund = isBancoChile(refund.calculationSnapshot?.institution)
+
   // Load firma images on mount
   useEffect(() => {
     loadImageAsBase64(firmaAugustarImg).then(setFirmaBase64).catch(console.error)
     loadImageAsBase64(firmaTdvImg).then(setFirmaTdvBase64).catch(console.error)
+    loadImageAsBase64(firmaCngImg).then(setFirmaCngBase64).catch(console.error)
   }, [])
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -206,7 +219,14 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.remainingInstallments || 0
     const age = refund.calculationSnapshot?.age
-    const tbm = getTasaBrutaMensual(age) / 1000
+    
+    // Use Banco de Chile specific rates if applicable
+    let tbm: number
+    if (isBancoChileRefund) {
+      tbm = getBancoChileTasaBrutaMensual(isPrimeFormat, age) / 1000
+    } else {
+      tbm = getTasaBrutaMensual(age) / 1000
+    }
     return Math.round(saldoInsoluto * tbm * nper)
   }
 
@@ -1329,7 +1349,27 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
-      // Use Prime format for credits > 20 million
+      // Check if this is Banco de Chile - use specific generators
+      if (isBancoChileRefund) {
+        if (isPrimeFormat) {
+          await generateBancoChilePrimePDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+          toast({
+            title: 'Certificado Banco de Chile generado',
+            description: 'El certificado de cobertura (Póliza 344 - Banco de Chile) se descargó correctamente',
+          })
+        } else {
+          await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+          toast({
+            title: 'Certificado Banco de Chile generado',
+            description: 'El certificado de cobertura (Póliza 342 - Banco de Chile) se descargó correctamente',
+          })
+        }
+        setOpen(false)
+        setIsGenerating(false)
+        return
+      }
+
+      // Use Prime format for credits > 20 million (non-Banco de Chile)
       if (isPrimeFormat) {
         await generatePrimePDF()
         toast({
@@ -2537,8 +2577,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       </TooltipProvider>
       <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0 pb-2">
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
             {step === 'form' ? 'Certificado de Cobertura' : 'Previsualización del Certificado'}
+            {isBancoChileRefund && (
+              <Badge variant="secondary" className="bg-blue-500/20 text-blue-600 border-blue-500/30">
+                Banco de Chile
+              </Badge>
+            )}
             {isPrimeFormat && (
               <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 border-amber-500/30">
                 Póliza 344 (Prime)
