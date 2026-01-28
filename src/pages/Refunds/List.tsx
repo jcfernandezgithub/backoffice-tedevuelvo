@@ -350,11 +350,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortField(field)
-      setSortDirection('asc')
+    // Con paginación server-side, enviamos el ordenamiento al servidor
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
+    setSortField(field)
+    setSortDirection(newDirection)
+    
+    // Solo enviamos ordenamiento de campos soportados por el backend
+    const supportedSortFields = ['createdAt', 'status']
+    if (supportedSortFields.includes(field)) {
+      handleFilterChange('sort', `${field}:${newDirection}` as any)
     }
   }
 
@@ -389,137 +393,44 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
   }, [error])
 
-  // Normalizar respuesta de la API - puede ser array o objeto
+  // Normalizar respuesta de la API - ahora viene del endpoint listV2 con paginación server-side
   const normalizedData = useMemo(() => {
     if (!data) {
-      return { total: 0, page: 1, pageSize: 20, items: [] }
+      return { total: 0, page: 1, pageSize: 20, totalPages: 1, hasNext: false, hasPrev: false, items: [] }
     }
     
-    // Si es un array directo, crear el objeto esperado
-    if (Array.isArray(data)) {
-      return {
-        total: data.length,
-        page: filters.page || 1,
-        pageSize: filters.pageSize || 20,
-        items: data
-      }
+    // El servicio ya devuelve el formato correcto desde listV2
+    return {
+      total: data.total || 0,
+      page: data.page || filters.page || 1,
+      pageSize: data.pageSize || filters.pageSize || 20,
+      totalPages: data.totalPages || 1,
+      hasNext: data.hasNext || false,
+      hasPrev: data.hasPrev || false,
+      items: data.items || []
     }
-    
-    // Si es un objeto con items
-    if (typeof data === 'object' && 'items' in data) {
-      return data
-    }
-    
-    // Fallback
-    return { total: 0, page: 1, pageSize: 20, items: [] }
   }, [data, filters.page, filters.pageSize])
 
-  // Memoizar todo el pipeline de filtrado para evitar recálculos innecesarios
+  // Con paginación server-side, los filtros principales (search, status, from, to) se envían al servidor
+  // Solo aplicamos filtros adicionales locales (origen, banco, tipo seguro) sobre los items recibidos
   const statusFilteredItems = useMemo(() => {
-    const items = normalizedData.items
-    
-    // Filtro de búsqueda por texto
-    const searchTerm = (filters.search || '').toLowerCase().trim()
-    let filtered = searchTerm
-      ? items.filter((r: any) => {
-          const haystack = [
-            r.publicId,
-            r.id,
-            r.email,
-            r.rut,
-            r.fullName,
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-          return haystack.includes(searchTerm)
-        })
-      : items
-    
-    // Filtro por fecha de creación (interpretando las fechas como LOCAL)
-    if (filters.from || filters.to) {
-      const parseLocalStart = (s: string) => {
-        const [y, m, d] = s.split('-').map(Number)
-        return new Date(y, (m as number) - 1, d as number, 0, 0, 0, 0)
-      }
-      const parseLocalEnd = (s: string) => {
-        const [y, m, d] = s.split('-').map(Number)
-        return new Date(y, (m as number) - 1, d as number, 23, 59, 59, 999)
-      }
-      
-      filtered = filtered.filter((r: any) => {
-        if (!r.createdAt) return true
-        const createdAt = new Date(r.createdAt)
-        const createdLocalDay = new Date(
-          createdAt.getFullYear(),
-          createdAt.getMonth(),
-          createdAt.getDate(),
-          0, 0, 0, 0
-        )
-
-        if (filters.from) {
-          const fromStart = parseLocalStart(filters.from)
-          if (createdLocalDay < fromStart) return false
-        }
-        if (filters.to) {
-          const toEnd = parseLocalEnd(filters.to)
-          if (createdLocalDay > toEnd) return false
-        }
-        return true
-      })
-    }
-    
-    // Filtro por estado
-    if (filters.status) {
-      filtered = filtered.filter((r: any) => r.status === filters.status)
-    }
-    
-    return filtered
-  }, [normalizedData.items, filters.search, filters.from, filters.to, filters.status])
+    return normalizedData.items
+  }, [normalizedData.items])
   
-  // Memoizar ordenamiento para evitar recálculos en cada render
+  // Con paginación server-side, el ordenamiento ya viene del servidor
+  // Solo aplicamos ordenamiento local si el usuario lo cambia en la UI
   const preSortedItems = useMemo(() => {
-    return [...statusFilteredItems].sort((a: any, b: any) => {
-      let aValue = a[sortField]
-      let bValue = b[sortField]
-      if (sortField === 'createdAt') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
-      } else if (sortField === 'estimatedAmountCLP') {
-        aValue = Number(aValue)
-        bValue = Number(bValue)
-      } else if (typeof aValue === 'string') {
-        aValue = (aValue || '').toLowerCase()
-        bValue = (bValue || '').toLowerCase()
-      }
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
-      return 0
-    })
-  }, [statusFilteredItems, sortField, sortDirection])
+    // Los items ya vienen ordenados del servidor según filters.sort
+    return statusFilteredItems
+  }, [statusFilteredItems])
   
-  // Cuando hay filtro de mandato, necesitamos obtener estados de todo el dataset
-  // para poder filtrar correctamente antes de paginar
-  const needsFullMandateData = mandateFilter !== 'all'
-  
-  // IDs para consultar mandatos
-  const pageSize = normalizedData.pageSize
-  const currentPageForQuery = filters.page || 1
-  const startIdx = (currentPageForQuery - 1) * pageSize
-  
-  // Si hay filtro de mandato activo, consultamos todos (max 200 para performance)
-  // Si no, solo los de la página actual (20)
+  // IDs para consultar mandatos - solo de la página actual (ya paginada por el servidor)
   const idsToFetch = useMemo(() => {
-    if (needsFullMandateData) {
-      // Limitamos a 200 para no saturar el navegador
-      return preSortedItems.slice(0, 200).map((r: any) => r.publicId).filter(Boolean)
-    }
-    // Solo página actual
-    return preSortedItems.slice(startIdx, startIdx + pageSize).map((r: any) => r.publicId).filter(Boolean)
-  }, [needsFullMandateData, preSortedItems, startIdx, pageSize])
+    return preSortedItems.map((r: any) => r.publicId).filter(Boolean)
+  }, [preSortedItems])
   
   const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
-    queryKey: ['mandate-statuses-page', idsToFetch, needsFullMandateData],
+    queryKey: ['mandate-statuses-page', idsToFetch],
     queryFn: async () => {
       const statuses: Record<string, any> = {}
       // Ejecutar en lotes de 10 para no saturar
@@ -547,7 +458,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // Cuando hay filtro de mandato, primero filtramos por mandato, luego paginamos
+  // Aplicar filtros locales adicionales (mandato, origen, banco, tipo seguro)
   const mandateFilteredItems = useMemo(() => {
     if (mandateFilter === 'all') return preSortedItems
     // Filtrar por mandato (solo los que tenemos datos)
@@ -600,25 +511,26 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
   }, [originFilter, bankFilter, insuranceTypeFilter])
   
-  // Dataset filtrado completo (con mandato y otros filtros)
+  // Dataset filtrado completo (con mandato y otros filtros locales)
   const filteredFullDataset = useMemo(() => 
     applyNonMandateFilters(mandateFilteredItems),
     [applyNonMandateFilters, mandateFilteredItems]
   )
   
-  // Paginar DESPUÉS de todos los filtros
-  const paginatedItems = useMemo(() => 
-    filteredFullDataset.slice(startIdx, startIdx + pageSize),
-    [filteredFullDataset, startIdx, pageSize]
-  )
+  // Con paginación server-side, los items ya vienen paginados
+  // paginatedItems son los items después de aplicar filtros locales adicionales
+  const paginatedItems = filteredFullDataset
   
-  // sortedItems se usa para exportar - contiene todo el dataset filtrado
+  // sortedItems se usa para exportar - contiene los items de la página actual
   const sortedItems = filteredFullDataset
 
-  const totalFiltered = filteredFullDataset.length
-  const totalPages = Math.max(1, Math.ceil(filteredFullDataset.length / normalizedData.pageSize))
+  // Usar paginación del servidor
+  const totalFiltered = normalizedData.total
+  const totalPages = normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize))
+  const hasNextPage = normalizedData.hasNext
+  const hasPrevPage = normalizedData.hasPrev
 
-  const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
+  const currentPage = normalizedData.page
   const startIndex = (currentPage - 1) * normalizedData.pageSize
 
   return (
@@ -1433,13 +1345,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               {totalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
                   <div className="text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
+                    Página {currentPage} de {totalPages} ({totalFiltered} solicitudes)
                   </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={currentPage === 1}
+                      disabled={!hasPrevPage}
                       onClick={() => handlePageChange(currentPage - 1)}
                     >
                       Anterior
@@ -1447,7 +1359,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={currentPage === totalPages}
+                      disabled={!hasNextPage}
                       onClick={() => handlePageChange(currentPage + 1)}
                     >
                       Siguiente

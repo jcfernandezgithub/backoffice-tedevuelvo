@@ -24,28 +24,20 @@ class RefundAdminApiClient {
   }
 
   async list(params: AdminQueryParams): Promise<AdminListResponse> {
-    // Normalizar rango de fechas a límites del día en HORARIO LOCAL y enviarlo en UTC
-    const normalized: AdminQueryParams = { ...params }
-    const isDateOnly = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s)
-    const parseLocal = (s: string, endOfDay = false) => {
-      const [y, m, d] = s.split('-').map(Number)
-      return new Date(y, (m as number) - 1, d as number, endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0)
-    }
-    if (isDateOnly(normalized.from)) {
-      normalized.from = parseLocal(normalized.from as string, false).toISOString()
-    }
-    if (isDateOnly(normalized.to)) {
-      normalized.to = parseLocal(normalized.to as string, true).toISOString()
-    }
-
     const query = new URLSearchParams()
-    Object.entries(normalized).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        query.append(key, String(value))
-      }
-    })
+    
+    // Mapear parámetros al nuevo endpoint listV2
+    query.append('page', String(params.page || 1))
+    query.append('limit', String(params.pageSize || 20))
+    
+    // Pasar filtros adicionales si el backend los soporta
+    if (params.search) query.append('search', params.search)
+    if (params.status) query.append('status', params.status.toUpperCase())
+    if (params.from) query.append('from', params.from)
+    if (params.to) query.append('to', params.to)
+    if (params.sort) query.append('sort', params.sort)
 
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin?${query}`, {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/listV2?${query}`, {
       headers: await this.getAuthHeaders(),
     })
 
@@ -58,31 +50,26 @@ class RefundAdminApiClient {
       throw new Error(error.message || 'Error al cargar refunds')
     }
 
-    const data = await response.json()
+    const responseData = await response.json()
     
-    // Normalizar los estados en la respuesta
-    if (Array.isArray(data)) {
-      // Si el servicio retorna un array directo, crear la estructura esperada
-      return {
-        total: data.length,
-        page: params.page || 1,
-        pageSize: params.pageSize || 20,
-        items: data.map(item => ({
-          ...item,
-          status: normalizeStatus(item.status)
-        }))
-      }
-    } else if (data.items && Array.isArray(data.items)) {
-      return {
-        ...data,
-        items: data.items.map((item: any) => ({
-          ...item,
-          status: normalizeStatus(item.status)
-        }))
-      }
+    // Adaptar respuesta del nuevo formato a nuestro formato interno
+    // El nuevo endpoint retorna: { data: [...], meta: { page, limit, total, pages, hasNext, hasPrev } }
+    const items = (responseData.data || []).map((item: any) => ({
+      ...item,
+      status: normalizeStatus(item.status)
+    }))
+    
+    const meta = responseData.meta || {}
+    
+    return {
+      total: meta.total || items.length,
+      page: meta.page || params.page || 1,
+      pageSize: meta.limit || params.pageSize || 20,
+      totalPages: meta.pages || 1,
+      hasNext: meta.hasNext || false,
+      hasPrev: meta.hasPrev || false,
+      items
     }
-    
-    return data
   }
 
   async getById(id: string): Promise<RefundRequest> {
