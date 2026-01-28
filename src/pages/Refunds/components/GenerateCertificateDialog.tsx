@@ -2584,7 +2584,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
           )}
         </Tooltip>
       </TooltipProvider>
-      <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-2">
           <DialogTitle className="flex items-center gap-2 flex-wrap">
             {step === 'form' ? 'Certificado de Cobertura' : 'Previsualización del Certificado'}
@@ -2606,7 +2606,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 min-h-0 pr-4">
+        <ScrollArea className="flex-1 overflow-auto pr-4">
           {step === 'form' ? (
             // ========== FORMULARIO ==========
             <div className="space-y-4 py-2">
