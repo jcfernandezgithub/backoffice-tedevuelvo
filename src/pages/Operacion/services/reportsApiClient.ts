@@ -261,15 +261,20 @@ export const reportsApiClient = {
       conteos.set(alianza, (conteos.get(alianza) || 0) + 1);
     });
 
-    const total = refunds.length;
-    return Array.from(conteos.entries())
+    // Filtrar "Sin alianza" ya que no es una institución válida
+    const entradasFiltradas = Array.from(conteos.entries())
+      .filter(([nombre]) => nombre !== 'Sin alianza');
+    
+    const totalFiltrado = entradasFiltradas.reduce((acc, [, cantidad]) => acc + cantidad, 0);
+    
+    return entradasFiltradas
       .map(([nombre, cantidad]) => ({
         categoria: nombre,
         name: nombre,
         valor: cantidad,
-        porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+        porcentaje: totalFiltrado > 0 ? (cantidad / totalFiltrado) * 100 : 0
       }))
-      .sort((a, b) => b.valor - a.valor); // Ordenar de mayor a menor
+      .sort((a, b) => b.valor - a.valor);
   },
 
   async getDistribucionPorTipoSeguro(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
