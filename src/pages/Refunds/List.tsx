@@ -498,54 +498,67 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     })
   }, [statusFilteredItems, sortField, sortDirection])
   
-  // Calcular items de la página actual ANTES de la query de mandatos
+  // Cuando hay filtro de mandato, necesitamos obtener estados de todo el dataset
+  // para poder filtrar correctamente antes de paginar
+  const needsFullMandateData = mandateFilter !== 'all'
+  
+  // IDs para consultar mandatos
   const pageSize = normalizedData.pageSize
   const currentPageForQuery = filters.page || 1
   const startIdx = (currentPageForQuery - 1) * pageSize
-  const currentPageItems = useMemo(() => 
-    preSortedItems.slice(startIdx, startIdx + pageSize),
-    [preSortedItems, startIdx, pageSize]
-  )
   
-  // SOLO cargar mandatos para los items de la página actual (máx 20)
-  const idsToFetch = currentPageItems
-    .map((r: any) => r.publicId)
-    .filter(Boolean)
+  // Si hay filtro de mandato activo, consultamos todos (max 200 para performance)
+  // Si no, solo los de la página actual (20)
+  const idsToFetch = useMemo(() => {
+    if (needsFullMandateData) {
+      // Limitamos a 200 para no saturar el navegador
+      return preSortedItems.slice(0, 200).map((r: any) => r.publicId).filter(Boolean)
+    }
+    // Solo página actual
+    return preSortedItems.slice(startIdx, startIdx + pageSize).map((r: any) => r.publicId).filter(Boolean)
+  }, [needsFullMandateData, preSortedItems, startIdx, pageSize])
   
   const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
-    queryKey: ['mandate-statuses-page', idsToFetch],
+    queryKey: ['mandate-statuses-page', idsToFetch, needsFullMandateData],
     queryFn: async () => {
       const statuses: Record<string, any> = {}
-      // Ejecutar todas las peticiones en paralelo (solo 20 máx)
-      await Promise.all(
-        idsToFetch.map(async (publicId: string) => {
-          try {
-            const response = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            )
-            if (response.ok) {
-              statuses[publicId] = await response.json()
+      // Ejecutar en lotes de 10 para no saturar
+      const batchSize = 10
+      for (let i = 0; i < idsToFetch.length; i += batchSize) {
+        const batch = idsToFetch.slice(i, i + batchSize)
+        await Promise.all(
+          batch.map(async (publicId: string) => {
+            try {
+              const response = await fetch(
+                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+              )
+              if (response.ok) {
+                statuses[publicId] = await response.json()
+              }
+            } catch (error) {
+              // Silently fail for individual requests
             }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
-        })
-      )
+          })
+        )
+      }
       return statuses
     },
     enabled: idsToFetch.length > 0,
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // Memoizar filtro de mandato
-  const mandateFilteredPageItems = useMemo(() => {
-    if (mandateFilter === 'all') return currentPageItems
-    return currentPageItems.filter((r: any) => {
+  // Cuando hay filtro de mandato, primero filtramos por mandato, luego paginamos
+  const mandateFilteredItems = useMemo(() => {
+    if (mandateFilter === 'all') return preSortedItems
+    // Filtrar por mandato (solo los que tenemos datos)
+    return preSortedItems.filter((r: any) => {
       const status = mandateStatuses?.[r.publicId]
+      // Si no tenemos el status aún, no lo incluimos
+      if (!status) return false
       const hasSigned = status?.hasSignedPdf === true
       return mandateFilter === 'signed' ? hasSigned : !hasSigned
     })
-  }, [currentPageItems, mandateFilter, mandateStatuses])
+  }, [preSortedItems, mandateFilter, mandateStatuses])
   
   // Memoizar función de filtros adicionales con useCallback
   const applyNonMandateFilters = useMemo(() => {
@@ -587,27 +600,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
   }, [originFilter, bankFilter, insuranceTypeFilter])
   
-  // Memoizar dataset filtrado completo para exportación
+  // Dataset filtrado completo (con mandato y otros filtros)
   const filteredFullDataset = useMemo(() => 
-    applyNonMandateFilters(preSortedItems),
-    [applyNonMandateFilters, preSortedItems]
+    applyNonMandateFilters(mandateFilteredItems),
+    [applyNonMandateFilters, mandateFilteredItems]
   )
   
-  // Memoizar items paginados finales
+  // Paginar DESPUÉS de todos los filtros
   const paginatedItems = useMemo(() => 
-    applyNonMandateFilters(mandateFilteredPageItems),
-    [applyNonMandateFilters, mandateFilteredPageItems]
+    filteredFullDataset.slice(startIdx, startIdx + pageSize),
+    [filteredFullDataset, startIdx, pageSize]
   )
   
-  // sortedItems se usa para exportar - contiene todo el dataset filtrado (sin mandato)
+  // sortedItems se usa para exportar - contiene todo el dataset filtrado
   const sortedItems = filteredFullDataset
 
-  const totalFiltered = mandateFilter === 'all' 
-    ? filteredFullDataset.length 
-    : paginatedItems.length
-  const totalPages = mandateFilter === 'all'
-    ? Math.max(1, Math.ceil(filteredFullDataset.length / normalizedData.pageSize))
-    : 1
+  const totalFiltered = filteredFullDataset.length
+  const totalPages = Math.max(1, Math.ceil(filteredFullDataset.length / normalizedData.pageSize))
 
   const currentPage = Math.min(filters.page || 1, Math.max(totalPages, 1))
   const startIndex = (currentPage - 1) * normalizedData.pageSize
