@@ -50,6 +50,9 @@ interface CertificateData {
   fechaInicioCredito: string
   fechaFinCredito: string
   saldoInsoluto: string
+  // Campos para Banco de Chile - Beneficiario Irrevocable
+  beneficiarioNombre: string
+  beneficiarioRut: string
 }
 
 const formatDate = (dateString?: string) => {
@@ -120,6 +123,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     fechaInicioCredito: '',
     fechaFinCredito: '',
     saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
+    beneficiarioNombre: '',
+    beneficiarioRut: '',
   })
 
   // Check if this refund is for Banco de Chile
@@ -2705,6 +2710,41 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 </div>
               </div>
 
+              {/* Sección: Beneficiario Irrevocable (solo Banco de Chile) */}
+              {isBancoChileRefund && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <User className="h-4 w-4 text-primary" />
+                    Beneficiario Irrevocable (Banco de Chile)
+                  </div>
+                  <div className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/30 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Nombre del Beneficiario</Label>
+                        <Input
+                          value={formData.beneficiarioNombre}
+                          onChange={(e) => handleChange('beneficiarioNombre', e.target.value)}
+                          placeholder="Nombre completo del beneficiario"
+                          className="h-9"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">RUT del Beneficiario</Label>
+                        <Input
+                          value={formData.beneficiarioRut}
+                          onChange={(e) => handleChange('beneficiarioRut', e.target.value)}
+                          placeholder="12.345.678-9"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Este beneficiario aparecerá como beneficiario irrevocable en el certificado de cobertura.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Sección: Datos Personales (con búsqueda RUT) */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -2940,6 +2980,28 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   </div>
                 </div>
               </div>
+
+              {/* Resumen del Beneficiario Irrevocable (solo Banco de Chile) */}
+              {isBancoChileRefund && (formData.beneficiarioNombre || formData.beneficiarioRut) && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
+                    <User className="h-4 w-4" />
+                    Beneficiario Irrevocable
+                  </div>
+                  <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500/30">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Nombre:</span>
+                        <span className="font-medium">{formData.beneficiarioNombre || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">RUT:</span>
+                        <span className="font-medium">{formData.beneficiarioRut || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Prima calculada destacada */}
               <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
