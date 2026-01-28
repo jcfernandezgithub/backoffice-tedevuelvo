@@ -234,7 +234,8 @@ export const generateBancoChilePrimePDF = async (
   doc.text('NO', margin + 107, y)
   y += 12
 
-  // PLAN and PRIMA
+  // PLAN and PRIMA - Póliza 344 (Prime) = Plan 2
+  const primaUnicaFormatted = `$${primaUnica.toLocaleString('es-CL')}`
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('PLAN', margin, y)
@@ -246,9 +247,10 @@ export const generateBancoChilePrimePDF = async (
   doc.text('Plan 1', margin + 7, y)
   doc.rect(margin + 50, y - 3, 40, 5, 'S')
   y += 6
-  drawCheckbox(margin, y, false)
+  drawCheckbox(margin, y, true) // Plan 2 checked for Póliza 344
   doc.text('Plan 2', margin + 7, y)
   doc.rect(margin + 50, y - 3, 40, 5, 'S')
+  doc.text(primaUnicaFormatted, margin + 52, y) // Prima Única in second row
   y += 12
 
   // MONEDA, PERIODO DE PAGO, CONDICIONES, COMISIÓN
@@ -1133,7 +1135,8 @@ export const generateBancoChileStandardPDF = async (
   doc.text('NO', margin + 107, y)
   y += 12
 
-  // PLAN and PRIMA
+  // PLAN and PRIMA - Póliza 342 (Standard) = Plan 1
+  const primaUnicaFormatted = `$${primaUnica.toLocaleString('es-CL')}`
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('PLAN', margin, y)
@@ -1141,9 +1144,10 @@ export const generateBancoChileStandardPDF = async (
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  drawCheckbox(margin, y, false)
+  drawCheckbox(margin, y, true) // Plan 1 checked for Póliza 342
   doc.text('Plan 1', margin + 7, y)
   doc.rect(margin + 50, y - 3, 40, 5, 'S')
+  doc.text(primaUnicaFormatted, margin + 52, y) // Prima Única in first row
   y += 6
   drawCheckbox(margin, y, false)
   doc.text('Plan 2', margin + 7, y)
