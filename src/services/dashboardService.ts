@@ -14,36 +14,90 @@ import type { RefundRequest, RefundStatus } from '@/types/refund'
 export type Aggregation = 'day' | 'week' | 'month'
 
 const PAGE_SIZE = 100
+const CACHE_TTL_MS = 30 * 1000 // 30 segundos
 
-// Función helper para obtener todos los refunds con paginación paralela
+// Caché simple para evitar múltiples llamadas paralelas
+let refundsCache: {
+  data: RefundRequest[] | null
+  timestamp: number
+  promise: Promise<RefundRequest[]> | null
+} = {
+  data: null,
+  timestamp: 0,
+  promise: null
+}
+
+// Función helper para obtener todos los refunds con paginación paralela y caché
 async function fetchAllRefunds(): Promise<RefundRequest[]> {
-  // Primera llamada para obtener el total
-  const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 })
-  const total = firstPage.total || 0
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const now = Date.now()
   
-  console.log(`[DashboardService] Total registros: ${total}, Páginas: ${totalPages}`)
-  
-  let allItems = [...(firstPage.items || [])]
-  
-  // Si hay más páginas, obtenerlas en paralelo
-  if (totalPages > 1) {
-    const pagePromises = []
-    for (let page = 2; page <= totalPages; page++) {
-      pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }))
-    }
-    
-    const additionalPages = await Promise.all(pagePromises)
-    additionalPages.forEach(pageResult => {
-      allItems = allItems.concat(pageResult.items || [])
-    })
+  // Si hay datos en caché y no han expirado, retornarlos
+  if (refundsCache.data && (now - refundsCache.timestamp) < CACHE_TTL_MS) {
+    console.log('[DashboardService] Usando datos en caché')
+    return refundsCache.data
   }
   
-  // Normalizar status a minúsculas
-  return allItems.map(r => ({
-    ...r,
-    status: (r.status?.toLowerCase() || r.status) as RefundStatus
-  }))
+  // Si ya hay una promesa en curso, esperar por ella (evita llamadas duplicadas)
+  if (refundsCache.promise) {
+    console.log('[DashboardService] Esperando promesa existente')
+    return refundsCache.promise
+  }
+  
+  // Crear nueva promesa de fetch
+  refundsCache.promise = (async () => {
+    try {
+      // Primera llamada para obtener el total
+      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 })
+      const total = firstPage.total || 0
+      const totalPages = Math.ceil(total / PAGE_SIZE)
+      
+      console.log(`[DashboardService] Total registros: ${total}, Páginas: ${totalPages}`)
+      
+      let allItems = [...(firstPage.items || [])]
+      
+      // Si hay más páginas, obtenerlas en paralelo (en batches para no saturar)
+      if (totalPages > 1) {
+        const BATCH_SIZE = 10
+        for (let batchStart = 2; batchStart <= totalPages; batchStart += BATCH_SIZE) {
+          const batchEnd = Math.min(batchStart + BATCH_SIZE - 1, totalPages)
+          const pagePromises = []
+          
+          for (let page = batchStart; page <= batchEnd; page++) {
+            pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }))
+          }
+          
+          const batchResults = await Promise.all(pagePromises)
+          batchResults.forEach(pageResult => {
+            allItems = allItems.concat(pageResult.items || [])
+          })
+        }
+      }
+      
+      // Normalizar status a minúsculas
+      const normalizedItems = allItems.map(r => ({
+        ...r,
+        status: (r.status?.toLowerCase() || r.status) as RefundStatus
+      }))
+      
+      // Guardar en caché
+      refundsCache.data = normalizedItems
+      refundsCache.timestamp = Date.now()
+      
+      return normalizedItems
+    } finally {
+      // Limpiar la promesa para permitir futuras llamadas
+      refundsCache.promise = null
+    }
+  })()
+  
+  return refundsCache.promise
+}
+
+// Función para invalidar el caché manualmente si es necesario
+export function invalidateDashboardCache() {
+  refundsCache.data = null
+  refundsCache.timestamp = 0
+  refundsCache.promise = null
 }
 
 // Mapeo de estados de refunds a estados del dashboard
