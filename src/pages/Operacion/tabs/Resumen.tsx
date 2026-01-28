@@ -71,21 +71,27 @@ export function TabResumen() {
   });
 
   // Filtrar refunds por fechas según los filtros
-  const filteredRefunds = refunds.filter((r: any) => {
-    if (!r.createdAt) return false;
-    const createdDate = new Date(r.createdAt);
-    if (filtros.fechaDesde) {
-      const desde = new Date(filtros.fechaDesde);
-      desde.setHours(0, 0, 0, 0);
-      if (createdDate < desde) return false;
-    }
-    if (filtros.fechaHasta) {
-      const hasta = new Date(filtros.fechaHasta);
-      hasta.setHours(23, 59, 59, 999);
-      if (createdDate > hasta) return false;
-    }
-    return true;
-  });
+  const filteredRefunds = useMemo(() => {
+    const filtered = refunds.filter((r: any) => {
+      if (!r.createdAt) return false;
+      const createdDate = new Date(r.createdAt);
+      if (filtros.fechaDesde) {
+        const desde = new Date(filtros.fechaDesde);
+        desde.setHours(0, 0, 0, 0);
+        if (createdDate < desde) return false;
+      }
+      if (filtros.fechaHasta) {
+        const hasta = new Date(filtros.fechaHasta);
+        hasta.setHours(23, 59, 59, 999);
+        if (createdDate > hasta) return false;
+      }
+      return true;
+    });
+    console.log('[Resumen] Refunds después de filtrar por fechas:', filtered.length);
+    console.log('[Resumen] Fechas usadas:', { desde: filtros.fechaDesde, hasta: filtros.fechaHasta });
+    console.log('[Resumen] Status únicos:', [...new Set(filtered.map((r: any) => r.status))]);
+    return filtered;
+  }, [refunds, filtros.fechaDesde, filtros.fechaHasta]);
 
   // Query para obtener estados de mandatos de todas las solicitudes filtradas
   const allFilteredPublicIds = filteredRefunds.map((r: any) => r.publicId);
