@@ -252,6 +252,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       isPartnerValue = 1
     }
     
+    // hasBankInfo: 1 = con datos bancarios (Listo), 0 = sin datos bancarios (Pendiente)
+    let hasBankInfoValue: 0 | 1 | undefined = undefined
+    if (bankFilter === 'ready') {
+      hasBankInfoValue = 1
+    } else if (bankFilter === 'pending') {
+      hasBankInfoValue = 0
+    }
+    
     const newSearchFilters: SearchParams = {
       q: localFilters.search || undefined,
       status: localFilters.status || undefined,
@@ -263,6 +271,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       signatureStatus: signatureStatusValue,
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
       isPartner: isPartnerValue,
+      hasBankInfo: hasBankInfoValue,
     }
     
     setSearchFilters(newSearchFilters)
