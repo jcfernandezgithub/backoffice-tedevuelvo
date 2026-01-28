@@ -414,24 +414,40 @@ export default function Dashboard() {
                           data={pieChartData}
                           cx="50%"
                           cy="50%"
-                          innerRadius={40}
-                          outerRadius={80}
+                          innerRadius={50}
+                          outerRadius={90}
                           paddingAngle={2}
                           dataKey="value"
-                          label={({ name, percentage }) => `${name}: ${percentage}%`}
-                          labelLine={true}
+                          label={false}
+                          labelLine={false}
                         >
                           {pieChartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value: number, name: string, props: any) => [
-                            `${value} solicitudes (${props.payload.percentage}%)`,
-                            props.payload.name
-                          ]} 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload
+                              return (
+                                <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+                                  <p className="font-semibold">{data.name}</p>
+                                  <p className="text-muted-foreground">{data.value} solicitudes ({data.percentage}%)</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          }}
                         />
-                        <Legend wrapperStyle={{ fontSize: '12px' }} />
+                        <Legend 
+                          layout="horizontal"
+                          verticalAlign="bottom"
+                          align="center"
+                          wrapperStyle={{ fontSize: '11px', paddingTop: '16px' }} 
+                          formatter={(value, entry: any) => (
+                            <span className="text-xs">{entry.payload.name}</span>
+                          )}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
