@@ -124,6 +124,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
   const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
 
+  // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
+  const [appliedLocalFilters, setAppliedLocalFilters] = useState({
+    origin: searchParams.get('origin') || 'all',
+    bank: searchParams.get('bank') || 'all',
+    insuranceType: searchParams.get('insuranceType') || 'all',
+  })
+
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
@@ -252,6 +259,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setSearchFilters(newSearchFilters)
     setUseSearchEndpoint(true)
     
+    // Guardar filtros locales aplicados (los que no soporta el servidor)
+    setAppliedLocalFilters({
+      origin: originFilter,
+      bank: bankFilter,
+      insuranceType: insuranceTypeFilter,
+    })
+    
     // Actualizar URL params
     const params = new URLSearchParams()
     if (newSearchFilters.q) params.set('q', newSearchFilters.q)
@@ -305,6 +319,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setOriginFilter('all')
     setBankFilter('all')
     setInsuranceTypeFilter('all')
+    setAppliedLocalFilters({
+      origin: 'all',
+      bank: 'all',
+      insuranceType: 'all',
+    })
     setSearchParams(new URLSearchParams())
   }
   
@@ -500,13 +519,41 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // Los filtros locales ya NO se aplican automáticamente
-  // Solo se envían al servidor cuando se presiona "Buscar"
-  // Los items vienen ya filtrados del servidor
-  const paginatedItems = preSortedItems
+  // Aplicar filtros locales que el servidor no soporta (usando valores aplicados al presionar Buscar)
+  const locallyFilteredItems = useMemo(() => {
+    let result = preSortedItems
+    
+    // Filtro de banco (no soportado por servidor)
+    if (appliedLocalFilters.bank !== 'all') {
+      result = appliedLocalFilters.bank === 'ready'
+        ? result.filter((r: any) => r.bankInfo)
+        : result.filter((r: any) => !r.bankInfo)
+    }
+    
+    // Filtro de tipo de seguro (no soportado por servidor)
+    if (appliedLocalFilters.insuranceType !== 'all') {
+      result = result.filter((r: any) => {
+        const snapshot = r.calculationSnapshot
+        const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+        
+        if (appliedLocalFilters.insuranceType === 'cesantia') {
+          return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
+        } else if (appliedLocalFilters.insuranceType === 'desgravamen') {
+          return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
+        } else if (appliedLocalFilters.insuranceType === 'ambos') {
+          return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
+        }
+        return true
+      })
+    }
+    
+    return result
+  }, [preSortedItems, appliedLocalFilters])
+  
+  const paginatedItems = locallyFilteredItems
   
   // sortedItems se usa para exportar - contiene los items de la página actual
-  const sortedItems = preSortedItems
+  const sortedItems = locallyFilteredItems
 
   // Usar paginación del servidor
   const totalFiltered = normalizedData.total
