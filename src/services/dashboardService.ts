@@ -13,6 +13,39 @@ import type { RefundRequest, RefundStatus } from '@/types/refund'
 
 export type Aggregation = 'day' | 'week' | 'month'
 
+const PAGE_SIZE = 100
+
+// Función helper para obtener todos los refunds con paginación paralela
+async function fetchAllRefunds(): Promise<RefundRequest[]> {
+  // Primera llamada para obtener el total
+  const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 })
+  const total = firstPage.total || 0
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+  
+  console.log(`[DashboardService] Total registros: ${total}, Páginas: ${totalPages}`)
+  
+  let allItems = [...(firstPage.items || [])]
+  
+  // Si hay más páginas, obtenerlas en paralelo
+  if (totalPages > 1) {
+    const pagePromises = []
+    for (let page = 2; page <= totalPages; page++) {
+      pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }))
+    }
+    
+    const additionalPages = await Promise.all(pagePromises)
+    additionalPages.forEach(pageResult => {
+      allItems = allItems.concat(pageResult.items || [])
+    })
+  }
+  
+  // Normalizar status a minúsculas
+  return allItems.map(r => ({
+    ...r,
+    status: (r.status?.toLowerCase() || r.status) as RefundStatus
+  }))
+}
+
 // Mapeo de estados de refunds a estados del dashboard
 const statusToDashboardState = (status: RefundStatus): string => {
   switch (status) {
@@ -80,12 +113,8 @@ function filterByLocalDate(refunds: RefundRequest[], desde?: string, hasta?: str
 export const dashboardService = {
   async getSolicitudesPorEstado(desde?: string, hasta?: string) {
     try {
-      // Obtener todas las solicitudes del API (sin filtro de fecha en backend)
-      const response = await refundAdminApi.list({
-        pageSize: 1000, // Obtener todas las solicitudes
-      })
-
-      const refunds = Array.isArray(response) ? response : response.items || []
+      // Obtener todas las solicitudes con paginación paralela
+      const refunds = await fetchAllRefunds()
 
       // Aplicar filtro de fecha LOCAL (mismo criterio que List.tsx)
       const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
@@ -127,15 +156,11 @@ export const dashboardService = {
 
   async getPagosClientes(desde?: string, hasta?: string) {
     try {
-      // Obtener todas las solicitudes (sin filtro de fecha en backend)
-      const response = await refundAdminApi.list({
-        pageSize: 1000,
-      })
-
-      const refunds = Array.isArray(response) ? response : response.items || []
+      // Obtener todas las solicitudes con paginación paralela
+      const refunds = await fetchAllRefunds()
 
       // Aplicar filtro de fecha LOCAL
-      const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
+      const filteredRefunds = filterByLocalDate(refunds, desde, hasta)
 
       // Filtrar solo las que están en estado paid
       const paidRefunds = filteredRefunds.filter(
@@ -189,15 +214,11 @@ export const dashboardService = {
 
   async getSolicitudesAggregate(desde?: string, hasta?: string, by: Aggregation = 'day') {
     try {
-      // Obtener todas las solicitudes (sin filtro de fecha en backend)
-      const response = await refundAdminApi.list({
-        pageSize: 1000,
-      })
-
-      const allRefunds = Array.isArray(response) ? response : response.items || []
+      // Obtener todas las solicitudes con paginación paralela
+      const allRefunds = await fetchAllRefunds()
 
       // Aplicar filtro de fecha LOCAL
-      const refunds = filterByLocalDate(allRefunds as RefundRequest[], desde, hasta)
+      const refunds = filterByLocalDate(allRefunds, desde, hasta)
 
       // Agrupar por fecha de creación
       const map = new Map<string, number>()
@@ -243,12 +264,9 @@ export const dashboardService = {
 
   async getSolicitudesParaMandato(desde?: string, hasta?: string): Promise<string[]> {
     try {
-      const response = await refundAdminApi.list({
-        pageSize: 1000,
-      })
-
-      const refunds = Array.isArray(response) ? response : response.items || []
-      const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
+      // Obtener todas las solicitudes con paginación paralela
+      const refunds = await fetchAllRefunds()
+      const filteredRefunds = filterByLocalDate(refunds, desde, hasta)
 
       // Retornar TODOS los publicIds del período para verificar mandatos
       // El mandato puede estar firmado en cualquier estado
