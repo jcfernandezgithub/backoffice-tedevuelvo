@@ -244,12 +244,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     // Construir parámetros para el nuevo endpoint search
-    // isPartner: 1 = directo (sin partnerId), 0 = alianza (con partnerId)
+    // isPartner: 0 = directo (sin partnerId), 1 = alianza (con partnerId)
     let isPartnerValue: 0 | 1 | undefined = undefined
     if (originFilter === 'directo') {
-      isPartnerValue = 1
-    } else if (originFilter === 'alianza') {
       isPartnerValue = 0
+    } else if (originFilter === 'alianza') {
+      isPartnerValue = 1
     }
     
     const newSearchFilters: SearchParams = {
