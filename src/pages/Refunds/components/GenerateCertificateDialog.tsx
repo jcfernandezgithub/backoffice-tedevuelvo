@@ -401,7 +401,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    drawCheckbox(margin, y, true)
+    drawCheckbox(margin, y, false)
     doc.text('UF', margin + 7, y)
     drawCheckbox(margin + 30, y, false)
     doc.text('Anual', margin + 37, y)
@@ -409,7 +409,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     doc.text('Fija', margin + 82, y)
     doc.text('15% + IVA por prima', margin + 122, y)
     y += 5
-    drawCheckbox(margin, y, false)
+    // Peso checked for non-Banco de Chile
+    drawCheckbox(margin, y, true)
     doc.text('Peso', margin + 7, y)
     drawCheckbox(margin + 30, y, false)
     doc.text('Mensual', margin + 37, y)
@@ -437,12 +438,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
+    // Fallecimiento - Show Saldo Insoluto value and CLP for non-Banco de Chile
     drawCheckbox(margin, y, true)
     doc.text('Fallecimiento', margin + 7, y)
     doc.rect(margin + 60, y - 3, 35, 5, 'S')
-    doc.text('Saldo Insoluto', margin + 62, y)
+    doc.text(saldoInsolutoFormatted, margin + 62, y)
     doc.rect(margin + 98, y - 3, 15, 5, 'S')
-    doc.text('UF', margin + 100, y)
+    doc.text('CLP', margin + 100, y)
     doc.rect(margin + 120, y - 3, 15, 5, 'S')
     doc.rect(margin + 145, y - 3, 15, 5, 'S')
     y += 6
@@ -1539,7 +1541,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
       // Row 1
-      drawCheckbox(margin, y, true)
+      drawCheckbox(margin, y, false)
       doc.text('UF', margin + 7, y)
       drawCheckbox(margin + 30, y, false)
       doc.text('Anual', margin + 37, y)
@@ -1547,8 +1549,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.text('Fija', margin + 82, y)
       doc.text('15% + IVA por prima', margin + 122, y)
       y += 5
-      // Row 2
-      drawCheckbox(margin, y, false)
+      // Row 2 - Peso checked for non-Banco de Chile
+      drawCheckbox(margin, y, true)
       doc.text('Peso', margin + 7, y)
       drawCheckbox(margin + 30, y, false)
       doc.text('Mensual', margin + 37, y)
@@ -1577,13 +1579,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
-      // Fallecimiento
+      // Fallecimiento - Show Saldo Insoluto value and CLP for non-Banco de Chile
       drawCheckbox(margin, y, true)
       doc.text('Fallecimiento', margin + 7, y)
       doc.rect(margin + 60, y - 3, 35, 5, 'S')
-      doc.text('Saldo Insoluto', margin + 62, y)
+      doc.text(saldoInsolutoFormatted, margin + 62, y)
       doc.rect(margin + 98, y - 3, 15, 5, 'S')
-      doc.text('UF', margin + 100, y)
+      doc.text('CLP', margin + 100, y)
       doc.rect(margin + 120, y - 3, 15, 5, 'S')
       doc.text('2/3', margin + 124, y)
       doc.rect(margin + 145, y - 3, 15, 5, 'S')
