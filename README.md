@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.1
+## Versión 2.1.2
 
 ## Changelog
+
+### Versión 2.1.2 - 2026-01-28
+
+#### Mejoras en Certificado de Cobertura Banco de Chile
+- **Beneficiario irrevocable corregido**: Corregida la visualización del beneficiario irrevocable en los certificados de cobertura del Banco de Chile.
+  - Póliza 342 y 344: El nombre y RUT del beneficiario irrevocable ahora se muestran correctamente en la sección "Detalle de Coberturas".
+  - Póliza 342 y 344: Corregida la sección de fallecimiento para mostrar los datos del beneficiario ingresado en lugar de datos del banco.
+  - Campos con formato visual consistente usando cajas delimitadas.
+
+---
 
 ### Versión 2.1.1 - 2026-01-28
 
