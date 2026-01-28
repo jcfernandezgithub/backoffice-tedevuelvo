@@ -367,6 +367,8 @@ export default function Dashboard() {
                 icon={c.icon} 
                 color={c.color} 
                 refundStatus={c.refundStatus}
+                desde={desde}
+                hasta={hasta}
               />
             ))}
           </div>
@@ -375,7 +377,7 @@ export default function Dashboard() {
           <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados finales</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {estadoCards.slice(4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} />
+              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} desde={desde} hasta={hasta} />
             ))}
           </div>
         </div>
@@ -497,19 +499,26 @@ export default function Dashboard() {
   )
 }
 
-function Kpi({ title, value, icon: Icon, color, refundStatus, extraInfo }: { 
+function Kpi({ title, value, icon: Icon, color, refundStatus, extraInfo, desde, hasta }: { 
   title: string; 
   value: number | React.ReactNode; 
   icon?: LucideIcon;
   color?: string;
   refundStatus?: string;
   extraInfo?: { label: string; value: number; icon?: LucideIcon };
+  desde?: string;
+  hasta?: string;
 }) {
   const navigate = useNavigate()
   
   const handleClick = () => {
     if (refundStatus) {
-      navigate(`/refunds?status=${refundStatus}&autoSearch=true`)
+      const params = new URLSearchParams()
+      params.set('status', refundStatus)
+      params.set('autoSearch', 'true')
+      if (desde) params.set('from', desde)
+      if (hasta) params.set('to', hasta)
+      navigate(`/refunds?${params.toString()}`)
     }
   }
   
