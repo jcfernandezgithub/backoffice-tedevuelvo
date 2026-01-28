@@ -256,18 +256,71 @@ export const reportsApiClient = {
     const conteos = new Map<string, number>();
     
     refunds.forEach(r => {
-      // Por ahora usamos el institutionId como alianza
-      const alianza = r.institutionId || 'Sin alianza';
+      // Usamos partnerId si existe, sino "Sin alianza"
+      const alianza = r.partnerId ? (r.institutionId || r.partnerId) : 'Sin alianza';
       conteos.set(alianza, (conteos.get(alianza) || 0) + 1);
     });
 
     const total = refunds.length;
-    return Array.from(conteos.entries()).map(([nombre, cantidad]) => ({
-      categoria: nombre,
-      name: nombre,
-      valor: cantidad,
-      porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+    return Array.from(conteos.entries())
+      .map(([nombre, cantidad]) => ({
+        categoria: nombre,
+        name: nombre,
+        valor: cantidad,
+        porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+      }))
+      .sort((a, b) => b.valor - a.valor); // Ordenar de mayor a menor
+  },
+
+  async getDistribucionPorTipoSeguro(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
+    const refunds = await fetchRefunds(filtros);
+    const conteos = new Map<string, { cantidad: number; montoTotal: number; pagadas: number }>();
+    
+    refunds.forEach(r => {
+      const tipoSeguro = r.calculationSnapshot?.insuranceToEvaluate || 'Sin tipo';
+      const current = conteos.get(tipoSeguro) || { cantidad: 0, montoTotal: 0, pagadas: 0 };
+      current.cantidad += 1;
+      current.montoTotal += r.estimatedAmountCLP || 0;
+      if (r.status === 'paid') current.pagadas += 1;
+      conteos.set(tipoSeguro, current);
+    });
+
+    const total = refunds.length;
+    return Array.from(conteos.entries()).map(([tipo, data]) => ({
+      categoria: tipo,
+      name: tipo === 'CESANTIA' ? 'Cesantía' : tipo === 'DESGRAVAMEN' ? 'Desgravamen' : tipo === 'AMBOS' ? 'Ambos' : tipo,
+      valor: data.cantidad,
+      porcentaje: total > 0 ? (data.cantidad / total) * 100 : 0,
+      montoPromedio: data.cantidad > 0 ? Math.round(data.montoTotal / data.cantidad) : 0,
+      conversion: data.cantidad > 0 ? (data.pagadas / data.cantidad) * 100 : 0
     }));
+  },
+
+  async getKpisSegmentos(filtros: FiltrosReporte) {
+    const refunds = await fetchRefunds(filtros);
+    
+    // Agrupar por partnerId (alianza)
+    const porAlianza = new Map<string, RefundRequest[]>();
+    refunds.forEach(r => {
+      const alianza = r.partnerId || 'direct';
+      if (!porAlianza.has(alianza)) porAlianza.set(alianza, []);
+      porAlianza.get(alianza)!.push(r);
+    });
+    
+    const alianzasCount = porAlianza.size;
+    const solicitudesPromedio = alianzasCount > 0 ? Math.round(refunds.length / alianzasCount) : 0;
+    
+    const pagadas = refunds.filter(r => r.status === 'paid').length;
+    const tasaConversion = refunds.length > 0 ? (pagadas / refunds.length) * 100 : 0;
+    
+    // Calcular comisión promedio estimada (12% por defecto)
+    const comisionPromedio = 12;
+    
+    return {
+      solicitudesPromedio,
+      tasaConversion,
+      comisionPromedio
+    };
   },
 
   async getFunnelData(filtros: FiltrosReporte): Promise<FunnelStep[]> {

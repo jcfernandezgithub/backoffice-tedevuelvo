@@ -31,6 +31,14 @@ export const reportsClient = {
     return reportsApiClient.getDistribucionPorAlianza(filtros);
   },
 
+  async getDistribucionPorTipoSeguro(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
+    return reportsApiClient.getDistribucionPorTipoSeguro(filtros);
+  },
+
+  async getKpisSegmentos(filtros: FiltrosReporte) {
+    return reportsApiClient.getKpisSegmentos(filtros);
+  },
+
   async getFunnelData(filtros: FiltrosReporte): Promise<FunnelStep[]> {
     return reportsApiClient.getFunnelData(filtros);
   },

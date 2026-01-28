@@ -38,6 +38,22 @@ export function useDistribucionPorAlianza(filtros: FiltrosReporte) {
   });
 }
 
+export function useDistribucionPorTipoSeguro(filtros: FiltrosReporte) {
+  return useQuery({
+    queryKey: ['reportes', 'distribucion-tipo-seguro', filtros],
+    queryFn: () => reportsClient.getDistribucionPorTipoSeguro(filtros),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useKpisSegmentos(filtros: FiltrosReporte) {
+  return useQuery({
+    queryKey: ['reportes', 'kpis-segmentos', filtros],
+    queryFn: () => reportsClient.getKpisSegmentos(filtros),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useFunnelData(filtros: FiltrosReporte) {
   return useQuery({
     queryKey: ['reportes', 'funnel', filtros],

@@ -5,70 +5,61 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { KpiCard } from '../components/KpiCard';
 import { DataGrid } from '@/components/datagrid/DataGrid';
 import { useFilters } from '../hooks/useFilters';
-import { useDistribucionPorAlianza, useTablaResumen } from '../hooks/useReportsData';
+import { useDistribucionPorAlianza, useDistribucionPorTipoSeguro, useKpisSegmentos } from '../hooks/useReportsData';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
-// Mock data para diferentes segmentos
-const kpisPorAlianza = [
-  {
-    titulo: 'Solicitudes Promedio',
-    valor: 145,
-    formato: 'numero' as const,
-    icono: 'FileText',
-    tooltip: 'Promedio de solicitudes por alianza'
-  },
-  {
-    titulo: 'Tasa de Conversión',
-    valor: 78.5,
-    formato: 'porcentaje' as const,
-    icono: 'TrendingUp',
-    tooltip: 'Tasa promedio de conversión'
-  },
-  {
-    titulo: 'Comisión Promedio',
-    valor: 11.2,
-    formato: 'porcentaje' as const,
-    icono: 'Percent',
-    tooltip: 'Comisión promedio por alianza'
-  }
-];
-
-const datosPorTipoSeguro = [
-  { tipo: 'Cesantía', solicitudes: 156, conversion: 82.1, montoPromedio: 850000 },
-  { tipo: 'Desgravamen', solicitudes: 89, conversion: 74.2, montoPromedio: 1200000 },
-];
-
-const datosPorUsuario = [
-  { usuario: 'María González', solicitudes: 45, conversion: 85.6, eficiencia: 'Alta' },
-  { usuario: 'Carlos Rodríguez', solicitudes: 38, conversion: 79.8, eficiencia: 'Alta' },
-  { usuario: 'Ana Pérez', solicitudes: 42, conversion: 76.2, eficiencia: 'Media' },
-  { usuario: 'Luis Martínez', solicitudes: 35, conversion: 81.4, eficiencia: 'Alta' },
-  { usuario: 'Sofia López', solicitudes: 28, conversion: 73.9, eficiencia: 'Media' },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#d884d8', '#84d8c9', '#d8a984'];
 
 export function TabSegmentos() {
   const { filtros } = useFilters();
   const [segmentoActivo, setSegmentoActivo] = useState('alianza');
   
   const { data: distribucionAlianza, isLoading: loadingAlianza } = useDistribucionPorAlianza(filtros);
-  const { data: tablaData, isLoading: loadingTabla } = useTablaResumen(filtros, 1, 20);
+  const { data: distribucionTipoSeguro, isLoading: loadingTipoSeguro } = useDistribucionPorTipoSeguro(filtros);
+  const { data: kpisSegmentos, isLoading: loadingKpis } = useKpisSegmentos(filtros);
 
   const renderSegmentoAlianza = () => (
     <div className="space-y-6">
       {/* KPIs por alianza */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {kpisPorAlianza.map((kpi, index) => (
-          <KpiCard key={index} data={kpi} />
-        ))}
+        {loadingKpis ? (
+          <>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </>
+        ) : (
+          <>
+            <KpiCard data={{
+              titulo: 'Solicitudes Promedio',
+              valor: kpisSegmentos?.solicitudesPromedio || 0,
+              formato: 'numero',
+              icono: 'FileText',
+              tooltip: 'Promedio de solicitudes por alianza'
+            }} />
+            <KpiCard data={{
+              titulo: 'Tasa de Conversión',
+              valor: kpisSegmentos?.tasaConversion || 0,
+              formato: 'porcentaje',
+              icono: 'TrendingUp',
+              tooltip: 'Tasa promedio de conversión a pagadas'
+            }} />
+            <KpiCard data={{
+              titulo: 'Comisión Promedio',
+              valor: kpisSegmentos?.comisionPromedio || 0,
+              formato: 'porcentaje',
+              icono: 'Percent',
+              tooltip: 'Comisión promedio por alianza'
+            }} />
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Distribución por alianza */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribución por Alianza</CardTitle>
+            <CardTitle>Distribución por Institución</CardTitle>
           </CardHeader>
           <CardContent>
             {loadingAlianza ? (
@@ -77,21 +68,43 @@ export function TabSegmentos() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={distribucionAlianza}
+                    data={distribucionAlianza.slice(0, 10)}
                     cx="50%"
                     cy="50%"
-                    labelLine={false}
-                    label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
+                    innerRadius={50}
+                    outerRadius={90}
+                    paddingAngle={2}
                     dataKey="valor"
+                    label={false}
+                    labelLine={false}
                   >
-                    {distribucionAlianza.map((entry, index) => (
+                    {distribucionAlianza.slice(0, 10).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => [value.toLocaleString('es-CL'), 'Solicitudes']} />
-                  <Legend />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload
+                        return (
+                          <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+                            <p className="font-semibold">{data.name}</p>
+                            <p className="text-muted-foreground">{data.valor.toLocaleString('es-CL')} solicitudes ({data.porcentaje.toFixed(1)}%)</p>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Legend 
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ fontSize: '10px', paddingTop: '16px' }}
+                    formatter={(value, entry: any) => (
+                      <span className="text-xs">{entry.payload.name}</span>
+                    )}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -105,19 +118,23 @@ export function TabSegmentos() {
         {/* Tabla detallada por alianza */}
         <Card>
           <CardHeader>
-            <CardTitle>Top Alianzas</CardTitle>
+            <CardTitle>Top Instituciones</CardTitle>
           </CardHeader>
           <CardContent>
-            {distribucionAlianza?.length ? (
+            {loadingAlianza ? (
               <div className="space-y-3">
-                {distribucionAlianza.slice(0, 5).map((item, index) => (
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14" />)}
+              </div>
+            ) : distribucionAlianza?.length ? (
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {distribucionAlianza.slice(0, 10).map((item, index) => (
                   <div key={item.categoria} className="flex justify-between items-center p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div 
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: COLORS[index % COLORS.length] }}
                       />
-                      <span className="font-medium">{item.categoria}</span>
+                      <span className="font-medium text-sm truncate max-w-[150px]">{item.name}</span>
                     </div>
                     <div className="text-right">
                       <div className="font-bold">{item.valor.toLocaleString('es-CL')}</div>
@@ -144,33 +161,60 @@ export function TabSegmentos() {
           <CardTitle>Análisis por Tipo de Seguro</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={datosPorTipoSeguro} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="tipo" stroke="hsl(var(--muted-foreground))" />
-              <YAxis stroke="hsl(var(--muted-foreground))" />
-              <Tooltip />
-              <Bar dataKey="solicitudes" fill="hsl(var(--primary))" name="Solicitudes" />
-              <Bar dataKey="conversion" fill="hsl(var(--accent))" name="Conversión %" />
-            </BarChart>
-          </ResponsiveContainer>
+          {loadingTipoSeguro ? (
+            <Skeleton className="h-[300px] w-full" />
+          ) : distribucionTipoSeguro?.length ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={distribucionTipoSeguro} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload
+                      return (
+                        <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+                          <p className="font-semibold">{data.name}</p>
+                          <p>Solicitudes: {data.valor?.toLocaleString('es-CL')}</p>
+                          <p>Conversión: {data.conversion?.toFixed(1)}%</p>
+                        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
+                <Bar dataKey="valor" fill="hsl(var(--primary))" name="Solicitudes" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              No hay datos para mostrar
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {datosPorTipoSeguro.map((tipo) => (
-          <Card key={tipo.tipo}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loadingTipoSeguro ? (
+          <>
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+          </>
+        ) : distribucionTipoSeguro?.map((tipo: any) => (
+          <Card key={tipo.categoria}>
             <CardHeader>
-              <CardTitle>{tipo.tipo}</CardTitle>
+              <CardTitle className="text-lg">{tipo.name}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Solicitudes:</span>
-                <span className="font-semibold">{tipo.solicitudes.toLocaleString('es-CL')}</span>
+                <span className="font-semibold">{tipo.valor?.toLocaleString('es-CL')}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Conversión:</span>
-                <span className="font-semibold">{tipo.conversion}%</span>
+                <span className="font-semibold">{tipo.conversion?.toFixed(1)}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Monto promedio:</span>
@@ -179,7 +223,7 @@ export function TabSegmentos() {
                     style: 'currency',
                     currency: 'CLP',
                     maximumFractionDigits: 0
-                  }).format(tipo.montoPromedio)}
+                  }).format(tipo.montoPromedio || 0)}
                 </span>
               </div>
             </CardContent>
@@ -196,34 +240,12 @@ export function TabSegmentos() {
           <CardTitle>Rendimiento por Usuario</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataGrid
-            data={datosPorUsuario}
-            columns={[
-              { key: 'usuario', header: 'Usuario', sortable: true },
-              { key: 'solicitudes', header: 'Solicitudes', sortable: true },
-              { 
-                key: 'conversion', 
-                header: 'Conversión (%)', 
-                sortable: true,
-                render: (item) => `${item.conversion}%`
-              },
-              { 
-                key: 'eficiencia', 
-                header: 'Eficiencia', 
-                sortable: false,
-                render: (item) => (
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    item.eficiencia === 'Alta' 
-                      ? 'bg-emerald-100 text-emerald-800' 
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.eficiencia}
-                  </span>
-                )
-              },
-            ]}
-            pageSize={10}
-          />
+          <div className="h-64 flex items-center justify-center text-muted-foreground">
+            <p className="text-center">
+              La segmentación por usuario estará disponible próximamente.<br />
+              <span className="text-sm">Requiere integración con datos de gestores.</span>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -233,7 +255,7 @@ export function TabSegmentos() {
     <div className="space-y-6">
       <Tabs value={segmentoActivo} onValueChange={setSegmentoActivo}>
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="alianza">Por Alianza</TabsTrigger>
+          <TabsTrigger value="alianza">Por Institución</TabsTrigger>
           <TabsTrigger value="tipo">Por Tipo de Seguro</TabsTrigger>
           <TabsTrigger value="usuario">Por Usuario</TabsTrigger>
         </TabsList>
