@@ -302,27 +302,23 @@ export const reportsApiClient = {
   async getKpisSegmentos(filtros: FiltrosReporte) {
     const refunds = await fetchRefunds(filtros);
     
-    // Agrupar por partnerId (alianza)
-    const porAlianza = new Map<string, RefundRequest[]>();
-    refunds.forEach(r => {
-      const alianza = r.partnerId || 'direct';
-      if (!porAlianza.has(alianza)) porAlianza.set(alianza, []);
-      porAlianza.get(alianza)!.push(r);
-    });
+    // Ticket Promedio: monto estimado promedio por solicitud
+    const totalMonto = refunds.reduce((acc, r) => acc + (r.estimatedAmountCLP || 0), 0);
+    const ticketPromedio = refunds.length > 0 ? Math.round(totalMonto / refunds.length) : 0;
     
-    const alianzasCount = porAlianza.size;
-    const solicitudesPromedio = alianzasCount > 0 ? Math.round(refunds.length / alianzasCount) : 0;
+    // Monto en Pipeline: suma de montos de solicitudes activas (no pagadas ni rechazadas)
+    const estadosActivos = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled'];
+    const solicitudesActivas = refunds.filter(r => estadosActivos.includes(r.status));
+    const montoEnPipeline = solicitudesActivas.reduce((acc, r) => acc + (r.estimatedAmountCLP || 0), 0);
     
+    // Tasa de Conversión: % de solicitudes que llegaron a PAID
     const pagadas = refunds.filter(r => r.status === 'paid').length;
     const tasaConversion = refunds.length > 0 ? (pagadas / refunds.length) * 100 : 0;
     
-    // Calcular comisión promedio estimada (12% por defecto)
-    const comisionPromedio = 12;
-    
     return {
-      solicitudesPromedio,
-      tasaConversion,
-      comisionPromedio
+      ticketPromedio,
+      montoEnPipeline,
+      tasaConversion
     };
   },
 

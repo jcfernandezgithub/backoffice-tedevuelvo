@@ -31,25 +31,25 @@ export function TabSegmentos() {
         ) : (
           <>
             <KpiCard data={{
-              titulo: 'Solicitudes Promedio',
-              valor: kpisSegmentos?.solicitudesPromedio || 0,
-              formato: 'numero',
-              icono: 'FileText',
-              tooltip: 'Promedio de solicitudes por alianza'
+              titulo: 'Ticket Promedio',
+              valor: kpisSegmentos?.ticketPromedio || 0,
+              formato: 'moneda',
+              icono: 'Wallet',
+              tooltip: 'Monto estimado promedio por solicitud'
+            }} />
+            <KpiCard data={{
+              titulo: 'Monto en Pipeline',
+              valor: kpisSegmentos?.montoEnPipeline || 0,
+              formato: 'moneda',
+              icono: 'TrendingUp',
+              tooltip: 'Total de dinero en solicitudes activas (no pagadas/rechazadas)'
             }} />
             <KpiCard data={{
               titulo: 'Tasa de Conversión',
               valor: kpisSegmentos?.tasaConversion || 0,
               formato: 'porcentaje',
-              icono: 'TrendingUp',
-              tooltip: 'Tasa promedio de conversión a pagadas'
-            }} />
-            <KpiCard data={{
-              titulo: 'Comisión Promedio',
-              valor: kpisSegmentos?.comisionPromedio || 0,
-              formato: 'porcentaje',
               icono: 'Percent',
-              tooltip: 'Comisión promedio por alianza'
+              tooltip: 'Porcentaje de solicitudes que llegaron a PAGADO'
             }} />
           </>
         )}
