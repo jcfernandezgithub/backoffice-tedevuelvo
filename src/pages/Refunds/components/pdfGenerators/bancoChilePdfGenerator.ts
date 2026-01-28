@@ -311,7 +311,7 @@ export const generateBancoChilePrimePDF = async (
   drawCheckbox(margin, y, true)
   doc.text('Fallecimiento', margin + 7, y)
   doc.rect(margin + 60, y - 3, 35, 5, 'S')
-  doc.text('Saldo Insoluto', margin + 62, y)
+  doc.text(saldoInsolutoFormatted, margin + 62, y)
   doc.rect(margin + 98, y - 3, 15, 5, 'S')
   doc.text('CLP', margin + 100, y)
   doc.rect(margin + 120, y - 3, 15, 5, 'S')
