@@ -2165,9 +2165,20 @@ export const generateBancoChileStandardPDF = async (
   doc.text('POL 2 2015 0573', margin + 92, y)
   y += 6
 
+  // BENEFICIARIO IRREVOCABLE en Detalle de Coberturas (Póliza 342)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('BENEFICIARIO IRREVOCABLE', margin, y)
+  doc.text('Rut', margin + 100, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text('BENEFICIARIO IRREVOCABLE                                            Rut', margin, y)
-  y += 4
+  doc.rect(margin, y - 3, 95, 5, 'S')
+  doc.text(formData.beneficiarioNombre || '', margin + 2, y)
+  doc.rect(margin + 100, y - 3, 60, 5, 'S')
+  doc.text(formData.beneficiarioRut || '', margin + 102, y)
+  y += 8
+
   doc.text('El presente contrato no cuenta con Sello SERNAC conforme al Artículo 55, Ley 20.555', margin, y)
   y += 8
 
