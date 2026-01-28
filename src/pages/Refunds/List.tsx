@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { refundAdminApi } from '@/services/refundAdminApi'
+import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
@@ -131,13 +131,37 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Estado para selección de solicitudes
   const [selectedRefunds, setSelectedRefunds] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
+  
+  // Estado para parámetros de búsqueda (nuevo endpoint search)
+  const [searchFilters, setSearchFilters] = useState<SearchParams>({
+    page: 1,
+    limit: 20,
+  })
+  const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
 
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['refunds', filters],
+  // Query para listado inicial (listV2)
+  const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
+    queryKey: ['refunds-list', filters],
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
-    staleTime: 30 * 1000, // Cache por 30 segundos
+    staleTime: 30 * 1000,
+    enabled: !useSearchEndpoint,
   })
+  
+  // Query para búsqueda (search endpoint)
+  const { data: searchData, isLoading: isSearchLoading, error: searchError, refetch: refetchSearch } = useQuery({
+    queryKey: ['refunds-search', searchFilters],
+    queryFn: () => refundAdminApi.search(searchFilters),
+    retry: false,
+    staleTime: 30 * 1000,
+    enabled: useSearchEndpoint,
+  })
+  
+  // Unificar datos según el endpoint usado
+  const data = useSearchEndpoint ? searchData : listData
+  const isLoading = useSearchEndpoint ? isSearchLoading : isListLoading
+  const error = useSearchEndpoint ? searchError : listError
+  const refetch = useSearchEndpoint ? refetchSearch : refetchList
 
   // Fetch partners para mostrar nombres de alianzas
   const { data: partnersData } = useQuery({
@@ -202,35 +226,52 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setLocalFilters(prev => ({ ...prev, from, to }))
   }
 
-  // Ejecuta la búsqueda con los filtros locales actuales
+  // Ejecuta la búsqueda con los filtros locales actuales usando el endpoint search
   const handleSearch = () => {
-    const newFilters = { ...localFilters, page: 1, pageSize: filters.pageSize }
-    setFilters(newFilters)
+    // Construir parámetros para el nuevo endpoint search
+    const newSearchFilters: SearchParams = {
+      q: localFilters.search || undefined,
+      status: localFilters.status || undefined,
+      origin: originFilter !== 'all' ? originFilter : undefined,
+      sort: 'recent', // Por defecto más recientes
+      from: localFilters.from || undefined,
+      to: localFilters.to || undefined,
+      page: 1,
+      limit: filters.pageSize || 20,
+    }
     
+    setSearchFilters(newSearchFilters)
+    setUseSearchEndpoint(true)
+    
+    // Actualizar URL params
     const params = new URLSearchParams()
-    Object.entries(newFilters).forEach(([k, v]) => {
-      if (v) params.set(k, String(v))
-    })
-    // Mantener filtros locales adicionales en URL
+    if (newSearchFilters.q) params.set('q', newSearchFilters.q)
+    if (newSearchFilters.status) params.set('status', newSearchFilters.status)
+    if (newSearchFilters.origin) params.set('origin', newSearchFilters.origin)
+    if (newSearchFilters.from) params.set('from', newSearchFilters.from)
+    if (newSearchFilters.to) params.set('to', newSearchFilters.to)
     if (mandateFilter !== 'all') params.set('mandate', mandateFilter)
-    if (originFilter !== 'all') params.set('origin', originFilter)
     if (bankFilter !== 'all') params.set('bank', bankFilter)
     if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
+    params.set('page', '1')
     setSearchParams(params)
   }
 
   const handlePageChange = (newPage: number) => {
-    const newFilters = { ...filters, page: newPage }
-    setFilters(newFilters)
+    if (useSearchEndpoint) {
+      const newSearchFilters = { ...searchFilters, page: newPage }
+      setSearchFilters(newSearchFilters)
+    } else {
+      const newFilters = { ...filters, page: newPage }
+      setFilters(newFilters)
+    }
     
-    const params = new URLSearchParams()
-    Object.entries(newFilters).forEach(([k, v]) => {
-      if (v) params.set(k, String(v))
-    })
+    const params = new URLSearchParams(searchParams)
+    params.set('page', String(newPage))
     setSearchParams(params)
   }
 
-  // Limpia todos los filtros y ejecuta búsqueda con valores por defecto
+  // Limpia todos los filtros y carga listado inicial con listV2
   const handleClearFilters = () => {
     const clearedFilters: AdminQueryParams = {
       search: '',
@@ -249,6 +290,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       sort: 'createdAt:desc',
     })
     setFilters(clearedFilters)
+    setSearchFilters({ page: 1, limit: 20 })
+    setUseSearchEndpoint(false) // Volver a usar listV2
     setMandateFilter('all')
     setOriginFilter('all')
     setBankFilter('all')
