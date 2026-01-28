@@ -310,46 +310,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   
   const handleOriginFilterChange = (value: string) => {
     setOriginFilter(value)
-    const params = new URLSearchParams(searchParams)
-    if (value === 'all') {
-      params.delete('origin')
-    } else {
-      params.set('origin', value)
-    }
-    setSearchParams(params)
   }
   
   const handleMandateFilterChange = (value: string) => {
     setMandateFilter(value)
-    const params = new URLSearchParams(searchParams)
-    if (value === 'all') {
-      params.delete('mandate')
-    } else {
-      params.set('mandate', value)
-    }
-    setSearchParams(params)
   }
   
   const handleBankFilterChange = (value: string) => {
     setBankFilter(value)
-    const params = new URLSearchParams(searchParams)
-    if (value === 'all') {
-      params.delete('bank')
-    } else {
-      params.set('bank', value)
-    }
-    setSearchParams(params)
   }
   
   const handleInsuranceTypeFilterChange = (value: string) => {
     setInsuranceTypeFilter(value)
-    const params = new URLSearchParams(searchParams)
-    if (value === 'all') {
-      params.delete('insuranceType')
-    } else {
-      params.set('insuranceType', value)
-    }
-    setSearchParams(params)
   }
 
   const handleCopy = (text: string, fieldId: string) => {
@@ -528,71 +500,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     staleTime: 2 * 60 * 1000, // Cache por 2 minutos
   })
   
-  // Aplicar filtros locales adicionales (mandato, origen, banco, tipo seguro)
-  const mandateFilteredItems = useMemo(() => {
-    if (mandateFilter === 'all') return preSortedItems
-    // Filtrar por mandato (solo los que tenemos datos)
-    return preSortedItems.filter((r: any) => {
-      const status = mandateStatuses?.[r.publicId]
-      // Si no tenemos el status aún, no lo incluimos
-      if (!status) return false
-      const hasSigned = status?.hasSignedPdf === true
-      return mandateFilter === 'signed' ? hasSigned : !hasSigned
-    })
-  }, [preSortedItems, mandateFilter, mandateStatuses])
-  
-  // Memoizar función de filtros adicionales con useCallback
-  const applyNonMandateFilters = useMemo(() => {
-    return (items: any[]) => {
-      let result = items
-      
-      // Filtro de origen
-      if (originFilter !== 'all') {
-        result = originFilter === 'alianza'
-          ? result.filter((r: any) => r.partnerId)
-          : result.filter((r: any) => !r.partnerId)
-      }
-      
-      // Filtro de datos bancarios
-      if (bankFilter !== 'all') {
-        result = bankFilter === 'ready'
-          ? result.filter((r: any) => r.bankInfo)
-          : result.filter((r: any) => !r.bankInfo)
-      }
-      
-      // Filtro de tipo de seguro
-      if (insuranceTypeFilter !== 'all') {
-        result = result.filter((r: any) => {
-          const snapshot = r.calculationSnapshot
-          const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
-          
-          if (insuranceTypeFilter === 'cesantia') {
-            return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
-          } else if (insuranceTypeFilter === 'desgravamen') {
-            return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
-          } else if (insuranceTypeFilter === 'ambos') {
-            return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
-          }
-          return true
-        })
-      }
-      
-      return result
-    }
-  }, [originFilter, bankFilter, insuranceTypeFilter])
-  
-  // Dataset filtrado completo (con mandato y otros filtros locales)
-  const filteredFullDataset = useMemo(() => 
-    applyNonMandateFilters(mandateFilteredItems),
-    [applyNonMandateFilters, mandateFilteredItems]
-  )
-  
-  // Con paginación server-side, los items ya vienen paginados
-  // paginatedItems son los items después de aplicar filtros locales adicionales
-  const paginatedItems = filteredFullDataset
+  // Los filtros locales ya NO se aplican automáticamente
+  // Solo se envían al servidor cuando se presiona "Buscar"
+  // Los items vienen ya filtrados del servidor
+  const paginatedItems = preSortedItems
   
   // sortedItems se usa para exportar - contiene los items de la página actual
-  const sortedItems = filteredFullDataset
+  const sortedItems = preSortedItems
 
   // Usar paginación del servidor
   const totalFiltered = normalizedData.total
