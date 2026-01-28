@@ -10,7 +10,8 @@ import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
 
 import { dashboardDataMock } from '@/mocks/dashboardData'
-import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon, FileSignature } from 'lucide-react'
+import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon, FileSignature, Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
@@ -78,21 +79,21 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  const { data: counts, isLoading: isLoadingCounts } = useQuery({
+  const { data: counts, isLoading: isLoadingCounts, isFetching: isFetchingCounts } = useQuery({
     queryKey: ['dashboard', 'counts', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesPorEstado(desde, hasta),
     staleTime: 30 * 1000, // 30 segundos
     placeholderData: (previousData) => previousData,
   })
 
-  const { data: pagosAgg } = useQuery({
+  const { data: pagosAgg, isFetching: isFetchingPagos } = useQuery({
     queryKey: ['dashboard', 'pagos-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getPagosAggregate(desde, hasta, agg),
     staleTime: 30 * 1000,
     placeholderData: (previousData) => previousData,
   })
 
-  const { data: solicitudesAgg } = useQuery({
+  const { data: solicitudesAgg, isFetching: isFetchingSolicitudes } = useQuery({
     queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
     staleTime: 30 * 1000,
@@ -100,7 +101,7 @@ export default function Dashboard() {
   })
 
   // Obtener publicIds de solicitudes para consultar estado de mandato
-  const { data: solicitudesIds } = useQuery({
+  const { data: solicitudesIds, isFetching: isFetchingIds } = useQuery({
     queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
     staleTime: 30 * 1000,
@@ -108,7 +109,7 @@ export default function Dashboard() {
   })
 
   // Query para obtener estados de mandatos de todas las solicitudes
-  const { data: mandateStatuses } = useQuery({
+  const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
     queryKey: ['dashboard', 'mandate-statuses', solicitudesIds?.join(',')],
     queryFn: async () => {
       if (!solicitudesIds || solicitudesIds.length === 0) return {}
@@ -135,12 +136,16 @@ export default function Dashboard() {
   })
 
   // Query para obtener monto total pagado con paginación paralela
-  const { data: totalPaidAmount = 0 } = useQuery({
+  const { data: totalPaidAmount = 0, isFetching: isFetchingPaid } = useQuery({
     queryKey: ['dashboard', 'total-paid', desde, hasta],
     queryFn: () => dashboardService.getTotalPaidAmount(desde, hasta),
     staleTime: 30 * 1000,
     placeholderData: (previousData) => previousData,
   })
+
+  // Estado general de carga
+  const isLoading = isLoadingCounts || (isFetchingCounts && !counts)
+  const isRefreshing = isFetchingCounts || isFetchingPagos || isFetchingSolicitudes || isFetchingIds || isFetchingMandates || isFetchingPaid
 
   // Conteo de solicitudes firmadas en proceso
   const solicitudesFirmadas = useMemo(() => {
@@ -186,10 +191,32 @@ export default function Dashboard() {
     })).filter(item => item.value > 0)
   }, [counts])
 
+  if (isLoading) {
+    return (
+      <main className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
+        <header className="flex flex-col gap-1 sm:gap-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Cargando datos...</p>
+        </header>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
+          <Skeleton className="h-32 lg:col-span-5" />
+          <Skeleton className="h-32 lg:col-span-3" />
+          <Skeleton className="h-32 lg:col-span-4" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6" role="main" aria-label="Panel principal del Dashboard">
       <header className="flex flex-col gap-1 sm:gap-2">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
+          {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+        </div>
         <p className="text-xs sm:text-sm text-muted-foreground">KPIs por estado y evolución de pagos a clientes (CLP)</p>
       </header>
 
