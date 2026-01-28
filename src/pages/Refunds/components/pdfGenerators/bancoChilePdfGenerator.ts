@@ -115,6 +115,7 @@ const parseSaldoInsoluto = (saldoStr: string): number => {
 /**
  * Genera el PDF de la Póliza 344 (Prime) para Banco de Chile
  * Créditos > 20.000.000 CLP
+ * Documento legal conforme a Caratula y Cuerpo Póliza 344
  */
 export const generateBancoChilePrimePDF = async (
   refund: RefundRequest,
@@ -154,7 +155,6 @@ export const generateBancoChilePrimePDF = async (
 
   // Valores calculados - Prima Única usa saldoInsoluto del formulario
   const saldoInsoluto = parseSaldoInsoluto(formData.saldoInsoluto)
-  const montoCredito = refund.calculationSnapshot?.totalAmount || 0 // Para mostrar en PDF
   const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual344(ageValue)
@@ -180,13 +180,11 @@ export const generateBancoChilePrimePDF = async (
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('CONTRATANTE (SI ES DISTINTO DEL ASEGURADO)', margin, y)
-  doc.text('RUT', pageWidth - margin - 40, y)
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.rect(margin, y - 3, 90, 6, 'S')
   doc.text('TDV SERVICIOS SPA', margin + 2, y + 1)
-  doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
-  doc.text('RUT: 78.168.126-1', pageWidth - margin - 38, y + 1)
+  doc.text('RUT: 78.168.126-1', margin + 95, y + 1)
   y += 12
 
   // ASEGURADO
@@ -294,7 +292,6 @@ export const generateBancoChilePrimePDF = async (
   doc.text('Otra', margin + 7, y)
   drawCheckbox(margin + 30, y, true)
   doc.text('Otro', margin + 37, y)
-  doc.text('No hay comisión', margin + 122, y)
 
   // ===================== CARÁTULA - PAGE 2 =====================
   doc.addPage()
@@ -314,10 +311,11 @@ export const generateBancoChilePrimePDF = async (
   drawCheckbox(margin, y, true)
   doc.text('Fallecimiento', margin + 7, y)
   doc.rect(margin + 60, y - 3, 35, 5, 'S')
-  doc.text(saldoInsolutoFormatted, margin + 62, y)
+  doc.text('Saldo Insoluto', margin + 62, y)
   doc.rect(margin + 98, y - 3, 15, 5, 'S')
   doc.text('CLP', margin + 100, y)
   doc.rect(margin + 120, y - 3, 15, 5, 'S')
+  doc.text('2/3', margin + 123, y)
   doc.rect(margin + 145, y - 3, 15, 5, 'S')
   y += 6
 
@@ -347,9 +345,9 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFontSize(7)
   doc.text('Esta póliza contiene otras coberturas adicionales, cuyo detalle debe ser consultado en las condiciones particulares.', margin, y)
-  y += 12
+  y += 10
 
-  // BENEFICIARIOS
+  // BENEFICIARIOS EN CASO DE FALLECIMIENTO
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('BENEFICIARIOS EN CASO DE FALLECIMIENTO', margin, y)
@@ -371,25 +369,24 @@ export const generateBancoChilePrimePDF = async (
   doc.text('2', margin + 151, y)
   y += 8
 
-  // Beneficiario Irrevocable - datos ingresados por usuario
-  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.text('BENEFICIARIO IRREVOCABLE:', margin, y)
-    y += 5
-    doc.setFont('helvetica', 'normal')
-    if (formData.beneficiarioNombre) {
-      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 5, y)
-      y += 4
-    }
-    if (formData.beneficiarioRut) {
-      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 5, y)
-      y += 4
-    }
-  }
-  y += 4
+  // BENEFICIARIO IRREVOCABLE - campo del documento legal
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('BENEFICIARIO IRREVOCABLE', margin, y)
+  doc.text('Rut', margin + 100, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.rect(margin, y - 3, 95, 5, 'S')
+  doc.text(formData.beneficiarioNombre || '', margin + 2, y)
+  doc.rect(margin + 100, y - 3, 60, 5, 'S')
+  doc.text(formData.beneficiarioRut || '', margin + 102, y)
+  y += 8
 
-  // CONDICIONES ESPECIALES
+  doc.setFontSize(7)
+  doc.text('El presente contrato no cuenta con Sello SERNAC conforme al Artículo 55, Ley 20.555', margin, y)
+  y += 10
+
+  // CONDICIONES ESPECIALES DE ASEGURABILIDAD
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('CONDICIONES ESPECIALES DE ASEGURABILIDAD', margin, y)
@@ -413,15 +410,10 @@ export const generateBancoChilePrimePDF = async (
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('PERIODO DE CARENCIA', margin, y)
-  doc.text('ART. CG', margin + 120, y)
-  doc.text('ART. CP', margin + 145, y)
-  y += 6
+  y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.rect(margin, y - 3, 50, 5, 'S')
-  doc.text('NO APLICA', margin + 2, y)
-  doc.rect(margin + 120, y - 3, 15, 5, 'S')
-  doc.rect(margin + 145, y - 3, 15, 5, 'S')
+  doc.text('NO APLICA', margin, y)
   y += 10
 
   // EXCLUSIONES
@@ -442,7 +434,7 @@ export const generateBancoChilePrimePDF = async (
   y += 6
   drawCheckbox(margin, y, false)
   doc.text('No', margin + 7, y)
-  y += 12
+  y += 10
 
   // SISTEMA DE NOTIFICACIÓN
   doc.setFont('helvetica', 'bold')
@@ -503,7 +495,7 @@ export const generateBancoChilePrimePDF = async (
   doc.setFontSize(6)
 
   const definitions = [
-    { term: 'CÓDIGO CMF DE LA PÓLIZA:', desc: 'Es el Código con que la póliza fue depositada en la Comisión para el Mercado Financiero, conocido también como "código Pol".' },
+    { term: 'CÓDIGO CMF DE LA PÓLIZA:', desc: 'Es el Código con que la póliza fue depositada en la Comisión para el Mercado Financiero, conocido también como "código Pol". Si la póliza incluye más de uno, se incluye sólo el de la cobertura principal.' },
     { term: 'PÓLIZA:', desc: 'Documento justificativo del seguro.' },
     { term: 'CERTIFICADO DE COBERTURA:', desc: 'Documento que da cuenta de un seguro emitido con sujeción a los términos de una póliza de seguro colectivo.' },
     { term: 'CONTRATANTE:', desc: 'La persona que contrata el seguro con la compañía aseguradora y sobre quien recaen las obligaciones y cargas del contrato.' },
@@ -536,7 +528,7 @@ export const generateBancoChilePrimePDF = async (
     y += 3
   })
 
-  // ===================== CARÁTULA - PAGE 4 =====================
+  // ===================== CARÁTULA - PAGE 4 (más definiciones) =====================
   doc.addPage()
   y = 15
 
@@ -565,7 +557,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text(sistemaNotifLines, margin, y)
   y += sistemaNotifLines.length * 2.5 + 10
 
-  // ===================== CUERPO - PAGE 1 =====================
+  // ===================== CUERPO DEL CERTIFICADO - PAGE 5 =====================
   doc.addPage()
   y = 15
 
@@ -659,7 +651,7 @@ export const generateBancoChilePrimePDF = async (
   y += 4
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text('Autorizo que toda comunicación y notificación que diga relación con el presente seguro me sea enviada al correo electrónico señalado.', margin, y)
+  doc.text('Autorizo que toda comunicación y notificación que diga relación con el presente seguro me sea enviada al correo electrónico señalado en esta Solicitud de Incorporación.', margin, y)
   y += 4
   doc.setFontSize(8)
   drawBox(margin, y, 3, 3, formData.autorizaEmail === 'SI')
@@ -668,7 +660,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text('NO', margin + 25, y)
   y += 7
 
-  // Antecedentes
+  // Antecedentes de la Compañía Aseguradora
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
@@ -681,6 +673,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text('RUT: 76.632.384-7', 120, y)
   y += 6
 
+  // Antecedentes del Contratante y Recaudador
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
@@ -693,6 +686,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text('RUT: 78.168.126-1', 120, y)
   y += 6
 
+  // Antecedentes del Corredor
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
@@ -715,9 +709,9 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text('Saldo Insoluto*:', margin, y)
+  doc.text('Monto Inicial del Crédito*:', margin, y)
   doc.setFont('helvetica', 'bold')
-  doc.text(`$${saldoInsoluto.toLocaleString('es-CL')}`, margin + 35, y)
+  doc.text(saldoInsolutoFormatted, margin + 45, y)
   doc.setFont('helvetica', 'normal')
   doc.text('Nro. Operación:', 120, y)
   doc.setFont('helvetica', 'bold')
@@ -734,23 +728,23 @@ export const generateBancoChilePrimePDF = async (
   doc.text(formData.fechaFinCredito || '', 158, y)
   y += 6
 
+  // Prima Única del Seguro - fórmula exacta del documento legal
   doc.setFont('helvetica', 'normal')
-  doc.text('Prima Única del Seguro (Exenta de IVA):', margin, y)
-  doc.setFont('helvetica', 'bold')
-  doc.text(`$${primaUnica.toLocaleString('es-CL')}`, margin + 68, y)
+  doc.setFontSize(8)
+  doc.text('Prima Única del Seguro, Exenta de IVA = TC/1000 * MCI * nper', margin, y)
   y += 5
 
-  doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text('Fórmula: TC/1000 × MCI × Nper', margin, y)
-  y += 4
-  doc.text('Donde:', margin, y)
+  doc.text('Dónde:', margin, y)
   y += 3
-  doc.text(`• MCI: Saldo Insoluto: $${saldoInsoluto.toLocaleString('es-CL')}`, margin + 5, y)
+  doc.text('• MCI: Monto del crédito inicial', margin + 5, y)
   y += 3
-  doc.text(`• TC: Tasa Comercial Bruta Mensual: ${tcValue.toFixed(4)} por mil`, margin + 5, y)
+  doc.text('• TC: Tasa Comercial Bruta Mensual', margin + 5, y)
   y += 3
-  doc.text(`• Nper: plazo de duración del crédito, en meses: ${nperValue}`, margin + 5, y)
+  doc.text('• Nper: plazo de duración del crédito, en meses', margin + 5, y)
+  y += 5
+
+  doc.text('La Tasa Bruta dependerá de la edad del asegurado, al momento de la emisión del certificado, de acuerdo con la siguiente tabla:', margin, y)
   y += 5
 
   // Tabla de tasas
@@ -760,21 +754,21 @@ export const generateBancoChilePrimePDF = async (
   doc.rect(margin, y - 3, 70, 5, 'F')
   doc.rect(margin + 70, y - 3, 50, 5, 'F')
   doc.text('Rangos de Edad de Emisión', margin + 2, y)
-  doc.text('Tasa Bruta mensual (por mil)', margin + 72, y)
+  doc.text('Tasa Bruta (por mil)', margin + 72, y)
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text(config.tasas['18-55'].toFixed(4).replace('.', ','), margin + 72, y)
+  doc.text('0,3267', margin + 72, y)
   y += 5
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('56 – 65 años', margin + 2, y)
-  doc.text(config.tasas['56-65'].toFixed(4).replace('.', ','), margin + 72, y)
+  doc.text('0,4106', margin + 72, y)
   y += 7
 
-  // Asegurados section
+  // Asegurados
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
@@ -783,13 +777,11 @@ export const generateBancoChilePrimePDF = async (
   y += 6
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const aseguradosText = 'Personas naturales que firmen el contrato de término de condiciones y mantengan un crédito de consumo o automotriz vigente con un acreedor financiero, que cumplan con la edad de permanencia establecida para este producto.'
+  const aseguradosText = 'Personas naturales que suscriban el respectivo documento de "Términos y Condiciones" con el contratante de esta Póliza y mantengan un crédito de consumo o automotriz vigente con un acreedor financiero, que cumplan con la edad de permanencia establecida para este producto a la fecha del siniestro, siempre que este ocurra dentro del período de vigencia de la correspondiente cobertura.'
   const aseguradosLines = doc.splitTextToSize(aseguradosText, contentWidth)
   doc.text(aseguradosLines, margin, y)
-  y += aseguradosLines.length * 3 + 4
 
-  // Continue with remaining pages (simplified for brevity - following same pattern)
-  // ===================== CUERPO - PAGE 2 =====================
+  // ===================== CUERPO - PAGE 6 =====================
   doc.addPage()
   y = 15
 
@@ -825,11 +817,22 @@ export const generateBancoChilePrimePDF = async (
   doc.text(config.codigoCMF, margin + 92, y)
   y += 6
 
+  // BENEFICIARIO IRREVOCABLE en Detalle
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('BENEFICIARIO IRREVOCABLE', margin, y)
+  doc.text('Rut', margin + 100, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
+  doc.text(formData.beneficiarioNombre || '', margin, y)
+  doc.text(formData.beneficiarioRut || '', margin + 100, y)
+  y += 6
+
   doc.text('El presente contrato no cuenta con Sello SERNAC conforme al Artículo 55, Ley 20.555', margin, y)
   y += 8
 
-  // Descripción de Coberturas
+  // Descripción de Coberturas y Condiciones de Asegurabilidad
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setFillColor(220, 220, 220)
@@ -837,6 +840,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text('Descripción de Coberturas y Condiciones de Asegurabilidad', margin + 2, y)
   y += 8
 
+  // Materia y Capital Asegurado
   doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
   doc.rect(margin, y - 4, contentWidth, 6, 'F')
@@ -845,7 +849,7 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const materiaText = `Acreditado el fallecimiento del asegurado, la compañía de seguros pagará al beneficiario el saldo insoluto del crédito de consumo o automotriz del asegurado al momento de ocurrir el siniestro, con tope máximo de $${config.capitalMaximo.toLocaleString('es-CL')} Pesos.`
+  const materiaText = `Acreditado el fallecimiento del asegurado, la compañía de seguros pagará al beneficiario el saldo insoluto del crédito de consumo o automotriz del asegurado al momento de ocurrir el siniestro, con tope máximo de $${config.capitalMaximo.toLocaleString('es-CL')} Pesos, cualquiera sea la época y lugar donde ocurra, siempre que el certificado se encuentre vigente.`
   const materiaLines = doc.splitTextToSize(materiaText, contentWidth)
   doc.text(materiaLines, margin, y)
   y += materiaLines.length * 3 + 3
@@ -858,6 +862,21 @@ export const generateBancoChilePrimePDF = async (
   doc.setFontSize(8)
   doc.text(`$${config.capitalMaximo.toLocaleString('es-CL')}.-`, margin, y)
   y += 6
+
+  // Interés Asegurable
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Interés Asegurable', margin + 2, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const interesText = 'El interés asegurable por parte del asegurado corresponde a saldo insoluto de la deuda. Asegurados qué firmen un contrato de mandato con TDV SERVICIOS SPA y mantengan un crédito de consumo o automotriz vigente con un acreedor financiero, que cumplan con la edad de permanencia establecida para este producto a la fecha del siniestro y con los demás requisitos de asegurabilidad, siempre que este ocurra dentro del período de vigencia de la correspondiente cobertura.'
+  const interesLines = doc.splitTextToSize(interesText, contentWidth)
+  doc.text(interesLines, margin, y)
+  y += interesLines.length * 3 + 5
 
   // Requisitos de Asegurabilidad
   doc.setFont('helvetica', 'bold')
@@ -889,28 +908,10 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const beneficiariosText344 = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro.'
-  const beneficiariosLines344 = doc.splitTextToSize(beneficiariosText344, contentWidth)
-  doc.text(beneficiariosLines344, margin, y)
-  y += beneficiariosLines344.length * 3 + 3
-
-  // Mostrar beneficiario irrevocable específico si fue ingresado
-  if (formData.beneficiarioNombre || formData.beneficiarioRut) {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7)
-    doc.text('Beneficiario Irrevocable Designado:', margin, y)
-    y += 4
-    doc.setFont('helvetica', 'normal')
-    if (formData.beneficiarioNombre) {
-      doc.text(`Nombre: ${formData.beneficiarioNombre}`, margin + 3, y)
-      y += 3
-    }
-    if (formData.beneficiarioRut) {
-      doc.text(`RUT: ${formData.beneficiarioRut}`, margin + 3, y)
-      y += 3
-    }
-  }
-  y += 3
+  const beneficiariosText = 'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.'
+  const beneficiariosLines = doc.splitTextToSize(beneficiariosText, contentWidth)
+  doc.text(beneficiariosLines, margin, y)
+  y += beneficiariosLines.length * 3 + 5
 
   // Inalterabilidad
   doc.setFont('helvetica', 'bold')
@@ -922,10 +923,13 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const inalterabilidadText = 'El Contratante y la Compañía Aseguradora no podrán, sin autorización escrita del beneficiario, efectuar modificaciones que alteren la naturaleza del seguro contratado.'
+  const inalterabilidadText = 'El Contratante y la Compañía Aseguradora no podrán, sin autorización escrita del beneficiario, efectuar modificaciones que alteren la naturaleza del seguro contratado ya sea en su vigencia, monto asegurado y condiciones particulares. Para tal efecto, el contratante deberá requerir y presentar a la Compañía Aseguradora la autorización del beneficiario.'
   const inalterabilidadLines = doc.splitTextToSize(inalterabilidadText, contentWidth)
   doc.text(inalterabilidadLines, margin, y)
-  y += inalterabilidadLines.length * 3 + 5
+
+  // ===================== CUERPO - PAGE 7 =====================
+  doc.addPage()
+  y = 15
 
   // Cobertura de Desgravamen
   doc.setFont('helvetica', 'bold')
@@ -937,111 +941,286 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const coberturaText = 'Conforme a los términos de la presente póliza y en sus condiciones particulares, la Compañía Aseguradora asegura la vida de los deudores asegurados que se hayan incorporado a la póliza.'
-  const coberturaLines = doc.splitTextToSize(coberturaText, contentWidth)
-  doc.text(coberturaLines, margin, y)
+  const coberturaText1 = 'Conforme a los términos de la presente póliza y en sus condiciones particulares, la Compañía Aseguradora asegura la vida de los deudores asegurados que se hayan incorporado a la póliza, pagado la prima correspondiente, cumpliendo con los demás requisitos de asegurabilidad.'
+  const coberturaLines1 = doc.splitTextToSize(coberturaText1, contentWidth)
+  doc.text(coberturaLines1, margin, y)
+  y += coberturaLines1.length * 3 + 3
 
-  // Additional pages with exclusions, procedures, signatures...
-  // (Following same pattern as original Prime PDF generator)
+  const coberturaText2 = 'De acuerdo a lo anterior, la indemnización correspondiente al capital asegurado de un Deudor-Asegurado según lo indicado en las Condiciones Particulares de la póliza, será pagado por la Compañía Aseguradora al acreedor Beneficiario de esta póliza.'
+  const coberturaLines2 = doc.splitTextToSize(coberturaText2, contentWidth)
+  doc.text(coberturaLines2, margin, y)
+  y += coberturaLines2.length * 3 + 3
 
-  // ===================== PAGE 7 - PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS =====================
-  doc.addPage()
-  y = 15
+  const coberturaText3 = 'inmediatamente después de haberse comprobado por ésta que el fallecimiento del Asegurado ocurrió durante la vigencia de la cobertura para dicho Asegurado, y que no se produjo bajo algunas de las exclusiones señaladas en el artículo 4° las Condiciones Generales. Si el Asegurado sobrevive a la fecha de vencimiento de la cobertura otorgada por esta póliza, no habrá derecho a indemnización alguna.'
+  const coberturaLines3 = doc.splitTextToSize(coberturaText3, contentWidth)
+  doc.text(coberturaLines3, margin, y)
+  y += coberturaLines3.length * 3 + 5
 
+  // Prima del Seguro
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
+  doc.setFontSize(9)
   doc.setFillColor(240, 240, 240)
   doc.rect(margin, y - 4, contentWidth, 6, 'F')
-  doc.text('PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS', margin + 2, y)
-  y += 10
+  doc.text('Prima del Seguro', margin + 2, y)
+  y += 7
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text('1. Denuncia del Siniestro', margin, y)
-  y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const denunciaText = 'El asegurado, beneficiario o quien tenga interés en el seguro, deberá comunicar la ocurrencia del siniestro a la Compañía dentro de los 5 días hábiles siguientes a la fecha en que haya tomado conocimiento de su ocurrencia, mediante comunicación escrita dirigida al Servicio de Atención al Cliente de la Compañía, número 600 600 4490, o correo electrónico svida@augustarseguros.cl. También puede contactar a TDV SERVICIOS SPA vía WhatsApp al +56973973802 o al correo electrónico contacto@tedevuelvo.cl'
-  const denunciaLines = doc.splitTextToSize(denunciaText, contentWidth)
-  doc.text(denunciaLines, margin, y)
-  y += denunciaLines.length * 3 + 5
+  doc.text('La prima bruta de este seguro es única, pagada al contado y corresponde a una tasa multiplicada por el monto de cada crédito.', margin, y)
+  y += 5
 
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text('2. Documentación Requerida', margin, y)
-  y += 5
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  doc.text('Para la liquidación del siniestro, el beneficiario deberá presentar los siguientes documentos:', margin, y)
+  doc.text('Prima Única = TC/1000 * MCI * nper', margin, y)
   y += 5
 
-  doc.text('2.1. Cobertura de Fallecimiento:', margin + 5, y)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Dónde:', margin, y)
+  y += 3
+  doc.text('• MCI: Monto del crédito inicial', margin + 5, y)
+  y += 3
+  doc.text('• TC: Tasa Comercial Bruta Mensual', margin + 5, y)
+  y += 3
+  doc.text('• Nper: plazo de duración del crédito, en meses', margin + 5, y)
+  y += 5
+
+  doc.text('La Tasa Bruta dependerá de la edad del asegurado, al momento de la emisión del certificado, de acuerdo con la siguiente tabla:', margin, y)
+  y += 5
+
+  // Tabla de tasas (repetida en cuerpo)
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setFillColor(230, 230, 230)
+  doc.rect(margin, y - 3, 60, 4, 'F')
+  doc.rect(margin + 60, y - 3, 40, 4, 'F')
+  doc.text('Rangos de Edad de Emisión', margin + 2, y)
+  doc.text('Tasa Bruta (por mil)', margin + 62, y)
   y += 4
-  doc.text('a) Certificado de defunción original o copia legalizada ante notario.', margin + 10, y)
-  y += 3
-  doc.text('b) Informe médico que indique la causa de muerte.', margin + 10, y)
-  y += 3
-  doc.text('c) Certificado de nacimiento del asegurado.', margin + 10, y)
-  y += 3
-  doc.text('d) Cédula de identidad del asegurado fallecido (fotocopia por ambos lados).', margin + 10, y)
-  y += 3
-  doc.text('e) Cédula de identidad del beneficiario (fotocopia por ambos lados).', margin + 10, y)
-  y += 3
-  doc.text('f) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
-  y += 3
-  doc.text('g) Tabla de amortización del crédito vigente.', margin + 10, y)
+  doc.setFont('helvetica', 'normal')
+  doc.rect(margin, y - 3, 60, 4, 'S')
+  doc.rect(margin + 60, y - 3, 40, 4, 'S')
+  doc.text('18 – 55 años', margin + 2, y)
+  doc.text('0,3267', margin + 62, y)
+  y += 4
+  doc.rect(margin, y - 3, 60, 4, 'S')
+  doc.rect(margin + 60, y - 3, 40, 4, 'S')
+  doc.text('56 – 65 años', margin + 2, y)
+  doc.text('0,4106', margin + 62, y)
   y += 6
 
-  doc.text('2.2. Cobertura de Invalidez Total y Permanente:', margin + 5, y)
+  // Ejemplo de cálculo
+  doc.text(`Por ejemplo, un asegurado de 50 años, con una deuda inicial de $30.000.000, y un crédito a 36 meses:`, margin, y)
   y += 4
-  doc.text('a) Resolución de la Comisión de Medicina Preventiva e Invalidez (COMPIN) o Compañía de Seguros AFC.', margin + 10, y)
-  y += 3
-  doc.text('b) Certificado de afiliación a AFP o IPS.', margin + 10, y)
-  y += 3
-  doc.text('c) Informe médico detallado con diagnóstico y pronóstico.', margin + 10, y)
-  y += 3
-  doc.text('d) Cédula de identidad del asegurado (fotocopia por ambos lados).', margin + 10, y)
-  y += 3
-  doc.text('e) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
-  y += 3
-  doc.text('f) Tabla de amortización del crédito vigente.', margin + 10, y)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Prima Única = $30.000.000 * 0,3267/1000 * 36 = $352.800 Pesos', margin, y)
   y += 8
 
+  // Exclusiones
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text('3. Plazo de Liquidación', margin, y)
-  y += 5
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  const plazosText = 'Una vez recibida la totalidad de la documentación requerida, la Compañía dispondrá de un plazo de 10 días hábiles para pronunciarse sobre la procedencia del siniestro. Si el siniestro es aceptado, la Compañía procederá a pagar la indemnización dentro de los 10 días hábiles siguientes a la fecha de aceptación del siniestro.'
-  const plazosLines = doc.splitTextToSize(plazosText, contentWidth)
-  doc.text(plazosLines, margin, y)
-  y += plazosLines.length * 3 + 5
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Exclusiones', margin + 2, y)
+  y += 7
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
-  doc.text('4. Forma de Pago', margin, y)
+  doc.text('Exclusiones Cobertura de Desgravamen (POL220150573, Artículo N°4)', margin, y)
   y += 5
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const pagoText = 'La indemnización será pagada directamente a la institución financiera otorgante del crédito, hasta por el monto del saldo insoluto del crédito a la fecha del siniestro. Si existiere algún excedente, éste será pagado al beneficiario designado o a los herederos legales del asegurado, según corresponda.'
-  const pagoLines = doc.splitTextToSize(pagoText, contentWidth)
-  doc.text(pagoLines, margin, y)
-  y += pagoLines.length * 3 + 5
+  doc.text('Este seguro no cubre el riesgo de muerte si el fallecimiento del Asegurado fuere causado por:', margin, y)
+  y += 4
+  doc.text('a) Guerra, terrorismo o cualquier conflicto armado.', margin + 5, y)
+  y += 3
+  doc.text('b) Suicidio. No obstante, esta exclusión cesará si hubieren transcurrido 2 años completos e ininterrumpidos de cobertura', margin + 5, y)
+  y += 3
+  doc.text('    desde la contratación.', margin + 5, y)
+  y += 3
+  doc.text('c) Acto delictivo cometido, en calidad de autor o cómplice, por el asegurado.', margin + 5, y)
+  y += 3
+  doc.text('d) Energía atómica o nuclear.', margin + 5, y)
+  y += 8
+
+  // Procedimiento de Denuncia de Siniestro
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Procedimiento de Denuncia de Siniestro', margin + 2, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const denunciaText = 'En caso de consultas, reclamos y denuncias de siniestro, el asegurado se deberá comunicar al teléfono 600 600 4490. En todos los casos la compañía se reserva el derecho de pedir mayores antecedentes para la liquidación del siniestro. En todas las denuncias deberá dejarse constancia del nombre, dirección y teléfono de la persona denunciante para posteriores contactos que sean necesarios.'
+  const denunciaLines = doc.splitTextToSize(denunciaText, contentWidth)
+  doc.text(denunciaLines, margin, y)
+  y += denunciaLines.length * 3 + 3
+
+  doc.text('Para efectuar el denuncio de un siniestro, se deberá presentar al asegurador los siguientes antecedentes junto al formulario "Denuncio de Siniestros":', margin, y)
+  y += 5
 
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text('5. Rechazo del Siniestro', margin, y)
-  y += 5
+  doc.text('Cobertura Fallecimiento', margin, y)
+  y += 4
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  const rechazoText = 'En caso de rechazo del siniestro, la Compañía comunicará por escrito al beneficiario los fundamentos de su decisión, dentro del plazo señalado en el punto 3. El beneficiario podrá reclamar de dicha resolución ante la Comisión para el Mercado Financiero (CMF), dentro del plazo de 90 días contados desde la fecha de notificación del rechazo.'
-  const rechazoLines = doc.splitTextToSize(rechazoText, contentWidth)
-  doc.text(rechazoLines, margin, y)
+  doc.text('• Certificado de defunción original con causa de muerte.', margin + 5, y)
 
-  // ===================== FINAL PAGE - SIGNATURES =====================
+  // ===================== CUERPO - PAGE 8 =====================
   doc.addPage()
   y = 15
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('Formulario de denuncio de siniestro', margin, y)
+  y += 5
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('• Fotocopia de la cédula de identidad del asegurado.', margin + 5, y)
+  y += 3
+  doc.text('• En caso de muerte presunta, ésta deberá acreditarse de conformidad a la ley.', margin + 5, y)
+  y += 3
+  doc.text('• Certificado de saldo de la deuda, emitido por la entidad contratante a la fecha de fallecimiento del deudor.', margin + 5, y)
+  y += 3
+  doc.text('• Otros antecedentes que se estimen convenientes y necesarios para la evaluación del siniestro.', margin + 5, y)
+  y += 8
+
+  // Plazo de Pago de Siniestros
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Plazo de Pago de Siniestros', margin + 2, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const plazoText = 'El período de liquidación y pago de siniestro, a contar de la fecha de recepción conforme a todos los antecedentes indicados en la póliza, no podrá exceder de 15 días hábiles. Tratándose de siniestros que no vengan acompañados de la documentación pertinente o en que se requiera de un mayor análisis, la Compañía se reserva el derecho de contabilizar este plazo desde que se reciban tales antecedentes o los exigidos en forma excepcional. En este último evento, la Compañía deberá informar al Corredor a más tardar dentro de los 15 días hábiles siguientes a la presentación del siniestro.'
+  const plazoLines = doc.splitTextToSize(plazoText, contentWidth)
+  doc.text(plazoLines, margin, y)
+  y += plazoLines.length * 3 + 8
+
+  // Comisiones
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Comisiones', margin + 2, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('Recaudador: TDV SERVICIOS SPA, Rut: 78.168.126-1', margin, y)
+  y += 4
+  doc.text('Comisión de Cobranza: 35% + IVA sobre la prima recaudada', margin, y)
+  y += 4
+  doc.text('Corredor: PRIME CORREDORES DE SEGUROS SPA, Rut: 76.196.802-5', margin, y)
+  y += 4
+  doc.text('Comisión de Intermediación: 15% + IVA sobre la prima recaudada', margin, y)
+  y += 4
+  doc.text('Comisión CEF: Se calculará de acuerdo a la siguiente fórmula.', margin, y)
+  y += 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Primero:', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6)
+  doc.text('Resultado AUG Pre CEF t = Prima Cliente Bruta t - Comisión de Recaudación Bruta t - Comisión de Intermediación Bruta t – Siniestros t – IBNR t - Costos de Liq. de Siniestros t – Costos Fijos t', margin, y)
+  y += 3
+  doc.text('Resultado AUG tras CEF t = Resultado AUG Pre CEF t x 10%', margin, y)
+  y += 4
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.text('Segundo:', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6)
+  doc.text('CEF t = Resultado Bruto Pre CEF t × 10% - Pérdida Acarreada t-1 (*)', margin, y)
+  y += 3
+  doc.text('Existirá Pérdida Acarreada t-1 solo en caso de que en el ejercicio anterior se produzca lo siguiente: Resultado AUG Pre CEF t < 0', margin, y)
+  y += 3
+  doc.text('Dónde: Costos Fijos t = 3% * Prima Cliente Bruta t', margin, y)
+  y += 8
+
+  // Notas Importantes - Declaraciones y Condiciones
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('Notas Importantes - DECLARACIONES Y CONDICIONES', margin + 2, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('1. El Contratante declara que se encuentra debidamente mandatado por el Asegurado para suscribir la presente Solicitud de', margin, y)
+  y += 3
+  doc.text('   Incorporación, Propuesta y Certificado de Cobertura, así como para realizar el pago de la prima única correspondiente.', margin, y)
+  y += 3
+  doc.text('   Asimismo, declara que el Asegurado:', margin, y)
+  y += 3
+  doc.text('   a) Ha sido previa y completamente informado y ha aceptado las condiciones señaladas en esta Solicitud de Incorporación.', margin + 5, y)
+  y += 3
+  doc.text('   b) Ha tomado conocimiento de su derecho a decidir libremente sobre la contratación voluntaria del seguro.', margin + 5, y)
+  y += 3
+  doc.text('   c) Ha ejercido su derecho a la libre elección de la compañía aseguradora.', margin + 5, y)
+  y += 5
+
+  doc.text('2. Vigencia de las Coberturas. Las coberturas tendrán vigencia desde la firma de esta Solicitud de Incorporación por parte del', margin, y)
+  y += 3
+  doc.text('   Contratante. En este caso, la presente solicitud hará las veces de Certificado de Cobertura conforme a lo dispuesto en la', margin, y)
+  y += 3
+  doc.text('   Circular N° 2123 de la Comisión para el Mercado Financiero.', margin, y)
+
+  // ===================== CUERPO - PAGE 9 =====================
+  doc.addPage()
+  y = 15
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const notaResumen = 'La presente Solicitud de Incorporación, Propuesta y Certificado de Cobertura constituye un resumen con la descripción general del seguro, sus coberturas y el procedimiento a seguir en caso de siniestro. Dicho resumen es parcial y no reemplaza las condiciones particulares ni generales de la respectiva póliza, teniendo únicamente carácter informativo.'
+  const notaResumenLines = doc.splitTextToSize(notaResumen, contentWidth)
+  doc.text(notaResumenLines, margin, y)
+  y += notaResumenLines.length * 3 + 3
+
+  doc.text('En caso de requerir copia de las Condiciones Generales y Particulares del seguro, el cliente deberá solicitarlas al Contratante Colectivo de la póliza.', margin, y)
+  y += 8
+
+  // 3. Vigencia de la Póliza Colectiva
+  doc.setFont('helvetica', 'bold')
+  doc.text('3. Vigencia de la Póliza Colectiva.', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  const vigenciaPolizaText = 'La póliza colectiva tendrá vigencia desde el 01 de diciembre de 2025 hasta el 30 de noviembre de 2028, renovándose tácita y sucesivamente en los mismos términos por períodos de un (1) año cada uno, salvo voluntad en contrario manifestada por el Contratante o la Aseguradora, según corresponda, mediante carta certificada notarial enviada al domicilio de la parte respectiva.'
+  const vigenciaPolizaLines = doc.splitTextToSize(vigenciaPolizaText, contentWidth)
+  doc.text(vigenciaPolizaLines, margin, y)
+  y += vigenciaPolizaLines.length * 3 + 5
+
+  // 4. Vigencia de la Cobertura Individual
+  doc.setFont('helvetica', 'bold')
+  doc.text('4. Vigencia de la Cobertura Individual.', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  const vigenciaCoberturaText = 'Para aquellas personas que cumplan con los requisitos de asegurabilidad, la cobertura comenzará a regir desde la fecha de firma de la Solicitud de Incorporación y se mantendrá vigente hasta la extinción del crédito de consumo otorgado por la entidad acreedora.'
+  const vigenciaCoberturaLines = doc.splitTextToSize(vigenciaCoberturaText, contentWidth)
+  doc.text(vigenciaCoberturaLines, margin, y)
+  y += vigenciaCoberturaLines.length * 3 + 5
+
+  // 5. Término Anticipado de la Cobertura
+  doc.setFont('helvetica', 'bold')
+  doc.text('5. Término Anticipado de la Cobertura.', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  doc.text('Las coberturas de esta póliza terminarán anticipadamente respecto de un Asegurado en los siguientes casos:', margin, y)
+  y += 4
+  doc.text('5.1. En caso de renegociación, anulación o prepago del crédito de consumo.', margin + 5, y)
+  y += 3
+  doc.text('5.2. Al momento en que el Asegurado cumpla la edad máxima de permanencia establecida en las Condiciones Particulares de la póliza.', margin + 5, y)
+  y += 3
+  doc.text('5.3. En el instante en que el Asegurado deje de tener la calidad de deudor del Acreedor.', margin + 5, y)
+  y += 8
 
   // Disposiciones Finales
   doc.setFont('helvetica', 'bold')
@@ -1057,63 +1236,60 @@ export const generateBancoChilePrimePDF = async (
   y += 4
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const autoregText = 'La compañía de seguros Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente al código de autorregulación y al compendio de buenas prácticas de las compañías de seguros.'
+  const autoregText = 'La compañía de seguros Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente al código de autorregulación y al compendio de buenas prácticas de las compañías de seguros, cuyo propósito es propender al desarrollo del mercado de los seguros, en consonancia con los principios de libre competencia y buena fe que debe existir entre las empresas, y entre éstas y sus clientes. Copia del compendio de buenas prácticas corporativas de las compañías de seguros, se encuentra a disposición de los interesados en las oficinas de Augustar Seguros de Vida S.A. y en www.aach.cl'
   const autoregLines = doc.splitTextToSize(autoregText, contentWidth)
   doc.text(autoregLines, margin, y)
   y += autoregLines.length * 3 + 3
 
-  const defensorText = 'Asimismo, Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente a la institución del Defensor del Asegurado. Para mayor información: www.ddachile.cl; teléfono 800 646 232.'
+  const defensorText = 'Asimismo, Augustar Seguros de Vida S.A. se encuentra adherida voluntariamente a la institución del Defensor del Asegurado dependiente del Consejo de Autorregulación de las Compañías de Seguros, y cuya finalidad es velar por el desarrollo del mercado de seguros bajo el principio de buena fe, debiendo conforme a sus estatutos conocer y resolver los conflictos y/o reclamos que pudieran producirse entre las Compañías y sus clientes. Para mayor información, ésta se encuentra disponible en www.ddachile.cl; teléfono 800 646 232, desde celulares 22 234 3583, o bien En Augusto Leguía Sur N° 79, oficina 1210, Las Condes.'
   const defensorLines = doc.splitTextToSize(defensorText, contentWidth)
   doc.text(defensorLines, margin, y)
   y += defensorLines.length * 3 + 6
 
   // Información sobre atención de clientes
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setFillColor(240, 240, 240)
-  doc.rect(margin, y - 4, contentWidth, 6, 'F')
-  doc.text('Información sobre atención de clientes y presentación de consultas y reclamos', margin + 2, y)
-  y += 7
+  doc.setFontSize(8)
+  doc.text('Información sobre atención de clientes y presentación de consultas y reclamos', margin, y)
+  y += 4
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const atencionText = 'En virtud de la circular nro. 2.131 de 28 de noviembre de 2013, las compañías de seguros, corredores de seguros y liquidadores de siniestros, deberán recibir, registrar y responder todas las presentaciones, consultas o reclamos que se les presenten directamente por el contratante, asegurado, beneficiarios o legítimos interesados o sus mandatarios.'
+  const atencionLines = doc.splitTextToSize(atencionText, contentWidth)
+  doc.text(atencionLines, margin, y)
+  y += atencionLines.length * 3 + 2
+
+  doc.text('Las presentaciones pueden ser efectuadas en todas las oficinas de las entidades que se atienda público, presencialmente, por correo postal, medios electrónicos, o telefónicamente, sin formalidades, en el horario normal de atención.', margin, y)
+
+  // ===================== CUERPO - PAGE 10 =====================
+  doc.addPage()
+  y = 15
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const contactoText = 'En caso de consultas y/o reclamos, el Asegurado debe comunicarse con el Servicio de Atención al Cliente de Augustar Seguros de Vida S.A., número 600 600 4490 o correo electrónico svida@augustarseguros.cl. También puede contactar a TDV SERVICIOS SPA vía WhatsApp al +56973973802 o al correo electrónico contacto@tedevuelvo.cl'
+  const contactoText = 'En caso de consultas y/o reclamos y, el Asegurado debe comunicarse con el Servicio de Atención al Cliente de Augustar Seguros de Vida S.A., número 600 600 4490 o correo electrónico svida@augustarseguros.cl. El Asegurado también puede enviar su consulta o solicitud al Servicio de Atención al Cliente de TDV SERVICIOS SPA. vía WhatsApp al +56973973802 o al correo electrónico contacto@tedevuelvo.cl'
   const contactoLines = doc.splitTextToSize(contactoText, contentWidth)
   doc.text(contactoLines, margin, y)
-  y += contactoLines.length * 3 + 2
+  y += contactoLines.length * 3 + 3
 
-  doc.text('Recibida una presentación, consulta o reclamo, ésa deberá ser respondida en el plazo máximo de 20 días hábiles.', margin, y)
-  y += 8
+  doc.text('Recibida una presentación, consulta o reclamo, ésa deberá ser respondida en el plazo más breve posible, el que no podrá exceder de 20 días hábiles contados desde su recepción.', margin, y)
+  y += 6
 
-  // Autorización Datos
+  const cmfText = 'Interesado, en caso de disconformidad respecto de lo informado, o bien cuando exista demora injustificada de la respuesta, podrá recurrir a la Comisión Para el Mercado Financiero, área de protección al inversionista y asegurado, cuyas oficinas se encuentran ubicadas en avda. Libertador Bernardo O\'Higgins 1449 piso 1, Santiago, o a través del sitio web www.cmfchile.cl.'
+  const cmfLines = doc.splitTextToSize(cmfText, contentWidth)
+  doc.text(cmfLines, margin, y)
+  y += cmfLines.length * 3 + 8
+
+  // Autorización para el Tratamiento de Datos Personales
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setFillColor(240, 240, 240)
-  doc.rect(margin, y - 4, contentWidth, 6, 'F')
-  doc.text('Autorización para el Tratamiento de Datos Personales', margin + 2, y)
-  y += 7
-
+  doc.setFontSize(8)
+  doc.text('Autorización para el Tratamiento de Datos Personales', margin, y)
+  y += 4
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  const datosText = 'Por este acto, y según lo dispuesto en la Ley N°19.628 sobre protección de la vida privada, doy mi consentimiento y autorización expresa a Augustar Seguros de Vida S.A. para proceder a la transmisión o transferencia de mis datos personales.'
+  const datosText = 'Por este acto, y según lo dispuesto en la Ley N°19.628 sobre protección de la vida privada y sus modificaciones, doy mi consentimiento y autorización expresa a Augustar Seguros de Vida S.A. y sus representantes, sucesores y cesionarios puedan proceder a la transmisión o transferencia de todos o parte de los datos personales e información que declaro haber entregado voluntariamente a esta y/o puesto voluntariamente a su disposición, a cualesquiera terceros prestadores de servicios que estuvieren ubicados dentro o fuera de chile, para efectos del presente contrato de seguro y, en particular, para poder hacer efectivo el (los) beneficio (s) que pudieren estar asociados al seguro contratado.'
   const datosLines = doc.splitTextToSize(datosText, contentWidth)
   doc.text(datosLines, margin, y)
-  y += datosLines.length * 3 + 8
-
-  // Mandato y Autorización
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setFillColor(240, 240, 240)
-  doc.rect(margin, y - 4, contentWidth, 6, 'F')
-  doc.text('Mandato y Autorización', margin + 2, y)
-  y += 7
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  const mandatoText = `Conforme a lo dispuesto en el Artículo 13 y 3 del Contrato de Crédito, por medio del presente mandato, faculto a TDV SERVICIOS SPA. para incorporarme a la Póliza Colectiva Nº ${config.numero} emitida por Augustar Seguros de Vida S.A. y para incluir dentro del mismo crédito la prima de este seguro.`
-  const mandatoLines = doc.splitTextToSize(mandatoText, contentWidth)
-  doc.text(mandatoLines, margin, y)
-  y += mandatoLines.length * 3 + 10
+  y += datosLines.length * 3 + 10
 
   // Firmas
   doc.setFontSize(8)
@@ -1137,8 +1313,139 @@ export const generateBancoChilePrimePDF = async (
   y += 4
   doc.setFontSize(7)
   doc.text('TDV SERVICIOS SPA', margin, y)
-  doc.text('AuguStar Seguros de Vida', 75, y)
+  doc.text('AuguStar Seguros de Vida S.A.', 75, y)
   doc.text('Asegurado', 145, y)
+
+  // ===================== PAGE 11 - PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS (Circular N°2106 CMF) =====================
+  doc.addPage()
+  y = 15
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('(Circular N°2106 Comisión Para el Mercado Financiero)', margin, y)
+  y += 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS', margin + 2, y)
+  y += 10
+
+  // 1) OBJETO DE LA LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('1) OBJETO DE LA LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const objeto1Text = 'La liquidación tiene por fin establecer la ocurrencia de un siniestro, determinar si el siniestro está cubierto en la póliza contratada en una compañía de seguros determinada, y cuantificar el monto de la pérdida y de la indemnización a pagar.'
+  const objeto1Lines = doc.splitTextToSize(objeto1Text, contentWidth)
+  doc.text(objeto1Lines, margin, y)
+  y += objeto1Lines.length * 3 + 2
+
+  doc.text('El procedimiento de liquidación está sometido a los principios de celeridad y economía procedimental, de objetividad y carácter técnico y de transparencia y acceso.', margin, y)
+  y += 8
+
+  // 2) FORMA DE EFECTUAR LA LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('2) FORMA DE EFECTUAR LA LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const forma2Text = 'La liquidación puede efectuarla directamente la Compañía o encomendarla a un Liquidador de Seguros. La decisión debe comunicarse al Asegurado dentro del plazo de tres días hábiles contados desde la fecha de la denuncia del siniestro.'
+  const forma2Lines = doc.splitTextToSize(forma2Text, contentWidth)
+  doc.text(forma2Lines, margin, y)
+  y += forma2Lines.length * 3 + 5
+
+  // 3) DERECHO DE OPOSICIÓN A LA LIQUIDACIÓN DIRECTA
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('3) DERECHO DE OPOSICIÓN A LA LIQUIDACIÓN DIRECTA', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const oposicion3Text = 'En caso de liquidación directa por la compañía, el Asegurado o beneficiario puede oponerse a ella, solicitándole por escrito que designe un Liquidador de Seguros, dentro del plazo de cinco días hábiles contados desde la notificación de la comunicación de la Compañía. La Compañía deberá designar al Liquidador en el plazo de dos días hábiles contados desde dicha oposición.'
+  const oposicion3Lines = doc.splitTextToSize(oposicion3Text, contentWidth)
+  doc.text(oposicion3Lines, margin, y)
+  y += oposicion3Lines.length * 3 + 5
+
+  // 4) INFORMACIÓN AL ASEGURADO DE GESTIONES A REALIZAR Y PETICION DE ANTECEDENTES
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('4) INFORMACIÓN AL ASEGURADO DE GESTIONES A REALIZAR Y PETICION DE ANTECEDENTES', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const info4Text = 'El Liquidador o la Compañía deberá informar al Asegurado, por escrito, en forma suficiente y oportuna, al correo electrónico (informado en la denuncia del siniestro) o por carta certificada (al domicilio señalado en la denuncia de siniestro), de las gestiones que le corresponde realizar, solicitando de una sola vez, cuando las circunstancias lo permitan, todos los antecedentes que requiere para liquidar el siniestro.'
+  const info4Lines = doc.splitTextToSize(info4Text, contentWidth)
+  doc.text(info4Lines, margin, y)
+  y += info4Lines.length * 3 + 5
+
+  // 5) PRE-INFORME DE LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('5) PRE-INFORME DE LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const preinforme5Text = 'En aquellos siniestros en que surgieren problemas y diferencias de criterios sobre sus causas, evaluación del riesgo o extensión de la cobertura, podrá el Liquidador, actuando de oficio o a petición del Asegurado, emitir un pre-informe de liquidación sobre la cobertura del siniestro y el monto de los daños producidos, el que deberá ponerse en conocimiento de los interesados. El asegurado o la Compañía podrán hacer observaciones por escrito al pre-informe dentro del plazo de cinco días hábiles desde su conocimiento.'
+  const preinforme5Lines = doc.splitTextToSize(preinforme5Text, contentWidth)
+  doc.text(preinforme5Lines, margin, y)
+  y += preinforme5Lines.length * 3 + 5
+
+  // 6) PLAZO DE LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('6) PLAZO DE LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('Dentro del más breve plazo, no pudiendo exceder de 45 días corridos desde fecha denuncio, a excepción de;', margin, y)
+  y += 4
+  doc.text('a) Siniestros que correspondan a seguros individuales sobre riesgos del Primer Grupo cuya prima anual sea superior a 100 UF: 90 días corridos desde fecha denuncio;', margin + 5, y)
+  y += 3
+  doc.text('b) Siniestros marítimos que afecten a los cascos o en caso de Avería Gruesa: 180 días corridos desde fecha denuncio.', margin + 5, y)
+  y += 8
+
+  // 7) PRORROGA DEL PLAZO DE LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('7) PRORROGA DEL PLAZO DE LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const prorroga7Text = 'Los plazos antes señalados podrán, excepcionalmente siempre que las circunstancias lo ameriten, prorrogarse, sucesivamente por iguales períodos, informando los motivos que la fundamenten e indicando las gestiones concretas y específicas que se realizarán, lo que deberá comunicarse al Asegurado y a la Comisión Para el Mercado Financiero, pudiendo esta última dejar sin efecto la ampliación, en casos calificados, y fijar un plazo para entrega del Informe de Liquidación. No podrá ser motivo de prórroga la solicitud de nuevos antecedentes cuyo requerimiento pudo preverse con anterioridad, salvo que se indiquen las razones que justifiquen la falta de requerimiento, ni podrán prorrogarse los siniestros en que no haya existido gestión alguna del liquidador, registrado o directo.'
+  const prorroga7Lines = doc.splitTextToSize(prorroga7Text, contentWidth)
+  doc.text(prorroga7Lines, margin, y)
+  y += prorroga7Lines.length * 3 + 5
+
+  // 8) INFORME FINAL DE LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('8) INFORME FINAL DE LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const informe8Text = 'El informe final de liquidación deberá remitirse al Asegurado y simultáneamente al Asegurador, cuando corresponda, y deberá contener necesariamente la transcripción íntegra de los artículos 26 y 27 del Reglamento de Auxiliares del Comercio de Seguros (D.S. de Hacienda Nº 1.055 de 2012, Diario Oficial de 29 de diciembre de 2012).'
+  const informe8Lines = doc.splitTextToSize(informe8Text, contentWidth)
+  doc.text(informe8Lines, margin, y)
+  y += informe8Lines.length * 3 + 5
+
+  // 9) IMPUGNACION INFORME DE LIQUIDACIÓN
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('9) IMPUGNACION INFORME DE LIQUIDACIÓN', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const impugnacion9Text = 'Recibido el informe de Liquidación, la Compañía y el Asegurado dispondrán de un plazo de diez días hábiles para impugnarla. En caso de liquidación directa por la Compañía, este derecho sólo lo tendrá el Asegurado.'
+  const impugnacion9Lines = doc.splitTextToSize(impugnacion9Text, contentWidth)
+  doc.text(impugnacion9Lines, margin, y)
+  y += impugnacion9Lines.length * 3 + 2
+
+  doc.text('Impugnado el informe, el Liquidador o la compañía dispondrá de un plazo de 6 días hábiles para responder la impugnación.', margin, y)
 
   // Download
   const fileName = `Certificado_BancoChile_Prime_${config.numero}_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
