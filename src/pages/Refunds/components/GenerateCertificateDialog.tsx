@@ -123,7 +123,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   })
 
   // Check if this refund is for Banco de Chile
-  const isBancoChileRefund = isBancoChile(refund.calculationSnapshot?.institution)
+  const isBancoChileRefund = isBancoChile(refund.institutionId)
 
   // Load firma images on mount
   useEffect(() => {
