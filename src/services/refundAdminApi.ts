@@ -65,7 +65,7 @@ class RefundAdminApiClient {
     if (params.page) query.append('page', String(params.page))
     if (params.limit) query.append('limit', String(params.limit))
     if (params.signatureStatus === 'signed') query.append('signatureStatus', 'signed')
-    else if (params.signatureStatus === null) query.append('signatureStatus', '')
+    else if (params.signatureStatus === null) query.append('signatureStatus', 'null')
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/search?${query}`, {
       headers: await this.getAuthHeaders(),
