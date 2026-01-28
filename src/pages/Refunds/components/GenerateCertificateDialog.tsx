@@ -30,8 +30,8 @@ import {
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
 
-// RUT validation regex - accepts formats: 12345678-9 or 12.345.678-9
-const rutRegex = /^(\d{1,2}\.?\d{3}\.?\d{3}-[\dkK])$/
+// RUT validation regex - accepts formats: 12345678-9, 12.345.678-9, or with 7-8 digit numbers
+const rutRegex = /^(\d{7,8}-[\dkK]|\d{1,2}\.\d{3}\.\d{3}-[\dkK])$/i
 
 // Function to validate Chilean RUT check digit
 function validateRutDigit(rut: string): boolean {
