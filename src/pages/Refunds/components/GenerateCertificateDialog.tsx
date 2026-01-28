@@ -2645,8 +2645,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                       <p className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
                     </div>
                     <div>
-                      <span className="text-muted-foreground text-xs">Cuotas</span>
-                      <p className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</p>
+                      <span className="text-muted-foreground text-xs">Cuotas Pendientes</span>
+                      <p className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
