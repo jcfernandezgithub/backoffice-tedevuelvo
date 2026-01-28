@@ -147,8 +147,8 @@ class RefundAdminApiClient {
     }
   }
 
-  async getById(id: string): Promise<RefundRequest> {
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${id}`, {
+  async getById(publicId: string): Promise<RefundRequest> {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/detail/${publicId}`, {
       headers: await this.getAuthHeaders(),
     })
 
