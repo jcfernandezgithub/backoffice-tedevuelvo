@@ -228,12 +228,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   // Ejecuta la búsqueda con los filtros locales actuales usando el endpoint search
   const handleSearch = () => {
-    // Determinar valor de mandate para el servidor
-    let mandateValue: 'signed' | null | undefined = undefined
+    // Determinar valor de signatureStatus para el servidor
+    let signatureStatusValue: 'signed' | null | undefined = undefined
     if (mandateFilter === 'signed') {
-      mandateValue = 'signed'
+      signatureStatusValue = 'signed'
     } else if (mandateFilter === 'pending') {
-      mandateValue = null
+      signatureStatusValue = null
     }
     
     // Construir parámetros para el nuevo endpoint search
@@ -246,7 +246,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       to: localFilters.to || undefined,
       page: 1,
       limit: filters.pageSize || 20,
-      mandate: mandateValue,
+      signatureStatus: signatureStatusValue,
     }
     
     setSearchFilters(newSearchFilters)
