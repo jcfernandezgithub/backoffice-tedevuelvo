@@ -673,22 +673,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <Select
-              value={localFilters.sort || 'createdAt:desc'}
-              onValueChange={(v) => handleLocalFilterChange('sort', v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Ordenar" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt:desc">Más recientes</SelectItem>
-                <SelectItem value="createdAt:asc">Más antiguos</SelectItem>
-                <SelectItem value="status:asc">Estado A-Z</SelectItem>
-                <SelectItem value="status:desc">Estado Z-A</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
