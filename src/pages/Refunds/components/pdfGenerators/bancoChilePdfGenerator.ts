@@ -687,9 +687,9 @@ export const generateBancoChilePrimePDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text('Monto Inicial del Crédito*:', margin, y)
+  doc.text('Saldo Insoluto*:', margin, y)
   doc.setFont('helvetica', 'bold')
-  doc.text(`$${montoCredito.toLocaleString('es-CL')}`, margin + 45, y)
+  doc.text(`$${saldoInsoluto.toLocaleString('es-CL')}`, margin + 35, y)
   doc.setFont('helvetica', 'normal')
   doc.text('Nro. Operación:', 120, y)
   doc.setFont('helvetica', 'bold')
@@ -718,7 +718,7 @@ export const generateBancoChilePrimePDF = async (
   y += 4
   doc.text('Donde:', margin, y)
   y += 3
-  doc.text(`• MCI: Monto del crédito inicial: $${montoCredito.toLocaleString('es-CL')}`, margin + 5, y)
+  doc.text(`• MCI: Saldo Insoluto: $${saldoInsoluto.toLocaleString('es-CL')}`, margin + 5, y)
   y += 3
   doc.text(`• TC: Tasa Comercial Bruta Mensual: ${tcValue.toFixed(4)} por mil`, margin + 5, y)
   y += 3
@@ -897,6 +897,101 @@ export const generateBancoChilePrimePDF = async (
 
   // Additional pages with exclusions, procedures, signatures...
   // (Following same pattern as original Prime PDF generator)
+
+  // ===================== PAGE 7 - PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS =====================
+  doc.addPage()
+  y = 15
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS', margin + 2, y)
+  y += 10
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('1. Denuncia del Siniestro', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const denunciaText = 'El asegurado, beneficiario o quien tenga interés en el seguro, deberá comunicar la ocurrencia del siniestro a la Compañía dentro de los 5 días hábiles siguientes a la fecha en que haya tomado conocimiento de su ocurrencia, mediante comunicación escrita dirigida al Servicio de Atención al Cliente de la Compañía, número 600 600 4490, o correo electrónico svida@augustarseguros.cl. También puede contactar a TDV SERVICIOS SPA vía WhatsApp al +56973973802 o al correo electrónico contacto@tedevuelvo.cl'
+  const denunciaLines = doc.splitTextToSize(denunciaText, contentWidth)
+  doc.text(denunciaLines, margin, y)
+  y += denunciaLines.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('2. Documentación Requerida', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('Para la liquidación del siniestro, el beneficiario deberá presentar los siguientes documentos:', margin, y)
+  y += 5
+
+  doc.text('2.1. Cobertura de Fallecimiento:', margin + 5, y)
+  y += 4
+  doc.text('a) Certificado de defunción original o copia legalizada ante notario.', margin + 10, y)
+  y += 3
+  doc.text('b) Informe médico que indique la causa de muerte.', margin + 10, y)
+  y += 3
+  doc.text('c) Certificado de nacimiento del asegurado.', margin + 10, y)
+  y += 3
+  doc.text('d) Cédula de identidad del asegurado fallecido (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('e) Cédula de identidad del beneficiario (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('f) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
+  y += 3
+  doc.text('g) Tabla de amortización del crédito vigente.', margin + 10, y)
+  y += 6
+
+  doc.text('2.2. Cobertura de Invalidez Total y Permanente:', margin + 5, y)
+  y += 4
+  doc.text('a) Resolución de la Comisión de Medicina Preventiva e Invalidez (COMPIN) o Compañía de Seguros AFC.', margin + 10, y)
+  y += 3
+  doc.text('b) Certificado de afiliación a AFP o IPS.', margin + 10, y)
+  y += 3
+  doc.text('c) Informe médico detallado con diagnóstico y pronóstico.', margin + 10, y)
+  y += 3
+  doc.text('d) Cédula de identidad del asegurado (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('e) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
+  y += 3
+  doc.text('f) Tabla de amortización del crédito vigente.', margin + 10, y)
+  y += 8
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('3. Plazo de Liquidación', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const plazosText = 'Una vez recibida la totalidad de la documentación requerida, la Compañía dispondrá de un plazo de 10 días hábiles para pronunciarse sobre la procedencia del siniestro. Si el siniestro es aceptado, la Compañía procederá a pagar la indemnización dentro de los 10 días hábiles siguientes a la fecha de aceptación del siniestro.'
+  const plazosLines = doc.splitTextToSize(plazosText, contentWidth)
+  doc.text(plazosLines, margin, y)
+  y += plazosLines.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('4. Forma de Pago', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const pagoText = 'La indemnización será pagada directamente a la institución financiera otorgante del crédito, hasta por el monto del saldo insoluto del crédito a la fecha del siniestro. Si existiere algún excedente, éste será pagado al beneficiario designado o a los herederos legales del asegurado, según corresponda.'
+  const pagoLines = doc.splitTextToSize(pagoText, contentWidth)
+  doc.text(pagoLines, margin, y)
+  y += pagoLines.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('5. Rechazo del Siniestro', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const rechazoText = 'En caso de rechazo del siniestro, la Compañía comunicará por escrito al beneficiario los fundamentos de su decisión, dentro del plazo señalado en el punto 3. El beneficiario podrá reclamar de dicha resolución ante la Comisión para el Mercado Financiero (CMF), dentro del plazo de 90 días contados desde la fecha de notificación del rechazo.'
+  const rechazoLines = doc.splitTextToSize(rechazoText, contentWidth)
+  doc.text(rechazoLines, margin, y)
 
   // ===================== FINAL PAGE - SIGNATURES =====================
   doc.addPage()
@@ -1418,9 +1513,9 @@ export const generateBancoChileStandardPDF = async (
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text('Monto Inicial del Crédito*:', margin, y)
+  doc.text('Saldo Insoluto*:', margin, y)
   doc.setFont('helvetica', 'bold')
-  doc.text(`$${montoCredito.toLocaleString('es-CL')}`, margin + 45, y)
+  doc.text(`$${saldoInsoluto.toLocaleString('es-CL')}`, margin + 35, y)
   doc.setFont('helvetica', 'normal')
   doc.text('Nro. Operación:', 120, y)
   doc.setFont('helvetica', 'bold')
@@ -1449,7 +1544,7 @@ export const generateBancoChileStandardPDF = async (
   y += 4
   doc.text('Donde:', margin, y)
   y += 3
-  doc.text(`• MCI: Monto del crédito inicial: $${montoCredito.toLocaleString('es-CL')}`, margin + 5, y)
+  doc.text(`• MCI: Saldo Insoluto: $${saldoInsoluto.toLocaleString('es-CL')}`, margin + 5, y)
   y += 3
   doc.text(`• TC: Tasa Comercial Bruta Mensual: ${tcValue.toFixed(4)} por mil`, margin + 5, y)
   y += 3
@@ -1479,6 +1574,101 @@ export const generateBancoChileStandardPDF = async (
 
   // Continue with rest of the document following similar pattern...
   // Add remaining pages with signature section
+
+  // ===================== PAGE 7 - PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS =====================
+  doc.addPage()
+  y = 15
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y - 4, contentWidth, 6, 'F')
+  doc.text('PROCEDIMIENTO DE LIQUIDACIÓN DE SINIESTROS', margin + 2, y)
+  y += 10
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('1. Denuncia del Siniestro', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const denunciaTextStd = 'El asegurado, beneficiario o quien tenga interés en el seguro, deberá comunicar la ocurrencia del siniestro a la Compañía dentro de los 5 días hábiles siguientes a la fecha en que haya tomado conocimiento de su ocurrencia, mediante comunicación escrita dirigida al Servicio de Atención al Cliente de la Compañía, número 600 600 4490, o correo electrónico svida@augustarseguros.cl. También puede contactar a TDV SERVICIOS SPA vía WhatsApp al +56973973802 o al correo electrónico contacto@tedevuelvo.cl'
+  const denunciaLinesStd = doc.splitTextToSize(denunciaTextStd, contentWidth)
+  doc.text(denunciaLinesStd, margin, y)
+  y += denunciaLinesStd.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('2. Documentación Requerida', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('Para la liquidación del siniestro, el beneficiario deberá presentar los siguientes documentos:', margin, y)
+  y += 5
+
+  doc.text('2.1. Cobertura de Fallecimiento:', margin + 5, y)
+  y += 4
+  doc.text('a) Certificado de defunción original o copia legalizada ante notario.', margin + 10, y)
+  y += 3
+  doc.text('b) Informe médico que indique la causa de muerte.', margin + 10, y)
+  y += 3
+  doc.text('c) Certificado de nacimiento del asegurado.', margin + 10, y)
+  y += 3
+  doc.text('d) Cédula de identidad del asegurado fallecido (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('e) Cédula de identidad del beneficiario (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('f) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
+  y += 3
+  doc.text('g) Tabla de amortización del crédito vigente.', margin + 10, y)
+  y += 6
+
+  doc.text('2.2. Cobertura de Invalidez Total y Permanente:', margin + 5, y)
+  y += 4
+  doc.text('a) Resolución de la Comisión de Medicina Preventiva e Invalidez (COMPIN) o Compañía de Seguros AFC.', margin + 10, y)
+  y += 3
+  doc.text('b) Certificado de afiliación a AFP o IPS.', margin + 10, y)
+  y += 3
+  doc.text('c) Informe médico detallado con diagnóstico y pronóstico.', margin + 10, y)
+  y += 3
+  doc.text('d) Cédula de identidad del asegurado (fotocopia por ambos lados).', margin + 10, y)
+  y += 3
+  doc.text('e) Certificado de saldo insoluto del crédito emitido por la institución financiera.', margin + 10, y)
+  y += 3
+  doc.text('f) Tabla de amortización del crédito vigente.', margin + 10, y)
+  y += 8
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('3. Plazo de Liquidación', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const plazosTextStd = 'Una vez recibida la totalidad de la documentación requerida, la Compañía dispondrá de un plazo de 10 días hábiles para pronunciarse sobre la procedencia del siniestro. Si el siniestro es aceptado, la Compañía procederá a pagar la indemnización dentro de los 10 días hábiles siguientes a la fecha de aceptación del siniestro.'
+  const plazosLinesStd = doc.splitTextToSize(plazosTextStd, contentWidth)
+  doc.text(plazosLinesStd, margin, y)
+  y += plazosLinesStd.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('4. Forma de Pago', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const pagoTextStd = 'La indemnización será pagada directamente a la institución financiera otorgante del crédito, hasta por el monto del saldo insoluto del crédito a la fecha del siniestro. Si existiere algún excedente, éste será pagado al beneficiario designado o a los herederos legales del asegurado, según corresponda.'
+  const pagoLinesStd = doc.splitTextToSize(pagoTextStd, contentWidth)
+  doc.text(pagoLinesStd, margin, y)
+  y += pagoLinesStd.length * 3 + 5
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('5. Rechazo del Siniestro', margin, y)
+  y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  const rechazoTextStd = 'En caso de rechazo del siniestro, la Compañía comunicará por escrito al beneficiario los fundamentos de su decisión, dentro del plazo señalado en el punto 3. El beneficiario podrá reclamar de dicha resolución ante la Comisión para el Mercado Financiero (CMF), dentro del plazo de 90 días contados desde la fecha de notificación del rechazo.'
+  const rechazoLinesStd = doc.splitTextToSize(rechazoTextStd, contentWidth)
+  doc.text(rechazoLinesStd, margin, y)
 
   // ===================== FINAL PAGE - SIGNATURES =====================
   doc.addPage()
