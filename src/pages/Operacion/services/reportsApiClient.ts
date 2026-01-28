@@ -308,24 +308,22 @@ export const reportsApiClient = {
   },
 
   async getKpisSegmentos(filtros: FiltrosReporte) {
-    // Usamos fetchAllRefunds para incluir TODAS las solicitudes (incluyendo pagadas y rechazadas)
+    // Usamos fetchAllRefunds para incluir TODAS las solicitudes
     const refunds = await fetchAllRefunds(filtros);
     
     // Solo considerar solicitudes que tienen monto estimado
     const refundsConMonto = refunds.filter(r => r.estimatedAmountCLP && r.estimatedAmountCLP > 0);
     
-    console.log('[KpisSegmentos] Total refunds:', refunds.length);
-    console.log('[KpisSegmentos] Refunds con monto:', refundsConMonto.length);
-    if (refundsConMonto.length > 0) {
-      console.log('[KpisSegmentos] Ejemplo:', { 
-        status: refundsConMonto[0]?.status, 
-        monto: refundsConMonto[0]?.estimatedAmountCLP 
-      });
-    }
+    // Estados válidos para el Ticket Promedio (activas + pagadas, excluyendo rechazadas/canceladas)
+    const estadosParaTicket = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
+    const refundsParaTicket = refundsConMonto.filter(r => estadosParaTicket.includes(r.status));
     
-    // Ticket Promedio: monto estimado promedio por solicitud (solo las que tienen monto)
-    const totalMonto = refundsConMonto.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
-    const ticketPromedio = refundsConMonto.length > 0 ? Math.round(totalMonto / refundsConMonto.length) : 0;
+    console.log('[KpisSegmentos] Total refunds:', refunds.length);
+    console.log('[KpisSegmentos] Refunds para ticket (activas+pagadas):', refundsParaTicket.length);
+    
+    // Ticket Promedio: monto promedio de solicitudes activas + pagadas
+    const totalMonto = refundsParaTicket.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
+    const ticketPromedio = refundsParaTicket.length > 0 ? Math.round(totalMonto / refundsParaTicket.length) : 0;
     
     // Monto en Pipeline: suma de montos de solicitudes activas (excluye paid, rejected, canceled)
     const estadosActivos = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled'];
@@ -334,9 +332,9 @@ export const reportsApiClient = {
     
     console.log('[KpisSegmentos] Activas:', solicitudesActivas.length, 'Pipeline:', montoEnPipeline, 'Ticket:', ticketPromedio);
     
-    // Tasa de Conversión: % de solicitudes con monto que llegaron a PAID
-    const pagadas = refundsConMonto.filter(r => r.status === 'paid').length;
-    const tasaConversion = refundsConMonto.length > 0 ? (pagadas / refundsConMonto.length) * 100 : 0;
+    // Tasa de Conversión: % de solicitudes (activas+pagadas) que llegaron a PAID
+    const pagadas = refundsParaTicket.filter(r => r.status === 'paid').length;
+    const tasaConversion = refundsParaTicket.length > 0 ? (pagadas / refundsParaTicket.length) * 100 : 0;
     
     return {
       ticketPromedio,
