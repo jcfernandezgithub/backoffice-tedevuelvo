@@ -531,22 +531,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         : result.filter((r: any) => !r.bankInfo)
     }
     
-    // Filtro de tipo de seguro (no soportado por servidor)
-    if (appliedLocalFilters.insuranceType !== 'all') {
-      result = result.filter((r: any) => {
-        const snapshot = r.calculationSnapshot
-        const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
-        
-        if (appliedLocalFilters.insuranceType === 'cesantia') {
-          return insuranceToEvaluate === 'CESANTIA' || insuranceToEvaluate.includes('CESANT')
-        } else if (appliedLocalFilters.insuranceType === 'desgravamen') {
-          return insuranceToEvaluate === 'DESGRAVAMEN' || insuranceToEvaluate.includes('DESGRAV')
-        } else if (appliedLocalFilters.insuranceType === 'ambos') {
-          return insuranceToEvaluate === 'AMBOS' || insuranceToEvaluate.includes('BOTH')
-        }
-        return true
-      })
-    }
+    // Nota: El filtro de tipo de seguro ahora es soportado por el servidor
+    // Se envía como parámetro insuranceToEvaluate en la búsqueda
     
     return result
   }, [preSortedItems, appliedLocalFilters])
