@@ -32,6 +32,7 @@ export interface SearchParams {
   page?: number
   limit?: number
   signatureStatus?: 'signed' | null
+  insuranceToEvaluate?: string
 }
 
 export interface SearchResponse {
@@ -66,6 +67,7 @@ class RefundAdminApiClient {
     if (params.limit) query.append('limit', String(params.limit))
     if (params.signatureStatus === 'signed') query.append('signatureStatus', 'signed')
     else if (params.signatureStatus === null) query.append('signatureStatus', 'null')
+    if (params.insuranceToEvaluate) query.append('insuranceToEvaluate', params.insuranceToEvaluate.toUpperCase())
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/search?${query}`, {
       headers: await this.getAuthHeaders(),
