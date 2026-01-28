@@ -99,6 +99,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  // Filtros que se envían al servidor (solo se actualizan al hacer clic en "Buscar")
   const [filters, setFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
     status: (searchParams.get('status') as RefundStatus) || undefined,
@@ -109,13 +110,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
   })
   
+  // Estado local para los inputs de filtros (antes de aplicar)
+  const [localFilters, setLocalFilters] = useState<AdminQueryParams>({
+    search: searchParams.get('search') || '',
+    status: (searchParams.get('status') as RefundStatus) || undefined,
+    from: searchParams.get('from') || '',
+    to: searchParams.get('to') || '',
+    sort: (searchParams.get('sort') as any) || 'createdAt:desc',
+  })
+  
   const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
   const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
   const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
   const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
 
-  // Estado local para el input de búsqueda (para debounce)
-  const [searchInput, setSearchInput] = useState(filters.search)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
@@ -123,17 +131,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Estado para selección de solicitudes
   const [selectedRefunds, setSelectedRefunds] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
-
-  // Debounce para la búsqueda
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchInput !== filters.search) {
-        handleFilterChange('search', searchInput)
-      }
-    }, 500) // Espera 500ms después de que el usuario deje de escribir
-
-    return () => clearTimeout(timer)
-  }, [searchInput])
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['refunds', filters],
@@ -195,25 +192,30 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Mapa de partnerUserId a nombre del gestor
   const gestorNameMap = partnerUsersData || {}
 
-  const handleFilterChange = (key: keyof AdminQueryParams, value: any) => {
-    const newFilters = { ...filters, [key]: value, page: 1 }
-    setFilters(newFilters)
-    
-    const params = new URLSearchParams()
-    Object.entries(newFilters).forEach(([k, v]) => {
-      if (v) params.set(k, String(v))
-    })
-    setSearchParams(params)
+  // Actualiza solo el estado local de filtros (no dispara búsqueda)
+  const handleLocalFilterChange = (key: keyof AdminQueryParams, value: any) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }))
   }
 
-  const handleDateRangeChange = (from: string, to: string) => {
-    const newFilters = { ...filters, from, to, page: 1 }
+  // Actualiza rango de fechas en estado local
+  const handleLocalDateRangeChange = (from: string, to: string) => {
+    setLocalFilters(prev => ({ ...prev, from, to }))
+  }
+
+  // Ejecuta la búsqueda con los filtros locales actuales
+  const handleSearch = () => {
+    const newFilters = { ...localFilters, page: 1, pageSize: filters.pageSize }
     setFilters(newFilters)
     
     const params = new URLSearchParams()
     Object.entries(newFilters).forEach(([k, v]) => {
       if (v) params.set(k, String(v))
     })
+    // Mantener filtros locales adicionales en URL
+    if (mandateFilter !== 'all') params.set('mandate', mandateFilter)
+    if (originFilter !== 'all') params.set('origin', originFilter)
+    if (bankFilter !== 'all') params.set('bank', bankFilter)
+    if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
     setSearchParams(params)
   }
 
@@ -228,6 +230,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setSearchParams(params)
   }
 
+  // Limpia todos los filtros y ejecuta búsqueda con valores por defecto
   const handleClearFilters = () => {
     const clearedFilters: AdminQueryParams = {
       search: '',
@@ -238,8 +241,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       pageSize: 20,
       sort: 'createdAt:desc',
     }
+    setLocalFilters({
+      search: '',
+      status: undefined,
+      from: '',
+      to: '',
+      sort: 'createdAt:desc',
+    })
     setFilters(clearedFilters)
-    setSearchInput('')
     setMandateFilter('all')
     setOriginFilter('all')
     setBankFilter('all')
@@ -358,7 +367,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     // Solo enviamos ordenamiento de campos soportados por el backend
     const supportedSortFields = ['createdAt', 'status']
     if (supportedSortFields.includes(field)) {
-      handleFilterChange('sort', `${field}:${newDirection}` as any)
+      const sortValue = `${field}:${newDirection}` as any
+      setLocalFilters(prev => ({ ...prev, sort: sortValue }))
+      // Aplicar ordenamiento inmediatamente
+      const newFilters = { ...filters, sort: sortValue }
+      setFilters(newFilters)
+      const params = new URLSearchParams()
+      Object.entries(newFilters).forEach(([k, v]) => {
+        if (v) params.set(k, String(v))
+      })
+      setSearchParams(params)
     }
   }
 
@@ -562,21 +580,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearFilters}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Limpiar filtros
-            </Button>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -584,15 +591,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar (ID, email, RUT, nombre)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                value={localFilters.search || ''}
+                onChange={(e) => handleLocalFilterChange('search', e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-9"
               />
             </div>
 
             <Select
-              value={filters.status || 'all'}
-              onValueChange={(v) => handleFilterChange('status', v === 'all' ? undefined : v)}
+              value={localFilters.status || 'all'}
+              onValueChange={(v) => handleLocalFilterChange('status', v === 'all' ? undefined : v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Estado" />
@@ -667,8 +675,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <Select
-              value={filters.sort || 'createdAt:desc'}
-              onValueChange={(v) => handleFilterChange('sort', v)}
+              value={localFilters.sort || 'createdAt:desc'}
+              onValueChange={(v) => handleLocalFilterChange('sort', v)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Ordenar" />
@@ -690,7 +698,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 size="sm"
                 onClick={() => {
                   const hoy = toLocalDateString(new Date())
-                  handleDateRangeChange(hoy, hoy)
+                  handleLocalDateRangeChange(hoy, hoy)
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -703,7 +711,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                   const ayer = new Date()
                   ayer.setDate(ayer.getDate() - 1)
                   const ayerStr = toLocalDateString(ayer)
-                  handleDateRangeChange(ayerStr, ayerStr)
+                  handleLocalDateRangeChange(ayerStr, ayerStr)
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -716,7 +724,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                   const hoy = new Date()
                   const semanaAtras = new Date()
                   semanaAtras.setDate(hoy.getDate() - 7)
-                  handleDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy))
+                  handleLocalDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy))
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -729,7 +737,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                   const hoy = new Date()
                   const mesAtras = new Date()
                   mesAtras.setMonth(hoy.getMonth() - 1)
-                  handleDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy))
+                  handleLocalDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy))
                 }}
                 className="h-7 text-xs px-2"
               >
@@ -741,19 +749,31 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <label className="text-sm text-muted-foreground">Desde</label>
                 <Input
                   type="date"
-                  value={filters.from || ''}
-                  onChange={(e) => handleFilterChange('from', e.target.value)}
+                  value={localFilters.from || ''}
+                  onChange={(e) => handleLocalFilterChange('from', e.target.value)}
                 />
               </div>
               <div>
                 <label className="text-sm text-muted-foreground">Hasta</label>
                 <Input
                   type="date"
-                  value={filters.to || ''}
-                  onChange={(e) => handleFilterChange('to', e.target.value)}
+                  value={localFilters.to || ''}
+                  onChange={(e) => handleLocalFilterChange('to', e.target.value)}
                 />
               </div>
             </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex items-center gap-2 pt-2">
+            <Button onClick={handleSearch}>
+              <Search className="h-4 w-4 mr-2" />
+              Buscar
+            </Button>
+            <Button variant="outline" onClick={handleClearFilters}>
+              <X className="h-4 w-4 mr-2" />
+              Limpiar Filtros
+            </Button>
           </div>
         </CardContent>
       </Card>
