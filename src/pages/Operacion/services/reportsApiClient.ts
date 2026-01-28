@@ -325,12 +325,12 @@ export const reportsApiClient = {
     const totalMonto = refundsParaTicket.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
     const ticketPromedio = refundsParaTicket.length > 0 ? Math.round(totalMonto / refundsParaTicket.length) : 0;
     
-    // Monto en Pipeline: suma de montos de solicitudes activas (excluye paid, rejected, canceled)
-    const estadosActivos = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled'];
-    const solicitudesActivas = refundsConMonto.filter(r => estadosActivos.includes(r.status));
-    const montoEnPipeline = solicitudesActivas.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
+    // Prima Promedio: promedio de newMonthlyPremium de solicitudes con calculationSnapshot
+    const refundsConPrima = refundsParaTicket.filter(r => r.calculationSnapshot?.newMonthlyPremium > 0);
+    const totalPrimas = refundsConPrima.reduce((acc, r) => acc + (r.calculationSnapshot?.newMonthlyPremium || 0), 0);
+    const primaPromedio = refundsConPrima.length > 0 ? Math.round(totalPrimas / refundsConPrima.length) : 0;
     
-    console.log('[KpisSegmentos] Activas:', solicitudesActivas.length, 'Pipeline:', montoEnPipeline, 'Ticket:', ticketPromedio);
+    console.log('[KpisSegmentos] Refunds con prima:', refundsConPrima.length, 'Prima promedio:', primaPromedio);
     
     // Tasa de Conversión: % de solicitudes (activas+pagadas) que llegaron a PAID
     const pagadas = refundsParaTicket.filter(r => r.status === 'paid').length;
@@ -338,7 +338,7 @@ export const reportsApiClient = {
     
     return {
       ticketPromedio,
-      montoEnPipeline,
+      primaPromedio,
       tasaConversion
     };
   },
