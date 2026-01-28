@@ -1,8 +1,21 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.0
+## Versión 2.1.1
 
 ## Changelog
+
+### Versión 2.1.1 - 2026-01-28
+
+#### Mejoras en Filtros de Solicitudes
+- **Filtro de origen a backend**: El filtro por origen (Directo/Alianza) ahora envía el parámetro `isPartner` al servidor.
+  - `isPartner=0` para solicitudes directas.
+  - `isPartner=1` para solicitudes de alianza.
+  
+- **Filtro de datos bancarios a backend**: El filtro de estado de pago ahora envía el parámetro `hasBankInfo` al servidor.
+  - `hasBankInfo=1` para solicitudes con datos bancarios (Listo).
+  - `hasBankInfo=0` para solicitudes sin datos bancarios (Pendiente).
+
+---
 
 ### Versión 2.1.0 - 2026-01-23
 
