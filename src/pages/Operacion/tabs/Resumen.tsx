@@ -50,16 +50,24 @@ export function TabResumen() {
   
   // Obtener todas las solicitudes del sistema usando el mismo servicio que la página de Solicitudes
   const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
-    queryKey: ['refunds-all', filtros],
+    queryKey: ['refunds-operacion', filtros.fechaDesde, filtros.fechaHasta],
     queryFn: async () => {
+      console.log('[Resumen] Fetching refunds...');
       const response = await refundAdminApi.list({ pageSize: 10000 });
       const items = Array.isArray(response) ? response : response.items || [];
-      // Normalizar status a minúsculas (la API puede devolver en mayúsculas)
+      console.log('[Resumen] Items recibidos:', items.length);
+      console.log('[Resumen] Primeros 3 items:', items.slice(0, 3).map((r: any) => ({ 
+        publicId: r.publicId, 
+        status: r.status,
+        createdAt: r.createdAt 
+      })));
+      // Asegurar normalización a minúsculas
       return items.map((r: any) => ({
         ...r,
-        status: r.status?.toLowerCase() || r.status
+        status: r.status?.toLowerCase?.() || r.status
       }));
-    }
+    },
+    staleTime: 30 * 1000,
   });
 
   // Filtrar refunds por fechas según los filtros
