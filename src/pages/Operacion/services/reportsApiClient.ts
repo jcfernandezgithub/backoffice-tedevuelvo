@@ -28,32 +28,38 @@ const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
   'datos_sin_simulacion': 'DATOS_SIN_SIMULACION',
 };
 
-// Fetch todas las solicitudes aplicando filtros
+// Fetch todas las solicitudes aplicando filtros con paginación paralela
 async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   console.log('[ReportsAPI] Filtros recibidos:', filtros);
   
-  // La API solo permite filtrar por rango de fechas y estado
-  // Los demás filtros se aplicarán en cliente
-  const params: any = {
-    pageSize: 10000, // Obtener todas las solicitudes
-  };
-
-  if (filtros.fechaDesde) {
-    params.from = filtros.fechaDesde;
+  const PAGE_SIZE = 100;
+  
+  // Primera llamada para obtener el total
+  const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
+  const total = firstPage.total || 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  
+  console.log(`[ReportsAPI] Total registros: ${total}, Páginas: ${totalPages}`);
+  
+  let allItems = [...(firstPage.items || [])];
+  
+  // Si hay más páginas, obtenerlas en paralelo
+  if (totalPages > 1) {
+    const pagePromises = [];
+    for (let page = 2; page <= totalPages; page++) {
+      pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }));
+    }
+    
+    const additionalPages = await Promise.all(pagePromises);
+    additionalPages.forEach(pageResult => {
+      allItems = allItems.concat(pageResult.items || []);
+    });
   }
-  if (filtros.fechaHasta) {
-    params.to = filtros.fechaHasta;
-  }
 
-  console.log('[ReportsAPI] Params enviados a API:', params);
-
-  const response = await refundAdminApi.list(params);
-  let items = Array.isArray(response) ? response : response.items || [];
-
-  console.log('[ReportsAPI] Items recibidos de API:', items.length);
+  console.log('[ReportsAPI] Items totales obtenidos de API:', allItems.length);
   
   // Normalizar status a minúsculas (la API puede devolver en mayúsculas)
-  items = items.map(r => ({
+  let items = allItems.map(r => ({
     ...r,
     status: (r.status?.toLowerCase() || r.status) as any
   }));
@@ -63,6 +69,23 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
     createdAt: r.createdAt, 
     status: r.status 
   })));
+
+  // Filtrar por rango de fechas (comparación de strings para evitar problemas de timezone)
+  if (filtros.fechaDesde || filtros.fechaHasta) {
+    items = items.filter(r => {
+      if (!r.createdAt) return false;
+      const createdDateStr = r.createdAt.split('T')[0];
+      
+      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) {
+        return false;
+      }
+      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) {
+        return false;
+      }
+      return true;
+    });
+    console.log('[ReportsAPI] Items después de filtrar por fechas:', items.length);
+  }
 
   // Filtrar solo solicitudes no rechazadas/canceladas
   items = items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
