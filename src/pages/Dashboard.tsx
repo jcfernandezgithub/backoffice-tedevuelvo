@@ -509,7 +509,7 @@ function Kpi({ title, value, icon: Icon, color, refundStatus, extraInfo }: {
   
   const handleClick = () => {
     if (refundStatus) {
-      navigate(`/refunds?status=${refundStatus}`)
+      navigate(`/refunds?status=${refundStatus}&autoSearch=true`)
     }
   }
   
