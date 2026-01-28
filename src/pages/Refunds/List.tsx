@@ -452,6 +452,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     )
   }
 
+  // Auto-ejecutar búsqueda si viene con autoSearch=true desde Operación
+  useEffect(() => {
+    const autoSearch = searchParams.get('autoSearch')
+    if (autoSearch === 'true') {
+      // Pequeño delay para asegurar que los estados locales estén sincronizados
+      const timer = setTimeout(() => {
+        handleSearch()
+        // Remover autoSearch de la URL para evitar re-ejecuciones
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('autoSearch')
+        setSearchParams(newParams, { replace: true })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, []) // Solo al montar
+
   // Mostrar error en useEffect para evitar llamar toast durante el render
   useEffect(() => {
     if (error) {
