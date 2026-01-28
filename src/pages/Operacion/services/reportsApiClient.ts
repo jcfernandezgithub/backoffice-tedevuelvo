@@ -51,7 +51,14 @@ async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
   let items = Array.isArray(response) ? response : response.items || [];
 
   console.log('[ReportsAPI] Items recibidos de API:', items.length);
-  console.log('[ReportsAPI] Primeros 3 items:', items.slice(0, 3).map(r => ({ 
+  
+  // Normalizar status a minúsculas (la API puede devolver en mayúsculas)
+  items = items.map(r => ({
+    ...r,
+    status: (r.status?.toLowerCase() || r.status) as any
+  }));
+  
+  console.log('[ReportsAPI] Primeros 3 items (normalizados):', items.slice(0, 3).map(r => ({ 
     id: r.publicId, 
     createdAt: r.createdAt, 
     status: r.status 
