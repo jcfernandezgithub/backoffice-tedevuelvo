@@ -149,6 +149,7 @@ export const generateBancoChilePrimePDF = async (
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual344(ageValue)
   const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+  const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
   // ===================== CARÁTULA - PAGE 1 =====================
   doc.setFont('helvetica', 'bold')
@@ -303,9 +304,9 @@ export const generateBancoChilePrimePDF = async (
   drawCheckbox(margin, y, true)
   doc.text('Fallecimiento', margin + 7, y)
   doc.rect(margin + 60, y - 3, 35, 5, 'S')
-  doc.text('Saldo Insoluto', margin + 62, y)
+  doc.text(saldoInsolutoFormatted, margin + 62, y)
   doc.rect(margin + 98, y - 3, 15, 5, 'S')
-  doc.text('UF', margin + 100, y)
+  doc.text('CLP', margin + 100, y)
   doc.rect(margin + 120, y - 3, 15, 5, 'S')
   doc.rect(margin + 145, y - 3, 15, 5, 'S')
   y += 6
@@ -1050,6 +1051,7 @@ export const generateBancoChileStandardPDF = async (
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual342(ageValue)
   const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+  const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
   // ===================== CARÁTULA - PAGE 1 =====================
   doc.setFont('helvetica', 'bold')
@@ -1204,9 +1206,9 @@ export const generateBancoChileStandardPDF = async (
   drawCheckbox(margin, y, true)
   doc.text('Fallecimiento', margin + 7, y)
   doc.rect(margin + 60, y - 3, 35, 5, 'S')
-  doc.text('Saldo Insoluto', margin + 62, y)
+  doc.text(saldoInsolutoFormatted, margin + 62, y)
   doc.rect(margin + 98, y - 3, 15, 5, 'S')
-  doc.text('UF', margin + 100, y)
+  doc.text('CLP', margin + 100, y)
   doc.rect(margin + 120, y - 3, 15, 5, 'S')
   doc.rect(margin + 145, y - 3, 15, 5, 'S')
   y += 6
