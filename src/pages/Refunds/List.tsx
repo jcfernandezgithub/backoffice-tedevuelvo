@@ -254,6 +254,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       page: 1,
       limit: filters.pageSize || 20,
       signatureStatus: signatureStatusValue,
+      insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
     }
     
     setSearchFilters(newSearchFilters)
