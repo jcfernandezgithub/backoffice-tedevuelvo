@@ -273,13 +273,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       }
     }
 
-    // Valores calculados para Prime (Póliza 344)
+    // Valores calculados para Prime (Póliza 344) - Prima Única usa saldoInsoluto del formulario
     const saldoInsoluto = getSaldoInsolutoValue()
-    const montoCredito = refund.calculationSnapshot?.totalAmount || 0
+    const montoCredito = refund.calculationSnapshot?.totalAmount || 0 // Para mostrar en PDF
     const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
     const ageValue = refund.calculationSnapshot?.age
     const tcValue = getTasaBrutaMensualPrime(ageValue)
-    const primaUnica = Math.round(montoCredito * (tcValue / 1000) * nperValue)
+    const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
     const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
     // ===================== CARÁTULA - PAGE 1 =====================

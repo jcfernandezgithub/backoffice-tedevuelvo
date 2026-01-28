@@ -142,13 +142,13 @@ export const generateBancoChilePrimePDF = async (
     }
   }
 
-  // Valores calculados
+  // Valores calculados - Prima Única usa saldoInsoluto del formulario
   const saldoInsoluto = parseSaldoInsoluto(formData.saldoInsoluto)
-  const montoCredito = refund.calculationSnapshot?.totalAmount || 0
+  const montoCredito = refund.calculationSnapshot?.totalAmount || 0 // Para mostrar en PDF
   const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual344(ageValue)
-  const primaUnica = Math.round(montoCredito * (tcValue / 1000) * nperValue)
+  const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
 
   // ===================== CARÁTULA - PAGE 1 =====================
   doc.setFont('helvetica', 'bold')
@@ -1043,13 +1043,13 @@ export const generateBancoChileStandardPDF = async (
     }
   }
 
-  // Valores calculados
+  // Valores calculados - Prima Única usa saldoInsoluto del formulario
   const saldoInsoluto = parseSaldoInsoluto(formData.saldoInsoluto)
-  const montoCredito = refund.calculationSnapshot?.totalAmount || 0
+  const montoCredito = refund.calculationSnapshot?.totalAmount || 0 // Para mostrar en PDF
   const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual342(ageValue)
-  const primaUnica = Math.round(montoCredito * (tcValue / 1000) * nperValue)
+  const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
 
   // ===================== CARÁTULA - PAGE 1 =====================
   doc.setFont('helvetica', 'bold')
