@@ -37,6 +37,17 @@ export function TabResumen() {
   const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+
+  // Helper para construir URL con filtros de fecha incluidos
+  const buildRefundsUrl = (params: Record<string, string>) => {
+    const searchParams = new URLSearchParams(params);
+    // Siempre incluir las fechas del filtro actual para consistencia
+    if (filtros.fechaDesde) searchParams.set('from', filtros.fechaDesde);
+    if (filtros.fechaHasta) searchParams.set('to', filtros.fechaHasta);
+    searchParams.set('autoSearch', 'true');
+    return `/refunds?${searchParams.toString()}`;
+  };
+
   const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
     filtros,
     granularidad,
@@ -242,21 +253,21 @@ export function TabResumen() {
               <CardContent>
                 <div 
                   className="text-3xl font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
-                  onClick={() => navigate('/refunds?status=qualifying&autoSearch=true')}
+                  onClick={() => navigate(buildRefundsUrl({ status: 'qualifying' }))}
                 >
                   {qualifyingRefunds.length}
                 </div>
                 <div className="flex gap-4 mt-3">
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate('/refunds?status=qualifying&mandate=signed&autoSearch=true')}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'signed' }))}
                   >
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
                     <span className="font-semibold">{qualifyingWithSignature.length}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate('/refunds?status=qualifying&mandate=pending&autoSearch=true')}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'pending' }))}
                   >
                     <Badge variant="secondary">Pendiente</Badge>
                     <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
@@ -268,7 +279,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Ingresadas */}
             <Card 
               className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=submitted&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -286,7 +297,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Aprobadas */}
             <Card 
               className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=approved&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'approved' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -304,7 +315,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Rechazadas */}
             <Card 
               className="border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=rejected&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'rejected' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -332,21 +343,21 @@ export function TabResumen() {
               <CardContent>
                 <div 
                   className="text-3xl font-bold text-cyan-700 dark:text-cyan-400 cursor-pointer hover:underline"
-                  onClick={() => navigate('/refunds?status=payment_scheduled&autoSearch=true')}
+                  onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                 >
                   {paymentScheduledRefunds.length}
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate('/refunds?status=payment_scheduled&bank=ready&autoSearch=true')}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'ready' }))}
                   >
                     <Badge variant="default" className="bg-emerald-500 text-xs">Con datos para transferencia</Badge>
                     <span className="font-semibold">{paymentScheduledWithBank.length}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => navigate('/refunds?status=payment_scheduled&bank=pending&autoSearch=true')}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'pending' }))}
                   >
                     <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos para transferencia</Badge>
                     <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
@@ -358,7 +369,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Pagadas */}
             <Card 
               className="border-l-4 border-l-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=paid&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -376,7 +387,7 @@ export function TabResumen() {
             {/* Card: Monto Total Pagado */}
             <Card 
               className="border-l-4 border-l-green-700 bg-green-50/40 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=paid&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
@@ -400,7 +411,7 @@ export function TabResumen() {
             {/* Card: Prima Total */}
             <Card 
               className="border-l-4 border-l-violet-600 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate('/refunds?status=paid&autoSearch=true')}
+              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
