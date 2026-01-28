@@ -37,7 +37,7 @@ class RefundAdminApiClient {
     if (params.to) query.append('to', params.to)
     if (params.sort) query.append('sort', params.sort)
 
-    const response = await fetch(`${API_BASE_URL}/refund-requests/listV2?${query}`, {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/listV2?${query}`, {
       headers: await this.getAuthHeaders(),
     })
 
