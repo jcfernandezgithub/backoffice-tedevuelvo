@@ -38,11 +38,11 @@ export function TabSegmentos() {
               tooltip: 'Monto estimado promedio por solicitud'
             }} />
             <KpiCard data={{
-              titulo: 'Monto en Pipeline',
-              valor: kpisSegmentos?.montoEnPipeline || 0,
+              titulo: 'Prima Promedio',
+              valor: kpisSegmentos?.primaPromedio || 0,
               formato: 'moneda',
-              icono: 'TrendingUp',
-              tooltip: 'Total de dinero en solicitudes activas (no pagadas/rechazadas)'
+              icono: 'CreditCard',
+              tooltip: 'Promedio de nuevas primas mensuales'
             }} />
             <KpiCard data={{
               titulo: 'Tasa de Conversión',
