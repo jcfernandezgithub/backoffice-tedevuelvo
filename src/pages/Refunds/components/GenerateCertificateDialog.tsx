@@ -144,11 +144,24 @@ const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): nu
 // ALWAYS prioritizes calculationSnapshot.desgravamen.tasaBanco regardless of bank
 const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
   const desgravamen = refund.calculationSnapshot?.desgravamen
+  
+  // Debug log to see the actual values
+  console.log('getTasaFromSnapshot debug:', {
+    hasDesgravamen: !!desgravamen,
+    tasaBanco: desgravamen?.tasaBanco,
+    tasaBancoType: typeof desgravamen?.tasaBanco,
+    fullDesgravamen: desgravamen
+  })
+  
   if (desgravamen?.tasaBanco && typeof desgravamen.tasaBanco === 'number') {
-    // tasaBanco from calculationSnapshot is already in decimal form (e.g., 0.0003733)
-    // We need to convert it to per-mil format for the certificate (e.g., 0.3733)
-    return desgravamen.tasaBanco * 1000
+    // tasaBanco from calculationSnapshot is the rate from obtenerTasaBanco
+    // This is typically a small decimal like 0.0156 (which represents the rate per monto/cuotas)
+    // We multiply by 1000 to convert to per-mil format for display
+    const tasaConvertida = desgravamen.tasaBanco * 1000
+    console.log('Using tasaBanco from snapshot:', desgravamen.tasaBanco, '-> converted:', tasaConvertida)
+    return tasaConvertida
   }
+  
   // Fallback to hardcoded rates only if snapshot doesn't have the rate
   const age = refund.calculationSnapshot?.age
   console.warn('Using fallback TBM rate - calculationSnapshot.desgravamen.tasaBanco not found')
