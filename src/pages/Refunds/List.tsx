@@ -597,6 +597,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 partnerNameMap={partnerNameMap}
                 gestorNameMap={gestorNameMap}
                 mandateStatuses={mandateStatuses || {}}
+                selectedRefunds={selectedRefunds}
+                searchFilters={useSearchEndpoint ? searchFilters : undefined}
+                listFilters={!useSearchEndpoint ? filters : undefined}
+                useSearchEndpoint={useSearchEndpoint}
               />
               <GenerateExcelDialog 
                 selectedRefunds={getSelectedRefundsData()} 
