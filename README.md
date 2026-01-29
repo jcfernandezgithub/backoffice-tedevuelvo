@@ -1,8 +1,20 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.4
+## Versión 2.1.5
 
 ## Changelog
+
+### Versión 2.1.5 - 2026-01-29
+
+#### Correcciones en Cálculo de Prima Única (Certificado de Cobertura)
+- **Prima Única desde snapshot**: El cálculo de la Prima Única ahora utiliza directamente los valores del snapshot de cálculo.
+  - Fórmula: `Nueva Prima Mensualizada × Cuotas Pendientes` (extraídos del `calculationSnapshot`).
+  - Aplicado a Póliza 342 (Standard) y Póliza 344 (Prime) para todos los bancos.
+  - Aplicado específicamente a los certificados de Banco de Chile (ambas pólizas).
+  - Fallback a cálculo tradicional con TBM si no hay datos del snapshot.
+  - La TBM mostrada en el UI se deriva inversamente de la Prima Única calculada.
+
+---
 
 ### Versión 2.1.4 - 2026-01-29
 
