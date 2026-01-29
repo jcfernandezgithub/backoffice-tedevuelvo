@@ -143,14 +143,19 @@ const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): nu
 // Get TBM from calculationSnapshot if available, otherwise use fallback
 // ALWAYS prioritizes calculationSnapshot.desgravamen.tasaBanco regardless of bank
 const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
-  const desgravamen = refund.calculationSnapshot?.desgravamen
+  const snapshot = refund.calculationSnapshot
+  const desgravamen = snapshot?.desgravamen
   
   // Debug log to see the actual values
   console.log('getTasaFromSnapshot debug:', {
+    hasSnapshot: !!snapshot,
+    snapshotKeys: snapshot ? Object.keys(snapshot) : [],
     hasDesgravamen: !!desgravamen,
     tasaBanco: desgravamen?.tasaBanco,
     tasaBancoType: typeof desgravamen?.tasaBanco,
-    fullDesgravamen: desgravamen
+    // Also check if tasaBanco exists at root level
+    rootTasaBanco: snapshot?.tasaBanco,
+    fullSnapshot: snapshot
   })
   
   if (desgravamen?.tasaBanco && typeof desgravamen.tasaBanco === 'number') {
