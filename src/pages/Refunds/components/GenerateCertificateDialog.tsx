@@ -63,13 +63,33 @@ const obtenerTasaBancoFromJSON = (
   cuotas: number,
 ): { tasa: number; cuotasUtilizadas: number; montoRedondeado: number } | null => {
   try {
-    const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase()
+    // Primero intentar mapeo directo, luego buscar por nombre normalizado
+    let bancoMapeado = MAPEO_INSTITUCIONES[banco]
+    
+    // Si no está en el mapeo, intentar con el banco en mayúsculas o buscar variantes
+    if (!bancoMapeado) {
+      const bancoUpper = banco.toUpperCase()
+      // Buscar en el mapeo por valor (case insensitive)
+      for (const [key, value] of Object.entries(MAPEO_INSTITUCIONES)) {
+        if (key.toLowerCase() === banco.toLowerCase()) {
+          bancoMapeado = value
+          break
+        }
+      }
+      // Si aún no encontrado, intentar agregando "BANCO " al principio
+      if (!bancoMapeado) {
+        bancoMapeado = bancoUpper.startsWith('BANCO ') ? bancoUpper : `BANCO ${bancoUpper}`
+      }
+    }
+    
+    console.log('obtenerTasaBancoFromJSON:', { bancoOriginal: banco, bancoMapeado, edad, monto, cuotas })
+    
     const tramo = edad <= 55 ? "hasta_55" : "desde_56"
     const montoRedondeado = Math.round(monto / 1000000) * 1000000
     const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 60000000)
 
     if (!tasasSeguro[bancoMapeado as keyof typeof tasasSeguro]) {
-      console.warn(`Banco no encontrado en JSON: ${bancoMapeado}`)
+      console.warn(`Banco no encontrado en JSON: ${bancoMapeado} (original: ${banco})`)
       return null
     }
 
