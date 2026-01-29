@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.3
+## Versión 2.1.4
 
 ## Changelog
+
+### Versión 2.1.4 - 2026-01-29
+
+#### Correcciones en Certificado de Cobertura
+- **Póliza 344 (Prime) - Saldo Insoluto corregido**: Corregido el certificado para mostrar "Saldo Insoluto" en lugar de "Monto Inicial del Crédito".
+  - Campo de datos ahora muestra "Saldo Insoluto*" con el valor correcto del formulario.
+  - Fórmula actualizada: `TC/1000 × SI × Nper` (antes usaba MCI).
+  - Explicación de la fórmula actualizada para reflejar "SI: Saldo Insoluto" en lugar de "MCI: Monto del crédito inicial".
+
+---
 
 ### Versión 2.1.3 - 2026-01-29
 
