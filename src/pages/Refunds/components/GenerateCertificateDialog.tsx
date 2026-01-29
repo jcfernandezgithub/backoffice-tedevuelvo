@@ -2053,10 +2053,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
-      const montoCredito = refund.calculationSnapshot?.totalAmount || 0
-      doc.text('Monto Inicial del Crédito*:', margin, y)
+      doc.text('Saldo Insoluto*:', margin, y)
       doc.setFont('helvetica', 'bold')
-      doc.text(`$${montoCredito.toLocaleString('es-CL')}`, margin + 45, y)
+      doc.text(saldoInsolutoFormatted, margin + 32, y)
       doc.setFont('helvetica', 'normal')
       doc.text('Nro. Operación:', 120, y)
       doc.setFont('helvetica', 'bold')
