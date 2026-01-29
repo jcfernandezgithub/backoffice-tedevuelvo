@@ -29,6 +29,100 @@ import {
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
+import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+
+// Mapeo de instituciones (igual que en calculadoraUtils)
+const MAPEO_INSTITUCIONES: { [key: string]: string } = {
+  Santander: "BANCO SANTANDER",
+  BCI: "BANCO BCI",
+  "Lider BCI": "LIDER-BCI",
+  Scotiabank: "SCOTIABANK",
+  Chile: "BANCO CHILE",
+  chile: "BANCO CHILE",
+  Security: "BANCO SECURITY",
+  "Itaú - Corpbanca": "BANCO ITAU-CORPBANCA",
+  BICE: "BANCO BICE",
+  Estado: "BANCO ESTADO",
+  "Banco Ripley": "BANCO RIPLEY",
+  Falabella: "BANCO FALABELLA",
+  Consorcio: "BANCO CONSORCIO",
+  Condell: "BANCO CONSORCIO",
+  Internacional: "BANCO CONSORCIO",
+  Cencosud: "BANCO CENCOSUD",
+  Coopeuch: "COOPEUCH",
+  Cooperativas: "COOPERATIVAS",
+  Forum: "FORUM",
+  Tanner: "TANNER",
+}
+
+// Función para obtener tasa del banco desde el JSON (igual que en calculadoraUtils)
+const obtenerTasaBancoFromJSON = (
+  banco: string,
+  edad: number,
+  monto: number,
+  cuotas: number,
+): { tasa: number; cuotasUtilizadas: number; montoRedondeado: number } | null => {
+  try {
+    const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase()
+    const tramo = edad <= 55 ? "hasta_55" : "desde_56"
+    const montoRedondeado = Math.round(monto / 1000000) * 1000000
+    const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 60000000)
+
+    if (!tasasSeguro[bancoMapeado as keyof typeof tasasSeguro]) {
+      console.warn(`Banco no encontrado en JSON: ${bancoMapeado}`)
+      return null
+    }
+
+    const datosBanco = tasasSeguro[bancoMapeado as keyof typeof tasasSeguro] as Record<string, Record<string, Record<string, number>>>
+    const datosTramo = datosBanco[tramo]
+    const datosMonto = datosTramo?.[montoFinal.toString()]
+
+    if (!datosMonto || typeof datosMonto !== "object") {
+      console.warn(`No hay datos para monto ${montoFinal} en banco ${bancoMapeado}`)
+      return null
+    }
+
+    let tasa = datosMonto[cuotas.toString()]
+    let cuotasUtilizadas = cuotas
+
+    if (typeof tasa !== "number" || isNaN(tasa)) {
+      const cuotasDisponibles = Object.keys(datosMonto)
+        .map(Number)
+        .filter((n) => !isNaN(n))
+        .sort((a, b) => a - b)
+
+      if (cuotasDisponibles.length === 0) {
+        return null
+      }
+
+      let cuotaCercana = cuotasDisponibles[0]
+      let menorDiferencia = Math.abs(cuotas - cuotaCercana)
+
+      for (const cuotaDisponible of cuotasDisponibles) {
+        const diferencia = Math.abs(cuotas - cuotaDisponible)
+        if (diferencia < menorDiferencia) {
+          menorDiferencia = diferencia
+          cuotaCercana = cuotaDisponible
+        } else if (diferencia === menorDiferencia && cuotaDisponible > cuotaCercana) {
+          cuotaCercana = cuotaDisponible
+        }
+      }
+
+      tasa = datosMonto[cuotaCercana.toString()]
+      cuotasUtilizadas = cuotaCercana
+    }
+
+    if (typeof tasa !== "number" || isNaN(tasa)) {
+      return null
+    }
+
+    console.log('Tasa obtenida del JSON:', { banco: bancoMapeado, tramo, montoFinal, cuotasUtilizadas, tasa })
+    return { tasa, cuotasUtilizadas, montoRedondeado: montoFinal }
+  } catch (error) {
+    console.error("Error obteniendo tasa del banco desde JSON:", error)
+    return null
+  }
+}
 
 // RUT validation regex - accepts formats: 12345678-9, 12.345.678-9, or with 7-8 digit numbers
 const rutRegex = /^(\d{7,8}-[\dkK]|\d{1,2}\.\d{3}\.\d{3}-[\dkK])$/i
@@ -140,36 +234,38 @@ const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): nu
   return 0.297
 }
 
-// Get TBM from calculationSnapshot if available, otherwise use fallback
-// ALWAYS prioritizes calculationSnapshot.desgravamen.tasaBanco regardless of bank
+// Get TBM from calculationSnapshot if available, otherwise from JSON file, then fallback to hardcoded
 const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
   const snapshot = refund.calculationSnapshot
   const desgravamen = snapshot?.desgravamen
   
-  // Debug log to see the actual values
-  console.log('getTasaFromSnapshot debug:', {
-    hasSnapshot: !!snapshot,
-    snapshotKeys: snapshot ? Object.keys(snapshot) : [],
-    hasDesgravamen: !!desgravamen,
-    tasaBanco: desgravamen?.tasaBanco,
-    tasaBancoType: typeof desgravamen?.tasaBanco,
-    // Also check if tasaBanco exists at root level
-    rootTasaBanco: snapshot?.tasaBanco,
-    fullSnapshot: snapshot
-  })
-  
+  // 1. Try from calculationSnapshot.desgravamen.tasaBanco
   if (desgravamen?.tasaBanco && typeof desgravamen.tasaBanco === 'number') {
-    // tasaBanco from calculationSnapshot is the rate from obtenerTasaBanco
-    // This is typically a small decimal like 0.0156 (which represents the rate per monto/cuotas)
-    // We multiply by 1000 to convert to per-mil format for display
     const tasaConvertida = desgravamen.tasaBanco * 1000
     console.log('Using tasaBanco from snapshot:', desgravamen.tasaBanco, '-> converted:', tasaConvertida)
     return tasaConvertida
   }
   
-  // Fallback to hardcoded rates only if snapshot doesn't have the rate
-  const age = refund.calculationSnapshot?.age
-  console.warn('Using fallback TBM rate - calculationSnapshot.desgravamen.tasaBanco not found')
+  // 2. Try to get rate from JSON file using refund data
+  const banco = refund.institutionId
+  const edad = snapshot?.age
+  const monto = snapshot?.totalAmount
+  const cuotas = snapshot?.totalInstallments || snapshot?.remainingInstallments
+  
+  if (banco && edad && monto && cuotas) {
+    const resultadoJSON = obtenerTasaBancoFromJSON(banco, edad, monto, cuotas)
+    if (resultadoJSON) {
+      // La tasa del JSON ya viene en formato correcto (ej: 0.0156)
+      // Multiplicamos por 1000 para mostrar en formato "por mil" (ej: 15.6)
+      const tasaConvertida = resultadoJSON.tasa * 1000
+      console.log('Using tasa from JSON file:', resultadoJSON.tasa, '-> converted:', tasaConvertida)
+      return tasaConvertida
+    }
+  }
+  
+  // 3. Fallback to hardcoded rates
+  const age = snapshot?.age
+  console.warn('Using fallback TBM rate - no data found in snapshot or JSON')
   return getTasaBrutaMensualFallback(age, isPrime)
 }
 
