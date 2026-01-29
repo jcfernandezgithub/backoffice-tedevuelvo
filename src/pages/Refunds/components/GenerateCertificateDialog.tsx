@@ -124,11 +124,31 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
-const getTasaBrutaMensual = (age?: number): number => {
+// Fallback rates if not available in calculationSnapshot
+const getTasaBrutaMensualFallback = (age?: number): number => {
   if (!age) return 0.297
   if (age >= 18 && age <= 55) return 0.297
   if (age >= 56 && age <= 65) return 0.3733
   return 0.297
+}
+
+// Get TBM from calculationSnapshot if available, otherwise use fallback
+const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
+  const desgravamen = refund.calculationSnapshot?.desgravamen
+  if (desgravamen?.tasaBanco) {
+    // tasaBanco from calculationSnapshot is already in decimal form (e.g., 0.0003733)
+    // We need to convert it to per-mil format for the certificate (e.g., 0.3733)
+    return desgravamen.tasaBanco * 1000
+  }
+  // Fallback to hardcoded rates
+  const age = refund.calculationSnapshot?.age
+  if (isPrime) {
+    if (!age) return 0.3267
+    if (age >= 18 && age <= 55) return 0.3267
+    if (age >= 56 && age <= 65) return 0.4106
+    return 0.3267
+  }
+  return getTasaBrutaMensualFallback(age)
 }
 
 // Helper to load image as base64
@@ -299,16 +319,23 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.remainingInstallments || 0
-    const age = refund.calculationSnapshot?.age
     
-    // Use Banco de Chile specific rates if applicable
+    // Use Banco de Chile specific rates if applicable, otherwise use calculationSnapshot
     let tbm: number
     if (isBancoChileRefund) {
-      tbm = getBancoChileTasaBrutaMensual(isPrimeFormat, age) / 1000
+      tbm = getBancoChileTasaBrutaMensual(isPrimeFormat, refund.calculationSnapshot?.age) / 1000
     } else {
-      tbm = getTasaBrutaMensual(age) / 1000
+      tbm = getTasaFromSnapshot(refund, isPrimeFormat) / 1000
     }
     return Math.round(saldoInsoluto * tbm * nper)
+  }
+  
+  // Get the TBM value for display
+  const getTbmForDisplay = (): number => {
+    if (isBancoChileRefund) {
+      return getBancoChileTasaBrutaMensual(isPrimeFormat, refund.calculationSnapshot?.age)
+    }
+    return getTasaFromSnapshot(refund, isPrimeFormat)
   }
 
   const getSaldoInsolutoValue = () => {
@@ -1492,11 +1519,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
         }
       }
 
-      // Valores calculados
+      // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
       const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
-      const ageValue = refund.calculationSnapshot?.age
-      const tbmValue = getTasaBrutaMensual(ageValue)
+      const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat)
       const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
@@ -2948,7 +2974,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
@@ -3097,7 +3123,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTasaBrutaMensual(refund.calculationSnapshot?.age).toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
