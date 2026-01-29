@@ -1,8 +1,25 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.2
+## Versión 2.1.3
 
 ## Changelog
+
+### Versión 2.1.3 - 2026-01-29
+
+#### Mejoras en Exportación Excel de Solicitudes
+- **Exportación completa sin selección**: El botón "Exportar a Excel" ahora exporta todas las solicitudes cuando no hay selección.
+  - Sin selección: Descarga todo el dataset usando paginación paralela (lotes de 10 páginas, 100 registros cada una).
+  - Con selección: Exporta solo las solicitudes seleccionadas.
+  - Barra de progreso visible durante la descarga de datos.
+  - Advertencia visual cuando hay más de 100 registros a exportar.
+
+#### Mejoras en Módulo Operación (Segmentos)
+- **Nuevo KPI Prima Total Promedio**: Reemplazado "Monto en Pipeline" por "Prima Total Promedio".
+  - Fórmula: Promedio de (prima mensual × cuotas pendientes).
+  - Solo considera solicitudes activas + pagadas con datos válidos.
+  - Tooltip descriptivo con la fórmula utilizada.
+
+---
 
 ### Versión 2.1.2 - 2026-01-28
 
