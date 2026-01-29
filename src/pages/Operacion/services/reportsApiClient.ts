@@ -325,9 +325,16 @@ export const reportsApiClient = {
     const totalMonto = refundsParaTicket.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
     const ticketPromedio = refundsParaTicket.length > 0 ? Math.round(totalMonto / refundsParaTicket.length) : 0;
     
-    // Prima Promedio: promedio de newMonthlyPremium de solicitudes con calculationSnapshot
-    const refundsConPrima = refundsParaTicket.filter(r => r.calculationSnapshot?.newMonthlyPremium > 0);
-    const totalPrimas = refundsConPrima.reduce((acc, r) => acc + (r.calculationSnapshot?.newMonthlyPremium || 0), 0);
+    // Prima Total Promedio: promedio de (newMonthlyPremium × remainingInstallments)
+    // Solo solicitudes activas + pagadas que tengan los datos necesarios
+    const refundsConPrima = refundsParaTicket.filter(r => 
+      r.calculationSnapshot?.newMonthlyPremium > 0 && 
+      r.calculationSnapshot?.remainingInstallments > 0
+    );
+    const totalPrimas = refundsConPrima.reduce((acc, r) => {
+      const primaTotal = (r.calculationSnapshot?.newMonthlyPremium || 0) * (r.calculationSnapshot?.remainingInstallments || 0);
+      return acc + primaTotal;
+    }, 0);
     const primaPromedio = refundsConPrima.length > 0 ? Math.round(totalPrimas / refundsConPrima.length) : 0;
     
     console.log('[KpisSegmentos] Refunds con prima:', refundsConPrima.length, 'Prima promedio:', primaPromedio);
