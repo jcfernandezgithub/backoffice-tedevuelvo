@@ -125,7 +125,15 @@ const getTodayFormatted = () => {
 }
 
 // Fallback rates if not available in calculationSnapshot
-const getTasaBrutaMensualFallback = (age?: number): number => {
+const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): number => {
+  if (isPrime) {
+    // Prime (Póliza 344) rates
+    if (!age) return 0.3267
+    if (age >= 18 && age <= 55) return 0.3267
+    if (age >= 56 && age <= 65) return 0.4106
+    return 0.3267
+  }
+  // Standard (Póliza 342) rates
   if (!age) return 0.297
   if (age >= 18 && age <= 55) return 0.297
   if (age >= 56 && age <= 65) return 0.3733
@@ -133,22 +141,18 @@ const getTasaBrutaMensualFallback = (age?: number): number => {
 }
 
 // Get TBM from calculationSnapshot if available, otherwise use fallback
+// ALWAYS prioritizes calculationSnapshot.desgravamen.tasaBanco regardless of bank
 const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
   const desgravamen = refund.calculationSnapshot?.desgravamen
-  if (desgravamen?.tasaBanco) {
+  if (desgravamen?.tasaBanco && typeof desgravamen.tasaBanco === 'number') {
     // tasaBanco from calculationSnapshot is already in decimal form (e.g., 0.0003733)
     // We need to convert it to per-mil format for the certificate (e.g., 0.3733)
     return desgravamen.tasaBanco * 1000
   }
-  // Fallback to hardcoded rates
+  // Fallback to hardcoded rates only if snapshot doesn't have the rate
   const age = refund.calculationSnapshot?.age
-  if (isPrime) {
-    if (!age) return 0.3267
-    if (age >= 18 && age <= 55) return 0.3267
-    if (age >= 56 && age <= 65) return 0.4106
-    return 0.3267
-  }
-  return getTasaBrutaMensualFallback(age)
+  console.warn('Using fallback TBM rate - calculationSnapshot.desgravamen.tasaBanco not found')
+  return getTasaBrutaMensualFallback(age, isPrime)
 }
 
 // Helper to load image as base64
@@ -320,21 +324,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.remainingInstallments || 0
     
-    // Use Banco de Chile specific rates if applicable, otherwise use calculationSnapshot
-    let tbm: number
-    if (isBancoChileRefund) {
-      tbm = getBancoChileTasaBrutaMensual(isPrimeFormat, refund.calculationSnapshot?.age) / 1000
-    } else {
-      tbm = getTasaFromSnapshot(refund, isPrimeFormat) / 1000
-    }
+    // ALWAYS use calculationSnapshot rate first, regardless of bank
+    const tbm = getTasaFromSnapshot(refund, isPrimeFormat) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
   
-  // Get the TBM value for display
+  // Get the TBM value for display - always from snapshot
   const getTbmForDisplay = (): number => {
-    if (isBancoChileRefund) {
-      return getBancoChileTasaBrutaMensual(isPrimeFormat, refund.calculationSnapshot?.age)
-    }
     return getTasaFromSnapshot(refund, isPrimeFormat)
   }
 
