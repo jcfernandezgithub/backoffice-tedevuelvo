@@ -254,38 +254,55 @@ const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): nu
   return 0.297
 }
 
-// Get TBM from calculationSnapshot if available, otherwise from JSON file, then fallback to hardcoded
-const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean): number => {
+// Calcular Prima Única del Seguro desde el calculationSnapshot
+// Fórmula: Nueva Prima Mensual × Cuotas Pendientes
+const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
   const snapshot = refund.calculationSnapshot
-  const desgravamen = snapshot?.desgravamen
   
-  // 1. Try from calculationSnapshot.desgravamen.tasaBanco
-  if (desgravamen?.tasaBanco && typeof desgravamen.tasaBanco === 'number') {
-    const tasaConvertida = desgravamen.tasaBanco * 1000
-    console.log('Using tasaBanco from snapshot:', desgravamen.tasaBanco, '-> converted:', tasaConvertida)
-    return tasaConvertida
+  // newMonthlyPremium es la nueva prima mensual preferencial
+  const newMonthlyPremium = snapshot?.newMonthlyPremium
+  const remainingInstallments = snapshot?.remainingInstallments
+  
+  if (typeof newMonthlyPremium === 'number' && typeof remainingInstallments === 'number' && newMonthlyPremium > 0 && remainingInstallments > 0) {
+    const primaUnica = newMonthlyPremium * remainingInstallments
+    console.log('Prima Única calculada desde snapshot:', { newMonthlyPremium, remainingInstallments, primaUnica })
+    return primaUnica
   }
   
-  // 2. Try to get rate from JSON file using refund data
-  const banco = refund.institutionId
-  const edad = snapshot?.age
-  const monto = snapshot?.totalAmount
-  const cuotas = snapshot?.totalInstallments || snapshot?.remainingInstallments
+  console.warn('No se pudo calcular Prima Única desde snapshot - datos faltantes:', { newMonthlyPremium, remainingInstallments })
+  return null
+}
+
+// Derivar TBM desde la Prima Única calculada
+// Fórmula inversa: TBM = (Prima Única / (Saldo Insoluto × Nper)) × 1000
+const getTasaFromPrimaUnica = (refund: RefundRequest, saldoInsoluto: number): number | null => {
+  const snapshot = refund.calculationSnapshot
+  const primaUnica = getPrimaUnicaFromSnapshot(refund)
+  const remainingInstallments = snapshot?.remainingInstallments
   
-  if (banco && edad && monto && cuotas) {
-    const resultadoJSON = obtenerTasaBancoFromJSON(banco, edad, monto, cuotas)
-    if (resultadoJSON) {
-      // La tasa del JSON ya viene en formato correcto (ej: 0.0156)
-      // Multiplicamos por 1000 para mostrar en formato "por mil" (ej: 15.6)
-      const tasaConvertida = resultadoJSON.tasa * 1000
-      console.log('Using tasa from JSON file:', resultadoJSON.tasa, '-> converted:', tasaConvertida)
-      return tasaConvertida
+  if (primaUnica && saldoInsoluto > 0 && remainingInstallments && remainingInstallments > 0) {
+    // TBM = (Prima Única / (Saldo Insoluto × Nper)) × 1000
+    const tbm = (primaUnica / (saldoInsoluto * remainingInstallments)) * 1000
+    console.log('TBM derivada desde Prima Única:', { primaUnica, saldoInsoluto, remainingInstallments, tbm })
+    return tbm
+  }
+  
+  return null
+}
+
+// Get TBM - priority: derived from snapshot, then fallback to hardcoded
+const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean, saldoInsoluto?: number): number => {
+  // 1. Try to derive TBM from newMonthlyPremium × remainingInstallments
+  if (saldoInsoluto && saldoInsoluto > 0) {
+    const tbmDerivada = getTasaFromPrimaUnica(refund, saldoInsoluto)
+    if (tbmDerivada !== null) {
+      return tbmDerivada
     }
   }
   
-  // 3. Fallback to hardcoded rates
-  const age = snapshot?.age
-  console.warn('Using fallback TBM rate - no data found in snapshot or JSON')
+  // 2. Fallback to hardcoded rates
+  const age = refund.calculationSnapshot?.age
+  console.warn('Using fallback TBM rate - no data found in snapshot')
   return getTasaBrutaMensualFallback(age, isPrime)
 }
 
@@ -458,14 +475,21 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.remainingInstallments || 0
     
-    // ALWAYS use calculationSnapshot rate first, regardless of bank
-    const tbm = getTasaFromSnapshot(refund, isPrimeFormat) / 1000
+    // Primero intentar usar Prima Única directa desde snapshot (newMonthlyPremium × remainingInstallments)
+    const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
+    if (primaUnicaDirecta !== null) {
+      return Math.round(primaUnicaDirecta)
+    }
+    
+    // Fallback: calcular usando TBM
+    const tbm = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
   
   // Get the TBM value for display - always from snapshot
   const getTbmForDisplay = (): number => {
-    return getTasaFromSnapshot(refund, isPrimeFormat)
+    const saldoInsoluto = getSaldoInsolutoValue()
+    return getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
   }
 
   const getSaldoInsolutoValue = () => {
@@ -1652,8 +1676,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
       const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
-      const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat)
-      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
+      const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
+      
+      // Prima Única: primero intentar desde snapshot, luego calcular
+      let primaUnica: number
+      const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
+      if (primaUnicaDirecta !== null) {
+        primaUnica = Math.round(primaUnicaDirecta)
+      } else {
+        primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
+      }
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
       // ===================== CARÁTULA - PAGE 1 =====================
