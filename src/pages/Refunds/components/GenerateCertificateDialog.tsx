@@ -356,7 +356,6 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     // Valores calculados para Prime (Póliza 344) - Prima Única usa saldoInsoluto del formulario
     const saldoInsoluto = getSaldoInsolutoValue()
-    const montoCredito = refund.calculationSnapshot?.totalAmount || 0 // Para mostrar en PDF
     const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
     const ageValue = refund.calculationSnapshot?.age
     const tcValue = getTasaBrutaMensualPrime(ageValue)
@@ -901,9 +900,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.text('Monto Inicial del Crédito*:', margin, y)
+    doc.text('Saldo Insoluto*:', margin, y)
     doc.setFont('helvetica', 'bold')
-    doc.text(`$${montoCredito.toLocaleString('es-CL')}`, margin + 45, y)
+    doc.text(saldoInsolutoFormatted, margin + 32, y)
     doc.setFont('helvetica', 'normal')
     doc.text('Nro. Operación:', 120, y)
     doc.setFont('helvetica', 'bold')
@@ -928,11 +927,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7)
-    doc.text('Fórmula: TC/1000 × MCI × Nper', margin, y)
+    doc.text('Fórmula: TC/1000 × SI × Nper', margin, y)
     y += 4
     doc.text('Donde:', margin, y)
     y += 3
-    doc.text(`• MCI: Monto del crédito inicial: $${montoCredito.toLocaleString('es-CL')}`, margin + 5, y)
+    doc.text(`• SI: Saldo Insoluto: ${saldoInsolutoFormatted}`, margin + 5, y)
     y += 3
     doc.text(`• TC: Tasa Comercial Bruta Mensual: ${tcValue.toFixed(4)} por mil`, margin + 5, y)
     y += 3
