@@ -540,7 +540,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
     const ageValue = refund.calculationSnapshot?.age
     const tcValue = getTasaBrutaMensualPrime(ageValue)
-    const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+    
+    // Prima Única: primero intentar desde snapshot (newMonthlyPremium × remainingInstallments), luego calcular
+    let primaUnica: number
+    const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
+    if (primaUnicaDirecta !== null) {
+      primaUnica = Math.round(primaUnicaDirecta)
+    } else {
+      primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+    }
     const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
     // ===================== CARÁTULA - PAGE 1 =====================
