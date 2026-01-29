@@ -1587,7 +1587,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.text('NO', margin + 107, y)
       y += 12
 
-      // PLAN and PRIMA
+      // PLAN and PRIMA - Póliza 342 = Plan 1
+      const primaUnicaFormatted = `$${primaUnica.toLocaleString('es-CL')}`
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(9)
       doc.text('PLAN', margin, y)
@@ -1595,9 +1596,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       y += 5
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
-      drawCheckbox(margin, y, false)
+      drawCheckbox(margin, y, true) // Plan 1 checked for Póliza 342
       doc.text('Plan 1', margin + 7, y)
       doc.rect(margin + 50, y - 3, 40, 5, 'S')
+      doc.text(primaUnicaFormatted, margin + 52, y) // Prima Única in first row
       y += 6
       drawCheckbox(margin, y, false)
       doc.text('Plan 2', margin + 7, y)
