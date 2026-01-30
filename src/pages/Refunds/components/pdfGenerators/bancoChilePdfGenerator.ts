@@ -1653,7 +1653,6 @@ export const generateBancoChileStandardPDF = async (
   doc.text('Otra', margin + 7, y)
   drawCheckbox(margin + 30, y, true)
   doc.text('Otro', margin + 37, y)
-  doc.text('No hay comisión', margin + 122, y)
 
   // ===================== CARÁTULA - PAGE 2 =====================
   doc.addPage()
