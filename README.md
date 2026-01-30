@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.5
+## Versión 2.1.6
 
 ## Changelog
+
+### Versión 2.1.6 - 2026-01-30
+
+#### Actualización de Tasas en Certificado de Cobertura (Póliza 344 Prime)
+- **Tasas unificadas a 0,34**: La tabla de tasas en el PDF ahora muestra 0,34 para ambos rangos de edad (18-55 y 56-65).
+  - Aplicado al generador genérico (GenerateCertificateDialog) para todas las instituciones.
+  - Aplicado al generador específico de Banco de Chile (bancoChilePdfGenerator).
+  - El ejemplo de cálculo de prima actualizado: `$30.000.000 × 0,34/1000 × 36 = $367.200 Pesos`.
+- **Cambios solo estéticos**: La lógica de cálculo de Prima Única permanece sin cambios (usa snapshot).
+
+---
 
 ### Versión 2.1.5 - 2026-01-29
 

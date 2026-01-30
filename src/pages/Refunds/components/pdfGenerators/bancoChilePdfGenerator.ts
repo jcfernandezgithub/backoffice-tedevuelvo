@@ -770,12 +770,12 @@ export const generateBancoChilePrimePDF = async (
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text('0,3267', margin + 72, y)
+  doc.text('0,34', margin + 72, y)
   y += 5
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('56 – 65 años', margin + 2, y)
-  doc.text('0,4106', margin + 72, y)
+  doc.text('0,34', margin + 72, y)
   y += 7
 
   // Asegurados
@@ -1011,19 +1011,19 @@ export const generateBancoChilePrimePDF = async (
   doc.rect(margin, y - 3, 60, 4, 'S')
   doc.rect(margin + 60, y - 3, 40, 4, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text('0,3267', margin + 62, y)
+  doc.text('0,34', margin + 62, y)
   y += 4
   doc.rect(margin, y - 3, 60, 4, 'S')
   doc.rect(margin + 60, y - 3, 40, 4, 'S')
   doc.text('56 – 65 años', margin + 2, y)
-  doc.text('0,4106', margin + 62, y)
+  doc.text('0,34', margin + 62, y)
   y += 6
 
   // Ejemplo de cálculo
   doc.text(`Por ejemplo, un asegurado de 50 años, con una deuda inicial de $30.000.000, y un crédito a 36 meses:`, margin, y)
   y += 4
   doc.setFont('helvetica', 'bold')
-  doc.text('Prima Única = $30.000.000 * 0,3267/1000 * 36 = $352.800 Pesos', margin, y)
+  doc.text('Prima Única = $30.000.000 * 0,34/1000 * 36 = $367.200 Pesos', margin, y)
   y += 8
 
   // Exclusiones
