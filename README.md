@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.7
+## Versión 2.1.8
 
 ## Changelog
+
+### Versión 2.1.8 - 2026-01-30
+
+#### Actualización de Versión
+- Bump de versión a 2.1.8.
+
+---
 
 ### Versión 2.1.7 - 2026-01-30
 
