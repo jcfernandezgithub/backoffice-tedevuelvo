@@ -6,8 +6,11 @@
 
 ### Versión 2.1.8 - 2026-01-30
 
-#### Actualización de Versión
-- Bump de versión a 2.1.8.
+#### Corrección en Carátula de Certificados de Cobertura
+- **Eliminado "No hay comisión"**: Removido el texto "No hay comisión" de la sección COMISIÓN TOTAL CORREDOR en las carátulas de Póliza 342 y 344.
+  - Aplicado al generador genérico (GenerateCertificateDialog) para todas las instituciones.
+  - Aplicado al generador específico de Banco de Chile (bancoChilePdfGenerator).
+- **Cambios solo estéticos**: La lógica de generación del PDF permanece sin cambios.
 
 ---
 
