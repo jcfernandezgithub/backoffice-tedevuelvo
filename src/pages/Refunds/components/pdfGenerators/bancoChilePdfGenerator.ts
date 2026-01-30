@@ -4,9 +4,9 @@
  * Póliza 342: Créditos ≤ 20.000.000 CLP
  * Póliza 344: Créditos > 20.000.000 CLP
  * 
- * Tasas específicas para Banco de Chile:
- * - Póliza 342: 0.2970 (18-55 años), 0.3733 (56-65 años)
- * - Póliza 344: 0.3267 (18-55 años), 0.4106 (56-65 años)
+ * Tasas de visualización en PDF (estéticas):
+ * - Póliza 342: 0.30 (18-55 años), 0.39 (56-65 años)
+ * - Póliza 344: 0.34 (ambos rangos)
  */
 
 import jsPDF from 'jspdf'
@@ -2128,12 +2128,12 @@ export const generateBancoChileStandardPDF = async (
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text('0,2970', margin + 72, y)
+  doc.text('0,30', margin + 72, y)
   y += 5
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('56 – 65 años', margin + 2, y)
-  doc.text('0,3733', margin + 72, y)
+  doc.text('0,39', margin + 72, y)
   y += 7
 
   // Asegurados section
@@ -2386,19 +2386,19 @@ export const generateBancoChileStandardPDF = async (
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text('0,2970', margin + 72, y)
+  doc.text('0,30', margin + 72, y)
   y += 5
   doc.rect(margin, y - 3, 70, 5, 'S')
   doc.rect(margin + 70, y - 3, 50, 5, 'S')
   doc.text('56 – 65 años', margin + 2, y)
-  doc.text('0,3733', margin + 72, y)
+  doc.text('0,39', margin + 72, y)
   y += 8
 
   doc.setFontSize(7)
   doc.text('Por ejemplo, un asegurado de 50 años, con una deuda inicial de $30.000.000, y un crédito a 36 meses:', margin, y)
   y += 4
   doc.setFont('helvetica', 'bold')
-  doc.text('Prima Única = $30.000.000 * 0,2970/1000 * 36 = $320.760 Pesos', margin, y)
+  doc.text('Prima Única = $30.000.000 * 0,30/1000 * 36 = $324.000 Pesos', margin, y)
   y += 8
 
   // Exclusiones
