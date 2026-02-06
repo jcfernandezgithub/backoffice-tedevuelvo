@@ -38,6 +38,9 @@ const editSchema = z.object({
   estimatedAmountCLP: z.coerce.number().min(0, 'Monto debe ser >= 0').optional(),
   realAmount: z.coerce.number().min(0).optional(),
   birthDate: z.string().trim().optional().or(z.literal('')),
+  bankName: z.string().trim().max(100).optional().or(z.literal('')),
+  bankAccountType: z.string().trim().max(50).optional().or(z.literal('')),
+  bankAccountNumber: z.string().trim().max(30).optional().or(z.literal('')),
 })
 
 type EditFormValues = z.infer<typeof editSchema>
@@ -61,6 +64,9 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
     birthDate: refund.calculationSnapshot?.birthDate
       ? refund.calculationSnapshot.birthDate.slice(0, 10)
       : '',
+    bankName: refund.bankInfo?.bank || '',
+    bankAccountType: refund.bankInfo?.accountType || '',
+    bankAccountNumber: refund.bankInfo?.accountNumber || '',
   }
 
   const form = useForm<EditFormValues>({
@@ -70,14 +76,21 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
 
   const mutation = useMutation({
     mutationFn: (data: EditFormValues) => {
-      // Only send fields that actually changed
       const payload: Record<string, any> = {}
       const entries = Object.entries(data) as [keyof EditFormValues, any][]
+      const bankFields = { bankName: 'bank', bankAccountType: 'accountType', bankAccountNumber: 'accountNumber' }
+      const bankInfo: Record<string, any> = {}
+
       for (const [key, value] of entries) {
-        if (value !== defaults[key] && value !== '' && value !== undefined) {
+        if (value === defaults[key] || value === '' || value === undefined) continue
+        if (key in bankFields) {
+          bankInfo[bankFields[key as keyof typeof bankFields]] = value
+        } else {
           payload[key] = value
         }
       }
+
+      if (Object.keys(bankInfo).length > 0) payload.bankInfo = bankInfo
       if (Object.keys(payload).length === 0) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
@@ -220,6 +233,51 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="border-t pt-4 mt-2">
+              <p className="text-sm font-medium mb-3">Datos bancarios</p>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="bankName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Banco</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Banco Chile" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bankAccountType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de cuenta</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Cuenta corriente" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bankAccountNumber"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Número de cuenta</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="1234567890" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
