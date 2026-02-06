@@ -1159,7 +1159,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 <Badge className={getStatusColors(displayStatus)}>
                                   {statusLabels[displayStatus] || displayStatus}
                                 </Badge>
-                                {historicalStatusMode && displayStatus !== refund.status && (
+                                {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
                                   <span title={`Estado actual: ${statusLabels[refund.status]}`}>
                                     <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                                   </span>
@@ -1400,7 +1400,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               <Badge className={getStatusColors(displayStatus)}>
                                 {statusLabels[displayStatus] || displayStatus}
                               </Badge>
-                              {historicalStatusMode && displayStatus !== refund.status && (
+                              {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
                                 <Clock className="h-3 w-3 text-muted-foreground" />
                               )}
                             </div>
