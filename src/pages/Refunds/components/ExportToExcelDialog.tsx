@@ -102,6 +102,15 @@ function prepareExcelData(
         : parsed.toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' })
     }
 
+    // Fechas de estado desde statusHistory
+    const getStatusDate = (status: string) => {
+      const entry = (refund.statusHistory as any[])
+        ?.filter((e: any) => e.to?.toLowerCase() === status)
+        .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
+      if (!entry) return 'N/A'
+      return new Date(entry.at).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    }
+
     return {
       // === DATOS DEL CLIENTE ===
       'ID Público': refund.publicId,
@@ -142,6 +151,8 @@ function prepareExcelData(
       'Monto Estimado CLP': refund.estimatedAmountCLP || 0,
       
       // === FECHAS ===
+      'Fecha Docs Pendientes': getStatusDate('docs_pending'),
+      'Fecha Docs Recibidos': getStatusDate('docs_received'),
       'Fecha de Creación': formattedCreatedAt,
       'Última Actualización': refund.updatedAt ? new Date(refund.updatedAt).toLocaleDateString('es-CL', {
         year: 'numeric',
