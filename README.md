@@ -20,15 +20,6 @@
   - Tooltip con el estado actual al pasar el mouse.
   - Reemplaza el ícono de reloj (Clock) por mayor claridad semántica.
 
-- **Banner informativo de modo histórico**: Banner azul prominente indicando que el modo histórico está activo.
-  - Muestra la fecha de corte seleccionada.
-  - Botón de cierre rápido para desactivar el modo.
-
-#### Edición de Solicitudes (Admin)
-- **Edición parcial de datos**: Botones "Editar" en las secciones de Datos del Cliente, Información Bancaria y Snapshot.
-  - Endpoint PATCH `/api/v1/refund-requests/admin/:publicId/update`.
-  - Envío de solo campos modificados (payload parcial).
-  - Confirmación detallada por categoría de campos actualizados.
 
 ---
 
