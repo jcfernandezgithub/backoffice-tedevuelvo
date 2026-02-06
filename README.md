@@ -1,8 +1,36 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.8
+## Versión 2.1.9
 
 ## Changelog
+
+### Versión 2.1.9 - 2026-02-06
+
+#### Modo Histórico "Estado en fecha" en Solicitudes
+- **Filtrado por estado histórico en rango de fechas**: El toggle "Estado en fecha" permite buscar solicitudes que estuvieron en un estado determinado durante un rango de fechas.
+  - Recorre el `statusHistory` de cada solicitud para determinar si el estado objetivo estuvo activo en algún momento dentro del rango [Desde, Hasta].
+  - Ejemplo: filtrar por "En calificación" entre 06/01/2026 y 06/02/2026 muestra todas las solicitudes que pasaron por ese estado en ese período.
+  - Obtención de datos completa con paginación paralela (lotes de 5, máx. 100 por página) para superar el límite del backend.
+
+- **Paginación local en modo histórico**: Los resultados filtrados localmente se paginan en páginas de 20 elementos.
+  - Navegación entre páginas funcional con controles estándar.
+  - La exportación a Excel mantiene el dataset completo (sin paginar) para no perder información.
+
+- **Ícono ArrowRightLeft en estados**: Nuevo ícono ↔️ junto al badge de estado cuando el estado actual de la solicitud difiere del estado filtrado.
+  - Tooltip con el estado actual al pasar el mouse.
+  - Reemplaza el ícono de reloj (Clock) por mayor claridad semántica.
+
+- **Banner informativo de modo histórico**: Banner azul prominente indicando que el modo histórico está activo.
+  - Muestra la fecha de corte seleccionada.
+  - Botón de cierre rápido para desactivar el modo.
+
+#### Edición de Solicitudes (Admin)
+- **Edición parcial de datos**: Botones "Editar" en las secciones de Datos del Cliente, Información Bancaria y Snapshot.
+  - Endpoint PATCH `/api/v1/refund-requests/admin/:publicId/update`.
+  - Envío de solo campos modificados (payload parcial).
+  - Confirmación detallada por categoría de campos actualizados.
+
+---
 
 ### Versión 2.1.8 - 2026-01-30
 
