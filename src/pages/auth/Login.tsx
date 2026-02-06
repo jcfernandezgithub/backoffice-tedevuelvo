@@ -167,7 +167,7 @@ export default function Login() {
 
             <div className="mt-8 pt-6 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-                Versión 2.1.9 • © {new Date().getFullYear()} Te devuelvo
+                Versión 2.2.0 • © {new Date().getFullYear()} Te devuelvo
               </p>
             </div>
           </div>
