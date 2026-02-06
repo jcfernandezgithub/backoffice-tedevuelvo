@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -52,6 +52,7 @@ interface EditRefundDialogProps {
 export function EditRefundDialog({ refund }: EditRefundDialogProps) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
+  const updatedFieldsRef = useRef<Record<string, any>>({})
 
   const defaults: EditFormValues = {
     fullName: refund.fullName || '',
@@ -77,11 +78,10 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
   const mutation = useMutation({
     mutationFn: (data: EditFormValues) => {
       const payload: Record<string, any> = {}
-      const entries = Object.entries(data) as [keyof EditFormValues, any][]
       const bankFields = { bankName: 'bank', bankAccountType: 'accountType', bankAccountNumber: 'accountNumber' }
       const bankInfo: Record<string, any> = {}
 
-      for (const [key, value] of entries) {
+      for (const [key, value] of Object.entries(data) as [keyof EditFormValues, any][]) {
         if (value === defaults[key] || value === '' || value === undefined) continue
         if (key in bankFields) {
           bankInfo[bankFields[key as keyof typeof bankFields]] = value
@@ -94,10 +94,22 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
       if (Object.keys(payload).length === 0) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
+      updatedFieldsRef.current = { ...payload }
       return refundAdminApi.updateData(refund.id, payload)
     },
     onSuccess: () => {
-      toast({ title: 'Datos actualizados', description: 'La solicitud se actualizó correctamente' })
+      const fields = updatedFieldsRef.current
+      const hasBankUpdate = !!fields.bankInfo
+      const otherCount = Object.keys(fields).filter(k => k !== 'bankInfo').length
+
+      const parts: string[] = []
+      if (otherCount > 0) parts.push(`${otherCount} campo${otherCount > 1 ? 's' : ''} actualizado${otherCount > 1 ? 's' : ''}`)
+      if (hasBankUpdate) parts.push('datos bancarios actualizados')
+
+      toast({
+        title: '✅ Datos actualizados',
+        description: parts.join(' · ') || 'La solicitud se actualizó correctamente',
+      })
       queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] })
       queryClient.invalidateQueries({ queryKey: ['refunds'] })
       setOpen(false)
