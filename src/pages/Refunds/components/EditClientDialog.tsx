@@ -142,6 +142,8 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
 
       const clientPayload = { ...payload }
       delete clientPayload.calculationSnapshot
+      delete clientPayload.birthDate
+      delete clientPayload.age
 
       if (Object.keys(clientPayload).length === 0 && !birthDateChanged && !ageChanged) {
         return Promise.reject(new Error('No hay cambios para guardar'))
