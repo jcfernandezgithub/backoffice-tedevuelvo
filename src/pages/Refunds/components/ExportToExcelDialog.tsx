@@ -105,7 +105,7 @@ function prepareExcelData(
     // Fechas de estado desde statusHistory
     const getStatusDate = (status: string) => {
       const entry = (refund.statusHistory as any[])
-        ?.filter((e: any) => e.to?.toLowerCase() === status)
+        ?.filter((e: any) => (e.to || '').toLowerCase() === status || (e.status || '').toLowerCase() === status)
         .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
       if (!entry) return 'N/A'
       return new Date(entry.at).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
