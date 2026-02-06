@@ -126,7 +126,7 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
       if (birthDateChanged || ageChanged) {
         const existingSnapshot = refund.calculationSnapshot || {}
         const snapshotPatch: Record<string, any> = { ...existingSnapshot }
-        if (birthDateChanged) snapshotPatch.birthDate = payload.birthDate
+        if (birthDateChanged) snapshotPatch.birthDate = `${payload.birthDate}T12:00:00`
         if (data.age !== undefined) snapshotPatch.age = data.age
         await refundAdminApi.updateData(refund.publicId, {
           calculationSnapshot: snapshotPatch,
