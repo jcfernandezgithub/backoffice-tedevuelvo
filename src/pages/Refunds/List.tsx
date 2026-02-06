@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -853,6 +853,32 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           </div>
         </CardContent>
       </Card>
+
+      {/* Banner modo histórico */}
+      {historicalStatusMode && (
+        <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3 animate-fade-in">
+          <div className="flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 p-1.5">
+            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              Modo histórico activo
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              La columna "Estado" muestra el estado que tenía cada solicitud al {localFilters.to ? new Date(localFilters.to + 'T12:00:00').toLocaleDateString('es-CL') : 'la fecha seleccionada'}. 
+              Si difiere del actual, verás un ícono <Clock className="inline h-3 w-3" />.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 shrink-0"
+            onClick={() => setHistoricalStatusMode(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
