@@ -32,37 +32,45 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Calculator, CreditCard, Shield, TrendingUp, Settings2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
 
 /* ------------------------------------------------------------------ */
 /*  Schema                                                             */
 /* ------------------------------------------------------------------ */
 
 const snapshotSchema = z.object({
-  // Datos del crédito
   creditType: z.string().trim().max(50).optional().or(z.literal('')),
   insuranceToEvaluate: z.string().trim().max(50).optional().or(z.literal('')),
   totalAmount: z.coerce.number().min(0).optional(),
   averageInsuredBalance: z.coerce.number().min(0).optional(),
   originalInstallments: z.coerce.number().int().min(0).optional(),
   remainingInstallments: z.coerce.number().int().min(0).optional(),
-
-  // Primas y seguros
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
-
-  // Ahorros
   monthlySaving: z.coerce.number().min(0).optional(),
   totalSaving: z.coerce.number().min(0).optional(),
-
-  // Datos demográficos
   birthDate: z.string().trim().optional().or(z.literal('')),
   age: z.coerce.number().int().min(0).max(120).optional(),
-
-  // Meta
   rateSet: z.string().trim().max(100).optional().or(z.literal('')),
 })
 
 type SnapshotFormValues = z.infer<typeof snapshotSchema>
+
+const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
+  creditType: 'Tipo de crédito',
+  insuranceToEvaluate: 'Seguro a evaluar',
+  totalAmount: 'Monto total crédito',
+  averageInsuredBalance: 'Saldo asegurado promedio',
+  originalInstallments: 'Cuotas originales',
+  remainingInstallments: 'Cuotas restantes',
+  currentMonthlyPremium: 'Prima mensual actual',
+  newMonthlyPremium: 'Nueva prima mensual',
+  monthlySaving: 'Ahorro mensual',
+  totalSaving: 'Ahorro total',
+  birthDate: 'Fecha de nacimiento',
+  age: 'Edad',
+  rateSet: 'Versión de tarifas',
+}
 
 /* ------------------------------------------------------------------ */
 /*  Section wrapper                                                    */
@@ -100,6 +108,8 @@ interface EditSnapshotDialogProps {
 
 export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [open, setOpen] = useState(false)
+  const [step, setStep] = useState<'form' | 'confirm'>('form')
+  const [pendingData, setPendingData] = useState<SnapshotFormValues | null>(null)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
@@ -135,14 +145,26 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     defaultValues: defaults,
   })
 
+  const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
+    const changes: FieldChange[] = []
+    for (const [key, value] of Object.entries(data) as [keyof SnapshotFormValues, any][]) {
+      const original = defaults[key]
+      if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      changes.push({
+        label: FIELD_LABELS[key] || key,
+        from: String(original ?? ''),
+        to: String(value),
+      })
+    }
+    return changes
+  }, [defaults])
+
   const mutation = useMutation({
     mutationFn: (values: SnapshotFormValues) => {
-      // Build a partial snapshot with only changed fields
       const patch: Record<string, any> = {}
 
       for (const [key, value] of Object.entries(values) as [keyof SnapshotFormValues, any][]) {
         const original = defaults[key]
-        // Skip unchanged / empty values
         if (value === original || value === '' || value === undefined) continue
         patch[key] = value
       }
@@ -151,7 +173,6 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
 
-      // Merge with existing snapshot to avoid losing other fields
       const mergedSnapshot = { ...snapshot, ...patch }
 
       return refundAdminApi.updateData(refund.publicId, {
@@ -159,16 +180,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       })
     },
     onSuccess: () => {
-      const changedCount = Object.entries(form.getValues()).filter(
-        ([key, value]) => {
-          const original = defaults[key as keyof SnapshotFormValues]
-          return value !== original && value !== '' && value !== undefined
-        }
-      ).length
-
+      const changes = getChanges(pendingData!)
       toast({
         title: '✅ Snapshot actualizado',
-        description: `${changedCount} campo${changedCount > 1 ? 's' : ''} del cálculo actualizado${changedCount > 1 ? 's' : ''}`,
+        description: `${changes.length} campo${changes.length > 1 ? 's' : ''} del cálculo actualizado${changes.length > 1 ? 's' : ''}`,
       })
       queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] })
       queryClient.invalidateQueries({ queryKey: ['refunds'] })
@@ -179,10 +194,26 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     },
   })
 
-  const onSubmit = (data: SnapshotFormValues) => mutation.mutate(data)
+  const onSubmit = (data: SnapshotFormValues) => {
+    const changes = getChanges(data)
+    if (changes.length === 0) {
+      toast({ title: 'Sin cambios', description: 'No se detectaron modificaciones', variant: 'destructive' })
+      return
+    }
+    setPendingData(data)
+    setStep('confirm')
+  }
+
+  const handleConfirm = () => {
+    if (pendingData) mutation.mutate(pendingData)
+  }
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) form.reset(defaults)
+    if (isOpen) {
+      form.reset(defaults)
+      setStep('form')
+      setPendingData(null)
+    }
     setOpen(isOpen)
   }
 
@@ -249,142 +280,144 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5 text-primary" />
-            Editar snapshot de cálculo
+            {step === 'form' ? 'Editar snapshot de cálculo' : 'Confirmar cambios'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Modifica los datos del cálculo asociado a esta solicitud. Solo se enviarán los campos que cambies.
+            {step === 'form'
+              ? 'Modifica los datos del cálculo asociado a esta solicitud. Solo se enviarán los campos que cambies.'
+              : 'Revisa los cambios antes de guardar.'}
           </p>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
-            {/* ---- Datos del crédito ---- */}
-            <Section icon={CreditCard} title="Datos del crédito">
-              <FormField
-                control={form.control}
-                name="creditType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Tipo de crédito</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+        {step === 'confirm' && pendingData ? (
+          <ConfirmChangesStep
+            changes={getChanges(pendingData)}
+            onConfirm={handleConfirm}
+            onBack={() => setStep('form')}
+            isPending={mutation.isPending}
+          />
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
+              {/* ---- Datos del crédito ---- */}
+              <Section icon={CreditCard} title="Datos del crédito">
+                <FormField
+                  control={form.control}
+                  name="creditType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Tipo de crédito</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="hipotecario">Hipotecario</SelectItem>
+                          <SelectItem value="consumo">Consumo</SelectItem>
+                          <SelectItem value="automotriz">Automotriz</SelectItem>
+                          <SelectItem value="comercial">Comercial</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="insuranceToEvaluate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Seguro a evaluar</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="desgravamen">Desgravamen</SelectItem>
+                          <SelectItem value="cesantia">Cesantía</SelectItem>
+                          <SelectItem value="ambos">Ambos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <NumberField name="totalAmount" label="Monto total crédito" prefix="$" />
+                <NumberField name="averageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
+                <NumberField name="originalInstallments" label="Cuotas originales" />
+                <NumberField name="remainingInstallments" label="Cuotas restantes" />
+              </Section>
+
+              <Separator />
+
+              <Section icon={Shield} title="Primas y seguros">
+                <NumberField name="currentMonthlyPremium" label="Prima mensual actual" prefix="$" />
+                <NumberField name="newMonthlyPremium" label="Nueva prima mensual" prefix="$" />
+              </Section>
+
+              <Separator />
+
+              <Section icon={TrendingUp} title="Ahorros calculados">
+                <NumberField name="monthlySaving" label="Ahorro mensual" prefix="$" />
+                <NumberField name="totalSaving" label="Ahorro total" prefix="$" />
+              </Section>
+
+              <Separator />
+
+              <Section icon={Calculator} title="Demografía y meta">
+                <FormField
+                  control={form.control}
+                  name="birthDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Fecha de nacimiento</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
+                        <Input
+                          {...field}
+                          type="date"
+                          onChange={(e) => {
+                            field.onChange(e)
+                            const age = calcAge(e.target.value)
+                            if (age !== undefined) form.setValue('age', age)
+                          }}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="hipotecario">Hipotecario</SelectItem>
-                        <SelectItem value="consumo">Consumo</SelectItem>
-                        <SelectItem value="automotriz">Automotriz</SelectItem>
-                        <SelectItem value="comercial">Comercial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="insuranceToEvaluate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Seguro a evaluar</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <NumberField name="age" label="Edad" suffix="años" />
+                <FormField
+                  control={form.control}
+                  name="rateSet"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel className="text-xs">Versión de tarifas</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar" />
-                        </SelectTrigger>
+                        <Input {...field} placeholder="ej: v2024-01" />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="desgravamen">Desgravamen</SelectItem>
-                        <SelectItem value="cesantia">Cesantía</SelectItem>
-                        <SelectItem value="ambos">Ambos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <NumberField name="totalAmount" label="Monto total crédito" prefix="$" />
-              <NumberField name="averageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
-              <NumberField name="originalInstallments" label="Cuotas originales" />
-              <NumberField name="remainingInstallments" label="Cuotas restantes" />
-            </Section>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </Section>
 
-            <Separator />
-
-            {/* ---- Primas ---- */}
-            <Section icon={Shield} title="Primas y seguros">
-              <NumberField name="currentMonthlyPremium" label="Prima mensual actual" prefix="$" />
-              <NumberField name="newMonthlyPremium" label="Nueva prima mensual" prefix="$" />
-            </Section>
-
-            <Separator />
-
-            {/* ---- Ahorros ---- */}
-            <Section icon={TrendingUp} title="Ahorros calculados">
-              <NumberField name="monthlySaving" label="Ahorro mensual" prefix="$" />
-              <NumberField name="totalSaving" label="Ahorro total" prefix="$" />
-            </Section>
-
-            <Separator />
-
-            {/* ---- Demografía y meta ---- */}
-            <Section icon={Calculator} title="Demografía y meta">
-              <FormField
-                control={form.control}
-                name="birthDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Fecha de nacimiento</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="date"
-                        onChange={(e) => {
-                          field.onChange(e)
-                          const age = calcAge(e.target.value)
-                          if (age !== undefined) form.setValue('age', age)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <NumberField name="age" label="Edad" suffix="años" />
-              <FormField
-                control={form.control}
-                name="rateSet"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel className="text-xs">Versión de tarifas</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="ej: v2024-01" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </Section>
-
-            {/* ---- Actions ---- */}
-            <div className="flex justify-end gap-2 pt-3 border-t">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              {/* ---- Actions ---- */}
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Revisar cambios
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   )

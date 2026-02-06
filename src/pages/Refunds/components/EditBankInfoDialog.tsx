@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Settings2, Landmark } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
+import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
 
 const bankSchema = z.object({
   bankName: z.string().trim().max(100).optional().or(z.literal('')),
@@ -33,12 +34,20 @@ const bankSchema = z.object({
 
 type BankFormValues = z.infer<typeof bankSchema>
 
+const FIELD_LABELS: Record<keyof BankFormValues, string> = {
+  bankName: 'Banco',
+  bankAccountType: 'Tipo de cuenta',
+  bankAccountNumber: 'Número de cuenta',
+}
+
 interface EditBankInfoDialogProps {
   refund: RefundRequest
 }
 
 export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
   const [open, setOpen] = useState(false)
+  const [step, setStep] = useState<'form' | 'confirm'>('form')
+  const [pendingData, setPendingData] = useState<BankFormValues | null>(null)
   const queryClient = useQueryClient()
 
   const defaults: BankFormValues = {
@@ -51,6 +60,20 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
     resolver: zodResolver(bankSchema),
     defaultValues: defaults,
   })
+
+  const getChanges = (data: BankFormValues): FieldChange[] => {
+    const changes: FieldChange[] = []
+    for (const [key, value] of Object.entries(data) as [keyof BankFormValues, any][]) {
+      const original = defaults[key]
+      if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      changes.push({
+        label: FIELD_LABELS[key] || key,
+        from: String(original ?? ''),
+        to: String(value),
+      })
+    }
+    return changes
+  }
 
   const mutation = useMutation({
     mutationFn: (data: BankFormValues) => {
@@ -87,10 +110,26 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
     },
   })
 
-  const onSubmit = (data: BankFormValues) => mutation.mutate(data)
+  const onSubmit = (data: BankFormValues) => {
+    const changes = getChanges(data)
+    if (changes.length === 0) {
+      toast({ title: 'Sin cambios', description: 'No se detectaron modificaciones', variant: 'destructive' })
+      return
+    }
+    setPendingData(data)
+    setStep('confirm')
+  }
+
+  const handleConfirm = () => {
+    if (pendingData) mutation.mutate(pendingData)
+  }
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) form.reset(defaults)
+    if (isOpen) {
+      form.reset(defaults)
+      setStep('form')
+      setPendingData(null)
+    }
     setOpen(isOpen)
   }
 
@@ -106,59 +145,71 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Landmark className="h-5 w-5 text-primary" />
-            Editar datos bancarios
+            {step === 'form' ? 'Editar datos bancarios' : 'Confirmar cambios'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Solo se enviarán los campos que modifiques.
+            {step === 'form'
+              ? 'Solo se enviarán los campos que modifiques.'
+              : 'Revisa los cambios antes de guardar.'}
           </p>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="bankName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Banco</FormLabel>
-                    <FormControl><Input {...field} placeholder="Banco Chile" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bankAccountType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">Tipo de cuenta</FormLabel>
-                    <FormControl><Input {...field} placeholder="Cuenta corriente" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="bankAccountNumber"
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <FormLabel className="text-xs">Número de cuenta</FormLabel>
-                    <FormControl><Input {...field} placeholder="1234567890" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-3 border-t">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Guardando...' : 'Guardar cambios'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+
+        {step === 'confirm' && pendingData ? (
+          <ConfirmChangesStep
+            changes={getChanges(pendingData)}
+            onConfirm={handleConfirm}
+            onBack={() => setStep('form')}
+            isPending={mutation.isPending}
+          />
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="bankName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Banco</FormLabel>
+                      <FormControl><Input {...field} placeholder="Banco Chile" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bankAccountType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Tipo de cuenta</FormLabel>
+                      <FormControl><Input {...field} placeholder="Cuenta corriente" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bankAccountNumber"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel className="text-xs">Número de cuenta</FormLabel>
+                      <FormControl><Input {...field} placeholder="1234567890" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  Revisar cambios
+                </Button>
+              </div>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   )
