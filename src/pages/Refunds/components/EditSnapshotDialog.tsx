@@ -135,7 +135,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     newMonthlyPremium: snapshot.newMonthlyPremium ?? undefined,
     monthlySaving: snapshot.monthlySaving ?? undefined,
     totalSaving: snapshot.totalSaving ?? undefined,
-    birthDate: snapshot.birthDate ? snapshot.birthDate.slice(0, 10) : '',
+    birthDate: snapshot.birthDate ? (() => {
+      const d = new Date(snapshot.birthDate)
+      if (isNaN(d.getTime())) return snapshot.birthDate.slice(0, 10)
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    })() : '',
     age: snapshot.age ?? undefined,
     rateSet: snapshot.rateSet || '',
   }
