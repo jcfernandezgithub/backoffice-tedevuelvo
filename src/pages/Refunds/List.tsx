@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
@@ -26,7 +26,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -55,6 +56,26 @@ const toLocalDateString = (date: Date): string => {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+// Obtener el estado que tenía una solicitud en una fecha específica
+const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
+  if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
+    return refund.status // fallback al estado actual
+  }
+
+  // Convertir la fecha límite al final del día
+  const limitDate = new Date(dateStr + 'T23:59:59.999Z')
+
+  // Filtrar entradas hasta la fecha indicada y tomar la última
+  const entriesBeforeDate = refund.statusHistory
+    .filter((entry: any) => new Date(entry.at) <= limitDate)
+    .sort((a: any, b: any) => new Date(a.at).getTime() - new Date(b.at).getTime())
+
+  if (entriesBeforeDate.length === 0) return null // no existía aún
+
+  const lastEntry = entriesBeforeDate[entriesBeforeDate.length - 1]
+  return (lastEntry.to?.toLowerCase() || refund.status) as RefundStatus
 }
 
 const getStatusColors = (status: RefundStatus): string => {
@@ -132,6 +153,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [historicalStatusMode, setHistoricalStatusMode] = useState(false)
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
@@ -337,6 +359,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setOriginFilter('all')
     setBankFilter('all')
     setInsuranceTypeFilter('all')
+    setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
@@ -584,6 +607,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const currentPage = normalizedData.page
   const startIndex = (currentPage - 1) * normalizedData.pageSize
 
+  // Helper: obtener el estado a mostrar según el modo (actual o histórico)
+  const getDisplayStatus = useCallback((refund: any): RefundStatus => {
+    if (!historicalStatusMode || !localFilters.to) return refund.status
+    const historical = getStatusAtDate(refund, localFilters.to)
+    return historical || refund.status
+  }, [historicalStatusMode, localFilters.to])
+
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -783,6 +813,31 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 />
               </div>
             </div>
+            {/* Toggle Estado en fecha */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="historical-status"
+                  checked={historicalStatusMode}
+                  onCheckedChange={setHistoricalStatusMode}
+                  disabled={!localFilters.to}
+                />
+                <label
+                  htmlFor="historical-status"
+                  className={`flex items-center gap-1.5 text-sm cursor-pointer select-none ${
+                    historicalStatusMode ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  Estado en fecha
+                </label>
+              </div>
+              {historicalStatusMode && (
+                <span className="text-xs text-muted-foreground">
+                  Mostrando el estado que tenían las solicitudes en la fecha seleccionada
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Botones de acción */}
@@ -978,9 +1033,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColors(refund.status)}>
-                            {statusLabels[refund.status]}
-                          </Badge>
+                          {(() => {
+                            const displayStatus = getDisplayStatus(refund)
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <Badge className={getStatusColors(displayStatus)}>
+                                  {statusLabels[displayStatus] || displayStatus}
+                                </Badge>
+                                {historicalStatusMode && displayStatus !== refund.status && (
+                                  <span title={`Estado actual: ${statusLabels[refund.status]}`}>
+                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })()}
                         </TableCell>
                         <TableCell>
                           {(() => {
@@ -1207,11 +1274,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       },
                       {
                         label: 'Estado',
-                        value: (
-                          <Badge className={getStatusColors(refund.status)}>
-                            {statusLabels[refund.status]}
-                          </Badge>
-                        )
+                        value: (() => {
+                          const displayStatus = getDisplayStatus(refund)
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={getStatusColors(displayStatus)}>
+                                {statusLabels[displayStatus] || displayStatus}
+                              </Badge>
+                              {historicalStatusMode && displayStatus !== refund.status && (
+                                <Clock className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </div>
+                          )
+                        })()
                       },
                       {
                         label: 'Tipo Seguro',
