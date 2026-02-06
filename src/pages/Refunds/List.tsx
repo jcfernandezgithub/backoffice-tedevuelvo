@@ -1358,7 +1358,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <TableCell className="text-sm">
                             {(() => {
                               const docsPendingEntry = refund.statusHistory
-                                ?.filter((entry: any) => entry.to?.toLowerCase() === 'docs_pending')
+                                ?.filter((entry: any) => (entry.to || '').toLowerCase() === 'docs_pending' || (entry.status || '').toLowerCase() === 'docs_pending')
                                 .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
                               if (!docsPendingEntry) return <span className="text-muted-foreground">-</span>
                               return new Date(docsPendingEntry.at).toLocaleString('es-CL', {
@@ -1372,7 +1372,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <TableCell className="text-sm">
                             {(() => {
                               const docsReceivedEntry = refund.statusHistory
-                                ?.filter((entry: any) => entry.to?.toLowerCase() === 'docs_received')
+                                ?.filter((entry: any) => (entry.to || '').toLowerCase() === 'docs_received' || (entry.status || '').toLowerCase() === 'docs_received')
                                 .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
                               if (!docsReceivedEntry) return <span className="text-muted-foreground">-</span>
                               return new Date(docsReceivedEntry.at).toLocaleString('es-CL', {
