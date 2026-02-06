@@ -249,7 +249,7 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Monto estimado (CLP)</FormLabel>
-                    <FormControl><Input {...field} type="number" min={0} /></FormControl>
+                    <FormControl><Input {...field} type="text" inputMode="numeric" onChange={(e) => { field.onChange(e.target.value.replace(/[^0-9]/g, '')) }} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -260,7 +260,7 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Monto real (CLP)</FormLabel>
-                    <FormControl><Input {...field} type="number" min={0} /></FormControl>
+                    <FormControl><Input {...field} type="text" inputMode="numeric" onChange={(e) => { field.onChange(e.target.value.replace(/[^0-9]/g, '')) }} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
