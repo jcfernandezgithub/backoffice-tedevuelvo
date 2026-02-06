@@ -253,7 +253,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     <FormLabel className="text-xs">Tipo de crédito</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -279,7 +279,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     <FormLabel className="text-xs">Seguro a evaluar</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
