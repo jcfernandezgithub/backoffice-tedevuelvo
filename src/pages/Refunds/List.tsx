@@ -153,6 +153,7 @@ interface RefundsListProps {
 }
 
 export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listado de Solicitudes', detailBasePath = '/refunds' }: RefundsListProps) {
+  const isCallCenter = detailBasePath === '/gestion-callcenter'
   const isMobile = useIsMobile()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -1086,6 +1087,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="createdAt" />
                         </div>
                       </TableHead>
+                      {isCallCenter && (
+                        <TableHead>Fecha Docs Recibidos</TableHead>
+                      )}
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1347,6 +1351,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             timeStyle: 'short'
                           }) : 'N/A'}
                         </TableCell>
+                        {isCallCenter && (
+                          <TableCell className="text-sm">
+                            {(() => {
+                              const docsReceivedEntry = refund.statusHistory
+                                ?.filter((entry: any) => entry.to?.toLowerCase() === 'docs_received')
+                                .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
+                              if (!docsReceivedEntry) return <span className="text-muted-foreground">-</span>
+                              return new Date(docsReceivedEntry.at).toLocaleString('es-CL', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            })()}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Button
                             variant="outline"
