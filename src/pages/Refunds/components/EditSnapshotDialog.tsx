@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -102,6 +102,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
+
+  const calcAge = useCallback((dateStr: string): number | undefined => {
+    if (!dateStr) return undefined
+    const birth = new Date(dateStr)
+    if (isNaN(birth.getTime())) return undefined
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    const m = today.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+    return age
+  }, [])
 
   const defaults: SnapshotFormValues = {
     creditType: (snapshot.creditType || '').toLowerCase(),
@@ -329,7 +340,15 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   <FormItem>
                     <FormLabel className="text-xs">Fecha de nacimiento</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <Input
+                        {...field}
+                        type="date"
+                        onChange={(e) => {
+                          field.onChange(e)
+                          const age = calcAge(e.target.value)
+                          if (age !== undefined) form.setValue('age', age)
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

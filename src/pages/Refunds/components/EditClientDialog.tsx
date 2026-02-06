@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -38,6 +38,7 @@ const clientSchema = z.object({
   estimatedAmountCLP: z.coerce.number().min(0, 'Monto debe ser >= 0').optional(),
   realAmount: z.coerce.number().min(0).optional(),
   birthDate: z.string().trim().optional().or(z.literal('')),
+  age: z.coerce.number().int().min(0).max(120).optional(),
 })
 
 type ClientFormValues = z.infer<typeof clientSchema>
@@ -50,6 +51,17 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
 
+  const calcAge = useCallback((dateStr: string): number | undefined => {
+    if (!dateStr) return undefined
+    const birth = new Date(dateStr)
+    if (isNaN(birth.getTime())) return undefined
+    const today = new Date()
+    let age = today.getFullYear() - birth.getFullYear()
+    const m = today.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+    return age
+  }, [])
+
   const defaults: ClientFormValues = {
     fullName: refund.fullName || '',
     rut: refund.rut || '',
@@ -61,6 +73,7 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
     birthDate: refund.calculationSnapshot?.birthDate
       ? refund.calculationSnapshot.birthDate.slice(0, 10)
       : '',
+    age: refund.calculationSnapshot?.age ?? undefined,
   }
 
   const form = useForm<ClientFormValues>({
@@ -180,7 +193,17 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">Fecha de nacimiento</FormLabel>
-                    <FormControl><Input {...field} type="date" /></FormControl>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="date"
+                        onChange={(e) => {
+                          field.onChange(e)
+                          const age = calcAge(e.target.value)
+                          if (age !== undefined) form.setValue('age', age)
+                        }}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
