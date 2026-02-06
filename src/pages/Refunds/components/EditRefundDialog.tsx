@@ -95,7 +95,7 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
       updatedFieldsRef.current = { ...payload }
-      return refundAdminApi.updateData(refund.id, payload)
+      return refundAdminApi.updateData(refund.publicId, payload)
     },
     onSuccess: () => {
       const fields = updatedFieldsRef.current
