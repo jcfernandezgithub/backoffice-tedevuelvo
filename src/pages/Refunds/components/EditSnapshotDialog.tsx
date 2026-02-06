@@ -390,7 +390,28 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     </FormItem>
                   )}
                 />
-                <NumberField name="age" label="Edad" suffix="años" />
+                <FormField
+                  control={form.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Edad</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            readOnly
+                            tabIndex={-1}
+                            className="bg-muted cursor-not-allowed"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            años
+                          </span>
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="rateSet"
