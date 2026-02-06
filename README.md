@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 2.1.9
+## Versión 2.2.0
 
 ## Changelog
+
+### Versión 2.2.0 - 2026-02-06
+
+#### Mejoras en Módulo Call Center
+- **Columnas de fechas de estado**: Agregadas columnas "Fecha Docs Pendientes" y "Fecha Docs Recibidos" en la tabla de solicitudes del Call Center.
+  - Extraen la fecha más reciente del `statusHistory` en que la solicitud pasó a cada estado.
+  - Visibles exclusivamente en la vista Call Center (no en Solicitudes).
+
+- **Restricción de cambio de estado**: El usuario de Call Center (`admin@callcenter.cl`) solo puede cambiar solicitudes a los estados: Cancelado, Documentos pendientes y Documentos recibidos.
+
+#### Mejoras en Exportación Excel
+- **Nuevas columnas de fechas de estado**: La exportación a Excel ahora incluye "Fecha Docs Pendientes" y "Fecha Docs Recibidos".
+  - Extraídas del `statusHistory` con búsqueda case-insensitive en campos `to` y `status`.
+
+#### Correcciones en Edición de Solicitudes
+- **Fix de timezone en fecha de nacimiento**: Corregido el bug donde la fecha de nacimiento se mostraba un día menos al editar.
+  - Se añade `T12:00:00` al enviar fechas al backend para evitar desplazamiento por conversión UTC.
+  - Se usan getters locales (`getFullYear`, `getMonth`, `getDate`) en lugar de `.slice(0, 10)` para poblar los inputs de fecha.
+- **Fix de datos no reflejados tras edición**: Corregido el envío duplicado de `birthDate` como campo top-level que sobrescribía el valor correcto del `calculationSnapshot`.
+
+---
 
 ### Versión 2.1.9 - 2026-02-06
 
