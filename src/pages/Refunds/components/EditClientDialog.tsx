@@ -86,8 +86,19 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
       const payload: Record<string, any> = {}
 
       for (const [key, value] of Object.entries(data) as [keyof ClientFormValues, any][]) {
+        if (key === 'age') continue // handled separately via snapshot
         if (value === defaults[key] || value === '' || value === undefined) continue
         payload[key] = value
+      }
+
+      // If birthDate changed, also update age in calculationSnapshot
+      if (payload.birthDate || data.age !== defaults.age) {
+        const existingSnapshot = refund.calculationSnapshot || {}
+        payload.calculationSnapshot = {
+          ...existingSnapshot,
+          ...(payload.birthDate ? { birthDate: payload.birthDate } : {}),
+          ...(data.age !== undefined ? { age: data.age } : {}),
+        }
       }
 
       if (Object.keys(payload).length === 0) {
