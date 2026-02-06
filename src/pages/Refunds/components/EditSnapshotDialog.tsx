@@ -216,8 +216,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
               )}
               <Input
                 {...field}
-                type="number"
-                min={0}
+                type="text"
+                inputMode="numeric"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                  field.onChange(val === '' ? '' : val)
+                }}
                 className={prefix ? 'pl-7' : ''}
               />
               {suffix && (
