@@ -82,29 +82,42 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ClientFormValues) => {
+    mutationFn: async (data: ClientFormValues) => {
       const payload: Record<string, any> = {}
 
       for (const [key, value] of Object.entries(data) as [keyof ClientFormValues, any][]) {
-        if (key === 'age') continue // handled separately via snapshot
+        if (key === 'age') continue // handled via snapshot update
         if (value === defaults[key] || value === '' || value === undefined) continue
         payload[key] = value
       }
 
-      // If birthDate changed, also update age in calculationSnapshot
-      if (payload.birthDate || data.age !== defaults.age) {
+      // If birthDate changed, update both root birthDate and snapshot (birthDate + age)
+      const birthDateChanged = payload.birthDate !== undefined
+      const ageChanged = data.age !== defaults.age
+
+      if (birthDateChanged || ageChanged) {
         const existingSnapshot = refund.calculationSnapshot || {}
-        payload.calculationSnapshot = {
-          ...existingSnapshot,
-          ...(payload.birthDate ? { birthDate: payload.birthDate } : {}),
-          ...(data.age !== undefined ? { age: data.age } : {}),
-        }
+        const snapshotPatch: Record<string, any> = { ...existingSnapshot }
+        if (birthDateChanged) snapshotPatch.birthDate = payload.birthDate
+        if (data.age !== undefined) snapshotPatch.age = data.age
+
+        // Send snapshot update separately (same approach as EditSnapshotDialog)
+        await refundAdminApi.updateData(refund.publicId, {
+          calculationSnapshot: snapshotPatch,
+        })
       }
 
-      if (Object.keys(payload).length === 0) {
+      // Send remaining client fields (excluding calculationSnapshot)
+      const clientPayload = { ...payload }
+      delete clientPayload.calculationSnapshot
+
+      if (Object.keys(clientPayload).length === 0 && !birthDateChanged && !ageChanged) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
-      return refundAdminApi.updateData(refund.publicId, payload)
+
+      if (Object.keys(clientPayload).length > 0) {
+        return refundAdminApi.updateData(refund.publicId, clientPayload)
+      }
     },
     onSuccess: () => {
       const changedCount = Object.entries(form.getValues()).filter(
