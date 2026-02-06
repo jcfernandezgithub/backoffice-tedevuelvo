@@ -31,6 +31,7 @@ import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCir
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { EditRefundDialog } from './components/EditRefundDialog'
+import { EditSnapshotDialog } from './components/EditSnapshotDialog'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
@@ -657,6 +658,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm text-muted-foreground">Snapshot de cálculo</p>
                     <div className="flex gap-1">
+                      <EditSnapshotDialog refund={refund} />
                       <Button
                         variant={snapshotView === 'parsed' ? 'default' : 'outline'}
                         size="sm"
