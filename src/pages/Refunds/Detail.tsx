@@ -469,11 +469,18 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(statusLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      {Object.entries(statusLabels)
+                        .filter(([value]) => {
+                          if (user?.email === 'admin@callcenter.cl') {
+                            return ['canceled', 'docs_pending', 'docs_received'].includes(value)
+                          }
+                          return true
+                        })
+                        .map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
