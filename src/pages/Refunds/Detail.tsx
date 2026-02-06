@@ -30,7 +30,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
-import { EditRefundDialog } from './components/EditRefundDialog'
+import { EditClientDialog } from './components/EditClientDialog'
+import { EditBankInfoDialog } from './components/EditBankInfoDialog'
 import { EditSnapshotDialog } from './components/EditSnapshotDialog'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
@@ -373,7 +374,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
-          <EditRefundDialog refund={refund} />
+          
           {/* Certificados de cobertura: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
             (() => {
@@ -545,8 +546,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
         <TabsContent value="info" className="space-y-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Datos del cliente</CardTitle>
+              <EditClientDialog refund={refund} />
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
@@ -600,11 +602,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           {/* Sección de datos bancarios para Pago Programado */}
           {(refund.status === 'payment_scheduled' || refund.status === 'paid') && refund.bankInfo && (
             <Card className="border-emerald-500/30 bg-emerald-500/5">
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-emerald-600">
                   <Landmark className="h-5 w-5" />
                   Datos para devolución
                 </CardTitle>
+                <EditBankInfoDialog refund={refund} />
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
