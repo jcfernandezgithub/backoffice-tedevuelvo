@@ -166,7 +166,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       for (const [key, value] of Object.entries(values) as [keyof SnapshotFormValues, any][]) {
         const original = defaults[key]
         if (value === original || value === '' || value === undefined) continue
-        patch[key] = value
+        // Evitar desfase de timezone en fechas: agregar hora mediodía
+        patch[key] = key === 'birthDate' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+          ? `${value}T12:00:00`
+          : value
       }
 
       if (Object.keys(patch).length === 0) {
