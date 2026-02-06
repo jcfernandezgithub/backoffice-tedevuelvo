@@ -1088,6 +1088,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         </div>
                       </TableHead>
                       {isCallCenter && (
+                        <TableHead>Fecha Docs Pendientes</TableHead>
+                      )}
+                      {isCallCenter && (
                         <TableHead>Fecha Docs Recibidos</TableHead>
                       )}
                       <TableHead>Acciones</TableHead>
@@ -1351,6 +1354,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             timeStyle: 'short'
                           }) : 'N/A'}
                         </TableCell>
+                        {isCallCenter && (
+                          <TableCell className="text-sm">
+                            {(() => {
+                              const docsPendingEntry = refund.statusHistory
+                                ?.filter((entry: any) => entry.to?.toLowerCase() === 'docs_pending')
+                                .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
+                              if (!docsPendingEntry) return <span className="text-muted-foreground">-</span>
+                              return new Date(docsPendingEntry.at).toLocaleString('es-CL', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            })()}
+                          </TableCell>
+                        )}
                         {isCallCenter && (
                           <TableCell className="text-sm">
                             {(() => {
