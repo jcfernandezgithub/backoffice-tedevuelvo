@@ -151,12 +151,16 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       if (calculation.birthDate) {
         try {
           const birthDate = new Date(calculation.birthDate)
-          const day = String(birthDate.getDate()).padStart(2, '0')
-          const month = String(birthDate.getMonth() + 1).padStart(2, '0')
-          const year = birthDate.getFullYear()
-          fechaNacimiento = `${day}-${month}-${year}`
+          if (!isNaN(birthDate.getTime())) {
+            const day = String(birthDate.getDate()).padStart(2, '0')
+            const month = String(birthDate.getMonth() + 1).padStart(2, '0')
+            const year = birthDate.getFullYear()
+            fechaNacimiento = `${day}-${month}-${year}`
+          } else {
+            fechaNacimiento = calculation.birthDate
+          }
         } catch {
-          fechaNacimiento = 'N/A'
+          fechaNacimiento = calculation.birthDate || 'N/A'
         }
       }
       

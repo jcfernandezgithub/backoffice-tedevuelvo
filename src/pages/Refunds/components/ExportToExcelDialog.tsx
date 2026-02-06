@@ -94,13 +94,13 @@ function prepareExcelData(
     
     // Fecha de nacimiento - buscar en refund o en calculationSnapshot
     const birthDateValue = refund.birthdate || calculation.birthDate || calculation.birthdate || null
-    const fechaNacimiento = birthDateValue 
-      ? new Date(birthDateValue).toLocaleDateString('es-CL', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        })
-      : 'N/A'
+    let fechaNacimiento = 'N/A'
+    if (birthDateValue) {
+      const parsed = new Date(birthDateValue)
+      fechaNacimiento = isNaN(parsed.getTime())
+        ? birthDateValue
+        : parsed.toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    }
 
     return {
       // === DATOS DEL CLIENTE ===
