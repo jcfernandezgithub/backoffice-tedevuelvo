@@ -261,8 +261,8 @@ class RefundAdminApiClient {
     }
   }
 
-  async updateData(publicId: string, data: Record<string, any>): Promise<RefundRequest> {
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/update`, {
+  async updateData(id: string, data: Record<string, any>): Promise<RefundRequest> {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${id}`, {
       method: 'PATCH',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(data),
