@@ -385,6 +385,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handlePageChange = (newPage: number) => {
+    if (historicalStatusMode) {
+      // En modo histórico, paginación local
+      setHistoricalPage(newPage)
+      return
+    }
+    
     if (useSearchEndpoint) {
       const newSearchFilters = { ...searchFilters, page: newPage }
       setSearchFilters(newSearchFilters)
@@ -662,21 +668,37 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return result
   }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.to, localFilters.status])
   
-  const paginatedItems = locallyFilteredItems
+  // Estado para paginación local en modo histórico
+  const [historicalPage, setHistoricalPage] = useState(1)
+  const historicalPageSize = filters.pageSize || 20
+
+  // Reset página histórica cuando cambian los filtros
+  useEffect(() => {
+    setHistoricalPage(1)
+  }, [locallyFilteredItems.length])
+
+  // En modo histórico, paginar localmente; en modo normal, usar datos del servidor
+  const paginatedItems = useMemo(() => {
+    if (historicalStatusMode) {
+      const start = (historicalPage - 1) * historicalPageSize
+      return locallyFilteredItems.slice(start, start + historicalPageSize)
+    }
+    return locallyFilteredItems
+  }, [locallyFilteredItems, historicalStatusMode, historicalPage, historicalPageSize])
   
-  // sortedItems se usa para exportar - contiene los items de la página actual
-  const sortedItems = locallyFilteredItems
+  // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
+  const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
   // Usar paginación del servidor, pero en modo histórico el total es local
   const totalFiltered = historicalStatusMode ? locallyFilteredItems.length : normalizedData.total
   const totalPages = historicalStatusMode 
-    ? Math.max(1, Math.ceil(locallyFilteredItems.length / (filters.pageSize || 20)))
+    ? Math.max(1, Math.ceil(locallyFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
-  const hasNextPage = historicalStatusMode ? false : normalizedData.hasNext
-  const hasPrevPage = historicalStatusMode ? false : normalizedData.hasPrev
+  const hasNextPage = historicalStatusMode ? historicalPage < totalPages : normalizedData.hasNext
+  const hasPrevPage = historicalStatusMode ? historicalPage > 1 : normalizedData.hasPrev
 
-  const currentPage = normalizedData.page
-  const startIndex = (currentPage - 1) * normalizedData.pageSize
+  const currentPage = historicalStatusMode ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * (historicalStatusMode ? historicalPageSize : normalizedData.pageSize)
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
