@@ -284,12 +284,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     
     const newSearchFilters: SearchParams = {
       q: localFilters.search || undefined,
-      status: localFilters.status || undefined,
+      // En modo histórico, NO enviamos el status al servidor para traer todas las solicitudes
+      // y filtrar localmente por el estado que tenían en la fecha seleccionada
+      status: historicalStatusMode ? undefined : (localFilters.status || undefined),
       sort: 'recent', // Por defecto más recientes
       from: localFilters.from || undefined,
       to: localFilters.to || undefined,
       page: 1,
-      limit: filters.pageSize || 20,
+      // En modo histórico pedimos más resultados ya que filtraremos localmente
+      limit: historicalStatusMode ? 200 : (filters.pageSize || 20),
       signatureStatus: signatureStatusValue,
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
       isPartner: isPartnerValue,
@@ -587,22 +590,29 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         : result.filter((r: any) => !r.bankInfo)
     }
     
-    // Nota: El filtro de tipo de seguro ahora es soportado por el servidor
-    // Se envía como parámetro insuranceToEvaluate en la búsqueda
+    // En modo histórico, filtrar por el estado que tenían en la fecha seleccionada
+    if (historicalStatusMode && localFilters.to && localFilters.status) {
+      result = result.filter((r: any) => {
+        const historicalStatus = getStatusAtDate(r, localFilters.to!)
+        return historicalStatus === localFilters.status
+      })
+    }
     
     return result
-  }, [preSortedItems, appliedLocalFilters])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.to, localFilters.status])
   
   const paginatedItems = locallyFilteredItems
   
   // sortedItems se usa para exportar - contiene los items de la página actual
   const sortedItems = locallyFilteredItems
 
-  // Usar paginación del servidor
-  const totalFiltered = normalizedData.total
-  const totalPages = normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize))
-  const hasNextPage = normalizedData.hasNext
-  const hasPrevPage = normalizedData.hasPrev
+  // Usar paginación del servidor, pero en modo histórico el total es local
+  const totalFiltered = historicalStatusMode ? locallyFilteredItems.length : normalizedData.total
+  const totalPages = historicalStatusMode 
+    ? Math.max(1, Math.ceil(locallyFilteredItems.length / (filters.pageSize || 20)))
+    : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
+  const hasNextPage = historicalStatusMode ? false : normalizedData.hasNext
+  const hasPrevPage = historicalStatusMode ? false : normalizedData.hasPrev
 
   const currentPage = normalizedData.page
   const startIndex = (currentPage - 1) * normalizedData.pageSize
