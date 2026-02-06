@@ -27,7 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -959,7 +959,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-400">
               La columna "Estado" muestra el estado que tenía cada solicitud al {localFilters.to ? new Date(localFilters.to + 'T12:00:00').toLocaleDateString('es-CL') : 'la fecha seleccionada'}. 
-              Si difiere del actual, verás un ícono <Clock className="inline h-3 w-3" />.
+              Si difiere del actual, verás un ícono <ArrowRightLeft className="inline h-3 w-3" />.
             </p>
           </div>
           <Button
@@ -1161,7 +1161,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 </Badge>
                                 {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
                                   <span title={`Estado actual: ${statusLabels[refund.status]}`}>
-                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
                                   </span>
                                 )}
                               </div>
@@ -1401,7 +1401,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 {statusLabels[displayStatus] || displayStatus}
                               </Badge>
                               {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
-                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
                               )}
                             </div>
                           )
