@@ -30,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
+import { EditRefundDialog } from './components/EditRefundDialog'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
@@ -371,6 +372,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             <FileText className="h-4 w-4 mr-2" />
             Ver Mandato
           </Button>
+          <EditRefundDialog refund={refund} />
           {/* Certificados de cobertura: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
             (() => {

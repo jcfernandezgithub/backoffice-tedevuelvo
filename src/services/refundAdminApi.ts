@@ -261,6 +261,26 @@ class RefundAdminApiClient {
     }
   }
 
+  async updateData(publicId: string, data: Record<string, any>): Promise<RefundRequest> {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/update`, {
+      method: 'PATCH',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(data),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al actualizar datos' }))
+      throw new Error(error.message || 'Error al actualizar datos')
+    }
+
+    const result = await response.json()
+    return { ...result, status: normalizeStatus(result.status) }
+  }
+
   async listByPartner(partnerId: string): Promise<RefundRequest[]> {
     const response = await fetch(`${API_BASE_URL}/partner-refunds/partner/${partnerId}`, {
       headers: await this.getAuthHeaders(),
