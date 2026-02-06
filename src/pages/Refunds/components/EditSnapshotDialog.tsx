@@ -104,8 +104,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const snapshot = refund.calculationSnapshot || {}
 
   const defaults: SnapshotFormValues = {
-    creditType: snapshot.creditType || '',
-    insuranceToEvaluate: snapshot.insuranceToEvaluate || '',
+    creditType: (snapshot.creditType || '').toLowerCase(),
+    insuranceToEvaluate: (snapshot.insuranceToEvaluate || '').toLowerCase(),
     totalAmount: snapshot.totalAmount ?? undefined,
     averageInsuredBalance: snapshot.averageInsuredBalance ?? undefined,
     originalInstallments: snapshot.originalInstallments ?? undefined,
