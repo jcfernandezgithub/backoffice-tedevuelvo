@@ -86,7 +86,14 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
     estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
     realAmount: (refund as any).realAmount ?? undefined,
     birthDate: refund.calculationSnapshot?.birthDate
-      ? refund.calculationSnapshot.birthDate.slice(0, 10)
+      ? (() => {
+          const d = new Date(refund.calculationSnapshot.birthDate)
+          if (isNaN(d.getTime())) return refund.calculationSnapshot.birthDate.slice(0, 10)
+          const yyyy = d.getFullYear()
+          const mm = String(d.getMonth() + 1).padStart(2, '0')
+          const dd = String(d.getDate()).padStart(2, '0')
+          return `${yyyy}-${mm}-${dd}`
+        })()
       : '',
     age: refund.calculationSnapshot?.age ?? undefined,
   }
