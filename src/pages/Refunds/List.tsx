@@ -180,7 +180,31 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Query para búsqueda (search endpoint)
   const { data: searchData, isLoading: isSearchLoading, error: searchError, refetch: refetchSearch } = useQuery({
     queryKey: ['refunds-search', searchFilters],
-    queryFn: () => refundAdminApi.search(searchFilters),
+    queryFn: async () => {
+      // En modo histórico, paginar para obtener todos los resultados (max 100 por página)
+      if (searchFilters.limit === 100 && historicalStatusMode) {
+        // Primera petición para obtener el total
+        const firstPage = await refundAdminApi.search({ ...searchFilters, page: 1, limit: 100 })
+        if (firstPage.total <= 100) return firstPage
+        
+        // Calcular páginas restantes y obtener en paralelo (lotes de 5)
+        const totalPages = Math.ceil(firstPage.total / 100)
+        const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+        let allItems = [...firstPage.items]
+        
+        const BATCH_SIZE = 5
+        for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
+          const batch = remainingPages.slice(i, i + BATCH_SIZE)
+          const results = await Promise.all(
+            batch.map(page => refundAdminApi.search({ ...searchFilters, page, limit: 100 }))
+          )
+          results.forEach(r => allItems = allItems.concat(r.items))
+        }
+        
+        return { ...firstPage, items: allItems, total: firstPage.total, page: 1, pageSize: allItems.length, totalPages: 1, hasNext: false, hasPrev: false }
+      }
+      return refundAdminApi.search(searchFilters)
+    },
     retry: false,
     staleTime: 30 * 1000,
     enabled: useSearchEndpoint,
@@ -292,7 +316,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       to: localFilters.to || undefined,
       page: 1,
       // En modo histórico pedimos más resultados ya que filtraremos localmente
-      limit: historicalStatusMode ? 200 : (filters.pageSize || 20),
+      limit: historicalStatusMode ? 100 : (filters.pageSize || 20),
       signatureStatus: signatureStatusValue,
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
       isPartner: isPartnerValue,
