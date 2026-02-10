@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { RefundStatus } from '@/types/refund'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
 import { useExportAllRefunds } from '../hooks/useExportAllRefunds'
 import { SearchParams } from '@/services/refundAdminApi'
 import { AdminQueryParams } from '@/types/refund'
@@ -111,6 +112,9 @@ function prepareExcelData(
       return new Date(entry.at).toLocaleDateString('es-CL', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
     }
 
+    // Desglose por tipo de seguro (para caso "ambos")
+    const breakdown = computeBreakdown(calculation)
+
     return {
       // === DATOS DEL CLIENTE ===
       'ID Público': refund.publicId,
@@ -144,6 +148,14 @@ function prepareExcelData(
       'Prima Neta (sin IVA)': primaNeta,
       'Saldo Insoluto': saldoInsoluto,
       'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
+
+      // === DESGLOSE DESGRAVAMEN / CESANTÍA ===
+      'Prima Mensual Desgravamen Banco': breakdown?.desgravamen.primaBanco ?? '',
+      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV ?? '',
+      'Devolución Desgravamen': breakdown?.desgravamen.devolucion ?? '',
+      'Prima Mensual Cesantía Banco': breakdown?.cesantia.primaBanco ?? '',
+      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV ?? '',
+      'Devolución Cesantía': breakdown?.cesantia.devolucion ?? '',
       
       // === AHORROS Y MONTOS ===
       'Ahorro Mensual': calculation.savingsPerMonth || 0,
