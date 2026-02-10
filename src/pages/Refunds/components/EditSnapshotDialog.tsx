@@ -52,6 +52,9 @@ const snapshotSchema = z.object({
   birthDate: z.string().trim().optional().or(z.literal('')),
   age: z.coerce.number().int().min(0).max(120).optional(),
   rateSet: z.string().trim().max(100).optional().or(z.literal('')),
+  // Campos root-level del refund
+  estimatedAmountCLP: z.coerce.number().min(0).optional(),
+  realAmount: z.coerce.number().min(0).optional(),
 })
 
 type SnapshotFormValues = z.infer<typeof snapshotSchema>
@@ -70,6 +73,8 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   birthDate: 'Fecha de nacimiento',
   age: 'Edad',
   rateSet: 'Versión de tarifas',
+  estimatedAmountCLP: 'Monto estimado devolución',
+  realAmount: 'Monto real devolución',
 }
 
 /* ------------------------------------------------------------------ */
@@ -145,6 +150,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     })() : '',
     age: snapshot.age ?? undefined,
     rateSet: snapshot.rateSet || '',
+    estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
+    realAmount: (() => {
+      if ((refund as any).realAmount) return (refund as any).realAmount
+      const entry = [...(refund.statusHistory || [])].reverse().find(
+        (e) => (e.to === 'payment_scheduled' || e.to === 'paid') && e.realAmount
+      )
+      return entry?.realAmount ?? undefined
+    })(),
   }
 
   const form = useForm<SnapshotFormValues>({
@@ -167,27 +180,34 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }, [defaults])
 
   const mutation = useMutation({
-    mutationFn: (values: SnapshotFormValues) => {
-      const patch: Record<string, any> = {}
+    mutationFn: async (values: SnapshotFormValues) => {
+      const snapshotPatch: Record<string, any> = {}
+      const rootPatch: Record<string, any> = {}
+      const ROOT_FIELDS = ['estimatedAmountCLP', 'realAmount']
 
       for (const [key, value] of Object.entries(values) as [keyof SnapshotFormValues, any][]) {
         const original = defaults[key]
         if (value === original || value === '' || value === undefined) continue
-        // Evitar desfase de timezone en fechas: agregar hora mediodía
-        patch[key] = key === 'birthDate' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-          ? `${value}T12:00:00`
-          : value
+        
+        if (ROOT_FIELDS.includes(key)) {
+          rootPatch[key] = value
+        } else {
+          snapshotPatch[key] = key === 'birthDate' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+            ? `${value}T12:00:00`
+            : value
+        }
       }
 
-      if (Object.keys(patch).length === 0) {
+      if (Object.keys(snapshotPatch).length === 0 && Object.keys(rootPatch).length === 0) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
 
-      const mergedSnapshot = { ...snapshot, ...patch }
+      const payload: Record<string, any> = { ...rootPatch }
+      if (Object.keys(snapshotPatch).length > 0) {
+        payload.calculationSnapshot = { ...snapshot, ...snapshotPatch }
+      }
 
-      return refundAdminApi.updateData(refund.publicId, {
-        calculationSnapshot: mergedSnapshot,
-      })
+      return refundAdminApi.updateData(refund.publicId, payload)
     },
     onSuccess: () => {
       const changes = getChanges(pendingData!)
@@ -378,9 +398,15 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
+              <Section icon={TrendingUp} title="Montos de devolución">
+                <NumberField name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
+                <NumberField name="realAmount" label="Monto real devolución" prefix="$" />
+              </Section>
+
+              <Separator />
+
               <Section icon={Calculator} title="Demografía y meta">
                 <FormField
-                  control={form.control}
                   name="birthDate"
                   render={({ field }) => (
                     <FormItem>
