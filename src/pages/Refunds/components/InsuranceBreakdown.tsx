@@ -38,11 +38,15 @@ interface BreakdownResult {
   desgravamen: {
     primaBanco: number
     primaTDV: number
+    primaTotalBanco: number
+    primaTotalTDV: number
     devolucion: number
   }
   cesantia: {
     primaBanco: number
     primaTDV: number
+    primaTotalBanco: number
+    primaTotalTDV: number
     devolucion: number
   }
   totalDevolucion: number
@@ -108,11 +112,15 @@ function computeBreakdown(snapshot: any): BreakdownResult | null {
     desgravamen: {
       primaBanco: desgPrimaBanco,
       primaTDV: desgPrimaTDV,
+      primaTotalBanco: desgPrimaBanco * remainingInstallments,
+      primaTotalTDV: desgPrimaTDV * remainingInstallments,
       devolucion: Math.max(0, Math.round(desgDevolucion)),
     },
     cesantia: {
       primaBanco: cesantiaPrimaBanco,
       primaTDV: cesantiaPrimaTDV,
+      primaTotalBanco: cesantiaPrimaBanco * remainingInstallments,
+      primaTotalTDV: cesantiaPrimaTDV * remainingInstallments,
       devolucion: Math.max(0, Math.round(cesantiaDevolucion)),
     },
     totalDevolucion: Math.round(totalDevolucion),
@@ -158,6 +166,20 @@ export function InsuranceBreakdown({ snapshot }: InsuranceBreakdownProps) {
               </p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Prima Total Banco</p>
+              <p className="font-medium text-sm">
+                <Money value={breakdown.desgravamen.primaTotalBanco} />
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Prima Total TDV</p>
+              <p className="font-medium text-sm text-green-600 dark:text-green-400">
+                <Money value={breakdown.desgravamen.primaTotalTDV} />
+              </p>
+            </div>
+          </div>
           <div className="pt-2 border-t border-blue-200 dark:border-blue-800">
             <p className="text-xs text-muted-foreground">Devolución estimada</p>
             <p className="font-semibold text-blue-700 dark:text-blue-400">
@@ -183,6 +205,20 @@ export function InsuranceBreakdown({ snapshot }: InsuranceBreakdownProps) {
               <p className="text-xs text-muted-foreground">Prima TDV</p>
               <p className="font-medium text-green-600 dark:text-green-400">
                 <Money value={breakdown.cesantia.primaTDV} /> <span className="text-xs text-muted-foreground">/mes</span>
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Prima Total Banco</p>
+              <p className="font-medium text-sm">
+                <Money value={breakdown.cesantia.primaTotalBanco} />
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Prima Total TDV</p>
+              <p className="font-medium text-sm text-green-600 dark:text-green-400">
+                <Money value={breakdown.cesantia.primaTotalTDV} />
               </p>
             </div>
           </div>
