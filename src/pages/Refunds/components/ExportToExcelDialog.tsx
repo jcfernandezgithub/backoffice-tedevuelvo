@@ -150,10 +150,8 @@ function prepareExcelData(
       'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
 
       // === DESGLOSE DESGRAVAMEN / CESANTÍA ===
-      'Prima Mensual Desgravamen Banco': breakdown?.desgravamen.primaBanco ?? '',
       'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV ?? '',
       'Devolución Desgravamen': breakdown?.desgravamen.devolucion ?? '',
-      'Prima Mensual Cesantía Banco': breakdown?.cesantia.primaBanco ?? '',
       'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV ?? '',
       'Devolución Cesantía': breakdown?.cesantia.devolucion ?? '',
       
