@@ -37,6 +37,7 @@ import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
 import { Money } from '@/components/common/Money'
+import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -760,9 +761,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                     <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
                       {JSON.stringify(refund.calculationSnapshot, null, 2)}
                     </pre>
-                  )}
+                )}
                 </div>
               )}
+
+              {/* Desglose por tipo de seguro (solo para "ambos") */}
+              <InsuranceBreakdown snapshot={refund.calculationSnapshot} />
             </CardContent>
           </Card>
         </TabsContent>
