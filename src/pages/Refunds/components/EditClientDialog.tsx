@@ -84,7 +84,14 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
     phone: refund.phone || '',
     institutionId: refund.institutionId || '',
     estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
-    realAmount: (refund as any).realAmount ?? undefined,
+    realAmount: (() => {
+      if ((refund as any).realAmount) return (refund as any).realAmount
+      // Buscar realAmount en statusHistory (payment_scheduled o paid)
+      const entry = [...(refund.statusHistory || [])].reverse().find(
+        (e) => (e.to === 'payment_scheduled' || e.to === 'paid') && e.realAmount
+      )
+      return entry?.realAmount ?? undefined
+    })(),
     birthDate: refund.calculationSnapshot?.birthDate
       ? (() => {
           const d = new Date(refund.calculationSnapshot.birthDate)
