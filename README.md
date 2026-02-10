@@ -1,8 +1,25 @@
 # Welcome to your Lovable project
 
-## Versión 2.2.0
+## Versión 2.2.1
 
 ## Changelog
+
+### Versión 2.2.1 - 2026-02-10
+
+#### Notificaciones por Correo en Cambios de Estado
+- **Envío automático de correos**: Al cambiar el estado de una solicitud a SUBMITTED, PAYMENT_SCHEDULED, REJECTED, PAID o DOCS_RECEIVED, se envía una notificación por correo electrónico.
+  - Destinatario: `dalia.mardones@tedevuelvo.cl`
+  - Integración vía webhook n8n: `https://gary-tester.app.n8n.cloud/webhook/6f73e927-434b-4a37-9e66-d72a905e5b53`
+
+#### Mejoras en Exportación Excel
+- **Columnas removidas**: Eliminadas "Prima Mensual Desgravamen Banco" y "Prima Mensual Cesantía Banco" de la exportación Excel.
+
+#### Mejoras en Edición de Solicitudes
+- **Montos de devolución en snapshot**: Agregados campos "Monto estimado devolución" y "Monto real devolución" al editor de snapshot.
+  - Pre-llenado automático de monto real desde `statusHistory` (entradas `payment_scheduled` o `paid`).
+  - Campos root-level enviados directamente al backend, separados del `calculationSnapshot`.
+
+---
 
 ### Versión 2.2.0 - 2026-02-06
 
