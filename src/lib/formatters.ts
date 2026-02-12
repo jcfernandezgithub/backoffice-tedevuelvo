@@ -1,6 +1,16 @@
 // Format date to locale string
 export const formatDate = (dateStr: string | Date) => {
   try {
+    // For string dates, try to extract date parts directly to avoid timezone shift
+    if (typeof dateStr === 'string') {
+      const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        return `${parseInt(day)} de ${months[parseInt(month) - 1]} de ${year}`;
+      }
+    }
+    
     const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
     
     if (isNaN(date.getTime())) {

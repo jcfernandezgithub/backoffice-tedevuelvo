@@ -251,8 +251,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const formatBirthDate = (dateString?: string) => {
     if (!dateString) return 'N/A'
     try {
+      // Extract date parts directly from ISO string to avoid timezone shift
+      const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (match) {
+        const [, year, month, day] = match
+        return `${day}/${month}/${year}`
+      }
       const date = new Date(dateString)
-      if (isNaN(date.getTime())) return dateString // Return raw if unparseable
+      if (isNaN(date.getTime())) return dateString
       const day = String(date.getDate()).padStart(2, '0')
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const year = date.getFullYear()
