@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 2.2.1
+## Versión 2.2.2
 
 ## Changelog
+
+### Versión 2.2.2 - 2026-02-12
+
+#### Corrección de Fechas (Timezone)
+- **Fix de fecha de nacimiento**: Corregido bug donde la fecha de nacimiento se mostraba un día menos en la vista de detalle, previsualización de certificados y PDFs.
+  - Causa: `new Date("1976-02-02T00:00:00.000+00:00")` en zona horaria Chile (UTC-3/4) se desplazaba al día anterior.
+  - Solución: Extracción directa de componentes de fecha desde el string ISO (`YYYY-MM-DD`) sin pasar por `new Date()`.
+  - Aplicado en: Vista de detalle, Certificado Desgravamen, Certificado Cesantía, Certificado Banco de Chile y `formatDate` global.
+
+---
 
 ### Versión 2.2.1 - 2026-02-10
 
