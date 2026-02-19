@@ -5,16 +5,15 @@
 
 const institutionHomologations: Record<string, string> = {
   chile: 'BANCO DE CHILE',
-  // Agregar más homologaciones aquí:
-  // santander: 'BANCO SANTANDER CHILE',
-  // bci: 'BANCO DE CRÉDITO E INVERSIONES',
-  // estado: 'BANCO DEL ESTADO DE CHILE',
-  // scotiabank: 'SCOTIABANK CHILE',
-  // itau: 'BANCO ITAÚ CHILE',
-  // security: 'BANCO SECURITY',
-  // bice: 'BANCO BICE',
-  // falabella: 'BANCO FALABELLA',
-  // ripley: 'BANCO RIPLEY',
+  santander: 'BANCO SANTANDER CHILE',
+  bci: 'BANCO DE CRÉDITO E INVERSIONES',
+  estado: 'BANCO DEL ESTADO DE CHILE',
+  scotiabank: 'SCOTIABANK CHILE',
+  itau: 'BANCO ITAÚ CHILE',
+  security: 'BANCO SECURITY',
+  bice: 'BANCO BICE',
+  falabella: 'BANCO FALABELLA',
+  ripley: 'BANCO RIPLEY',
 }
 
 /**
