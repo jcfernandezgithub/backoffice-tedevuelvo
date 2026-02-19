@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FileText, Download, Loader2, ImageOff } from 'lucide-react'
+import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import firmaImg from '@/assets/firma-cng.jpeg'
+import cedulaFrenteImg from '@/assets/cedula-frente.jpg'
+import cedulaDorsoImg from '@/assets/cedula-dorso.jpg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
-import { publicFilesApi } from '@/services/publicFilesApi'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
@@ -133,54 +134,28 @@ function generateGenericPDF(
 // ──────────────────────────────────────────
 // Generador PDF — Formato SANTANDER
 // ──────────────────────────────────────────
-async function generateSantanderPDF(
+function generateSantanderPDF(
   refund: RefundRequest,
   formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string },
-  idImages: { front?: string; back?: string },
 ) {
   const today = new Date()
   const day = today.getDate()
   const month = today.toLocaleDateString('es-CL', { month: 'long' })
   const year = today.getFullYear()
 
-  // Convertir blob URLs a base64 para embeber en el HTML del PDF
-  const toBase64 = async (blobUrl: string): Promise<string> => {
-    try {
-      const res = await fetch(blobUrl)
-      const blob = await res.blob()
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    } catch {
-      return ''
-    }
-  }
-
-  const frontBase64 = idImages.front ? await toBase64(idImages.front) : ''
-  const backBase64 = idImages.back ? await toBase64(idImages.back) : ''
-
   const idPageContent = `
     <div style="page-break-before: always;">
       <h3 style="text-align: center; font-size: 12pt; margin-bottom: 20px;">CÉDULA DE IDENTIDAD</h3>
-      ${(frontBase64 || backBase64) ? `
       <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-        ${frontBase64 ? `
         <div style="text-align: center; flex: 1; min-width: 220px;">
           <p style="font-weight: bold; margin-bottom: 8px;">Frente</p>
-          <img src="${frontBase64}" alt="Cédula Frente" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
-        </div>` : ''}
-        ${backBase64 ? `
+          <img src="${cedulaFrenteImg}" alt="Cédula Frente" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
+        </div>
         <div style="text-align: center; flex: 1; min-width: 220px;">
           <p style="font-weight: bold; margin-bottom: 8px;">Dorso</p>
-          <img src="${backBase64}" alt="Cédula Dorso" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
-        </div>` : ''}
-      </div>` : `
-      <p style="text-align: center; color: #888; font-style: italic; margin-top: 40px;">
-        Imágenes de cédula de identidad no disponibles
-      </p>`}
+          <img src="${cedulaDorsoImg}" alt="Cédula Dorso" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
+        </div>
+      </div>
     </div>`
 
   const content = `
@@ -492,13 +467,11 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
 interface SantanderPreviewProps {
   refund: RefundRequest
   formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string }
-  idImages: { front?: string; back?: string }
-  loadingImages: boolean
   onEdit: () => void
   onDownload: () => void
 }
 
-function SantanderPreview({ refund, formData, idImages, loadingImages, onEdit, onDownload }: SantanderPreviewProps) {
+function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPreviewProps) {
   const today = new Date()
   return (
     <div className="space-y-4">
@@ -545,38 +518,22 @@ function SantanderPreview({ refund, formData, idImages, loadingImages, onEdit, o
         {/* Segunda página: Cédula de Identidad */}
         <div className="mt-8 pt-6 border-t border-dashed border-border">
           <h4 className="text-center font-bold mb-4 text-sm tracking-wide">— CÉDULA DE IDENTIDAD —</h4>
-          {loadingImages ? (
-            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-xs">Cargando imágenes...</span>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <div className="text-center flex-1 min-w-[180px]">
+              <p className="text-xs font-semibold mb-1">Frente</p>
+              <img src={cedulaFrenteImg} alt="Cédula Frente" className="max-h-48 w-auto border rounded mx-auto" />
             </div>
-          ) : (idImages.front || idImages.back) ? (
-            <div className="flex gap-4 justify-center flex-wrap">
-              {idImages.front && (
-                <div className="text-center flex-1 min-w-[180px]">
-                  <p className="text-xs font-semibold mb-1">Frente</p>
-                  <img src={idImages.front} alt="Cédula Frente" className="max-h-48 w-auto border rounded mx-auto" />
-                </div>
-              )}
-              {idImages.back && (
-                <div className="text-center flex-1 min-w-[180px]">
-                  <p className="text-xs font-semibold mb-1">Dorso</p>
-                  <img src={idImages.back} alt="Cédula Dorso" className="max-h-48 w-auto border rounded mx-auto" />
-                </div>
-              )}
+            <div className="text-center flex-1 min-w-[180px]">
+              <p className="text-xs font-semibold mb-1">Dorso</p>
+              <img src={cedulaDorsoImg} alt="Cédula Dorso" className="max-h-48 w-auto border rounded mx-auto" />
             </div>
-          ) : (
-            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-              <ImageOff className="h-4 w-4" />
-              <span className="text-xs">Imágenes de cédula no disponibles</span>
-            </div>
-          )}
+          </div>
         </div>
       </div>
       <div className="flex gap-2">
         <Button variant="outline" onClick={onEdit} className="flex-1">Editar</Button>
-        <Button onClick={onDownload} className="flex-1" disabled={loadingImages}>
-          {loadingImages ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+        <Button onClick={onDownload} className="flex-1">
+          <Download className="h-4 w-4 mr-2" />
           Descargar PDF
         </Button>
       </div>
@@ -590,50 +547,17 @@ function SantanderPreview({ refund, formData, idImages, loadingImages, onEdit, o
 export function GenerateCorteDialog({ refund, isMandateSigned = false }: GenerateCorteDialogProps) {
   const [open, setOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
-  const [idImages, setIdImages] = useState<{ front?: string; back?: string }>({})
-  const [loadingImages, setLoadingImages] = useState(false)
 
   const isSantander = refund.institutionId?.toLowerCase() === 'santander'
 
-  // Estado para vista previa genérica
   const [genericData, setGenericData] = useState<{
     formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
     hasPolicyNumber: boolean
   } | null>(null)
 
-  // Estado para vista previa Santander
   const [santanderData, setSantanderData] = useState<{
     creditNumber: string; bankName: string; companyName: string; insuranceName: string
   } | null>(null)
-
-  // Cargar imágenes de cédula al abrir el diálogo (solo Santander)
-  useEffect(() => {
-    if (!isSantander || !open || !refund.clientTokenHash) return
-
-    setLoadingImages(true)
-    const publicId = refund.publicId
-    const token = refund.clientTokenHash
-
-    Promise.allSettled([
-      publicFilesApi.getIdImageBlob(publicId, 'id-front', token),
-      publicFilesApi.getIdImageBlob(publicId, 'id-back', token),
-    ]).then(([frontResult, backResult]) => {
-      const newImages: { front?: string; back?: string } = {}
-      if (frontResult.status === 'fulfilled') newImages.front = URL.createObjectURL(frontResult.value)
-      if (backResult.status === 'fulfilled') newImages.back = URL.createObjectURL(backResult.value)
-      setIdImages(newImages)
-    }).finally(() => {
-      setLoadingImages(false)
-    })
-
-    return () => {
-      setIdImages(prev => {
-        if (prev.front) URL.revokeObjectURL(prev.front)
-        if (prev.back) URL.revokeObjectURL(prev.back)
-        return {}
-      })
-    }
-  }, [isSantander, open, refund.publicId, refund.clientTokenHash])
 
   const handleClose = () => {
     setOpen(false)
@@ -710,10 +634,8 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
           <SantanderPreview
             refund={refund}
             formData={santanderData}
-            idImages={idImages}
-            loadingImages={loadingImages}
             onEdit={() => setShowPreview(false)}
-            onDownload={() => generateSantanderPDF(refund, santanderData, idImages)}
+            onDownload={() => generateSantanderPDF(refund, santanderData)}
           />
         )}
       </DialogContent>
