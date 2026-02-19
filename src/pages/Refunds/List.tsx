@@ -190,6 +190,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     origin: searchParams.get('origin') || 'all',
     bank: searchParams.get('bank') || 'all',
     insuranceType: searchParams.get('insuranceType') || 'all',
+    alliance: searchParams.get('alliance') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -375,6 +376,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       origin: originFilter,
       bank: bankFilter,
       insuranceType: insuranceTypeFilter,
+      alliance: allianceFilter,
     })
     
     // Actualizar URL params
@@ -443,6 +445,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       origin: 'all',
       bank: 'all',
       insuranceType: 'all',
+      alliance: 'all',
     })
     setSearchParams(new URLSearchParams())
   }
@@ -664,6 +667,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = appliedLocalFilters.bank === 'ready'
         ? result.filter((r: any) => r.bankInfo)
         : result.filter((r: any) => !r.bankInfo)
+    }
+    
+    // Filtro de alianza específica (backend no soporta partnerId, solo isPartner)
+    if (appliedLocalFilters.alliance !== 'all') {
+      result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
     
     // En modo histórico, filtrar por solicitudes que estuvieron en el estado seleccionado
