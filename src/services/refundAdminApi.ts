@@ -35,6 +35,7 @@ export interface SearchParams {
   insuranceToEvaluate?: string
   isPartner?: 0 | 1
   hasBankInfo?: 0 | 1
+  partnerId?: string
 }
 
 export interface SearchResponse {
@@ -72,6 +73,7 @@ class RefundAdminApiClient {
     if (params.insuranceToEvaluate) query.append('insuranceToEvaluate', params.insuranceToEvaluate.toUpperCase())
     if (params.isPartner !== undefined) query.append('isPartner', String(params.isPartner))
     if (params.hasBankInfo !== undefined) query.append('hasBankInfo', String(params.hasBankInfo))
+    if (params.partnerId) query.append('partnerId', params.partnerId)
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/search?${query}`, {
       headers: await this.getAuthHeaders(),

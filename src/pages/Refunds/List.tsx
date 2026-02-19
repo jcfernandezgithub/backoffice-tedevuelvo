@@ -182,6 +182,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
   const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
   const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
+  const [allianceFilter, setAllianceFilter] = useState<string>(searchParams.get('alliance') || 'all')
 
   // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
   const [appliedLocalFilters, setAppliedLocalFilters] = useState({
@@ -330,7 +331,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     // Construir parámetros para el nuevo endpoint search
     // isPartner: 0 = directo (sin partnerId), 1 = alianza (con partnerId)
     let isPartnerValue: 0 | 1 | undefined = undefined
-    if (originFilter === 'directo') {
+    if (allianceFilter !== 'all') {
+      // Si se seleccionó una alianza específica, forzar isPartner=1
+      isPartnerValue = 1
+    } else if (originFilter === 'directo') {
       isPartnerValue = 0
     } else if (originFilter === 'alianza') {
       isPartnerValue = 1
@@ -359,6 +363,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
       isPartner: isPartnerValue,
       hasBankInfo: hasBankInfoValue,
+      partnerId: allianceFilter !== 'all' ? allianceFilter : undefined,
     }
     
     setSearchFilters(newSearchFilters)
@@ -381,6 +386,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (mandateFilter !== 'all') params.set('mandate', mandateFilter)
     if (bankFilter !== 'all') params.set('bank', bankFilter)
     if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
+    if (allianceFilter !== 'all') params.set('alliance', allianceFilter)
     params.set('page', '1')
     setSearchParams(params)
   }
@@ -430,6 +436,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setOriginFilter('all')
     setBankFilter('all')
     setInsuranceTypeFilter('all')
+    setAllianceFilter('all')
     setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
@@ -830,6 +837,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <SelectItem value="desgravamen">Desgravamen</SelectItem>
                 <SelectItem value="cesantia">Cesantía</SelectItem>
                 <SelectItem value="ambos">Ambos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={allianceFilter}
+              onValueChange={setAllianceFilter}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Alianza" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las alianzas</SelectItem>
+                {partnersData?.items?.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nombre}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
