@@ -34,6 +34,7 @@ import { ExportToExcelDialog } from './components/ExportToExcelDialog'
 import { MobileCard } from '@/components/common/MobileCard'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+import { AllianceCombobox } from './components/AllianceCombobox'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -840,22 +841,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               </SelectContent>
             </Select>
 
-            <Select
+            <AllianceCombobox
               value={allianceFilter}
-              onValueChange={setAllianceFilter}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Alianza" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las alianzas</SelectItem>
-                {partnersData?.items?.map((p: any) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={setAllianceFilter}
+              partners={partnersData?.items || []}
+            />
           </div>
 
 
