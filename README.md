@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 2.2.2
+## Versión 2.2.3
 
 ## Changelog
+
+### Versión 2.2.3 - 2026-02-19
+
+#### Carta de Corte Banco Santander - Imágenes de Cédula
+- **Segunda hoja con cédula de identidad**: La carta de corte para Banco Santander ahora incluye una segunda página con las imágenes de la cédula de identidad del representante (Cristian Nieto Gavilán).
+  - Imágenes estáticas (frente y dorso) adjuntas directamente al PDF generado.
+  - Segunda página siempre presente en el documento Santander, tanto en vista previa como en PDF descargado.
+
+---
 
 ### Versión 2.2.2 - 2026-02-12
 
