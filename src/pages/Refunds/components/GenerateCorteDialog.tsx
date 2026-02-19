@@ -162,9 +162,10 @@ async function generateSantanderPDF(
   const frontBase64 = idImages.front ? await toBase64(idImages.front) : ''
   const backBase64 = idImages.back ? await toBase64(idImages.back) : ''
 
-  const idPageContent = (frontBase64 || backBase64) ? `
+  const idPageContent = `
     <div style="page-break-before: always;">
       <h3 style="text-align: center; font-size: 12pt; margin-bottom: 20px;">CÉDULA DE IDENTIDAD</h3>
+      ${(frontBase64 || backBase64) ? `
       <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
         ${frontBase64 ? `
         <div style="text-align: center; flex: 1; min-width: 220px;">
@@ -176,8 +177,11 @@ async function generateSantanderPDF(
           <p style="font-weight: bold; margin-bottom: 8px;">Dorso</p>
           <img src="${backBase64}" alt="Cédula Dorso" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
         </div>` : ''}
-      </div>
-    </div>` : ''
+      </div>` : `
+      <p style="text-align: center; color: #888; font-style: italic; margin-top: 40px;">
+        Imágenes de cédula de identidad no disponibles
+      </p>`}
+    </div>`
 
   const content = `
     <html>
@@ -602,9 +606,9 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
     creditNumber: string; bankName: string; companyName: string; insuranceName: string
   } | null>(null)
 
-  // Cargar imágenes de cédula cuando se entra en modo Santander preview
+  // Cargar imágenes de cédula al abrir el diálogo (solo Santander)
   useEffect(() => {
-    if (!isSantander || !showPreview || !refund.clientTokenHash) return
+    if (!isSantander || !open || !refund.clientTokenHash) return
 
     setLoadingImages(true)
     const publicId = refund.publicId
@@ -629,7 +633,7 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
         return {}
       })
     }
-  }, [isSantander, showPreview, refund.publicId, refund.clientTokenHash])
+  }, [isSantander, open, refund.publicId, refund.clientTokenHash])
 
   const handleClose = () => {
     setOpen(false)
