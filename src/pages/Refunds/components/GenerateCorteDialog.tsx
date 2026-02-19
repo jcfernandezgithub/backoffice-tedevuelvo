@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
 import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
@@ -17,13 +16,6 @@ interface GenerateCorteDialogProps {
   isMandateSigned?: boolean
 }
 
-interface CorteFormData {
-  creditNumber: string
-  policyNumber: string
-  bankName: string
-  companyName: string
-}
-
 // Datos fijos para cuenta bancaria y contacto
 const FIXED_ACCOUNT_DATA = {
   accountNumber: '992866721',
@@ -34,181 +26,514 @@ const FIXED_ACCOUNT_DATA = {
   contactPhone: '+569 84295935',
 }
 
-export function GenerateCorteDialog({ refund, isMandateSigned = false }: GenerateCorteDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
-  const [formData, setFormData] = useState<CorteFormData>({
-    creditNumber: '',
-    policyNumber: '',
-    bankName: getInstitutionDisplayName(refund.institutionId),
-    companyName: '',
-  })
+// Helper: obtiene el nombre del seguro según tipo
+function getInsuranceName(insuranceType: string | null): string {
+  if (!insuranceType) return ''
+  const t = insuranceType.toLowerCase()
+  if (t === 'desgravamen') return 'Seguro de Desgravamen'
+  if (t === 'cesantia') return 'Seguro de Cesantía'
+  if (t === 'ambos') return 'Seguro de Desgravamen y Cesantía'
+  return insuranceType
+}
 
-  const handleInputChange = (field: keyof CorteFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+// Helper: obtiene el tipo de seguro desde calculationSnapshot
+function getInsuranceType(snapshot: any): string | null {
+  if (!snapshot) return null
+  if (snapshot.tipoSeguro) return snapshot.tipoSeguro
+  if (snapshot.insuranceToEvaluate) return snapshot.insuranceToEvaluate
+  return null
+}
 
-  const validateForm = () => {
-    const required = hasPolicyNumber 
-      ? ['creditNumber', 'policyNumber', 'companyName']
-      : ['creditNumber', 'companyName']
-    
-    const missing = required.filter(field => !formData[field as keyof CorteFormData])
-    
-    if (missing.length > 0) {
+// ──────────────────────────────────────────
+// Generador PDF — Formato GENÉRICO
+// ──────────────────────────────────────────
+function generateGenericPDF(
+  refund: RefundRequest,
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string },
+  hasPolicyNumber: boolean,
+) {
+  const today = new Date()
+  const day = today.getDate()
+  const month = today.toLocaleDateString('es-CL', { month: 'long' })
+  const year = today.getFullYear()
+
+  const creditText = hasPolicyNumber
+    ? `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
+    : `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
+
+  const content = `
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @page { margin: 1.5cm 2cm; size: letter; }
+          body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #000; }
+          .header { text-align: left; margin-bottom: 15px; }
+          .title { text-align: center; font-weight: bold; font-size: 11pt; margin: 12px 0; }
+          .content { text-align: justify; margin: 10px 0; }
+          .content p { margin: 8px 0; }
+          .signature { margin-top: 30px; text-align: center; page-break-inside: avoid; }
+        </style>
+      </head>
+      <body>
+        <div class="header">Santiago, ${day} de ${month} de ${year}</div>
+        <div class="header">
+          Sres.: ${formData.companyName}<br>
+          Atención: Servicio al Cliente (Post-Venta)<br><br>
+          Ref: Carta de Renuncia al seguro que indica
+        </div>
+        <div class="title">
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br>
+          Y SOLICITA DEVOLUCIÓN DE PRIMA NO DEVENGADA
+        </div>
+        <div class="content">
+          <p>
+            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> 
+            RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, actuando en representación y por cuenta de 
+            don (doña) <strong>${refund.fullName}</strong>, cédula de identidad 
+            <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
+            Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
+            con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
+            ${creditText}
+          </p>
+          <p>
+            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión 
+            para el Mercado Financiero (CMF), solicitamos la devolución de la prima 
+            pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
+            N° <strong>${FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>${FIXED_ACCOUNT_DATA.accountBank}</strong> 
+            cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, RUT: 
+            <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico 
+            <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir 
+            deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, 
+            conforme a la normativa vigente.
+          </p>
+          <p>
+            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta 
+            para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre 
+            del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos 
+            que se nos informe el resultado de esta gestión al correo electrónico 
+            <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número telefónico 
+            <strong>${FIXED_ACCOUNT_DATA.contactPhone}</strong>.
+          </p>
+          <p>Sin otro particular, se despiden atentamente,</p>
+        </div>
+        <div class="signature">
+          <img src="${firmaImg}" alt="Firma" style="width: 180px; height: auto; margin: 20px auto 10px; display: block;">
+          <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán</p>
+          <p style="margin: 5px 0;">p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}</p>
+        </div>
+      </body>
+    </html>
+  `
+
+  openPrintWindow(content)
+}
+
+// ──────────────────────────────────────────
+// Generador PDF — Formato SANTANDER
+// ──────────────────────────────────────────
+function generateSantanderPDF(
+  refund: RefundRequest,
+  formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string },
+) {
+  const today = new Date()
+  const day = today.getDate()
+  const month = today.toLocaleDateString('es-CL', { month: 'long' })
+  const year = today.getFullYear()
+
+  const content = `
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @page { margin: 1.5cm 2cm; size: letter; }
+          body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; color: #000; }
+          .header { text-align: left; margin-bottom: 15px; }
+          .title { text-align: center; font-weight: bold; font-size: 11pt; margin: 12px 0; }
+          .content { text-align: justify; margin: 10px 0; }
+          .content p { margin: 8px 0; }
+          .signature { margin-top: 30px; text-align: center; page-break-inside: avoid; }
+        </style>
+      </head>
+      <body>
+        <div class="header">Santiago, ${day} de ${month} de ${year}</div>
+        <div class="header">
+          Sres.: ${formData.companyName}<br>
+          Atención: Servicio al Cliente<br><br>
+          Ref: Carta de Renuncia al seguro que indica
+        </div>
+        <div class="title">
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br>
+          Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
+        </div>
+        <div class="content">
+          <p>
+            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> 
+            RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, actuando en representación y por cuenta de 
+            don (doña) <strong>${refund.fullName}</strong>, cédula de identidad 
+            <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
+            Aseguradora<strong>${formData.companyName ? ' ' + formData.companyName : ''}</strong> la renuncia al seguro 
+            <strong>${formData.insuranceName}</strong> y su cobertura que fuera contratado junto 
+            con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
+            que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, 
+            todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.
+          </p>
+          <p>
+            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión 
+            para el Mercado Financiero (CMF), solicitamos la devolución de la prima pagada y no devengada o 
+            consumida, la que deberá ser abonada a la cuenta corriente 
+            N° <strong>${FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>${FIXED_ACCOUNT_DATA.accountBank}</strong> 
+            cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, 
+            RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico 
+            <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir 
+            deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, 
+            conforme a la normativa vigente.
+          </p>
+          <p>
+            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar 
+            y tramitar la renuncia del seguro antes mencionado y recaudar a nombre del asegurado la 
+            devolución de las primas pagadas no devengadas, por lo cual solicitamos que se nos informe el 
+            resultado de esta gestión al correo electrónico <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong> y 
+            al número telefónico <strong>${FIXED_ACCOUNT_DATA.contactPhone}</strong>.
+          </p>
+          <p>Sin otro particular, se despiden atentamente,</p>
+        </div>
+        <div class="signature">
+          <img src="${firmaImg}" alt="Firma" style="width: 180px; height: auto; margin: 20px auto 10px; display: block;">
+          <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán / Rut: 13040385-9</p>
+          <p style="margin: 5px 0;">p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}</p>
+        </div>
+      </body>
+    </html>
+  `
+
+  openPrintWindow(content)
+}
+
+function openPrintWindow(content: string) {
+  const printWindow = window.open('', '_blank')
+  if (printWindow) {
+    printWindow.document.write(content)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
       toast({
-        title: 'Campos requeridos',
-        description: 'Por favor completa todos los campos obligatorios',
-        variant: 'destructive',
+        title: 'Carta generada',
+        description: 'Utiliza la función de impresión para guardar como PDF',
       })
-      return false
-    }
-    return true
+    }, 250)
   }
+}
+
+// ──────────────────────────────────────────
+// Formulario GENÉRICO
+// ──────────────────────────────────────────
+interface GenericFormProps {
+  refund: RefundRequest
+  onGenerate: (data: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }, hasPolicyNumber: boolean) => void
+}
+
+function GenericForm({ refund, onGenerate }: GenericFormProps) {
+  const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
+  const [creditNumber, setCreditNumber] = useState('')
+  const [policyNumber, setPolicyNumber] = useState('')
+  const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
+  const [companyName, setCompanyName] = useState('')
 
   const handleGenerate = () => {
-    if (!validateForm()) return
-    setShowPreview(true)
-  }
-
-  const generatePDF = () => {
-    const today = new Date()
-    const day = today.getDate()
-    const month = today.toLocaleDateString('es-CL', { month: 'long' })
-    const year = today.getFullYear()
-
-    // Texto adaptado según si tiene o no número de póliza
-    const creditText = hasPolicyNumber 
-      ? `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
-      : `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
-
-    const content = `
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            @page { 
-              margin: 1.5cm 2cm; 
-              size: letter;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              font-size: 10pt;
-              line-height: 1.4;
-              color: #000;
-            }
-            .header {
-              text-align: left;
-              margin-bottom: 15px;
-            }
-            .title {
-              text-align: center;
-              font-weight: bold;
-              font-size: 11pt;
-              margin: 12px 0;
-            }
-            .content {
-              text-align: justify;
-              margin: 10px 0;
-            }
-            .content p {
-              margin: 8px 0;
-            }
-            .signature {
-              margin-top: 30px;
-              text-align: center;
-              page-break-inside: avoid;
-            }
-            .signature-line {
-              border-top: 1px solid #000;
-              width: 250px;
-              margin: 20px auto 10px;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            Santiago, ${day} de ${month} de ${year}
-          </div>
-          
-          <div class="header">
-            Sres.: ${formData.companyName}<br>
-            Atención: Servicio al Cliente (Post-Venta)<br><br>
-            Ref: Carta de Renuncia al seguro que indica
-          </div>
-
-          <div class="title">
-            INFORMA TÉRMINO ANTICIPADO DE SEGURO<br>
-            Y SOLICITA DEVOLUCIÓN DE PRIMA NO DEVENGADA
-          </div>
-
-          <div class="content">
-            <p>
-              Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> 
-              RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, actuando en representación y por cuenta de 
-              don (doña) <strong>${refund.fullName}</strong>, cédula de identidad 
-              <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
-              Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
-              con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
-              ${creditText}
-            </p>
-
-            <p>
-              Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión 
-              para el Mercado Financiero (CMF), solicitamos la devolución de la prima 
-              pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
-              N° <strong>${FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>${FIXED_ACCOUNT_DATA.accountBank}</strong> 
-              cuyo titular es <strong>${FIXED_ACCOUNT_DATA.accountHolder}</strong>, RUT: 
-              <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico 
-              <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir 
-              deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, 
-              conforme a la normativa vigente.
-            </p>
-
-            <p>
-              Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta 
-              para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre 
-              del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos 
-              que se nos informe el resultado de esta gestión al correo electrónico 
-              <strong>${FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número telefónico 
-              <strong>${FIXED_ACCOUNT_DATA.contactPhone}</strong>.
-            </p>
-
-            <p>
-              Sin otro particular, se despiden atentamente,
-            </p>
-          </div>
-
-          <div class="signature">
-            <img src="${firmaImg}" alt="Firma" style="width: 180px; height: auto; margin: 20px auto 10px; display: block;">
-            <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán</p>
-            <p style="margin: 5px 0;">
-              p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}
-            </p>
-          </div>
-        </body>
-      </html>
-    `
-
-    const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      printWindow.document.write(content)
-      printWindow.document.close()
-      printWindow.focus()
-      
-      setTimeout(() => {
-        printWindow.print()
-        toast({
-          title: 'Carta generada',
-          description: 'Utiliza la función de impresión para guardar como PDF',
-        })
-      }, 250)
+    const required = hasPolicyNumber
+      ? [creditNumber, policyNumber, companyName]
+      : [creditNumber, companyName]
+    if (required.some(v => !v.trim())) {
+      toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
+      return
     }
+    onGenerate({ creditNumber, policyNumber, bankName, companyName }, hasPolicyNumber)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <div className="space-y-4 py-4">
+      <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+        <Checkbox id="hasPolicyNumber" checked={hasPolicyNumber} onCheckedChange={(c) => setHasPolicyNumber(c as boolean)} />
+        <Label htmlFor="hasPolicyNumber" className="text-sm font-normal cursor-pointer">Tengo número de póliza</Label>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Nombre del cliente</Label>
+          <Input value={refund.fullName} disabled className="bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <Label>RUT del cliente</Label>
+          <Input value={refund.rut} disabled className="bg-muted" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="companyName">Compañía de Seguros *</Label>
+        <Input id="companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ej: MAPFRE Seguros Generales de Chile S.A." />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="creditNumber">Nº de Crédito *</Label>
+          <Input id="creditNumber" value={creditNumber} onChange={e => setCreditNumber(e.target.value)} placeholder="Número de operación de crédito" />
+        </div>
+        {hasPolicyNumber && (
+          <div className="space-y-2">
+            <Label htmlFor="policyNumber">Póliza Nº *</Label>
+            <Input id="policyNumber" value={policyNumber} onChange={e => setPolicyNumber(e.target.value)} placeholder="Número de póliza" />
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="bankName">Banco (Crédito)</Label>
+        <Input id="bankName" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Nombre del banco que otorgó el crédito" />
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <Button onClick={handleGenerate} className="flex-1">Vista Previa</Button>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────
+// Formulario SANTANDER
+// ──────────────────────────────────────────
+interface SantanderFormProps {
+  refund: RefundRequest
+  onGenerate: (data: { creditNumber: string; bankName: string; companyName: string; insuranceName: string }) => void
+}
+
+function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
+  const rawInsuranceType = getInsuranceType(refund.calculationSnapshot)
+  const derivedInsuranceName = getInsuranceName(rawInsuranceType)
+
+  const [creditNumber, setCreditNumber] = useState('')
+  const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
+  const [companyName, setCompanyName] = useState('')
+  const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
+
+  const handleGenerate = () => {
+    if (!creditNumber.trim() || !companyName.trim() || !insuranceName.trim()) {
+      toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
+      return
+    }
+    onGenerate({ creditNumber, bankName, companyName, insuranceName })
+  }
+
+  return (
+    <div className="space-y-4 py-4">
+      {/* Badge indicador formato Santander */}
+      <div className="flex items-center gap-2 p-3 border rounded-lg bg-primary/10 border-primary/30">
+        <FileText className="h-4 w-4 text-primary shrink-0" />
+        <span className="text-sm text-primary font-medium">Formato especial Banco Santander</span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Nombre del cliente</Label>
+          <Input value={refund.fullName} disabled className="bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <Label>RUT del cliente</Label>
+          <Input value={refund.rut} disabled className="bg-muted" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="s-companyName">Compañía de Seguros *</Label>
+        <Input id="s-companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ej: BCI Seguros Generales S.A." />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="s-creditNumber">Nº de Crédito *</Label>
+          <Input id="s-creditNumber" value={creditNumber} onChange={e => setCreditNumber(e.target.value)} placeholder="Número de operación de crédito" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="s-bankName">Banco (Crédito)</Label>
+          <Input id="s-bankName" value={bankName} onChange={e => setBankName(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="s-insuranceName">
+          Tipo de Seguro *
+          {derivedInsuranceName && (
+            <span className="ml-2 text-xs text-muted-foreground font-normal">(precargado desde la solicitud)</span>
+          )}
+        </Label>
+        <Input
+          id="s-insuranceName"
+          value={insuranceName}
+          onChange={e => setInsuranceName(e.target.value)}
+          placeholder="Ej: Seguro de Desgravamen"
+        />
+      </div>
+
+      <div className="flex gap-2 pt-4">
+        <Button onClick={handleGenerate} className="flex-1">Vista Previa</Button>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────
+// Vista previa GENÉRICA
+// ──────────────────────────────────────────
+interface GenericPreviewProps {
+  refund: RefundRequest
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
+  hasPolicyNumber: boolean
+  onEdit: () => void
+  onDownload: () => void
+}
+
+function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload }: GenericPreviewProps) {
+  const today = new Date()
+  return (
+    <div className="space-y-4">
+      <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto text-sm">
+        <p className="mb-4">Santiago, {today.getDate()} de {today.toLocaleDateString('es-CL', { month: 'long' })} de {today.getFullYear()}</p>
+        <p>Sres.: {formData.companyName}</p>
+        <p>Atención: Servicio al Cliente (Post-Venta)</p>
+        <p className="mt-2">Ref: Carta de Renuncia al seguro que indica</p>
+        <h3 className="text-center font-bold my-4">
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br />
+          Y SOLICITA DEVOLUCIÓN DE PRIMA NO DEVENGADA
+        </h3>
+        <div className="space-y-3 text-justify">
+          <p>
+            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>,
+            actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>,
+            comunicamos formalmente a esa Compañía Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto
+            con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>, que corresponde a la operación de crédito
+            N°<strong>{formData.creditNumber}</strong>{hasPolicyNumber ? ` asociada a la Póliza N° ${formData.policyNumber}` : ''}, todo ello conforme
+            a lo dispuesto en el artículo 537 del Código de Comercio.
+          </p>
+          <p>
+            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión para el Mercado Financiero (CMF),
+            solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente
+            N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>,
+            RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>.
+          </p>
+          <p>
+            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro
+            antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos
+            que se nos informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número
+            telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
+          </p>
+          <p>Sin otro particular, se despiden atentamente,</p>
+        </div>
+        <div className="text-center mt-12">
+          <img src={firmaImg} alt="Firma" className="w-40 h-auto mx-auto mb-2" />
+          <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
+          <p>p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onEdit} className="flex-1">Editar</Button>
+        <Button onClick={onDownload} className="flex-1"><Download className="h-4 w-4 mr-2" />Descargar PDF</Button>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────
+// Vista previa SANTANDER
+// ──────────────────────────────────────────
+interface SantanderPreviewProps {
+  refund: RefundRequest
+  formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string }
+  onEdit: () => void
+  onDownload: () => void
+}
+
+function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPreviewProps) {
+  const today = new Date()
+  return (
+    <div className="space-y-4">
+      <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto text-sm">
+        <p className="mb-4">Santiago, {today.getDate()} de {today.toLocaleDateString('es-CL', { month: 'long' })} de {today.getFullYear()}</p>
+        <p>Sres.: {formData.companyName}</p>
+        <p>Atención: Servicio al Cliente</p>
+        <p className="mt-2">Ref: Carta de Renuncia al seguro que indica</p>
+        <h3 className="text-center font-bold my-4">
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br />
+          Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
+        </h3>
+        <div className="space-y-3 text-justify">
+          <p>
+            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>,
+            actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>,
+            comunicamos formalmente a esa Compañía Aseguradora <strong>{formData.companyName}</strong> la renuncia al seguro{' '}
+            <strong>{formData.insuranceName}</strong> y su cobertura que fuera contratado junto
+            con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>,
+            que corresponde a la operación de crédito N°<strong>{formData.creditNumber}</strong>,
+            todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.
+          </p>
+          <p>
+            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión para el Mercado Financiero (CMF),
+            solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente
+            N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>,
+            RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>.
+            Se hace presente que el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.
+          </p>
+          <p>
+            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro
+            antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos
+            que se nos informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número
+            telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
+          </p>
+          <p>Sin otro particular, se despiden atentamente,</p>
+        </div>
+        <div className="text-center mt-12">
+          <img src={firmaImg} alt="Firma" className="w-40 h-auto mx-auto mb-2" />
+          <p className="font-semibold">Cristian Andrés Nieto Gavilán / Rut: 13040385-9</p>
+          <p>p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={onEdit} className="flex-1">Editar</Button>
+        <Button onClick={onDownload} className="flex-1"><Download className="h-4 w-4 mr-2" />Descargar PDF</Button>
+      </div>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────
+// Componente principal
+// ──────────────────────────────────────────
+export function GenerateCorteDialog({ refund, isMandateSigned = false }: GenerateCorteDialogProps) {
+  const [open, setOpen] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+
+  const isSantander = refund.institutionId?.toLowerCase() === 'santander'
+
+  // Estado para vista previa genérica
+  const [genericData, setGenericData] = useState<{
+    formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
+    hasPolicyNumber: boolean
+  } | null>(null)
+
+  // Estado para vista previa Santander
+  const [santanderData, setSantanderData] = useState<{
+    creditNumber: string; bankName: string; companyName: string; insuranceName: string
+  } | null>(null)
+
+  const handleClose = () => {
+    setOpen(false)
+    setShowPreview(false)
+    setGenericData(null)
+    setSantanderData(null)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); else setOpen(true) }}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -228,148 +553,56 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
           )}
         </Tooltip>
       </TooltipProvider>
+
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Generar Carta de Renuncia y Término Anticipado de Seguro</DialogTitle>
+          <DialogTitle>
+            Generar Carta de Renuncia y Término Anticipado de Seguro
+            {isSantander && (
+              <span className="ml-2 text-xs font-normal text-primary bg-primary/10 border border-primary/30 rounded px-2 py-0.5">
+                Banco Santander
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
-        {!showPreview ? (
-          <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
-              <Checkbox 
-                id="hasPolicyNumber" 
-                checked={hasPolicyNumber}
-                onCheckedChange={(checked) => setHasPolicyNumber(checked as boolean)}
-              />
-              <Label htmlFor="hasPolicyNumber" className="text-sm font-normal cursor-pointer">
-                Tengo número de póliza
-              </Label>
-            </div>
+        {/* ── GENÉRICO ── */}
+        {!isSantander && !showPreview && (
+          <GenericForm
+            refund={refund}
+            onGenerate={(data, hasPol) => {
+              setGenericData({ formData: data, hasPolicyNumber: hasPol })
+              setShowPreview(true)
+            }}
+          />
+        )}
+        {!isSantander && showPreview && genericData && (
+          <GenericPreview
+            refund={refund}
+            formData={genericData.formData}
+            hasPolicyNumber={genericData.hasPolicyNumber}
+            onEdit={() => setShowPreview(false)}
+            onDownload={() => generateGenericPDF(refund, genericData.formData, genericData.hasPolicyNumber)}
+          />
+        )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nombre del cliente</Label>
-                <Input value={refund.fullName} disabled className="bg-muted" />
-              </div>
-              <div className="space-y-2">
-                <Label>RUT del cliente</Label>
-                <Input value={refund.rut} disabled className="bg-muted" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Compañía de Seguros *</Label>
-              <Input
-                id="companyName"
-                value={formData.companyName}
-                onChange={(e) => handleInputChange('companyName', e.target.value)}
-                placeholder="Ej: MAPFRE Seguros Generales de Chile S.A."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="creditNumber">Nº de Crédito *</Label>
-                <Input
-                  id="creditNumber"
-                  value={formData.creditNumber}
-                  onChange={(e) => handleInputChange('creditNumber', e.target.value)}
-                  placeholder="Número de operación de crédito"
-                />
-              </div>
-              {hasPolicyNumber && (
-                <div className="space-y-2">
-                  <Label htmlFor="policyNumber">Póliza Nº *</Label>
-                  <Input
-                    id="policyNumber"
-                    value={formData.policyNumber}
-                    onChange={(e) => handleInputChange('policyNumber', e.target.value)}
-                    placeholder="Número de póliza"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bankName">Banco (Crédito)</Label>
-              <Input
-                id="bankName"
-                value={formData.bankName}
-                onChange={(e) => handleInputChange('bankName', e.target.value)}
-                placeholder="Nombre del banco que otorgó el crédito"
-              />
-            </div>
-
-
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleGenerate} className="flex-1">
-                Vista Previa
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto">
-              <div className="mb-6">
-                <p>Santiago, {new Date().getDate()} de {new Date().toLocaleDateString('es-CL', { month: 'long' })} de {new Date().getFullYear()}</p>
-              </div>
-
-              <div className="mb-6">
-                <p>Sres.: {formData.companyName}</p>
-                <p>Atención: Servicio al Cliente (Post-Venta)</p>
-                <p className="mt-2">Ref: Carta de Renuncia al seguro que indica</p>
-              </div>
-
-              <h3 className="text-center font-bold my-4">
-                INFORMA TÉRMINO ANTICIPADO DE SEGURO<br/>
-                Y SOLICITA DEVOLUCIÓN DE PRIMA NO DEVENGADA
-              </h3>
-
-              <div className="space-y-4 text-justify">
-                <p>
-                  Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, 
-                  actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>, 
-                  comunicamos formalmente a esa Compañía Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto 
-                  con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>, que corresponde a la operación de crédito 
-                  N°<strong>{formData.creditNumber}</strong>{hasPolicyNumber ? ` asociada a la Póliza N° ${formData.policyNumber}` : ''}, todo ello conforme 
-                  a lo dispuesto en el artículo 537 del Código de Comercio.
-                </p>
-
-                <p>
-                  Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión para el Mercado Financiero (CMF), 
-                  solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente 
-                  N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>, 
-                  RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que 
-                  el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.
-                </p>
-
-                <p>
-                  Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro 
-                  antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos 
-                  que se nos informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número 
-                  telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
-                </p>
-
-                <p>Sin otro particular, se despiden atentamente,</p>
-              </div>
-
-              <div className="text-center mt-16">
-                <img src={firmaImg} alt="Firma" className="w-48 h-auto mx-auto mb-2" />
-                <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
-                <p className="mt-1">p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowPreview(false)} className="flex-1">
-                Editar
-              </Button>
-              <Button onClick={generatePDF} className="flex-1">
-                <Download className="h-4 w-4 mr-2" />
-                Descargar PDF
-              </Button>
-            </div>
-          </div>
+        {/* ── SANTANDER ── */}
+        {isSantander && !showPreview && (
+          <SantanderForm
+            refund={refund}
+            onGenerate={(data) => {
+              setSantanderData(data)
+              setShowPreview(true)
+            }}
+          />
+        )}
+        {isSantander && showPreview && santanderData && (
+          <SantanderPreview
+            refund={refund}
+            formData={santanderData}
+            onEdit={() => setShowPreview(false)}
+            onDownload={() => generateSantanderPDF(refund, santanderData)}
+          />
         )}
       </DialogContent>
     </Dialog>
