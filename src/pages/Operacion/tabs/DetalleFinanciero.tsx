@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
-import { refundAdminApi } from '@/services/refundAdminApi';
+import { useAllRefunds } from '../hooks/useAllRefunds';
 import {
   BarChart,
   Bar,
@@ -134,27 +133,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // Descarga TODO el dataset sin filtros de fecha (visión histórica completa)
-  const { data: refunds = [], isLoading } = useQuery({
-    queryKey: ['refunds-detalle-financiero'],
-    queryFn: async () => {
-      const PAGE_SIZE = 100;
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
-      const total = firstPage.total || 0;
-      const totalPages = Math.ceil(total / PAGE_SIZE);
-      let allItems = [...(firstPage.items || [])];
-      if (totalPages > 1) {
-        const pages = await Promise.all(
-          Array.from({ length: totalPages - 1 }, (_, i) =>
-            refundAdminApi.list({ pageSize: PAGE_SIZE, page: i + 2 })
-          )
-        );
-        pages.forEach(p => { allItems = allItems.concat(p.items || []); });
-      }
-      return allItems.map((r: any) => ({ ...r, status: r.status?.toLowerCase?.() || r.status }));
-    },
-    staleTime: 60 * 1000,
-  });
+  // ── Query compartido: reutiliza el caché de toda la pantalla Operación ───────
+  const { data: refunds = [], isLoading } = useAllRefunds();
 
   // Construir datos mensuales a partir de las solicitudes pagadas
   const monthlyData = useMemo(() => {

@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { refundAdminApi } from '@/services/refundAdminApi';
 import type { RefundRequest, RefundStatus } from '@/types/refund';
 import type {
   FiltrosReporte,
@@ -23,222 +22,128 @@ const STATUS_MAP: Record<RefundStatus, EstadoSolicitud | null> = {
   'approved': 'CERTIFICADO_EMITIDO',
   'payment_scheduled': 'CLIENTE_NOTIFICADO',
   'paid': 'PAGADA_CLIENTE',
-  'rejected': null, // No se incluye en reportes
-  'canceled': null, // No se incluye en reportes
+  'rejected': null,
+  'canceled': null,
   'datos_sin_simulacion': 'DATOS_SIN_SIMULACION',
 };
 
-// Fetch base de solicitudes con paginación paralela (sin filtrar estados)
-async function fetchAllRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
-  console.log('[ReportsAPI] Filtros recibidos:', filtros);
-  
-  const PAGE_SIZE = 100;
-  
-  // Primera llamada para obtener el total
-  const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
-  const total = firstPage.total || 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  
-  console.log(`[ReportsAPI] Total registros: ${total}, Páginas: ${totalPages}`);
-  
-  let allItems = [...(firstPage.items || [])];
-  
-  // Si hay más páginas, obtenerlas en paralelo
-  if (totalPages > 1) {
-    const pagePromises = [];
-    for (let page = 2; page <= totalPages; page++) {
-      pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }));
-    }
-    
-    const additionalPages = await Promise.all(pagePromises);
-    additionalPages.forEach(pageResult => {
-      allItems = allItems.concat(pageResult.items || []);
-    });
-  }
+// ── Filtrado local por fechas y estados ────────────────────────────────────────
 
-  console.log('[ReportsAPI] Items totales obtenidos de API:', allItems.length);
-  
-  // Normalizar status a minúsculas (la API puede devolver en mayúsculas)
-  let items = allItems.map(r => ({
-    ...r,
-    status: (r.status?.toLowerCase() || r.status) as any
-  }));
-  
-  console.log('[ReportsAPI] Primeros 3 items (normalizados):', items.slice(0, 3).map(r => ({ 
-    id: r.publicId, 
-    createdAt: r.createdAt, 
-    status: r.status,
-    monto: r.estimatedAmountCLP
-  })));
+function applyFiltros(items: RefundRequest[], filtros: FiltrosReporte): RefundRequest[] {
+  let result = items;
 
-  // Filtrar por rango de fechas (comparación de strings para evitar problemas de timezone)
   if (filtros.fechaDesde || filtros.fechaHasta) {
-    items = items.filter(r => {
+    result = result.filter(r => {
       if (!r.createdAt) return false;
-      const createdDateStr = r.createdAt.split('T')[0];
-      
-      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) {
-        return false;
-      }
-      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) {
-        return false;
-      }
+      const d = r.createdAt.split('T')[0];
+      if (filtros.fechaDesde && d < filtros.fechaDesde) return false;
+      if (filtros.fechaHasta && d > filtros.fechaHasta) return false;
       return true;
     });
-    console.log('[ReportsAPI] Items después de filtrar por fechas:', items.length);
   }
 
-  // Aplicar filtros adicionales en cliente
   if (filtros.estados?.length) {
-    items = items.filter(r => {
-      const mappedStatus = STATUS_MAP[r.status];
-      return mappedStatus && filtros.estados!.includes(mappedStatus);
+    result = result.filter(r => {
+      const mapped = STATUS_MAP[r.status];
+      return mapped && filtros.estados!.includes(mapped);
     });
   }
 
   if (filtros.montoMin !== undefined) {
-    items = items.filter(r => r.estimatedAmountCLP >= filtros.montoMin!);
+    result = result.filter(r => r.estimatedAmountCLP >= filtros.montoMin!);
   }
   if (filtros.montoMax !== undefined) {
-    items = items.filter(r => r.estimatedAmountCLP <= filtros.montoMax!);
+    result = result.filter(r => r.estimatedAmountCLP <= filtros.montoMax!);
   }
 
-  return items;
+  return result;
 }
 
-// Fetch solicitudes excluyendo rechazadas/canceladas (para reportes de funnel/estado)
-async function fetchRefunds(filtros: FiltrosReporte): Promise<RefundRequest[]> {
-  const items = await fetchAllRefunds(filtros);
-  
-  // Filtrar solo solicitudes no rechazadas/canceladas
-  const filtered = items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
-  console.log('[ReportsAPI] Items después de filtrar rechazadas:', filtered.length);
-  
-  return filtered;
+function filterActive(items: RefundRequest[]): RefundRequest[] {
+  return items.filter(r => r.status !== 'rejected' && r.status !== 'canceled');
 }
+
+// ── Cálculos puros (sin fetch — reciben los datos ya cargados) ────────────────
 
 function calcularKpis(refunds: RefundRequest[]): KpiData[] {
   const total = refunds.length;
   const pagadas = refunds.filter(r => r.status === 'paid').length;
   const tasaExito = total > 0 ? (pagadas / total) * 100 : 0;
   const totalRecuperado = refunds.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
-  
-  // Estimamos que el monto pagado al cliente es ~85% del monto recuperado
   const totalPagado = refunds
     .filter(r => r.status === 'paid')
     .reduce((acc, r) => acc + r.estimatedAmountCLP * 0.85, 0);
-
-  // Estimamos comisiones en ~12% del monto pagado
   const comisiones = totalPagado * 0.12;
 
   return [
-    {
-      titulo: 'Solicitudes Totales',
-      valor: total,
-      formato: 'numero',
-      icono: 'FileText',
-      tooltip: 'Total de solicitudes en el período'
-    },
-    {
-      titulo: 'Tasa de Éxito',
-      valor: tasaExito,
-      formato: 'porcentaje',
-      icono: 'TrendingUp',
-      tooltip: 'Porcentaje de solicitudes pagadas'
-    },
-    {
-      titulo: 'Monto Estimado Total',
-      valor: totalRecuperado,
-      formato: 'moneda',
-      icono: 'DollarSign',
-      tooltip: 'Total estimado a recuperar'
-    },
-    {
-      titulo: 'Monto Pagado a Clientes',
-      valor: totalPagado,
-      formato: 'moneda',
-      icono: 'Wallet',
-      tooltip: 'Total estimado pagado a clientes'
-    },
-    {
-      titulo: 'Ingresos por Comisiones',
-      valor: comisiones,
-      formato: 'moneda',
-      icono: 'Percent',
-      tooltip: 'Comisiones estimadas (12%)'
-    }
+    { titulo: 'Solicitudes Totales', valor: total, formato: 'numero', icono: 'FileText', tooltip: 'Total de solicitudes en el período' },
+    { titulo: 'Tasa de Éxito', valor: tasaExito, formato: 'porcentaje', icono: 'TrendingUp', tooltip: 'Porcentaje de solicitudes pagadas' },
+    { titulo: 'Monto Estimado Total', valor: totalRecuperado, formato: 'moneda', icono: 'DollarSign', tooltip: 'Total estimado a recuperar' },
+    { titulo: 'Monto Pagado a Clientes', valor: totalPagado, formato: 'moneda', icono: 'Wallet', tooltip: 'Total estimado pagado a clientes' },
+    { titulo: 'Ingresos por Comisiones', valor: comisiones, formato: 'moneda', icono: 'Percent', tooltip: 'Comisiones estimadas (12%)' },
   ];
 }
 
 function generarSerieTemporal(
-  refunds: RefundRequest[], 
+  refunds: RefundRequest[],
   granularidad: Granularidad,
   campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito'
 ): TimeSeriesPoint[] {
   const grupos = new Map<string, RefundRequest[]>();
-  
+
   refunds.forEach(r => {
     let clave = dayjs(r.createdAt).format('YYYY-MM-DD');
-    if (granularidad === 'week') {
-      clave = dayjs(r.createdAt).startOf('week').format('YYYY-MM-DD');
-    } else if (granularidad === 'month') {
-      clave = dayjs(r.createdAt).startOf('month').format('YYYY-MM-DD');
-    }
-    
+    if (granularidad === 'week') clave = dayjs(r.createdAt).startOf('week').format('YYYY-MM-DD');
+    else if (granularidad === 'month') clave = dayjs(r.createdAt).startOf('month').format('YYYY-MM-DD');
     if (!grupos.has(clave)) grupos.set(clave, []);
     grupos.get(clave)!.push(r);
   });
 
   return Array.from(grupos.entries())
-    .map(([fecha, refundsGrupo]) => {
+    .map(([fecha, grupo]) => {
       let valor = 0;
-      
       switch (campo) {
-        case 'cantidad':
-          valor = refundsGrupo.length;
+        case 'cantidad': valor = grupo.length; break;
+        case 'montoRecuperado': valor = grupo.reduce((acc, r) => acc + r.estimatedAmountCLP, 0); break;
+        case 'montoPagado': {
+          const pg = grupo.filter(r => r.status === 'paid');
+          valor = pg.reduce((acc, r) => acc + r.estimatedAmountCLP * 0.85, 0);
           break;
-        case 'montoRecuperado':
-          valor = refundsGrupo.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
+        }
+        case 'tasaExito': {
+          const pg = grupo.filter(r => r.status === 'paid').length;
+          valor = grupo.length > 0 ? (pg / grupo.length) * 100 : 0;
           break;
-        case 'montoPagado':
-          const pagadas = refundsGrupo.filter(r => r.status === 'paid');
-          valor = pagadas.reduce((acc, r) => acc + r.estimatedAmountCLP * 0.85, 0);
-          break;
-        case 'tasaExito':
-          const pagadasCount = refundsGrupo.filter(r => r.status === 'paid').length;
-          valor = refundsGrupo.length > 0 ? (pagadasCount / refundsGrupo.length) * 100 : 0;
-          break;
+        }
       }
-      
       return { fecha, valor };
     })
     .sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
+// ── Cliente de reportes — ahora recibe refunds ya cargados (sin fetch propio) ─
+
 export const reportsApiClient = {
-  async getKpisResumen(filtros: FiltrosReporte): Promise<KpiData[]> {
-    const refunds = await fetchRefunds(filtros);
-    return calcularKpis(refunds);
+  // Todos los métodos reciben allRefunds del caché compartido
+  getKpisResumen(filtros: FiltrosReporte, allRefunds: RefundRequest[]): KpiData[] {
+    return calcularKpis(filterActive(applyFiltros(allRefunds, filtros)));
   },
 
-  async getSerieTemporal(
+  getSerieTemporal(
     filtros: FiltrosReporte,
     granularidad: Granularidad,
-    campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito'
-  ): Promise<TimeSeriesPoint[]> {
-    const refunds = await fetchRefunds(filtros);
-    return generarSerieTemporal(refunds, granularidad, campo);
+    campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito',
+    allRefunds: RefundRequest[]
+  ): TimeSeriesPoint[] {
+    return generarSerieTemporal(filterActive(applyFiltros(allRefunds, filtros)), granularidad, campo);
   },
 
-  async getDistribucionPorEstado(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    const refunds = await fetchRefunds(filtros);
+  getDistribucionPorEstado(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const conteos = new Map<string, number>();
-    
     refunds.forEach(r => {
-      const mappedStatus = STATUS_MAP[r.status];
-      if (mappedStatus) {
-        conteos.set(mappedStatus, (conteos.get(mappedStatus) || 0) + 1);
-      }
+      const mapped = STATUS_MAP[r.status];
+      if (mapped) conteos.set(mapped, (conteos.get(mapped) || 0) + 1);
     });
 
     const ESTADO_LABELS: Record<string, string> = {
@@ -255,47 +160,38 @@ export const reportsApiClient = {
       categoria: estado,
       name: ESTADO_LABELS[estado] || estado,
       valor: cantidad,
-      porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+      porcentaje: total > 0 ? (cantidad / total) * 100 : 0,
     }));
   },
 
-  async getDistribucionPorAlianza(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    const refunds = await fetchRefunds(filtros);
+  getDistribucionPorAlianza(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const conteos = new Map<string, number>();
-    
-    // Solo usamos institutionId - ignoramos partnerId ya que es un ObjectId
     refunds.forEach(r => {
-      // Solo contamos si tiene institutionId válido (no es un ObjectId)
       if (r.institutionId && !r.institutionId.match(/^[0-9a-fA-F]{24}$/)) {
         conteos.set(r.institutionId, (conteos.get(r.institutionId) || 0) + 1);
       }
     });
-
     const total = Array.from(conteos.values()).reduce((acc, v) => acc + v, 0);
-    
     return Array.from(conteos.entries())
       .map(([nombre, cantidad]) => ({
-        categoria: nombre,
-        name: nombre,
-        valor: cantidad,
-        porcentaje: total > 0 ? (cantidad / total) * 100 : 0
+        categoria: nombre, name: nombre, valor: cantidad,
+        porcentaje: total > 0 ? (cantidad / total) * 100 : 0,
       }))
       .sort((a, b) => b.valor - a.valor);
   },
 
-  async getDistribucionPorTipoSeguro(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    const refunds = await fetchRefunds(filtros);
+  getDistribucionPorTipoSeguro(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const conteos = new Map<string, { cantidad: number; montoTotal: number; pagadas: number }>();
-    
     refunds.forEach(r => {
-      const tipoSeguro = r.calculationSnapshot?.insuranceToEvaluate || 'Sin tipo';
-      const current = conteos.get(tipoSeguro) || { cantidad: 0, montoTotal: 0, pagadas: 0 };
-      current.cantidad += 1;
-      current.montoTotal += r.estimatedAmountCLP || 0;
-      if (r.status === 'paid') current.pagadas += 1;
-      conteos.set(tipoSeguro, current);
+      const tipo = r.calculationSnapshot?.insuranceToEvaluate || 'Sin tipo';
+      const cur = conteos.get(tipo) || { cantidad: 0, montoTotal: 0, pagadas: 0 };
+      cur.cantidad += 1;
+      cur.montoTotal += r.estimatedAmountCLP || 0;
+      if (r.status === 'paid') cur.pagadas += 1;
+      conteos.set(tipo, cur);
     });
-
     const total = refunds.length;
     return Array.from(conteos.entries()).map(([tipo, data]) => ({
       categoria: tipo,
@@ -303,161 +199,96 @@ export const reportsApiClient = {
       valor: data.cantidad,
       porcentaje: total > 0 ? (data.cantidad / total) * 100 : 0,
       montoPromedio: data.cantidad > 0 ? Math.round(data.montoTotal / data.cantidad) : 0,
-      conversion: data.cantidad > 0 ? (data.pagadas / data.cantidad) * 100 : 0
+      conversion: data.cantidad > 0 ? (data.pagadas / data.cantidad) * 100 : 0,
     }));
   },
 
-  async getKpisSegmentos(filtros: FiltrosReporte) {
-    // Usamos fetchAllRefunds para incluir TODAS las solicitudes
-    const refunds = await fetchAllRefunds(filtros);
-    
-    // Solo considerar solicitudes que tienen monto estimado
-    const refundsConMonto = refunds.filter(r => r.estimatedAmountCLP && r.estimatedAmountCLP > 0);
-    
-    // Estados válidos para el Ticket Promedio (activas + pagadas, excluyendo rechazadas/canceladas)
+  getKpisSegmentos(filtros: FiltrosReporte, allRefunds: RefundRequest[]) {
+    const refunds = applyFiltros(allRefunds, filtros);
     const estadosParaTicket = ['simulated', 'requested', 'qualifying', 'docs_pending', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
-    const refundsParaTicket = refundsConMonto.filter(r => estadosParaTicket.includes(r.status));
-    
-    console.log('[KpisSegmentos] Total refunds:', refunds.length);
-    console.log('[KpisSegmentos] Refunds para ticket (activas+pagadas):', refundsParaTicket.length);
-    
-    // Ticket Promedio: monto promedio de solicitudes activas + pagadas
+    const refundsParaTicket = refunds.filter(r => r.estimatedAmountCLP > 0 && estadosParaTicket.includes(r.status));
     const totalMonto = refundsParaTicket.reduce((acc, r) => acc + r.estimatedAmountCLP, 0);
     const ticketPromedio = refundsParaTicket.length > 0 ? Math.round(totalMonto / refundsParaTicket.length) : 0;
-    
-    // Prima Total Promedio: promedio de (newMonthlyPremium × remainingInstallments)
-    // Solo solicitudes activas + pagadas que tengan los datos necesarios
-    const refundsConPrima = refundsParaTicket.filter(r => 
-      r.calculationSnapshot?.newMonthlyPremium > 0 && 
-      r.calculationSnapshot?.remainingInstallments > 0
+
+    const refundsConPrima = refundsParaTicket.filter(r =>
+      r.calculationSnapshot?.newMonthlyPremium > 0 && r.calculationSnapshot?.remainingInstallments > 0
     );
     const totalPrimas = refundsConPrima.reduce((acc, r) => {
-      const primaTotal = (r.calculationSnapshot?.newMonthlyPremium || 0) * (r.calculationSnapshot?.remainingInstallments || 0);
-      return acc + primaTotal;
+      return acc + (r.calculationSnapshot?.newMonthlyPremium || 0) * (r.calculationSnapshot?.remainingInstallments || 0);
     }, 0);
     const primaPromedio = refundsConPrima.length > 0 ? Math.round(totalPrimas / refundsConPrima.length) : 0;
-    
-    console.log('[KpisSegmentos] Refunds con prima:', refundsConPrima.length, 'Prima promedio:', primaPromedio);
-    
-    // Tasa de Conversión: % de solicitudes (activas+pagadas) que llegaron a PAID
     const pagadas = refundsParaTicket.filter(r => r.status === 'paid').length;
     const tasaConversion = refundsParaTicket.length > 0 ? (pagadas / refundsParaTicket.length) * 100 : 0;
-    
-    return {
-      ticketPromedio,
-      primaPromedio,
-      tasaConversion
-    };
+
+    return { ticketPromedio, primaPromedio, tasaConversion };
   },
 
-  async getFunnelData(filtros: FiltrosReporte): Promise<FunnelStep[]> {
-    const refunds = await fetchRefunds(filtros);
-    
+  getFunnelData(filtros: FiltrosReporte, allRefunds: RefundRequest[]): FunnelStep[] {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const estadosOrdenados: EstadoSolicitud[] = [
-      'SIMULACION_CONFIRMADA',
-      'DEVOLUCION_CONFIRMADA_COMPANIA', 
-      'FONDOS_RECIBIDOS_TD',
-      'CLIENTE_NOTIFICADO',
-      'PAGADA_CLIENTE'
+      'SIMULACION_CONFIRMADA', 'DEVOLUCION_CONFIRMADA_COMPANIA',
+      'FONDOS_RECIBIDOS_TD', 'CLIENTE_NOTIFICADO', 'PAGADA_CLIENTE',
     ];
-
-    // Contar cuántas solicitudes han alcanzado cada etapa
     return estadosOrdenados.map(estado => {
       const cantidad = refunds.filter(r => {
-        const mappedStatus = STATUS_MAP[r.status];
-        if (!mappedStatus) return false;
-        
-        // Una solicitud ha "alcanzado" una etapa si su estado actual es igual o posterior
-        const estadoActualIdx = estadosOrdenados.indexOf(mappedStatus);
-        const etapaIdx = estadosOrdenados.indexOf(estado);
-        return estadoActualIdx >= etapaIdx;
+        const mapped = STATUS_MAP[r.status];
+        if (!mapped) return false;
+        return estadosOrdenados.indexOf(mapped) >= estadosOrdenados.indexOf(estado);
       }).length;
-      
-      return {
-        etapa: estado,
-        cantidad,
-        porcentaje: refunds.length > 0 ? (cantidad / refunds.length) * 100 : 0
-      };
+      return { etapa: estado, cantidad, porcentaje: refunds.length > 0 ? (cantidad / refunds.length) * 100 : 0 };
     });
   },
 
-  async getSlaMetrics(filtros: FiltrosReporte): Promise<SlaMetric[]> {
-    const refunds = await fetchRefunds(filtros);
-    
-    // Agrupar por institución
+  getSlaMetrics(filtros: FiltrosReporte, allRefunds: RefundRequest[]): SlaMetric[] {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const porInstitucion = new Map<string, RefundRequest[]>();
     refunds.forEach(r => {
       const inst = r.institutionId || 'Sin institución';
       if (!porInstitucion.has(inst)) porInstitucion.set(inst, []);
       porInstitucion.get(inst)!.push(r);
     });
-
-    return Array.from(porInstitucion.entries()).map(([institucion, refundsInst]) => {
-      // Calcular días promedio de las solicitudes cerradas
-      const cerradas = refundsInst.filter(r => r.status === 'paid' || r.status === 'rejected');
-      const promedios = cerradas.map(r => {
-        const inicio = dayjs(r.createdAt);
-        const fin = dayjs(r.updatedAt);
-        return fin.diff(inicio, 'day');
-      });
-      
-      const promedio = promedios.length > 0 
-        ? promedios.reduce((a, b) => a + b, 0) / promedios.length 
-        : 0;
-      
-      const p95 = promedio * 1.5;
-      const p99 = promedio * 2;
-      
+    return Array.from(porInstitucion.entries()).map(([institucion, items]) => {
+      const cerradas = items.filter(r => r.status === 'paid' || r.status === 'rejected');
+      const promedios = cerradas.map(r => dayjs(r.updatedAt).diff(dayjs(r.createdAt), 'day'));
+      const promedio = promedios.length > 0 ? promedios.reduce((a, b) => a + b, 0) / promedios.length : 0;
       let estado: 'green' | 'yellow' | 'red' = 'green';
       if (promedio > 20) estado = 'yellow';
       if (promedio > 25) estado = 'red';
-      
       return {
         compania: institucion,
         promedio: Math.round(promedio * 10) / 10,
-        p95: Math.round(p95 * 10) / 10,
-        p99: Math.round(p99 * 10) / 10,
-        estado
+        p95: Math.round(promedio * 1.5 * 10) / 10,
+        p99: Math.round(promedio * 2 * 10) / 10,
+        estado,
       };
     });
   },
 
-  async getAlertas() {
-    // Por ahora retornamos alertas vacías
-    // En el futuro se pueden calcular alertas basadas en los datos reales
+  getAlertas() {
     return [];
   },
 
-  async getTablaResumen(filtros: FiltrosReporte, page = 1, pageSize = 10) {
-    const refunds = await fetchRefunds(filtros);
-    
+  getTablaResumen(filtros: FiltrosReporte, allRefunds: RefundRequest[], page = 1, pageSize = 10) {
+    const refunds = filterActive(applyFiltros(allRefunds, filtros));
     const start = (page - 1) * pageSize;
     const items = refunds.slice(start, start + pageSize);
-    
     return {
       items: items.map(r => ({
         id: r.publicId,
         fechaCreacion: dayjs(r.createdAt).format('YYYY-MM-DD'),
         estado: STATUS_MAP[r.status] || 'SIMULACION_CONFIRMADA',
-        tipoSeguro: 'cesantia', // Por defecto, hasta que tengamos el dato
+        tipoSeguro: 'cesantia',
         montoRecuperado: r.estimatedAmountCLP,
         montoPagado: r.status === 'paid' ? r.estimatedAmountCLP * 0.85 : 0,
         alianza: r.institutionId || 'N/A',
-        compania: 'Por determinar'
+        compania: 'Por determinar',
       })),
       total: refunds.length,
       page,
-      pageSize
+      pageSize,
     };
   },
 
-  // Datos para filtros (por ahora retornamos arrays vacíos)
-  async getAlianzas() {
-    // Retornar instituciones únicas de las solicitudes
-    return [];
-  },
-
-  async getCompanias() {
-    return [];
-  }
+  getAlianzas() { return []; },
+  getCompanias() { return []; },
 };

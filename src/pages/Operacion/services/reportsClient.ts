@@ -1,4 +1,5 @@
 import { reportsApiClient } from './reportsApiClient';
+import type { RefundRequest } from '@/types/refund';
 import type {
   FiltrosReporte,
   KpiData,
@@ -9,57 +10,59 @@ import type {
   Granularidad,
 } from '../types/reportTypes';
 
-// Delegamos toda la lógica al nuevo cliente de API
+// Delegamos toda la lógica al nuevo cliente de API.
+// Todos los métodos ahora reciben allRefunds para evitar fetches duplicados.
 export const reportsClient = {
-  async getKpisResumen(filtros: FiltrosReporte): Promise<KpiData[]> {
-    return reportsApiClient.getKpisResumen(filtros);
+  getKpisResumen(filtros: FiltrosReporte, allRefunds: RefundRequest[]): KpiData[] {
+    return reportsApiClient.getKpisResumen(filtros, allRefunds);
   },
 
-  async getSerieTemporal(
+  getSerieTemporal(
     filtros: FiltrosReporte,
     granularidad: Granularidad,
-    campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito'
-  ): Promise<TimeSeriesPoint[]> {
-    return reportsApiClient.getSerieTemporal(filtros, granularidad, campo);
+    campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito',
+    allRefunds: RefundRequest[]
+  ): TimeSeriesPoint[] {
+    return reportsApiClient.getSerieTemporal(filtros, granularidad, campo, allRefunds);
   },
 
-  async getDistribucionPorEstado(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    return reportsApiClient.getDistribucionPorEstado(filtros);
+  getDistribucionPorEstado(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    return reportsApiClient.getDistribucionPorEstado(filtros, allRefunds);
   },
 
-  async getDistribucionPorAlianza(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    return reportsApiClient.getDistribucionPorAlianza(filtros);
+  getDistribucionPorAlianza(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    return reportsApiClient.getDistribucionPorAlianza(filtros, allRefunds);
   },
 
-  async getDistribucionPorTipoSeguro(filtros: FiltrosReporte): Promise<DistribucionItem[]> {
-    return reportsApiClient.getDistribucionPorTipoSeguro(filtros);
+  getDistribucionPorTipoSeguro(filtros: FiltrosReporte, allRefunds: RefundRequest[]): DistribucionItem[] {
+    return reportsApiClient.getDistribucionPorTipoSeguro(filtros, allRefunds);
   },
 
-  async getKpisSegmentos(filtros: FiltrosReporte) {
-    return reportsApiClient.getKpisSegmentos(filtros);
+  getKpisSegmentos(filtros: FiltrosReporte, allRefunds: RefundRequest[]) {
+    return reportsApiClient.getKpisSegmentos(filtros, allRefunds);
   },
 
-  async getFunnelData(filtros: FiltrosReporte): Promise<FunnelStep[]> {
-    return reportsApiClient.getFunnelData(filtros);
+  getFunnelData(filtros: FiltrosReporte, allRefunds: RefundRequest[]): FunnelStep[] {
+    return reportsApiClient.getFunnelData(filtros, allRefunds);
   },
 
-  async getSlaMetrics(filtros: FiltrosReporte): Promise<SlaMetric[]> {
-    return reportsApiClient.getSlaMetrics(filtros);
+  getSlaMetrics(filtros: FiltrosReporte, allRefunds: RefundRequest[]): SlaMetric[] {
+    return reportsApiClient.getSlaMetrics(filtros, allRefunds);
   },
 
-  async getAlertas() {
+  getAlertas() {
     return reportsApiClient.getAlertas();
   },
 
-  async getTablaResumen(filtros: FiltrosReporte, page = 1, pageSize = 10) {
-    return reportsApiClient.getTablaResumen(filtros, page, pageSize);
+  getTablaResumen(filtros: FiltrosReporte, allRefunds: RefundRequest[], page = 1, pageSize = 10) {
+    return reportsApiClient.getTablaResumen(filtros, allRefunds, page, pageSize);
   },
 
-  async getAlianzas() {
+  getAlianzas() {
     return reportsApiClient.getAlianzas();
   },
 
-  async getCompanias() {
+  getCompanias() {
     return reportsApiClient.getCompanias();
-  }
+  },
 };
