@@ -446,6 +446,8 @@ export default function Dashboard() {
                     // Sub-métricas especiales
                     const isQualifying = stage.key === 'qualifying'
                     const isPaymentScheduled = stage.key === 'payment_scheduled'
+                    const isDocsReceived = stage.key === 'docs_received'
+                    const isUrgentDocs = isDocsReceived && count >= 1
 
                     return (
                       <div key={stage.key} className="flex items-center gap-2">
@@ -455,18 +457,30 @@ export default function Dashboard() {
                               <button
                                 onClick={() => goToRefunds(stage.refundStatus)}
                                 className={`
-                                  group flex items-start gap-3 rounded-lg border bg-background/80 p-3
+                                  group flex items-start gap-3 rounded-lg border p-3
                                   hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
-                                  ${colors.cardHover} cursor-pointer min-w-[140px]
+                                  cursor-pointer min-w-[140px]
+                                  ${isUrgentDocs
+                                    ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-300 dark:border-orange-700 ring-1 ring-orange-300 dark:ring-orange-700'
+                                    : `bg-background/80 ${colors.cardHover}`
+                                  }
                                 `}
                               >
-                                <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0 mt-0.5`}>
-                                  <IconComp className="h-4 w-4" />
+                                <div className={`p-2 rounded-lg flex-shrink-0 mt-0.5 relative ${isUrgentDocs ? 'bg-orange-100 dark:bg-orange-900/40' : colors.icon}`}>
+                                  <IconComp className={`h-4 w-4 ${isUrgentDocs ? 'text-orange-600' : ''}`} />
+                                  {isUrgentDocs && (
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-left min-w-0">
-                                  <p className="text-xs text-muted-foreground leading-none truncate">{stage.label}</p>
-                                  <p className="text-2xl font-bold leading-tight">{count}</p>
-                                  <p className="text-[10px] text-muted-foreground/70 truncate">{stage.sublabel}</p>
+                                  <p className={`text-xs leading-none truncate ${isUrgentDocs ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>{stage.label}</p>
+                                  <p className={`text-2xl font-bold leading-tight ${isUrgentDocs ? 'text-orange-700 dark:text-orange-300' : ''}`}>{count}</p>
+                                  <p className={`text-[10px] truncate ${isUrgentDocs ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-muted-foreground/70'}`}>
+                                    {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
+                                  </p>
 
                                   {/* Sub-métrica: En calificación — firmados / pendientes */}
                                   {isQualifying && mandateStatuses && (
