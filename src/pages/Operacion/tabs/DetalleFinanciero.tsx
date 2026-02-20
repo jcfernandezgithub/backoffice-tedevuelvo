@@ -15,7 +15,7 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, DollarSign, ShieldCheck } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, DollarSign, ShieldCheck, Receipt, BarChart2 } from 'lucide-react';
 import { format, parseISO, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -44,10 +44,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const d = payload[0]?.payload;
   const montoVar = variationLabel(d?.montoPct ?? null);
   const primaVar = variationLabel(d?.primaPct ?? null);
+  const ticketVar = variationLabel(d?.ticketPct ?? null);
+  const primaAvgVar = variationLabel(d?.primaAvgPct ?? null);
 
   return (
-    <div className="bg-background border rounded-xl p-4 shadow-xl min-w-[220px] space-y-3">
+    <div className="bg-background border rounded-xl p-4 shadow-xl min-w-[240px] space-y-3">
       <p className="font-semibold text-sm">{label}</p>
+
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -64,6 +67,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           </div>
         )}
       </div>
+
+      <div className="border-t pt-2 space-y-1.5">
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Receipt className="h-3.5 w-3.5 text-amber-500" />
+            Ticket Promedio
+          </span>
+          <span className="font-mono text-xs font-semibold">{formatCLP(d?.ticketPromedio ?? 0)}</span>
+        </div>
+        {ticketVar && (
+          <div className="flex justify-end">
+            <span className={`flex items-center gap-1 text-xs font-medium ${ticketVar.color}`}>
+              {ticketVar.icon}{ticketVar.label} vs mes anterior
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="border-t pt-2 space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -80,6 +101,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           </div>
         )}
       </div>
+
+      <div className="border-t pt-2 space-y-1.5">
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <BarChart2 className="h-3.5 w-3.5 text-violet-500" />
+            Prima Promedio
+          </span>
+          <span className="font-mono text-xs font-semibold">{formatCLP(d?.primaPromedio ?? 0)}</span>
+        </div>
+        {primaAvgVar && (
+          <div className="flex justify-end">
+            <span className={`flex items-center gap-1 text-xs font-medium ${primaAvgVar.color}`}>
+              {primaAvgVar.icon}{primaAvgVar.label} vs mes anterior
+            </span>
+          </div>
+        )}
+      </div>
+
       <div className="border-t pt-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>Solicitudes pagadas</span>
@@ -156,14 +195,26 @@ export function TabDetalleFinanciero() {
 
     return sorted.map((item, i) => {
       const prev = sorted[i - 1];
+      const ticketPromedio = item.count > 0 ? item.monto / item.count : 0;
+      const primaPromedio = item.count > 0 ? item.prima / item.count : 0;
+      const prevTicket = prev && prev.count > 0 ? prev.monto / prev.count : 0;
+      const prevPrimaAvg = prev && prev.count > 0 ? prev.prima / prev.count : 0;
+
       const montoPct = prev && prev.monto > 0 ? ((item.monto - prev.monto) / prev.monto) * 100 : null;
       const primaPct = prev && prev.prima > 0 ? ((item.prima - prev.prima) / prev.prima) * 100 : null;
+      const ticketPct = prev && prevTicket > 0 ? ((ticketPromedio - prevTicket) / prevTicket) * 100 : null;
+      const primaAvgPct = prev && prevPrimaAvg > 0 ? ((primaPromedio - prevPrimaAvg) / prevPrimaAvg) * 100 : null;
+
       return {
         ...item,
+        ticketPromedio,
+        primaPromedio,
         label: format(parseISO(`${item.monthKey}-01`), 'MMM yyyy', { locale: es }),
         labelShort: format(parseISO(`${item.monthKey}-01`), 'MMM yy', { locale: es }),
         montoPct,
         primaPct,
+        ticketPct,
+        primaAvgPct,
       };
     });
   }, [refunds]);
@@ -173,12 +224,12 @@ export function TabDetalleFinanciero() {
     const totalMonto = monthlyData.reduce((s, d) => s + d.monto, 0);
     const totalPrima = monthlyData.reduce((s, d) => s + d.prima, 0);
     const totalCount = monthlyData.reduce((s, d) => s + d.count, 0);
+    const ticketPromedioGlobal = totalCount > 0 ? totalMonto / totalCount : 0;
+    const primaPromedioGlobal = totalCount > 0 ? totalPrima / totalCount : 0;
 
-    // Últimos 2 meses para variación del resumen
     const last = monthlyData[monthlyData.length - 1];
-    const prev = monthlyData[monthlyData.length - 2];
 
-    return { totalMonto, totalPrima, totalCount, last, prev };
+    return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
   }, [monthlyData]);
 
   const isCurrentYear = monthlyData.filter(d => d.monthKey.startsWith(String(new Date().getFullYear())));
@@ -188,8 +239,8 @@ export function TabDetalleFinanciero() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
             <Card key={i}><CardContent className="pt-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
           ))}
         </div>
@@ -200,6 +251,8 @@ export function TabDetalleFinanciero() {
 
   const lastVar = variationLabel(totals.last?.montoPct ?? null);
   const lastPrimaVar = variationLabel(totals.last?.primaPct ?? null);
+  const lastTicketVar = variationLabel(totals.last?.ticketPct ?? null);
+  const lastPrimaAvgVar = variationLabel(totals.last?.primaAvgPct ?? null);
 
   return (
     <div className="space-y-6">
@@ -210,23 +263,41 @@ export function TabDetalleFinanciero() {
         <Badge variant="outline" className="text-xs">Sin filtro de fechas · Vista completa</Badge>
       </div>
 
-      {/* KPIs superiores */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* KPIs superiores — fila 1: totales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Monto total histórico */}
         <Card className="border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10">
           <CardHeader className="pb-1">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Monto Total Pagado (Histórico)</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Monto Total Pagado</CardTitle>
               <DollarSign className="h-5 w-5 text-emerald-500" />
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{formatCLP(totals.totalMonto, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes pagadas</p>
+            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes · histórico completo</p>
             {lastVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastVar.color}`}>
-                {lastVar.icon}
-                <span>{lastVar.label} vs mes anterior</span>
+                {lastVar.icon}<span>{lastVar.label} vs mes anterior</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Ticket promedio histórico */}
+        <Card className="border-l-4 border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10">
+          <CardHeader className="pb-1">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Promedio</CardTitle>
+              <Receipt className="h-5 w-5 text-amber-500" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
+            {lastTicketVar && (
+              <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
+                {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
               </div>
             )}
           </CardContent>
@@ -236,33 +307,61 @@ export function TabDetalleFinanciero() {
         <Card className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10">
           <CardHeader className="pb-1">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Total Recuperada (Histórico)</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Total Recuperada</CardTitle>
               <ShieldCheck className="h-5 w-5 text-indigo-500" />
             </div>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{formatCLP(totals.totalPrima, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Todos los meses registrados</p>
+            <p className="text-xs text-muted-foreground mt-1">Histórico completo</p>
             {lastPrimaVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaVar.color}`}>
-                {lastPrimaVar.icon}
-                <span>{lastPrimaVar.label} vs mes anterior</span>
+                {lastPrimaVar.icon}<span>{lastPrimaVar.label} vs mes anterior</span>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Año en curso */}
-        <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
+        {/* Prima promedio histórica */}
+        <Card className="border-l-4 border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10">
           <CardHeader className="pb-1">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Año en Curso ({new Date().getFullYear()})</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Promedio</CardTitle>
+              <BarChart2 className="h-5 w-5 text-violet-500" />
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-400">{formatCLP(ytdMonto, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Monto pagado · Prima: {formatCLP(ytdPrima, true)}</p>
+            <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
+            {lastPrimaAvgVar && (
+              <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
+                {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Año en curso — fila 2 compacta */}
+      <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
+        <CardContent className="py-3 px-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            <span className="font-semibold text-cyan-700 dark:text-cyan-400">Año {new Date().getFullYear()}</span>
+            <span className="text-muted-foreground">Monto: <span className="font-medium text-foreground">{formatCLP(ytdMonto, true)}</span></span>
+            <span className="text-muted-foreground">Prima: <span className="font-medium text-foreground">{formatCLP(ytdPrima, true)}</span></span>
+            {(() => {
+              const ytdCount = isCurrentYear.reduce((s, d) => s + d.count, 0);
+              const ytdTicket = ytdCount > 0 ? ytdMonto / ytdCount : 0;
+              const ytdPrimaAvg = ytdCount > 0 ? ytdPrima / ytdCount : 0;
+              return <>
+                <span className="text-muted-foreground">Ticket prom.: <span className="font-medium text-foreground">{formatCLP(ytdTicket, true)}</span></span>
+                <span className="text-muted-foreground">Prima prom.: <span className="font-medium text-foreground">{formatCLP(ytdPrimaAvg, true)}</span></span>
+                <span className="text-muted-foreground">Solicitudes: <span className="font-medium text-foreground">{ytdCount}</span></span>
+              </>;
+            })()}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Gráfico: Monto Total Pagado por mes */}
       <Card>
@@ -355,37 +454,41 @@ export function TabDetalleFinanciero() {
               <thead>
                 <tr className="border-b bg-muted/40">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Mes</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Solicitudes</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Solic.</th>
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Monto Pagado</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ Monto</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ticket Prom.</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ</th>
                   <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Recuperada</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ Prima</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Prom.</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Δ</th>
                 </tr>
               </thead>
               <tbody>
                 {[...monthlyData].reverse().map((row, i) => {
                   const mVar = variationLabel(row.montoPct);
                   const pVar = variationLabel(row.primaPct);
+                  const tVar = variationLabel(row.ticketPct);
+                  const paVar = variationLabel(row.primaAvgPct);
+                  const deltaCell = (v: ReturnType<typeof variationLabel>) =>
+                    v ? (
+                      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${v.color}`}>
+                        {v.icon}{v.label}
+                      </span>
+                    ) : <span className="text-muted-foreground text-xs">—</span>;
                   return (
                     <tr key={row.monthKey} className={`border-b transition-colors hover:bg-muted/30 ${i === 0 ? 'font-medium bg-muted/20' : ''}`}>
                       <td className="px-4 py-3 capitalize">{row.label}</td>
                       <td className="px-4 py-3 text-right tabular-nums">{row.count}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.monto)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {mVar ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${mVar.color}`}>
-                            {mVar.icon}{mVar.label}
-                          </span>
-                        ) : <span className="text-muted-foreground text-xs">—</span>}
-                      </td>
+                      <td className="px-4 py-3 text-right">{deltaCell(mVar)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-amber-700 dark:text-amber-400 font-medium">{formatCLP(row.ticketPromedio)}</td>
+                      <td className="px-4 py-3 text-right">{deltaCell(tVar)}</td>
                       <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.prima)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {pVar ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-medium ${pVar.color}`}>
-                            {pVar.icon}{pVar.label}
-                          </span>
-                        ) : <span className="text-muted-foreground text-xs">—</span>}
-                      </td>
+                      <td className="px-4 py-3 text-right">{deltaCell(pVar)}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-violet-700 dark:text-violet-400 font-medium">{formatCLP(row.primaPromedio)}</td>
+                      <td className="px-4 py-3 text-right">{deltaCell(paVar)}</td>
                     </tr>
                   );
                 })}
