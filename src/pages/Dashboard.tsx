@@ -47,7 +47,7 @@ const PHASES = [
     color: 'amber',
     stages: [
       { key: 'qualifying', label: 'En calificación', sublabel: 'Revisión de analista', icon: Clock, refundStatus: 'qualifying', tooltip: 'Un analista interno está revisando la solicitud para verificar que cumple los requisitos y es elegible para la devolución.' },
-      { key: 'docs_pending', label: 'Docs. pendientes', sublabel: 'Faltan requisitos', icon: AlertCircle, refundStatus: 'docs_pending', tooltip: 'La solicitud está aprobada internamente, pero el cliente aún no ha subido los documentos requeridos (cédula, liquidaciones, etc.).' },
+      { key: 'docs_pending', label: 'Docs. pendientes', sublabel: 'Faltan requisitos', icon: AlertCircle, refundStatus: 'docs_pending', tooltip: 'La solicitud está aprobada internamente, pero faltan documentos del cliente: mandato firmado, cédula de identidad y/o documentos asociados al crédito.' },
       { key: 'docs_received', label: 'Docs. recibidos', sublabel: 'Carga completada', icon: FileSignature, refundStatus: 'docs_received', tooltip: 'El cliente subió todos los documentos solicitados. El equipo está verificando que estén completos y legibles antes de ingresar el trámite.' },
     ],
   },
