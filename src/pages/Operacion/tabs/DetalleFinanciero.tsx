@@ -19,6 +19,8 @@ import { TrendingUp, TrendingDown, Minus, DollarSign, ShieldCheck, Receipt, BarC
 import * as XLSX from 'xlsx';
 import { format, parseISO, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { PlanCumplimientoChart } from '../components/PlanCumplimientoChart';
+
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -434,8 +436,18 @@ export function TabDetalleFinanciero() {
         </CardContent>
       </Card>
 
+      {/* ── Plan de cumplimiento ────────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plan de Cumplimiento · Prima Recuperada</h2>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        <PlanCumplimientoChart monthlyData={monthlyData} />
+      </div>
+
       {/* Gráfico: Prima Recuperada por mes */}
       <Card>
+
         <CardHeader>
           <CardTitle className="text-base">Prima Total Recuperada · por Mes</CardTitle>
           <CardDescription>Prima acumulada de todas las solicitudes pagadas en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
