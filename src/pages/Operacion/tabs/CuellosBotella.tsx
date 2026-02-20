@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useMemo } from 'react';
 import {
   AlertTriangle,
   Clock,
@@ -140,6 +141,28 @@ export function TabCuellosBotella() {
     return { key, cfg, promedio, muestra, tieneData, excede, pct: Math.min(pct, 100), pctVsObjetivo };
   });
 
+  // Tiempo total de punta a punta: desde que entró a qualifying hasta que llegó a paid
+  const OBJETIVO_TOTAL = STAGE_ORDER.reduce((sum, key) => sum + STAGE_CONFIG[key].objetivo, 0);
+
+  const tiempoPuntaAPunta = useMemo(() => {
+    const tiempos: number[] = [];
+    allRefunds.forEach(r => {
+      const history = [...(r.statusHistory || [])].sort(
+        (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()
+      );
+      const entradaQualifying = history.find(h => h.to === 'qualifying');
+      const llegadaPaid = history.find(h => h.to === 'paid');
+      if (!entradaQualifying || !llegadaPaid) return;
+      const diff = dayjs(llegadaPaid.at).diff(dayjs(entradaQualifying.at), 'hour') / 24;
+      if (diff >= 0 && diff < 730) tiempos.push(diff);
+    });
+    if (tiempos.length === 0) return null;
+    return {
+      promedio: tiempos.reduce((a, b) => a + b, 0) / tiempos.length,
+      muestra: tiempos.length,
+    };
+  }, [allRefunds]);
+
   return (
     <TooltipProvider>
     <div className="space-y-6">
@@ -161,7 +184,68 @@ export function TabCuellosBotella() {
             Calculado desde el historial real de cada solicitud
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-5">
+          {/* Banner punta a punta */}
+          {loadingRefunds ? (
+            <Skeleton className="h-20 rounded-xl" />
+          ) : (
+            <div className="rounded-xl overflow-hidden border border-border/50">
+              <div
+                className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                style={{ background: 'linear-gradient(135deg, hsl(220,70%,50%), hsl(240,65%,43%))' }}
+              >
+                <div className="flex-1">
+                  <p className="text-white/80 text-xs font-medium uppercase tracking-wide">
+                    Proceso completo · Calificación → Pagada
+                  </p>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    {tiempoPuntaAPunta ? (
+                      <>
+                        <span className="text-white font-bold text-3xl leading-none">
+                          {tiempoPuntaAPunta.promedio.toFixed(1)}
+                        </span>
+                        <span className="text-white/70 text-sm">días promedio</span>
+                        <span
+                          className={`ml-auto text-sm font-semibold px-2.5 py-0.5 rounded-full ${
+                            tiempoPuntaAPunta.promedio > OBJETIVO_TOTAL
+                              ? 'bg-red-500/30 text-red-100'
+                              : 'bg-emerald-500/30 text-emerald-100'
+                          }`}
+                        >
+                          {tiempoPuntaAPunta.promedio > OBJETIVO_TOTAL
+                            ? `+${(tiempoPuntaAPunta.promedio - OBJETIVO_TOTAL).toFixed(1)}d sobre objetivo`
+                            : `${(OBJETIVO_TOTAL - tiempoPuntaAPunta.promedio).toFixed(1)}d bajo objetivo ✓`}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-white/60 italic text-sm">Sin solicitudes pagadas con historial completo</span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-white/60 text-xs">Objetivo acumulado</p>
+                  <p className="text-white font-semibold text-lg">{OBJETIVO_TOTAL}d</p>
+                  {tiempoPuntaAPunta && (
+                    <p className="text-white/50 text-xs">{tiempoPuntaAPunta.muestra} solicitud{tiempoPuntaAPunta.muestra !== 1 ? 'es' : ''}</p>
+                  )}
+                </div>
+              </div>
+              {/* Mini barra visual */}
+              {tiempoPuntaAPunta && (
+                <div className="h-1.5 bg-muted">
+                  <div
+                    className="h-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min((tiempoPuntaAPunta.promedio / (OBJETIVO_TOTAL * 1.5)) * 100, 100)}%`,
+                      background: tiempoPuntaAPunta.promedio > OBJETIVO_TOTAL ? 'hsl(0,84%,60%)' : 'hsl(142,71%,45%)',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Desglose por etapa */}
           {loadingRefunds ? (
             <div className="space-y-5">
               {STAGE_ORDER.map(k => <Skeleton key={k} className="h-16 rounded-xl" />)}
