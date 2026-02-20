@@ -417,12 +417,8 @@ export default function Dashboard() {
 
       {/* ── Pipeline de etapas ── */}
       <section aria-label="Pipeline de solicitudes">
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
-          <Badge variant="secondary" className="text-xs gap-1.5">
-            <FileSignature className="h-3 w-3" />
-            Mandatos firmados: {solicitudesFirmadas}
-          </Badge>
         </div>
 
         <div className="space-y-4">
