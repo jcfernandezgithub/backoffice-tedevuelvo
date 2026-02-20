@@ -161,10 +161,8 @@ export function TabResumen() {
     montos: serieMontos?.[index]?.valor || 0,
   })) || [];
 
-  // Para las calugas de pipeline usamos TODOS los refunds (sin filtro de fecha)
-  // ya que representan el estado ACTUAL de las solicitudes, no un histórico.
-  // El filtro de fecha aplica solo a los gráficos de tendencia.
-  const qualifyingRefunds = refunds.filter((r: any) => r.status === 'qualifying');
+  // Todas las calugas respetan el filtro de fechas
+  const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
   const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
     mandateStatuses?.[r.publicId]?.hasSignedPdf === true
   );
@@ -172,21 +170,12 @@ export function TabResumen() {
     !mandateStatuses?.[r.publicId]?.hasSignedPdf
   );
 
-  // Filtrar solicitudes en estado "Documentos Recibidos"
-  const docsReceivedRefunds = refunds.filter((r: any) => r.status === 'docs_received');
-
-  // Filtrar solicitudes en estado "Ingresado"
-  const submittedRefunds = refunds.filter((r: any) => r.status === 'submitted');
-
-  // Filtrar solicitudes en estado "Aprobado"
-  const approvedRefunds = refunds.filter((r: any) => r.status === 'approved');
-
-  // Filtrar solicitudes en estado "Rechazado"
-  // Rechazadas es un estado TERMINAL/HISTÓRICO → respeta filtro de fecha
+  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
+  const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
+  const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
   const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
 
-  // Filtrar solicitudes en estado "Pago Programado"
-  const paymentScheduledRefunds = refunds.filter((r: any) => r.status === 'payment_scheduled');
+  const paymentScheduledRefunds = filteredRefunds.filter((r: any) => r.status === 'payment_scheduled');
   const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
   const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
 
