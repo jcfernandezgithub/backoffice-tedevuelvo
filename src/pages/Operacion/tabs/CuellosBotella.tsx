@@ -350,44 +350,120 @@ export function TabCuellosBotella() {
         </CardContent>
       </Card>
 
-      {/* Recomendaciones */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recomendaciones de Mejora</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 border border-warning/30 bg-warning/5 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-foreground">Cuellos de botella identificados</h4>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>• Las etapas que superen el objetivo se marcan en rojo en el gráfico de tiempos</li>
-                    <li>• Alta tasa de rechazo por documentación incompleta</li>
-                    <li>• Tiempo de procesamiento irregular entre Ingresadas y Aprobadas</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+      {/* Recomendaciones dinámicas */}
+      {(() => {
+        const etapasExcedidas = etapasConTiempos.filter(e => e.tieneData && e.excede);
+        const etapasOk       = etapasConTiempos.filter(e => e.tieneData && !e.excede);
+        const sinDatos       = etapasConTiempos.filter(e => !e.tieneData);
 
-            <div className="p-4 border border-primary/20 bg-primary/5 rounded-lg">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-foreground">Acciones sugeridas</h4>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>• Implementar validación automática de documentos</li>
-                    <li>• Crear checklist digital para reducir documentación incompleta</li>
-                    <li>• Establecer alertas automáticas para procesos que excedan 7 días</li>
-                    <li>• Revisar proceso de confirmación con compañías aseguradoras</li>
-                  </ul>
+        // Acciones sugeridas por etapa
+        const ACCIONES: Record<string, string> = {
+          qualifying:        'Revisar el proceso de calificación inicial y documentos requeridos para agilizar la validación.',
+          docs_received:     'Establecer recordatorios automáticos a clientes y revisar el flujo de recepción de documentos.',
+          submitted:         'Verificar que los expedientes estén completos antes de ingresarlos al banco para evitar reprocesos.',
+          approved:          'Coordinar con las compañías aseguradoras para acelerar la aprobación de solicitudes ingresadas.',
+          payment_scheduled: 'Revisar el proceso de programación de pagos y reducir tiempos de confirmación bancaria.',
+          paid:              'Automatizar la ejecución de transferencias una vez aprobado el pago programado.',
+        };
+
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Recomendaciones de Mejora
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Generadas automáticamente en base a los tiempos reales del proceso
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Sin datos suficientes */}
+              {etapasConTiempos.every(e => !e.tieneData) && (
+                <div className="p-4 border border-border rounded-lg text-sm text-muted-foreground">
+                  Sin suficientes solicitudes con historial completo para generar recomendaciones.
                 </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              )}
+
+              {/* Cuellos de botella detectados */}
+              {etapasExcedidas.length > 0 && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-foreground">
+                        {etapasExcedidas.length === 1
+                          ? '1 etapa supera el objetivo'
+                          : `${etapasExcedidas.length} etapas superan el objetivo`}
+                      </h4>
+                      <ul className="mt-3 space-y-3">
+                        {etapasExcedidas.map(({ key, cfg, promedio, pctVsObjetivo }) => {
+                          const Icon = cfg.icon;
+                          return (
+                            <li key={key} className="flex items-start gap-3">
+                              <div
+                                className="p-1.5 rounded-md shrink-0 mt-0.5"
+                                style={{ background: cfg.gradient }}
+                              >
+                                <Icon className="h-3 w-3 text-white" />
+                              </div>
+                              <div className="text-sm">
+                                <span className="font-medium text-foreground">{cfg.label}</span>
+                                <span className="text-destructive font-medium ml-2">
+                                  {promedio!.toFixed(1)}d
+                                  {pctVsObjetivo !== null && ` (+${pctVsObjetivo.toFixed(0)}% sobre ${cfg.objetivo}d obj.)`}
+                                </span>
+                                <p className="text-muted-foreground mt-0.5">{ACCIONES[key]}</p>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapas dentro del objetivo */}
+              {etapasOk.length > 0 && (
+                <div className="rounded-lg border border-primary/20 bg-primary/5 overflow-hidden">
+                  <div className="flex items-start gap-3 p-4">
+                    <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-foreground">
+                        {etapasOk.length === 1
+                          ? '1 etapa dentro del objetivo ✓'
+                          : `${etapasOk.length} etapas dentro del objetivo ✓`}
+                      </h4>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {etapasOk.map(({ key, cfg, promedio }) => {
+                          const Icon = cfg.icon;
+                          return (
+                            <span
+                              key={key}
+                              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium"
+                            >
+                              <Icon className="h-3 w-3" />
+                              {cfg.label} · {promedio!.toFixed(1)}d
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Etapas sin historial */}
+              {sinDatos.length > 0 && (
+                <p className="text-xs text-muted-foreground px-1">
+                  Sin datos aún para: {sinDatos.map(e => e.cfg.label).join(', ')}.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
     </div>
     </TooltipProvider>
   );
