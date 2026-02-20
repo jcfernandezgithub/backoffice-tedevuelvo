@@ -11,12 +11,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Money } from '@/components/common/Money'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
-  CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend,
+  CartesianGrid, PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
-  Wallet, BanknoteIcon, FileSignature, Users, TrendingUp, AlertCircle,
-  FileCheck, Inbox, Building2, ThumbsUp, CalendarCheck, CircleOff,
+  Wallet, FileSignature, Users, TrendingUp, AlertCircle,
+  FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -41,7 +41,6 @@ const toLocalDateString = (date: Date): string => {
   return `${y}-${m}-${d}`
 }
 
-// Filtrar por fecha local (mismo criterio que dashboardService)
 function filterByLocalDate(refunds: any[], desde?: string, hasta?: string): any[] {
   if (!desde && !hasta) return refunds
   return refunds.filter(r => {
@@ -51,43 +50,6 @@ function filterByLocalDate(refunds: any[], desde?: string, hasta?: string): any[
     if (hasta && dateStr > hasta) return false
     return true
   })
-}
-
-// Agregación temporal para gráficos
-function aggregateSeries(
-  refunds: any[],
-  dateKey: 'createdAt' | 'updatedAt',
-  valueKey: string | null,
-  by: Aggregation
-): { bucket: string; [k: string]: any }[] {
-  const map = new Map<string, number>()
-  for (const r of refunds) {
-    const rawDate = r[dateKey]
-    if (!rawDate) continue
-    const fecha = dayjs.tz(rawDate).format('YYYY-MM-DD')
-    let key = fecha
-    if (by === 'week') {
-      const d = dayjs.tz(fecha)
-      key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-    }
-    if (by === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
-    const val = valueKey ? (r[valueKey] ?? 1) : 1
-    map.set(key, (map.get(key) ?? 0) + val)
-  }
-
-  const toDate = (bucket: string) => {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(bucket)) return dayjs.tz(bucket)
-    if (/^\d{4}-W\d{2}$/.test(bucket)) {
-      const [y, w] = bucket.split('-W')
-      return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week')
-    }
-    return dayjs.tz(bucket + '-01')
-  }
-
-  return [...map.entries()]
-    .map(([k, v]) => ({ bucket: k, value: v, _sort: toDate(k).valueOf() }))
-    .sort((a, b) => a._sort - b._sort)
-    .map(({ bucket, value }) => ({ bucket, value }))
 }
 
 // ─── Definición de fases del flujo ──────────────────────────────────────────
@@ -209,16 +171,16 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  // ── OPTIMIZACIÓN 1: fuente de datos unificada (mismo caché que Operación) ──
+  // Fuente de datos unificada (mismo caché que Operación)
   const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds()
 
-  // ── Filtrado por fecha (memoizado) ──
+  // Filtrado por fecha (memoizado)
   const filteredRefunds = useMemo(
     () => filterByLocalDate(allRefunds, desde || undefined, hasta || undefined),
     [allRefunds, desde, hasta]
   )
 
-  // ── Conteos granulares por estado ──
+  // Conteos granulares por estado
   const granularCounts = useMemo(() => {
     const counts: Record<string, number> = {
       datos_sin_simulacion: 0, simulated: 0, requested: 0,
@@ -233,7 +195,7 @@ export default function Dashboard() {
     return counts
   }, [filteredRefunds])
 
-  // ── Sub-métricas: qualifying (mandatos) ──
+  // Sub-métricas: qualifying (mandatos)
   const qualifyingRefunds = useMemo(
     () => filteredRefunds.filter((r: any) => r.status === 'qualifying'),
     [filteredRefunds]
@@ -242,13 +204,11 @@ export default function Dashboard() {
     () => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean),
     [qualifyingRefunds]
   )
-  // OPTIMIZACIÓN 2: clave estable (sorted join) para evitar refetch innecesario
   const qualifyingIdsKey = useMemo(
     () => [...qualifyingPublicIds].sort().join(','),
     [qualifyingPublicIds]
   )
 
-  // OPTIMIZACIÓN 3: Authorization header correcto en mandate statuses
   const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
     queryKey: ['dashboard', 'mandate-statuses', qualifyingIdsKey],
     queryFn: async () => {
@@ -283,7 +243,7 @@ export default function Dashboard() {
     [qualifyingRefunds, mandateStatuses]
   )
 
-  // ── Sub-métricas: payment_scheduled (datos bancarios) ──
+  // Sub-métricas: payment_scheduled (datos bancarios)
   const paymentScheduledRefunds = useMemo(
     () => filteredRefunds.filter((r: any) => r.status === 'payment_scheduled'),
     [filteredRefunds]
@@ -297,14 +257,13 @@ export default function Dashboard() {
     [paymentScheduledRefunds]
   )
 
-  // ── KPIs de resumen ──
+  // KPIs de resumen
   const totalSolicitudes = useMemo(
     () => Object.values(granularCounts).reduce((s, v) => s + v, 0),
     [granularCounts]
   )
 
   const paidCount = granularCounts.paid
-  const rejectedCount = granularCounts.rejected + granularCounts.canceled
   const inProgressCount = granularCounts.qualifying + granularCounts.docs_pending +
     granularCounts.docs_received + granularCounts.submitted +
     granularCounts.approved + granularCounts.payment_scheduled
@@ -327,7 +286,7 @@ export default function Dashboard() {
     return Math.round((paidCount / base) * 100)
   }, [paidCount, totalSolicitudes, granularCounts.datos_sin_simulacion])
 
-  // ── OPTIMIZACIÓN 4: getActivePreset memoizado ──
+  // getActivePreset memoizado
   const activePreset = useMemo(() => {
     const hoy = toLocalDateString(new Date())
     const now = new Date()
@@ -343,24 +302,41 @@ export default function Dashboard() {
     return null
   }, [desde, hasta])
 
-  // ── Datos para gráficos ──
+  // Datos para gráficos
   const paidRefunds = useMemo(
     () => filteredRefunds.filter((r: any) => r.status === 'paid'),
     [filteredRefunds]
   )
 
-  const solicitudesAggSeries = useMemo(
-    () => aggregateSeries(filteredRefunds, 'createdAt', null, agg),
-    [filteredRefunds, agg]
-  )
+  const solicitudesAggSeries = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of filteredRefunds) {
+      if (!r.createdAt) continue
+      const fecha = dayjs.tz(r.createdAt).format('YYYY-MM-DD')
+      let key = fecha
+      if (agg === 'week') {
+        const d = dayjs.tz(fecha)
+        key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
+      }
+      if (agg === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
+      map.set(key, (map.get(key) ?? 0) + 1)
+    }
+    const toDate = (b: string) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
+      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
+      return dayjs.tz(b + '-01')
+    }
+    return [...map.entries()]
+      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
+      .sort((a, b) => a._s - b._s)
+      .map(({ bucket, value }) => ({ bucket, value }))
+  }, [filteredRefunds, agg])
 
   const pagosAggSeries = useMemo(() => {
-    // Para pagos, sumamos estimatedAmountCLP de los pagados
     const map = new Map<string, number>()
     for (const r of paidRefunds) {
-      const rawDate = r.updatedAt
-      if (!rawDate) continue
-      const fecha = dayjs.tz(rawDate).format('YYYY-MM-DD')
+      if (!r.updatedAt) continue
+      const fecha = dayjs.tz(r.updatedAt).format('YYYY-MM-DD')
       let key = fecha
       if (agg === 'week') {
         const d = dayjs.tz(fecha)
@@ -374,17 +350,14 @@ export default function Dashboard() {
       const monto = entry?.realAmount || r.estimatedAmountCLP || 0
       map.set(key, (map.get(key) ?? 0) + monto)
     }
-    const toDate = (bucket: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(bucket)) return dayjs.tz(bucket)
-      if (/^\d{4}-W\d{2}$/.test(bucket)) {
-        const [y, w] = bucket.split('-W')
-        return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week')
-      }
-      return dayjs.tz(bucket + '-01')
+    const toDate = (b: string) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
+      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
+      return dayjs.tz(b + '-01')
     }
     return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, monto: v, _sort: toDate(k).valueOf() }))
-      .sort((a, b) => a._sort - b._sort)
+      .map(([k, v]) => ({ bucket: k, monto: v, _s: toDate(k).valueOf() }))
+      .sort((a, b) => a._s - b._s)
       .map(({ bucket, monto }) => ({ bucket, monto }))
   }, [paidRefunds, agg])
 
@@ -401,7 +374,6 @@ export default function Dashboard() {
 
   const isRefreshing = isFetchingRefunds || isFetchingMandates
 
-  // ── Navegación al hacer clic en una card ──
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
     p.set('status', refundStatus)
@@ -426,11 +398,10 @@ export default function Dashboard() {
   }
 
   return (
-    // OPTIMIZACIÓN 5: TooltipProvider único al nivel raíz del componente
     <TooltipProvider delayDuration={300}>
       <main className="p-3 sm:p-4 md:p-6 space-y-6" role="main">
 
-        {/* ── Header ── */}
+        {/* Header */}
         <header className="flex items-center gap-2">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
@@ -439,7 +410,7 @@ export default function Dashboard() {
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </header>
 
-        {/* ── Panel de filtros de fecha ── */}
+        {/* Filtros de fecha */}
         <Card>
           <CardContent className="pt-4 pb-4 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -487,7 +458,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* ── KPIs de resumen ── */}
+        {/* KPIs de resumen */}
         <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
@@ -516,8 +487,12 @@ export default function Dashboard() {
             label="Tasa de éxito"
             value={`${conversionRate}%`}
             icon={TrendingUp}
-            className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/20"
-            valueClass="text-sky-700 dark:text-sky-300"
+            alert={conversionRate === 0}
+            className={conversionRate === 0
+              ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/20 ring-1 ring-red-300 dark:ring-red-700'
+              : 'border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/20'
+            }
+            valueClass={conversionRate === 0 ? 'text-red-600 dark:text-red-400' : 'text-sky-700 dark:text-sky-300'}
             tooltip="Porcentaje de solicitudes pagadas sobre el total que inició el proceso (excluye leads sin simulación)."
           />
           <SummaryKpi
@@ -530,7 +505,7 @@ export default function Dashboard() {
           />
         </section>
 
-        {/* ── Pipeline de etapas ── */}
+        {/* Pipeline de etapas */}
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
@@ -592,7 +567,6 @@ export default function Dashboard() {
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {/* Sub-métrica: En calificación — firmados / pendientes */}
                                   {isQualifying && mandateStatuses && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
@@ -612,7 +586,6 @@ export default function Dashboard() {
                                     </div>
                                   )}
 
-                                  {/* Sub-métrica: Pago programado — con/sin banco */}
                                   {isPaymentScheduled && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
@@ -653,7 +626,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* ── Gráficos ── */}
+        {/* Gráficos */}
         <section>
           <Card>
             <CardHeader className="p-4 sm:p-6 pb-2">
@@ -782,7 +755,7 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '', tooltip,
+  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false,
 }: {
   label: string
   value: number | string | React.ReactNode
@@ -790,15 +763,25 @@ function SummaryKpi({
   className?: string
   valueClass?: string
   tooltip?: string
-}) {
+  alert?: boolean
+}): React.ReactElement {
   const card = (
-    <Card className={`border ${className}`}>
+    <Card className={`border relative ${className}`}>
+      {alert && (
+        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+        </span>
+      )}
       <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground font-medium">{label}</span>
           <Icon className="h-4 w-4 text-muted-foreground/60" />
         </div>
         <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
+        {alert && (
+          <p className="text-[10px] text-red-500 font-medium">⚠ Sin conversiones en el período</p>
+        )}
       </CardContent>
     </Card>
   )
