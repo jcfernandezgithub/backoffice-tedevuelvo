@@ -23,12 +23,21 @@ import tasasCesantiaTeDevuelvo from '@/data/tasas_cesantia_te_devuelvo.json';
 import tasasDesgravamen from '@/data/tasas_formateadas_te_devuelvo.json';
 
 // ─── Constantes de tasas TDV desgravamen ────────────────────────────────────
+// Fuente: tabla oficial TDV — tasa mensual aplicada sobre el saldo insoluto
 
 const TDV_DESGRAVAMEN_TASAS = [
-  { segmento: 'Crédito ≤ $20M · Edad 18–55', tasa: 0.0003, montoLimite: '≤ $20.000.000', edadRango: '18 – 55 años', descripcion: 'Tasa mensual preferencial para créditos hasta 20 millones, clientes hasta 55 años' },
-  { segmento: 'Crédito ≤ $20M · Edad 56+',   tasa: 0.00039, montoLimite: '≤ $20.000.000', edadRango: '56+ años', descripcion: 'Tasa mensual preferencial para créditos hasta 20 millones, clientes de 56 años o más' },
-  { segmento: 'Crédito > $20M · Edad 18–55', tasa: 0.000344, montoLimite: '> $20.000.000', edadRango: '18 – 55 años', descripcion: 'Tasa mensual preferencial para créditos sobre 20 millones, clientes hasta 55 años' },
-  { segmento: 'Crédito > $20M · Edad 56+',   tasa: 0.000343, montoLimite: '> $20.000.000', edadRango: '56+ años', descripcion: 'Tasa mensual preferencial para créditos sobre 20 millones, clientes de 56 años o más' },
+  {
+    tramo: 'Tramo 1',
+    edadRango: 'Hasta 55 años',
+    tasa: 0.0029704,
+    descripcion: 'Tasa mensual TDV para clientes de hasta 55 años. Se aplica sobre el saldo insoluto del crédito.',
+  },
+  {
+    tramo: 'Tramo 2',
+    edadRango: 'Desde 56 años',
+    tasa: 0.0037379,
+    descripcion: 'Tasa mensual TDV para clientes de 56 años o más. Se aplica sobre el saldo insoluto del crédito.',
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -357,43 +366,53 @@ function TablaDesgravamenBancos() {
 
 function TablaDesgravamenTDV() {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {TDV_DESGRAVAMEN_TASAS.map((item) => (
-          <div key={item.segmento} className="rounded-xl border border-border/60 p-4 bg-indigo-50/30 dark:bg-indigo-950/10 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-colors">
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <p className="text-sm font-semibold leading-tight">{item.segmento}</p>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[220px] text-xs">{item.descripcion}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-3xl font-bold text-indigo-700 dark:text-indigo-400">{formatTasa(item.tasa)}</span>
-              <span className="text-xs text-muted-foreground text-right leading-tight">mensual</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border/40">
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Monto crédito</p>
-                <p className="text-xs font-medium">{item.montoLimite}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Edad cliente</p>
-                <p className="text-xs font-medium">{item.edadRango}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-start gap-3 rounded-lg bg-muted/40 border border-border/60 p-4">
-        <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p>Las tasas de desgravamen TDV son preferenciales y se aplican sobre el <strong>saldo insoluto restante del crédito</strong> en el momento del cálculo.</p>
-          <p>Para créditos con tasa superior a $20M se utiliza la tasa preferencial alta, independientemente de la institución financiera original.</p>
+    <div className="space-y-5">
+      {/* Tabla principal */}
+      <div className="rounded-xl border border-border/60 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/40">
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tramo</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Edad</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Tasa mensual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {TDV_DESGRAVAMEN_TASAS.map((item, i) => (
+              <tr key={item.tramo} className={`border-b hover:bg-muted/20 transition-colors ${i % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary/60 shrink-0" />
+                    <span className="font-medium text-sm">{item.tramo}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <UserRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-sm">{item.edadRango}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="font-mono text-base font-bold text-primary cursor-default">
+                          {item.tasa.toFixed(7)}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="text-xs max-w-[200px]">
+                        {item.descripcion}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="px-4 py-2.5 border-t bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
+          <Info className="h-3.5 w-3.5 shrink-0" />
+          Tasa mensual aplicada sobre el saldo insoluto del crédito en el momento del cálculo
         </div>
       </div>
     </div>
@@ -453,8 +472,10 @@ export function TasasSection() {
 
     // Hoja final: Desgravamen TDV
     const desgravTdvRows = TDV_DESGRAVAMEN_TASAS.map(item => ({
-      'Segmento': item.segmento, 'Monto Crédito': item.montoLimite, 'Edad Cliente': item.edadRango,
-      'Tasa Mensual': item.tasa, 'Tasa Mensual (%)': `${(item.tasa * 100).toFixed(4)}%`,
+      'Tramo': item.tramo,
+      'Edad Cliente': item.edadRango,
+      'Tasa Mensual': item.tasa,
+      'Tasa Mensual (formato)': item.tasa.toFixed(7),
     }));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(desgravTdvRows), 'Desgravamen TDV');
 
