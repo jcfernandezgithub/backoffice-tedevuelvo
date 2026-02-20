@@ -38,7 +38,6 @@ const PHASES = [
     stages: [
       { key: 'datos_sin_simulacion', label: 'Datos sin simulación', sublabel: 'Lead inicial', icon: FileText, refundStatus: 'datos_sin_simulacion' },
       { key: 'simulated', label: 'Simulado', sublabel: 'Cálculo completado', icon: FileCheck, refundStatus: 'simulated' },
-      { key: 'requested', label: 'Solicitado', sublabel: 'Confirmación cliente', icon: Inbox, refundStatus: 'requested' },
     ],
   },
   {
