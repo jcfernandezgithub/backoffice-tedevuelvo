@@ -171,7 +171,7 @@ export function TabResumen() {
   );
 
   // Filtrar solicitudes en estado "Documentos Recibidos"
-  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'documents_received');
+  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
 
   // Filtrar solicitudes en estado "Ingresado"
   const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
@@ -291,7 +291,7 @@ export function TabResumen() {
             {/* Card: Documentos Recibidos */}
             <Card 
               className="border-l-4 border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'documents_received' }))}
+              onClick={() => navigate(buildRefundsUrl({ status: 'docs_received' }))}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
