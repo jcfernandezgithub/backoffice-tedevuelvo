@@ -6,8 +6,8 @@ import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { refundAdminApi } from '@/services/refundAdminApi';
 import { useSerieTemporal } from '../hooks/useReportsData';
+import { useAllRefunds } from '../hooks/useAllRefunds';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -61,97 +61,56 @@ export function TabResumen() {
     'montoRecuperado'
   );
   
-  // Obtener todas las solicitudes del sistema usando el mismo servicio que la página de Solicitudes
-  const { data: refunds = [], isLoading: loadingRefunds } = useQuery({
-    queryKey: ['refunds-operacion', filtros.fechaDesde, filtros.fechaHasta],
-    queryFn: async () => {
-      console.log('[Resumen] Iniciando carga con paginación paralela...');
-      const PAGE_SIZE = 100;
-      
-      // Primera llamada para obtener el total
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
-      const total = firstPage.total || 0;
-      const totalPages = Math.ceil(total / PAGE_SIZE);
-      
-      console.log(`[Resumen] Total registros: ${total}, Páginas: ${totalPages}`);
-      
-      let allItems = [...(firstPage.items || [])];
-      
-      // Si hay más páginas, obtenerlas en paralelo
-      if (totalPages > 1) {
-        const pagePromises = [];
-        for (let page = 2; page <= totalPages; page++) {
-          pagePromises.push(refundAdminApi.list({ pageSize: PAGE_SIZE, page }));
-        }
-        
-        const additionalPages = await Promise.all(pagePromises);
-        additionalPages.forEach(pageResult => {
-          allItems = allItems.concat(pageResult.items || []);
-        });
-      }
-      
-      console.log(`[Resumen] Total items obtenidos: ${allItems.length}`);
-      console.log('[Resumen] Primeros 3 items:', allItems.slice(0, 3).map((r: any) => ({ 
-        publicId: r.publicId, 
-        status: r.status,
-        createdAt: r.createdAt 
-      })));
-      
-      // Asegurar normalización a minúsculas
-      return allItems.map((r: any) => ({
-        ...r,
-        status: r.status?.toLowerCase?.() || r.status
-      }));
-    },
-    staleTime: 30 * 1000,
-  });
+  // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
+  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
   // Filtrar refunds por fechas según los filtros
   const filteredRefunds = useMemo(() => {
-    const filtered = refunds.filter((r: any) => {
+    return allRefunds.filter((r: any) => {
       if (!r.createdAt) return false;
-      // Extraer solo la parte de fecha (YYYY-MM-DD) para comparar sin problemas de timezone
       const createdDateStr = r.createdAt.split('T')[0];
-      
-      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) {
-        return false;
-      }
-      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) {
-        return false;
-      }
+      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) return false;
+      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) return false;
       return true;
     });
-    console.log('[Resumen] Refunds después de filtrar por fechas:', filtered.length);
-    console.log('[Resumen] Fechas usadas:', { desde: filtros.fechaDesde, hasta: filtros.fechaHasta });
-    console.log('[Resumen] Status únicos:', [...new Set(filtered.map((r: any) => r.status))]);
-    return filtered;
-  }, [refunds, filtros.fechaDesde, filtros.fechaHasta]);
+  }, [allRefunds, filtros.fechaDesde, filtros.fechaHasta]);
 
-  // Query para obtener estados de mandatos de todas las solicitudes filtradas
-  const allFilteredPublicIds = filteredRefunds.map((r: any) => r.publicId);
-  
+  // ── Mejora: solo consultar mandatos de solicitudes en estado "qualifying" ────
+  // Son las únicas que necesitan el dato de firma para los KPIs de este tab.
+  const qualifyingPublicIds = useMemo(() =>
+    filteredRefunds
+      .filter((r: any) => r.status === 'qualifying')
+      .map((r: any) => r.publicId)
+      .filter(Boolean),
+    [filteredRefunds]
+  );
+
   const { data: mandateStatuses, isLoading: loadingMandates } = useQuery({
-    queryKey: ['mandate-statuses-resumen', allFilteredPublicIds],
+    queryKey: ['mandate-statuses-qualifying', qualifyingPublicIds],
     queryFn: async () => {
       const statuses: Record<string, any> = {};
-      await Promise.all(
-        allFilteredPublicIds.map(async (publicId: string) => {
-          try {
-            const response = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            );
-            if (response.ok) {
-              statuses[publicId] = await response.json();
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH_SIZE) {
+        const batch = qualifyingPublicIds.slice(i, i + BATCH_SIZE);
+        await Promise.all(
+          batch.map(async (publicId: string) => {
+            try {
+              const response = await fetch(
+                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+              );
+              if (response.ok) {
+                statuses[publicId] = await response.json();
+              }
+            } catch {
+              // Silently fail
             }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
-        })
-      );
+          })
+        );
+      }
       return statuses;
     },
-    enabled: allFilteredPublicIds.length > 0,
-    staleTime: 30 * 1000,
+    enabled: qualifyingPublicIds.length > 0,
+    staleTime: 10 * 60 * 1000,
   });
 
 

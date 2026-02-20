@@ -1,103 +1,110 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { reportsClient } from '../services/reportsClient';
+import { useAllRefunds } from './useAllRefunds';
 import type { FiltrosReporte, Granularidad } from '../types/reportTypes';
 
+const STALE_TIME = 10 * 60 * 1000; // 10 minutos (usado solo en useAlertas que sigue siendo async)
+
+/**
+ * Todos los hooks de reportes ahora consumen el caché compartido useAllRefunds.
+ * Los cálculos son síncronos (useMemo) — sin fetches adicionales.
+ */
+
 export function useKpisResumen(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'kpis', filtros],
-    queryFn: () => reportsClient.getKpisResumen(filtros),
-    staleTime: 5 * 60 * 1000, // 5 minutos
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getKpisResumen(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useSerieTemporal(
-  filtros: FiltrosReporte, 
-  granularidad: Granularidad, 
+  filtros: FiltrosReporte,
+  granularidad: Granularidad,
   campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito'
 ) {
-  return useQuery({
-    queryKey: ['reportes', 'serie-temporal', filtros, granularidad, campo],
-    queryFn: () => reportsClient.getSerieTemporal(filtros, granularidad, campo),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getSerieTemporal(filtros, granularidad, campo, allRefunds) : undefined,
+    [allRefunds, filtros, granularidad, campo]
+  );
+  return { data, isLoading };
 }
 
 export function useDistribucionPorEstado(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'distribucion-estado', filtros],
-    queryFn: () => reportsClient.getDistribucionPorEstado(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getDistribucionPorEstado(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useDistribucionPorAlianza(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'distribucion-alianza', filtros],
-    queryFn: () => reportsClient.getDistribucionPorAlianza(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getDistribucionPorAlianza(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useDistribucionPorTipoSeguro(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'distribucion-tipo-seguro', filtros],
-    queryFn: () => reportsClient.getDistribucionPorTipoSeguro(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getDistribucionPorTipoSeguro(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useKpisSegmentos(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'kpis-segmentos', filtros],
-    queryFn: () => reportsClient.getKpisSegmentos(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getKpisSegmentos(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useFunnelData(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'funnel', filtros],
-    queryFn: () => reportsClient.getFunnelData(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getFunnelData(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useSlaMetrics(filtros: FiltrosReporte) {
-  return useQuery({
-    queryKey: ['reportes', 'sla', filtros],
-    queryFn: () => reportsClient.getSlaMetrics(filtros),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getSlaMetrics(filtros, allRefunds) : undefined,
+    [allRefunds, filtros]
+  );
+  return { data, isLoading };
 }
 
 export function useAlertas() {
-  return useQuery({
-    queryKey: ['reportes', 'alertas'],
-    queryFn: () => reportsClient.getAlertas(),
-    staleTime: 2 * 60 * 1000, // 2 minutos para alertas
-  });
+  // Las alertas son estáticas por ahora — no requieren fetch
+  const data = useMemo(() => reportsClient.getAlertas(), []);
+  return { data, isLoading: false };
 }
 
 export function useTablaResumen(filtros: FiltrosReporte, page = 1, pageSize = 10) {
-  return useQuery({
-    queryKey: ['reportes', 'tabla-resumen', filtros, page, pageSize],
-    queryFn: () => reportsClient.getTablaResumen(filtros, page, pageSize),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const data = useMemo(
+    () => allRefunds.length ? reportsClient.getTablaResumen(filtros, allRefunds, page, pageSize) : undefined,
+    [allRefunds, filtros, page, pageSize]
+  );
+  return { data, isLoading };
 }
 
 export function useAlianzas() {
-  return useQuery({
-    queryKey: ['reportes', 'alianzas'],
-    queryFn: () => reportsClient.getAlianzas(),
-    staleTime: 30 * 60 * 1000, // 30 minutos
-  });
+  return { data: [], isLoading: false };
 }
 
 export function useCompanias() {
-  return useQuery({
-    queryKey: ['reportes', 'companias'],
-    queryFn: () => reportsClient.getCompanias(),
-    staleTime: 30 * 60 * 1000,
-  });
+  return { data: [], isLoading: false };
 }
