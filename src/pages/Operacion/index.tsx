@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { FiltersBar } from './components/FiltersBar';
+import { CacheIndicator } from './components/CacheIndicator';
 import { TabResumen } from './tabs/Resumen';
 import { TabDetalleFinanciero } from './tabs/DetalleFinanciero';
 import { TabTendencias } from './tabs/Tendencias';
@@ -68,7 +69,8 @@ export default function Operacion() {
             Análisis completo de solicitudes, tendencias y métricas operacionales
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <CacheIndicator />
           <Button variant="outline" size="sm">
             <FileText className="h-4 w-4 mr-2" />
             Programar reporte
