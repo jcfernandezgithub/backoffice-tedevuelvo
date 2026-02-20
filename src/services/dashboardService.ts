@@ -100,7 +100,7 @@ export function invalidateDashboardCache() {
   refundsCache.promise = null
 }
 
-// Mapeo de estados de refunds a estados del dashboard
+// Mapeo de estados de refunds a estados del dashboard (agrupado)
 const statusToDashboardState = (status: RefundStatus): string => {
   switch (status) {
     case 'datos_sin_simulacion':
@@ -126,6 +126,29 @@ const statusToDashboardState = (status: RefundStatus): string => {
     default:
       return 'OTRO'
   }
+}
+
+// Mapeo granular estado real → bucket dashboard
+export function getGranularCounts(refunds: RefundRequest[]): Record<string, number> {
+  const counts: Record<string, number> = {
+    datos_sin_simulacion: 0,
+    simulated: 0,
+    requested: 0,
+    qualifying: 0,
+    docs_pending: 0,
+    docs_received: 0,
+    submitted: 0,
+    approved: 0,
+    rejected: 0,
+    payment_scheduled: 0,
+    paid: 0,
+    canceled: 0,
+  }
+  for (const r of refunds) {
+    const s = r.status as string
+    if (s in counts) counts[s]++
+  }
+  return counts
 }
 
 // Filtrar por fecha de creación LOCAL (mismo criterio que List.tsx)
@@ -166,13 +189,9 @@ function filterByLocalDate(refunds: RefundRequest[], desde?: string, hasta?: str
 
 export const dashboardService = {
   async getSolicitudesPorEstado(desde?: string, hasta?: string) {
-    // Obtener todas las solicitudes con paginación paralela
     const refunds = await fetchAllRefunds()
-
-    // Aplicar filtro de fecha LOCAL (mismo criterio que List.tsx)
     const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
 
-    // Contar por estado mapeado
     const counts: Record<string, number> = {
       DATOS_SIN_SIMULACION: 0,
       SIMULACION_CONFIRMADA: 0,
@@ -191,6 +210,12 @@ export const dashboardService = {
     }
 
     return counts
+  },
+
+  async getSolicitudesPorEstadoGranular(desde?: string, hasta?: string) {
+    const refunds = await fetchAllRefunds()
+    const filteredRefunds = filterByLocalDate(refunds as RefundRequest[], desde, hasta)
+    return getGranularCounts(filteredRefunds)
   },
 
   async getPagosClientes(desde?: string, hasta?: string) {

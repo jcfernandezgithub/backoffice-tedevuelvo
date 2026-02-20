@@ -1,76 +1,130 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Money } from '@/components/common/Money'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts'
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
-
-import { dashboardDataMock } from '@/mocks/dashboardData'
-import { FileCheck, Clock, Building2, Wallet, Bell, CheckCircle2, XCircle, LucideIcon, FileSignature, Loader2 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Money } from '@/components/common/Money'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend,
+} from 'recharts'
+import {
+  FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
+  Wallet, BanknoteIcon, FileSignature, Users, TrendingUp, AlertCircle,
+  FileCheck, Inbox, Building2, ThumbsUp, CalendarCheck, CircleOff,
+} from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-const fmtCLP = (v: number) => v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+// ─── helpers ────────────────────────────────────────────────────────────────
+const fmtCLP = (v: number) =>
+  v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
 
-const ESTADO_LABELS: Record<string, string> = {
-  SIMULACION_CONFIRMADA: 'Simulado',
-  EN_PROCESO: 'En proceso',
-  DEVOLUCION_CONFIRMADA_COMPANIA: 'Enviado',
-  FONDOS_RECIBIDOS_TD: 'Aprobado',
-  CLIENTE_NOTIFICADO: 'Pago programado',
-  PAGADA_CLIENTE: 'Pagado',
-  RECHAZADO: 'Rechazado',
-  DATOS_SIN_SIMULACION: 'Datos (sin simulación)',
-}
-
-const ESTADO_COLORS: Record<string, string> = {
-  SIMULACION_CONFIRMADA: 'hsl(221, 83%, 53%)', // blue
-  EN_PROCESO: 'hsl(43, 96%, 56%)', // yellow
-  DEVOLUCION_CONFIRMADA_COMPANIA: 'hsl(238, 56%, 58%)', // indigo
-  FONDOS_RECIBIDOS_TD: 'hsl(142, 71%, 45%)', // green
-  CLIENTE_NOTIFICADO: 'hsl(160, 84%, 39%)', // emerald
-  PAGADA_CLIENTE: 'hsl(142, 76%, 36%)', // dark green
-  RECHAZADO: 'hsl(0, 84%, 60%)', // red
-  DATOS_SIN_SIMULACION: 'hsl(270, 70%, 60%)', // purple
-}
-
-const ESTADO_ICONS: Record<string, LucideIcon> = {
-  SIMULACION_CONFIRMADA: FileCheck,
-  EN_PROCESO: Clock,
-  DEVOLUCION_CONFIRMADA_COMPANIA: Building2,
-  FONDOS_RECIBIDOS_TD: Wallet,
-  CLIENTE_NOTIFICADO: Bell,
-  PAGADA_CLIENTE: CheckCircle2,
-  RECHAZADO: XCircle,
-  DATOS_SIN_SIMULACION: FileCheck,
-}
-
-// Mapeo de estados del dashboard a estados de refunds (lowercase para URL)
-const DASHBOARD_TO_REFUND_STATUS: Record<string, string> = {
-  SIMULACION_CONFIRMADA: 'requested',
-  EN_PROCESO: 'qualifying', // Agrupa QUALIFYING, DOCS_PENDING, DOCS_RECEIVED
-  DEVOLUCION_CONFIRMADA_COMPANIA: 'submitted',
-  FONDOS_RECIBIDOS_TD: 'approved',
-  CLIENTE_NOTIFICADO: 'payment_scheduled',
-  PAGADA_CLIENTE: 'paid',
-  RECHAZADO: 'rejected',
-  DATOS_SIN_SIMULACION: 'datos_sin_simulacion',
-}
-
-// Helper para obtener fecha local en formato YYYY-MM-DD
 const toLocalDateString = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
+// ─── Definición de fases del flujo ──────────────────────────────────────────
+const PHASES = [
+  {
+    id: 'captacion',
+    label: 'Captación',
+    color: 'violet',
+    stages: [
+      { key: 'datos_sin_simulacion', label: 'Datos sin simulación', sublabel: 'Lead inicial', icon: FileText, refundStatus: 'datos_sin_simulacion' },
+      { key: 'simulated', label: 'Simulado', sublabel: 'Cálculo completado', icon: FileCheck, refundStatus: 'simulated' },
+      { key: 'requested', label: 'Solicitado', sublabel: 'Confirmación cliente', icon: Inbox, refundStatus: 'requested' },
+    ],
+  },
+  {
+    id: 'revision',
+    label: 'Revisión y Docs',
+    color: 'amber',
+    stages: [
+      { key: 'qualifying', label: 'En calificación', sublabel: 'Revisión de analista', icon: Clock, refundStatus: 'qualifying' },
+      { key: 'docs_pending', label: 'Docs. pendientes', sublabel: 'Faltan requisitos', icon: AlertCircle, refundStatus: 'docs_pending' },
+      { key: 'docs_received', label: 'Docs. recibidos', sublabel: 'Carga completada', icon: FileSignature, refundStatus: 'docs_received' },
+    ],
+  },
+  {
+    id: 'gestion',
+    label: 'Gestión Bancaria',
+    color: 'sky',
+    stages: [
+      { key: 'submitted', label: 'Ingresado', sublabel: 'Trámite en entidad', icon: Building2, refundStatus: 'submitted' },
+      { key: 'approved', label: 'Aprobado', sublabel: 'Dictamen positivo', icon: ThumbsUp, refundStatus: 'approved' },
+      { key: 'payment_scheduled', label: 'Pago programado', sublabel: 'Fondos en proceso', icon: CalendarCheck, refundStatus: 'payment_scheduled' },
+      { key: 'paid', label: 'Pagado', sublabel: 'Proceso finalizado', icon: CheckCircle2, refundStatus: 'paid' },
+    ],
+  },
+  {
+    id: 'salida',
+    label: 'Salidas',
+    color: 'red',
+    stages: [
+      { key: 'rejected', label: 'Rechazado', sublabel: 'Entidad deniega', icon: XCircle, refundStatus: 'rejected' },
+      { key: 'canceled', label: 'Cancelado', sublabel: 'Proceso cancelado', icon: CircleOff, refundStatus: 'canceled' },
+    ],
+  },
+]
+
+const PHASE_COLORS: Record<string, { ring: string; bg: string; text: string; badge: string; icon: string; cardHover: string }> = {
+  violet: {
+    ring: 'border-violet-300 dark:border-violet-700',
+    bg: 'bg-violet-50 dark:bg-violet-950/20',
+    text: 'text-violet-700 dark:text-violet-300',
+    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 border-violet-200 dark:border-violet-700',
+    icon: 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/40',
+    cardHover: 'hover:border-violet-400 hover:shadow-violet-100 dark:hover:shadow-violet-900/20',
+  },
+  amber: {
+    ring: 'border-amber-300 dark:border-amber-700',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+    text: 'text-amber-700 dark:text-amber-300',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-700',
+    icon: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40',
+    cardHover: 'hover:border-amber-400 hover:shadow-amber-100 dark:hover:shadow-amber-900/20',
+  },
+  sky: {
+    ring: 'border-sky-300 dark:border-sky-700',
+    bg: 'bg-sky-50 dark:bg-sky-950/20',
+    text: 'text-sky-700 dark:text-sky-300',
+    badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300 border-sky-200 dark:border-sky-700',
+    icon: 'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/40',
+    cardHover: 'hover:border-sky-400 hover:shadow-sky-100 dark:hover:shadow-sky-900/20',
+  },
+  red: {
+    ring: 'border-red-300 dark:border-red-700',
+    bg: 'bg-red-50 dark:bg-red-950/20',
+    text: 'text-red-700 dark:text-red-300',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-700',
+    icon: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/40',
+    cardHover: 'hover:border-red-400 hover:shadow-red-100 dark:hover:shadow-red-900/20',
+  },
+}
+
+const PIE_COLORS = [
+  'hsl(262,83%,58%)', // violet
+  'hsl(258,70%,60%)',
+  'hsl(45,96%,56%)',  // amber
+  'hsl(38,92%,50%)',
+  'hsl(201,98%,41%)', // sky
+  'hsl(199,89%,48%)',
+  'hsl(173,80%,40%)',
+  'hsl(142,71%,45%)', // green
+  'hsl(0,84%,60%)',   // red
+  'hsl(0,72%,51%)',
+]
+
+// ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
-  // Rango de fechas por defecto: últimos 30 días
+
   const [desde, setDesde] = useState<string>(() => {
     const d = new Date()
     d.setDate(d.getDate() - 30)
@@ -79,40 +133,43 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  const { data: counts, isLoading: isLoadingCounts, isFetching: isFetchingCounts, isError: isErrorCounts } = useQuery({
-    queryKey: ['dashboard', 'counts', desde, hasta],
-    queryFn: () => dashboardService.getSolicitudesPorEstado(desde, hasta),
-    staleTime: 30 * 1000,
+  // ── Queries ──
+  const { data: granularCounts, isLoading: isLoadingCounts, isFetching: isFetchingCounts } = useQuery({
+    queryKey: ['dashboard', 'granular', desde, hasta],
+    queryFn: () => dashboardService.getSolicitudesPorEstadoGranular(desde, hasta),
+    staleTime: 30_000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+    retryDelay: (i) => Math.min(1000 * 2 ** i, 10_000),
+  })
+
+  const { data: totalPaidAmount = 0, isFetching: isFetchingPaid } = useQuery({
+    queryKey: ['dashboard', 'total-paid', desde, hasta],
+    queryFn: () => dashboardService.getTotalPaidAmount(desde, hasta),
+    staleTime: 30_000,
+    retry: 3,
   })
 
   const { data: pagosAgg, isFetching: isFetchingPagos } = useQuery({
     queryKey: ['dashboard', 'pagos-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getPagosAggregate(desde, hasta, agg),
-    staleTime: 30 * 1000,
+    staleTime: 30_000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
   const { data: solicitudesAgg, isFetching: isFetchingSolicitudes } = useQuery({
     queryKey: ['dashboard', 'solicitudes-agg', desde, hasta, agg],
     queryFn: () => dashboardService.getSolicitudesAggregate(desde, hasta, agg),
-    staleTime: 30 * 1000,
+    staleTime: 30_000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
-  // Obtener publicIds de solicitudes para consultar estado de mandato
-  const { data: solicitudesIds, isFetching: isFetchingIds } = useQuery({
+  const { data: solicitudesIds } = useQuery({
     queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
     queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
-    staleTime: 30 * 1000,
+    staleTime: 30_000,
     retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   })
 
-  // Query para obtener estados de mandatos de todas las solicitudes
   const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
     queryKey: ['dashboard', 'mandate-statuses', solicitudesIds?.join(',')],
     queryFn: async () => {
@@ -121,470 +178,414 @@ export default function Dashboard() {
       await Promise.all(
         solicitudesIds.map(async (publicId: string) => {
           try {
-            const response = await fetch(
+            const res = await fetch(
               `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
             )
-            if (response.ok) {
-              statuses[publicId] = await response.json()
-            }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
+            if (res.ok) statuses[publicId] = await res.json()
+          } catch { /* silencioso */ }
         })
       )
       return statuses
     },
     enabled: !!solicitudesIds && solicitudesIds.length > 0,
-    staleTime: 60 * 1000,
+    staleTime: 60_000,
     retry: 2,
   })
 
-  // Query para obtener monto total pagado con paginación paralela
-  const { data: totalPaidAmount = 0, isFetching: isFetchingPaid } = useQuery({
-    queryKey: ['dashboard', 'total-paid', desde, hasta],
-    queryFn: () => dashboardService.getTotalPaidAmount(desde, hasta),
-    staleTime: 30 * 1000,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-  })
+  const isRefreshing = isFetchingCounts || isFetchingPaid || isFetchingPagos || isFetchingSolicitudes || isFetchingMandates
 
-  // Estado general de carga
-  const isLoading = isLoadingCounts
-  const isRefreshing = isFetchingCounts || isFetchingPagos || isFetchingSolicitudes || isFetchingIds || isFetchingMandates || isFetchingPaid
+  // ── Métricas derivadas ──
+  const totalSolicitudes = useMemo(() => {
+    if (!granularCounts) return 0
+    return Object.values(granularCounts).reduce((s, v) => s + v, 0)
+  }, [granularCounts])
 
-  // Conteo de solicitudes firmadas en proceso
   const solicitudesFirmadas = useMemo(() => {
     if (!mandateStatuses) return 0
     return Object.values(mandateStatuses).filter((s: any) => s?.hasSignedPdf === true).length
   }, [mandateStatuses])
 
-  const estadoCards = useMemo(() => (
-    [
-      { key: 'DATOS_SIN_SIMULACION', color: 'purple' },
-      { key: 'SIMULACION_CONFIRMADA', color: 'blue' },
-      { key: 'EN_PROCESO', color: 'yellow' },
-      { key: 'DEVOLUCION_CONFIRMADA_COMPANIA', color: 'indigo' },
-      { key: 'FONDOS_RECIBIDOS_TD', color: 'green' },
-      { key: 'CLIENTE_NOTIFICADO', color: 'emerald' },
-      { key: 'PAGADA_CLIENTE', color: 'success' },
-      { key: 'RECHAZADO', color: 'destructive' },
-    ].map((item) => ({ 
-      key: item.key, 
-      title: ESTADO_LABELS[item.key], 
-      value: counts?.[item.key] ?? 0,
-      icon: ESTADO_ICONS[item.key],
-      color: item.color,
-      refundStatus: DASHBOARD_TO_REFUND_STATUS[item.key]
-    }))
-  ), [counts])
+  const paidCount = granularCounts?.paid ?? 0
+  const rejectedCount = (granularCounts?.rejected ?? 0) + (granularCounts?.canceled ?? 0)
+  const inProgressCount = (granularCounts?.qualifying ?? 0) +
+    (granularCounts?.docs_pending ?? 0) +
+    (granularCounts?.docs_received ?? 0) +
+    (granularCounts?.submitted ?? 0) +
+    (granularCounts?.approved ?? 0) +
+    (granularCounts?.payment_scheduled ?? 0)
 
-  const totalSolicitudes = useMemo(() => {
-    if (!counts) return 0
-    return Object.values(counts).reduce((sum, val) => sum + val, 0)
-  }, [counts])
+  const conversionRate = useMemo(() => {
+    const base = totalSolicitudes - (granularCounts?.datos_sin_simulacion ?? 0)
+    if (!base) return 0
+    return Math.round((paidCount / base) * 100)
+  }, [paidCount, totalSolicitudes, granularCounts])
 
-  const pieChartData = useMemo(() => {
-    if (!counts) return []
-    const total = Object.values(counts).reduce((sum, val) => sum + val, 0)
-    if (total === 0) return []
+  // Pie chart data
+  const pieData = useMemo(() => {
+    if (!granularCounts) return []
+    const labels: Record<string, string> = {
+      datos_sin_simulacion: 'Sin simulación',
+      simulated: 'Simulado',
+      requested: 'Solicitado',
+      qualifying: 'En calificación',
+      docs_pending: 'Docs. pendientes',
+      docs_received: 'Docs. recibidos',
+      submitted: 'Ingresado',
+      approved: 'Aprobado',
+      payment_scheduled: 'Pago programado',
+      paid: 'Pagado',
+      rejected: 'Rechazado',
+      canceled: 'Cancelado',
+    }
+    return Object.entries(granularCounts)
+      .filter(([, v]) => v > 0)
+      .map(([k, v], i) => ({
+        name: labels[k] ?? k,
+        value: v,
+        pct: totalSolicitudes > 0 ? ((v / totalSolicitudes) * 100).toFixed(1) : '0',
+        color: PIE_COLORS[i % PIE_COLORS.length],
+      }))
+  }, [granularCounts, totalSolicitudes])
 
-    return Object.entries(ESTADO_LABELS).map(([key, label]) => ({
-      name: label,
-      value: counts[key] || 0,
-      percentage: total > 0 ? ((counts[key] || 0) / total * 100).toFixed(1) : '0.0',
-      color: ESTADO_COLORS[key]
-    })).filter(item => item.value > 0)
-  }, [counts])
+  // ── Navegación al hacer clic en una card ──
+  const goToRefunds = (refundStatus: string) => {
+    const p = new URLSearchParams()
+    p.set('status', refundStatus)
+    p.set('autoSearch', 'true')
+    p.set('from', desde)
+    p.set('to', hasta)
+    navigate(`/refunds?${p.toString()}`)
+  }
 
-  if (isLoading) {
+  // ── Preset de fechas ──
+  const applyPreset = (days: number | 'month') => {
+    const hoy = new Date()
+    if (days === 'month') {
+      setDesde(toLocalDateString(new Date(hoy.getFullYear(), hoy.getMonth(), 1)))
+      setHasta(toLocalDateString(hoy))
+    } else {
+      const from = new Date()
+      from.setDate(hoy.getDate() - days)
+      setDesde(toLocalDateString(from))
+      setHasta(toLocalDateString(hoy))
+    }
+  }
+
+  if (isLoadingCounts) {
     return (
-      <main className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6">
-        <header className="flex flex-col gap-1 sm:gap-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">Cargando datos...</p>
-        </header>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
-          <Skeleton className="h-32 lg:col-span-5" />
-          <Skeleton className="h-32 lg:col-span-3" />
-          <Skeleton className="h-32 lg:col-span-4" />
+      <main className="p-4 md:p-6 space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28" />)}
-        </div>
+        <Skeleton className="h-64" />
       </main>
     )
   }
 
   return (
-    <main className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6" role="main" aria-label="Panel principal del Dashboard">
-      <header className="flex flex-col gap-1 sm:gap-2">
+    <main className="p-3 sm:p-4 md:p-6 space-y-6" role="main">
+
+      {/* ── Header ── */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold">Dashboard</h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
+          </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
-        <p className="text-xs sm:text-sm text-muted-foreground">KPIs por estado y evolución de pagos a clientes (CLP)</p>
+
+        {/* Controles de fecha */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-wrap gap-1">
+            {[
+              { label: 'Hoy', action: () => { const h = toLocalDateString(new Date()); setDesde(h); setHasta(h) } },
+              { label: '7 días', action: () => applyPreset(7) },
+              { label: 'Este mes', action: () => applyPreset('month') },
+              { label: '30 días', action: () => applyPreset(30) },
+            ].map(p => (
+              <Button key={p.label} variant="outline" size="sm" className="h-7 text-xs px-2" onClick={p.action}>
+                {p.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] text-muted-foreground">Desde</label>
+              <input
+                type="date" value={desde} max={hasta}
+                onChange={e => setDesde(e.target.value)}
+                className="h-7 rounded border bg-background px-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-[10px] text-muted-foreground">Hasta</label>
+              <input
+                type="date" value={hasta} min={desde}
+                onChange={e => setHasta(e.target.value)}
+                className="h-7 rounded border bg-background px-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </div>
+          </div>
+        </div>
       </header>
 
-      <section aria-label="Filtros" className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4">
-        <Card className="lg:col-span-5">
-          <CardHeader className="p-4 pb-2">
+      {/* ── KPIs de resumen ── */}
+      <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3" aria-label="Resumen general">
+        <SummaryKpi
+          label="Total solicitudes"
+          value={totalSolicitudes}
+          icon={Users}
+          className="border-border"
+        />
+        <SummaryKpi
+          label="En proceso"
+          value={inProgressCount}
+          icon={Clock}
+          className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
+          valueClass="text-amber-700 dark:text-amber-300"
+        />
+        <SummaryKpi
+          label="Pagados"
+          value={paidCount}
+          icon={CheckCircle2}
+          className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
+          valueClass="text-emerald-700 dark:text-emerald-300"
+        />
+        <SummaryKpi
+          label="Tasa de éxito"
+          value={`${conversionRate}%`}
+          icon={TrendingUp}
+          className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/20"
+          valueClass="text-sky-700 dark:text-sky-300"
+        />
+        <SummaryKpi
+          label="Monto pagado"
+          value={<Money value={totalPaidAmount} />}
+          icon={Wallet}
+          className="col-span-2 md:col-span-1 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
+          valueClass="text-violet-700 dark:text-violet-300 text-lg"
+        />
+      </section>
+
+      {/* ── Pipeline de etapas ── */}
+      <section aria-label="Pipeline de solicitudes">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
+          <Badge variant="secondary" className="text-xs gap-1.5">
+            <FileSignature className="h-3 w-3" />
+            Mandatos firmados: {solicitudesFirmadas}
+          </Badge>
+        </div>
+
+        <div className="space-y-4">
+          {PHASES.map((phase, phaseIdx) => {
+            const colors = PHASE_COLORS[phase.color]
+            const phaseTotal = phase.stages.reduce((s, st) => s + (granularCounts?.[st.key] ?? 0), 0)
+
+            return (
+              <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-4`}>
+                {/* Cabecera de fase */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${colors.badge}`}>
+                    {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
+                  </span>
+                  <span className={`text-xs font-semibold ${colors.text}`}>{phaseTotal} solicitudes</span>
+                </div>
+
+                {/* Grid de etapas */}
+                <div className="flex flex-wrap gap-2">
+                  {phase.stages.map((stage, stageIdx) => {
+                    const count = granularCounts?.[stage.key] ?? 0
+                    const IconComp = stage.icon
+                    const isLast = stageIdx === phase.stages.length - 1
+                    return (
+                      <div key={stage.key} className="flex items-center gap-2">
+                        <button
+                          onClick={() => goToRefunds(stage.refundStatus)}
+                          className={`
+                            group flex items-center gap-3 rounded-lg border bg-background/80 p-3
+                            hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
+                            ${colors.cardHover} cursor-pointer min-w-[140px]
+                          `}
+                          title={`Ver solicitudes: ${stage.label}`}
+                        >
+                          <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
+                            <IconComp className="h-4 w-4" />
+                          </div>
+                          <div className="text-left min-w-0">
+                            <p className="text-xs text-muted-foreground leading-none truncate">{stage.label}</p>
+                            <p className="text-2xl font-bold leading-tight">{count}</p>
+                            <p className="text-[10px] text-muted-foreground/70 truncate">{stage.sublabel}</p>
+                          </div>
+                        </button>
+                        {!isLast && (
+                          <ArrowRight className={`h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* ── Gráficos ── */}
+      <section>
+        <Card>
+          <CardHeader className="p-4 sm:p-6 pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <CardTitle className="text-sm">Rango de fechas</CardTitle>
-              <div className="flex flex-wrap gap-1">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const hoy = toLocalDateString(new Date())
-                    setDesde(hoy)
-                    setHasta(hoy)
-                  }}
-                  className="h-6 text-xs px-2"
-                >
-                  Hoy
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const ayer = new Date()
-                    ayer.setDate(ayer.getDate() - 1)
-                    const ayerStr = toLocalDateString(ayer)
-                    setDesde(ayerStr)
-                    setHasta(ayerStr)
-                  }}
-                  className="h-6 text-xs px-2"
-                >
-                  Ayer
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const hoy = new Date()
-                    const semanaAtras = new Date()
-                    semanaAtras.setDate(hoy.getDate() - 7)
-                    setDesde(toLocalDateString(semanaAtras))
-                    setHasta(toLocalDateString(hoy))
-                  }}
-                  className="h-6 text-xs px-2"
-                >
-                  Última semana
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    const hoy = new Date()
-                    const mesAtras = new Date()
-                    mesAtras.setMonth(hoy.getMonth() - 1)
-                    setDesde(toLocalDateString(mesAtras))
-                    setHasta(toLocalDateString(hoy))
-                  }}
-                  className="h-6 text-xs px-2"
-                >
-                  Último mes
-                </Button>
+              <CardTitle className="text-base sm:text-lg">Análisis temporal</CardTitle>
+              <div className="flex gap-1">
+                {(['day', 'week', 'month'] as const).map(g => (
+                  <Button
+                    key={g}
+                    variant={agg === g ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs px-2"
+                    onClick={() => setAgg(g)}
+                  >
+                    {{ day: 'Día', week: 'Semana', month: 'Mes' }[g]}
+                  </Button>
+                ))}
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-4 pt-2 grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="fecha-desde" className="text-xs text-muted-foreground">Desde</label>
-              <input
-                id="fecha-desde"
-                type="date"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={desde}
-                max={hasta}
-                onChange={(e) => setDesde(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="fecha-hasta" className="text-xs text-muted-foreground">Hasta</label>
-              <input
-                id="fecha-hasta"
-                type="date"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={hasta}
-                min={desde}
-                onChange={(e) => setHasta(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm">Agrupación</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="agg" className="text-xs text-muted-foreground">Agrupar por</label>
-              <select
-                id="agg"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={agg}
-                onChange={(e) => setAgg(e.target.value as Aggregation)}
-                aria-label="Seleccionar agrupación"
-              >
-                <option value="day">Día</option>
-                <option value="week">Semana</option>
-                <option value="month">Mes</option>
-              </select>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-primary lg:col-span-5">
-          <CardHeader className="p-4">
-            <CardTitle className="text-sm">Monto total pagado a clientes (CLP)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0 text-2xl font-semibold">
-            <Money value={totalPaidAmount} />
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="space-y-3 sm:space-y-4" aria-label="Métricas por estado">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground">Estados en proceso</h2>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="text-sm font-semibold">
-              Total: {totalSolicitudes} solicitudes
-            </Badge>
-            <Badge variant="outline" className="text-sm font-semibold flex items-center gap-1.5">
-              <FileSignature className="h-3.5 w-3.5" />
-              Mandatos firmados: {solicitudesFirmadas}
-            </Badge>
-          </div>
-        </div>
-        <div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {estadoCards.slice(0, 4).map((c) => (
-              <Kpi 
-                key={c.key} 
-                title={c.title} 
-                value={c.value} 
-                icon={c.icon} 
-                color={c.color} 
-                refundStatus={c.refundStatus}
-                desde={desde}
-                hasta={hasta}
-              />
-            ))}
-          </div>
-        </div>
-        <div>
-          <h2 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3">Estados finales</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {estadoCards.slice(4).map((c) => (
-              <Kpi key={c.key} title={c.title} value={c.value} icon={c.icon} color={c.color} refundStatus={c.refundStatus} desde={desde} hasta={hasta} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-3 sm:gap-4">
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="text-base sm:text-lg md:text-xl">Análisis de solicitudes</CardTitle>
-          </CardHeader>
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            <Tabs defaultValue="distribucion" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-auto">
-                <TabsTrigger value="distribucion" className="text-xs sm:text-sm px-2 py-2">
-                  <span className="hidden sm:inline">Distribución por estado</span>
-                  <span className="sm:hidden">Distribución</span>
-                </TabsTrigger>
-                <TabsTrigger value="pagos" className="text-xs sm:text-sm px-2 py-2">
-                  <span className="hidden sm:inline">Evolución de pagos</span>
-                  <span className="sm:hidden">Pagos</span>
-                </TabsTrigger>
-                <TabsTrigger value="tendencia" className="text-xs sm:text-sm px-2 py-2">
-                  <span className="hidden sm:inline">Tendencia de solicitudes</span>
-                  <span className="sm:hidden">Tendencia</span>
-                </TabsTrigger>
+            <Tabs defaultValue="solicitudes">
+              <TabsList className="grid w-full grid-cols-3 h-8 text-xs">
+                <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
+                <TabsTrigger value="pagos" className="text-xs">Montos pagados</TabsTrigger>
+                <TabsTrigger value="distribucion" className="text-xs">Distribución</TabsTrigger>
               </TabsList>
-              
-              <TabsContent value="distribucion" className="mt-3 sm:mt-4">
-                <div className="h-64 sm:h-72 md:h-80">
-                  {pieChartData.length > 0 ? (
+
+              <TabsContent value="solicitudes" className="mt-4">
+                <div className="h-64">
+                  {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={solicitudesAgg.series} barSize={14}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
+                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                        <Tooltip
+                          formatter={(v: number) => [`${v} solicitudes`, 'Cantidad']}
+                          labelFormatter={l => `Período: ${l}`}
+                          contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                        />
+                        <Bar dataKey="cantidad" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <EmptyChart />
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="pagos" className="mt-4">
+                <div className="h-64">
+                  {pagosAgg && pagosAgg.series.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={pagosAgg.series} barSize={14}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
+                        <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
+                        <Tooltip
+                          formatter={(v: number) => [fmtCLP(v), 'Monto']}
+                          contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                        />
+                        <Bar dataKey="monto" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <EmptyChart />
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="distribucion" className="mt-4">
+                <div className="h-64">
+                  {pieData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={pieChartData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={90}
+                          data={pieData}
+                          cx="50%" cy="50%"
+                          innerRadius={55} outerRadius={90}
                           paddingAngle={2}
                           dataKey="value"
                           label={false}
                           labelLine={false}
                         >
-                          {pieChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          {pieData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip 
+                        <Tooltip
                           content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload
-                              return (
-                                <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
-                                  <p className="font-semibold">{data.name}</p>
-                                  <p className="text-muted-foreground">{data.value} solicitudes ({data.percentage}%)</p>
-                                </div>
-                              )
-                            }
-                            return null
+                            if (!active || !payload?.length) return null
+                            const d = payload[0].payload
+                            return (
+                              <div className="bg-popover border rounded-lg shadow-lg p-3 text-sm">
+                                <p className="font-semibold">{d.name}</p>
+                                <p className="text-muted-foreground">{d.value} solicitudes · {d.pct}%</p>
+                              </div>
+                            )
                           }}
                         />
-                        <Legend 
-                          layout="horizontal"
-                          verticalAlign="bottom"
-                          align="center"
-                          wrapperStyle={{ fontSize: '11px', paddingTop: '16px' }} 
-                          formatter={(value, entry: any) => (
-                            <span className="text-xs">{entry.payload.name}</span>
+                        <Legend
+                          layout="horizontal" verticalAlign="bottom" align="center"
+                          wrapperStyle={{ fontSize: '10px', paddingTop: '12px' }}
+                          formatter={(_, entry: any) => (
+                            <span className="text-xs">{entry.payload.name} ({entry.payload.pct}%)</span>
                           )}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
-                      Sin datos en el rango seleccionado
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="pagos" className="mt-3 sm:mt-4">
-                <div className="h-64 sm:h-72 md:h-80">
-                  {pagosAgg && pagosAgg.series.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={pagosAgg.series} barSize={18}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} tickFormatter={(v) => v.toLocaleString('es-CL')} />
-                        <Tooltip formatter={(value: number) => fmtCLP(value)} labelFormatter={(l) => `${l}`} />
-                        <Bar dataKey="monto" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
-                      Sin datos en el rango seleccionado
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="tendencia" className="mt-3 sm:mt-4">
-                <div className="h-64 sm:h-72 md:h-80">
-                  {solicitudesAgg && solicitudesAgg.series.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={solicitudesAgg.series}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-                        <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                        <Tooltip 
-                          formatter={(value: number) => [`${value} solicitudes`, 'Cantidad']}
-                          labelFormatter={(label) => `Período: ${label}`}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="cantidad" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2}
-                          dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-xs sm:text-sm text-muted-foreground">
-                      Sin datos en el rango seleccionado
-                    </div>
+                    <EmptyChart />
                   )}
                 </div>
               </TabsContent>
             </Tabs>
           </CardContent>
-         </Card>
+        </Card>
       </section>
+
     </main>
   )
 }
 
-function Kpi({ title, value, icon: Icon, color, refundStatus, extraInfo, desde, hasta }: { 
-  title: string; 
-  value: number | React.ReactNode; 
-  icon?: LucideIcon;
-  color?: string;
-  refundStatus?: string;
-  extraInfo?: { label: string; value: number; icon?: LucideIcon };
-  desde?: string;
-  hasta?: string;
+// ── Sub-componentes ──────────────────────────────────────────────────────────
+
+function SummaryKpi({
+  label, value, icon: Icon, className = '', valueClass = '',
+}: {
+  label: string
+  value: number | string | React.ReactNode
+  icon: React.ElementType
+  className?: string
+  valueClass?: string
 }) {
-  const navigate = useNavigate()
-  
-  const handleClick = () => {
-    if (refundStatus) {
-      const params = new URLSearchParams()
-      params.set('status', refundStatus)
-      params.set('autoSearch', 'true')
-      if (desde) params.set('from', desde)
-      if (hasta) params.set('to', hasta)
-      navigate(`/refunds?${params.toString()}`)
-    }
-  }
-  
-  const colorClasses = {
-    blue: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50 hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30',
-    yellow: 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/50 hover:shadow-yellow-200/50 dark:hover:shadow-yellow-900/30',
-    indigo: 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-900/50 hover:shadow-indigo-200/50 dark:hover:shadow-indigo-900/30',
-    green: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-900/50 hover:shadow-green-200/50 dark:hover:shadow-green-900/30',
-    emerald: 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50 hover:shadow-emerald-200/50 dark:hover:shadow-emerald-900/30',
-    success: 'bg-green-100 dark:bg-green-950/30 border-green-300 dark:border-green-800/50 hover:shadow-green-300/50 dark:hover:shadow-green-800/30',
-    destructive: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:shadow-red-200/50 dark:hover:shadow-red-900/30',
-    purple: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/50 hover:shadow-purple-200/50 dark:hover:shadow-purple-900/30',
-  }
-
-  const iconColorClasses = {
-    blue: 'text-blue-600 dark:text-blue-400',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
-    indigo: 'text-indigo-600 dark:text-indigo-400',
-    green: 'text-green-600 dark:text-green-400',
-    emerald: 'text-emerald-600 dark:text-emerald-400',
-    success: 'text-green-700 dark:text-green-500',
-    destructive: 'text-red-600 dark:text-red-400',
-    purple: 'text-purple-600 dark:text-purple-400',
-  }
-
-  const cardClass = color ? colorClasses[color as keyof typeof colorClasses] : ''
-  const iconClass = color ? iconColorClasses[color as keyof typeof iconColorClasses] : 'text-muted-foreground'
-
   return (
-    <Card 
-      className={`hover:shadow-lg transition-all duration-300 sm:hover:scale-105 ${cardClass} ${refundStatus ? 'cursor-pointer' : ''}`}
-      onClick={handleClick}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4 md:p-6">
-        <CardTitle className="text-xs sm:text-sm font-medium">{title}</CardTitle>
-        {Icon && (
-          <div className={`p-1.5 sm:p-2 rounded-lg bg-background/50 ${iconClass}`}>
-            <Icon className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
-          </div>
-        )}
-      </CardHeader>
-      <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0 md:p-6 md:pt-0">
-        <div className="text-2xl sm:text-3xl font-bold">{typeof value === 'number' ? value : value}</div>
-        {extraInfo && (
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-            {extraInfo.icon && <extraInfo.icon className="h-3.5 w-3.5" />}
-            <span>{extraInfo.label}: <strong className="text-foreground">{extraInfo.value}</strong></span>
-          </div>
-        )}
+    <Card className={`border ${className}`}>
+      <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
+          <Icon className="h-4 w-4 text-muted-foreground/60" />
+        </div>
+        <div className={`text-xl sm:text-2xl font-bold ${valueClass}`}>{value}</div>
       </CardContent>
     </Card>
+  )
+}
+
+function EmptyChart() {
+  return (
+    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+      Sin datos en el rango seleccionado
+    </div>
   )
 }
