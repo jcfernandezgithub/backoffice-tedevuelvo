@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
+import { TasasSection } from './components/TasasSection';
 import {
   Timer,
   TrendingUp,
+  Percent,
   Settings2,
   ChevronRight,
 } from 'lucide-react';
@@ -36,6 +38,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: TrendingUp,
     group: 'Operación',
     component: <PlanCumplimientoForm />,
+  },
+  {
+    id: 'tasas',
+    label: 'Tasas de referencia',
+    description: 'Cesantía y desgravamen',
+    icon: Percent,
+    group: 'Cálculos',
+    component: <TasasSection />,
   },
 ];
 
