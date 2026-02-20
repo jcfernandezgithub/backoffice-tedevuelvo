@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Badge } from '@/components/ui/badge'
+import { useUrgentAlerts } from '@/hooks/useUrgentAlerts'
 
 const items = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
@@ -28,6 +29,7 @@ const items = [
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar()
   const { user } = useAuth()
+  const { urgentCount } = useUrgentAlerts()
   const collapsed = state === 'collapsed'
   const location = useLocation()
   const currentPath = location.pathname
@@ -65,30 +67,55 @@ export function AppSidebar() {
           {!collapsed && <SidebarGroupLabel>Principal</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavCls} onClick={handleLinkClick}>
-                      <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-                      {!collapsed && (
-                        <div className="flex items-center justify-between flex-1 gap-2">
-                          <span>{item.title}</span>
-                          {item.status === 'live' && (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1.5 py-0">
-                              Productiva
-                            </Badge>
-                          )}
-                          {item.status === 'dev' && (
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
-                              En desarrollo
-                            </Badge>
+              {visibleItems.map((item) => {
+                const isOperacion = item.url === '/operacion'
+                const showAlert = isOperacion && urgentCount > 0
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavCls} onClick={handleLinkClick}>
+                        {/* Icono con badge pulsante en modo colapsado */}
+                        <div className="relative">
+                          <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+                          {showAlert && collapsed && (
+                            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+                            </span>
                           )}
                         </div>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+
+                        {!collapsed && (
+                          <div className="flex items-center justify-between flex-1 gap-2">
+                            <span>{item.title}</span>
+                            {/* Badge de alertas urgentes (tiene prioridad sobre el badge de estado) */}
+                            {showAlert ? (
+                              <span className="relative flex items-center gap-1">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-40" />
+                                <Badge
+                                  variant="destructive"
+                                  className="relative text-[10px] px-1.5 py-0 min-w-[18px] text-center"
+                                >
+                                  {urgentCount}
+                                </Badge>
+                              </span>
+                            ) : item.status === 'live' ? (
+                              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1.5 py-0">
+                                Productiva
+                              </Badge>
+                            ) : item.status === 'dev' ? (
+                              <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
+                                En desarrollo
+                              </Badge>
+                            ) : null}
+                          </div>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
