@@ -228,8 +228,14 @@ export function TabResumen() {
 
   return (
     <div className="space-y-6">
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+      {/* Pipeline de solicitudes */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de Solicitudes</h2>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {loadingRefunds || loadingMandates ? (
           <>
             {Array.from({ length: 7 }).map((_, i) => (
@@ -408,59 +414,82 @@ export function TabResumen() {
                 <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</div>
               </CardContent>
             </Card>
-
-            {/* Card: Monto Total Pagado */}
-            <Card 
-              className="border-l-4 border-l-green-700 bg-green-50/40 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Monto Total Pagado
-                  </CardTitle>
-                  <Banknote className="h-5 w-5 text-green-700" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-800 dark:text-green-400">
-                  {new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP',
-                    maximumFractionDigits: 0
-                  }).format(totalPaidAmount)}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Card: Prima Total */}
-            <Card 
-              className="border-l-4 border-l-violet-600 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Prima Total (Pagados)
-                  </CardTitle>
-                  <Banknote className="h-5 w-5 text-violet-600" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-violet-700 dark:text-violet-400">
-                  {new Intl.NumberFormat('es-CL', {
-                    style: 'currency',
-                    currency: 'CLP',
-                    maximumFractionDigits: 0
-                  }).format(totalPaidPremium)}
-                </div>
-              </CardContent>
-            </Card>
           </>
+        )}
+        </div>
+      </div>
+
+      {/* Resumen Financiero */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Resumen Financiero</h2>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        {loadingRefunds ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
+                <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Monto Total Pagado */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/20 border-green-200 dark:border-green-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Monto Total Pagado a Clientes</p>
+                    <p className="text-3xl font-bold text-green-800 dark:text-green-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(totalPaidAmount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Basado en {paidRefunds.length} solicitudes pagadas</p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                    <Banknote className="h-7 w-7 text-green-700 dark:text-green-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Prima Total */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border-violet-200 dark:border-violet-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Prima Total Recuperada</p>
+                    <p className="text-3xl font-bold text-violet-800 dark:text-violet-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(totalPaidPremium)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">Prima mensual × cuotas restantes</p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+                    <Banknote className="h-7 w-7 text-violet-700 dark:text-violet-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
 
-      {/* Gráficos principales */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Gráfico combinado de solicitudes y montos */}
         <Card>
