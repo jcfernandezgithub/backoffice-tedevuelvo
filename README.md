@@ -6,15 +6,38 @@
 
 ### Versión 2.3.0 - 2026-02-20
 
-#### Sección de Tasas de Referencia en Ajustes
-- **Nueva sección "Tasas de referencia"**: Agregada bajo el grupo "Cálculos" en la página de Ajustes con visualización completa de tasas de seguros.
-  - Tab **Desgravamen**: Tabla interactiva con tasas bancarias por monto de crédito, plazo y tramo de edad (18–55 / 56+). Heatmap de colores para identificar rango de tasas. Tasas preferenciales TDV expresadas en porcentaje.
-  - Tab **Cesantía**: Tabla comparativa Banco vs TDV con todos los tramos de monto. Nueva columna "Ahorro TDV" con diferencial porcentual promedio por institución. Tooltip por celda con ahorro exacto por tramo.
-- **Selector de edad mejorado**: Botones propios con estado activo claramente visible usando tokens del sistema (`bg-primary`).
-- **Exportación a Excel**: Workbook con hojas separadas para Cesantía y Desgravamen.
-- **Layout expandido**: `max-w-5xl` para acomodar tablas anchas sin scroll horizontal.
+#### Página de Ajustes — Rediseño y nueva sección Tasas
+- **Navegación tipo sidebar**: Rediseño completo con panel lateral fijo y área de contenido dinámica, escalable para futuras secciones.
+  - Grupos de navegación: **Operación** (Objetivos por etapa, Plan de cumplimiento) y **Cálculos** (Tasas de referencia).
+  - Breadcrumb sticky en el encabezado del contenido para orientación contextual.
+  - Ítem activo destacado con `bg-primary text-primary-foreground` y flecha indicadora.
+- **Nueva sección "Tasas de referencia"** (grupo Cálculos, read-only con badge "Edición próximamente"):
+  - Tab **Desgravamen bancario**: Tabla interactiva con heatmap de colores (verde → rojo) por monto de crédito, plazo (cuotas) y tramo de edad. Selector de banco y toggle de edad 18–55 / 56+ con estado activo claramente visible.
+  - Tab **Desgravamen TDV**: Tabla con los 2 tramos oficiales (Tramo 1: hasta 55 años `0.2970400%`, Tramo 2: desde 56 años `0.3737900%`), expresados en porcentaje con 7 decimales.
+  - Tab **Cesantía**: Tabla comparativa Banco vs TDV con los 5 tramos de monto. Nueva columna "Ahorro TDV" con el diferencial porcentual promedio por institución. Tooltip por celda con el % de ahorro exacto del tramo al hacer hover.
+  - **Exportación a Excel**: Workbook multi-hoja con datos de Cesantía (todos los bancos + TDV) y Desgravamen (por banco + TDV).
+- **Layout expandido**: `max-w-5xl` para acomodar tablas anchas sin generar scroll horizontal no deseado.
+
+#### Página Dashboard — Mejoras de datos y visualización
+- **Fuente de datos unificada**: El Dashboard ahora consume el mismo caché de solicitudes que la página Operación (`useAllRefunds`), eliminando llamadas duplicadas a la API y garantizando consistencia entre ambas vistas.
+- **Filtrado por fecha con zona horaria**: Implementado `filterByLocalDate` con extracción directa del string ISO (`createdAt.split('T')[0]`) para evitar desplazamientos por conversión UTC en zona horaria Chile.
+- **Fases del flujo visual**: Visualización de solicitudes agrupadas en 4 fases del pipeline (Captación, Revisión y Docs, Gestión Bancaria, Salidas) con colores semánticos por fase (violeta, ámbar, azul, rojo).
+  - Cada etapa es clickeable y navega a `/refunds` pre-filtrado por estado y rango de fecha.
+  - Tooltips descriptivos por etapa explicando su significado operacional.
+- **Sub-métricas de etapas críticas**:
+  - **En calificación**: Consulta mandatos firmados vía Experian en lotes de 10, mostrando conteo de firmados vs pendientes.
+  - **Pago programado**: Muestra cuántas solicitudes tienen datos bancarios cargados vs pendientes.
+- **KPIs de resumen**: Total solicitudes, pagadas, en proceso, monto total pagado y tasa de conversión (pagadas / total sin leads iniciales).
+- **Gráficos temporales con granularidad**: Series de solicitudes ingresadas y montos pagados por día/semana/mes, con presets de fecha rápidos (Hoy, Ayer, Esta semana, Último mes, Mes actual).
+- **Gráfico de distribución por estado**: Pie chart y bar chart intercambiables mostrando la distribución porcentual de todas las solicitudes en el período.
+
+#### Página Operación — Mejoras en tab Resumen
+- **Navegación contextual desde KPIs**: Cada tarjeta de estado en el resumen es clickeable y navega a `/refunds` pre-filtrado por estado y fechas del filtro activo, manteniendo consistencia con el período seleccionado.
+- **Selector de tipo de gráfico**: Toggle Pie / Barra en la distribución por estado para flexibilidad de visualización.
+- **Integración de fechas en filtros de navegación**: Los links generados desde Operación incluyen siempre `from` y `to` del filtro activo, garantizando que el listado de solicitudes refleje exactamente el período analizado.
 
 ---
+
 
 ### Versión 2.2.3 - 2026-02-19
 
