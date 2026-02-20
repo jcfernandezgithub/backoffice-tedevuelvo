@@ -25,78 +25,100 @@ const STAGE_CONFIG: Record<string, {
   icon: React.ComponentType<{ className?: string }>;
   gradient: string;
   objetivo: number; // días objetivo en esta etapa
-  statusPairs: [RefundStatus, RefundStatus][]; // [from, to] para medir tiempo
 }> = {
   qualifying: {
     label: 'En Calificación',
     icon: ClipboardCheck,
     gradient: 'linear-gradient(135deg, hsl(43,96%,56%), hsl(38,92%,50%))',
     objetivo: 3,
-    statusPairs: [['requested', 'qualifying']],
   },
   docs_received: {
     label: 'Docs Recibidos',
     icon: FileCheck2,
     gradient: 'linear-gradient(135deg, hsl(271,91%,65%), hsl(265,85%,58%))',
     objetivo: 5,
-    statusPairs: [['qualifying', 'docs_received'], ['docs_pending', 'docs_received']],
   },
   submitted: {
     label: 'Ingresadas',
     icon: FileInput,
     gradient: 'linear-gradient(135deg, hsl(239,84%,67%), hsl(232,78%,60%))',
     objetivo: 4,
-    statusPairs: [['docs_received', 'submitted']],
   },
   approved: {
     label: 'Aprobadas',
     icon: CheckCircle,
     gradient: 'linear-gradient(135deg, hsl(142,71%,45%), hsl(138,65%,38%))',
     objetivo: 7,
-    statusPairs: [['submitted', 'approved']],
   },
   payment_scheduled: {
     label: 'Pago Programado',
     icon: CalendarClock,
     gradient: 'linear-gradient(135deg, hsl(187,92%,45%), hsl(192,85%,38%))',
     objetivo: 3,
-    statusPairs: [['approved', 'payment_scheduled']],
   },
   paid: {
     label: 'Pagadas',
     icon: Banknote,
     gradient: 'linear-gradient(135deg, hsl(160,84%,39%), hsl(155,78%,32%))',
     objetivo: 2,
-    statusPairs: [['payment_scheduled', 'paid']],
   },
 };
 
 const STAGE_ORDER = ['qualifying', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
 
-/** Calcula el tiempo promedio (en días) que tardaron las solicitudes en avanzar
- *  desde el estado `from` al estado `to`, usando el statusHistory. */
-function calcularTiempoPromedio(
+/**
+ * Mide cuántos días pasó cada solicitud EN un estado determinado.
+ * - Entrada al estado: la entrada del historial donde h.to === stage
+ * - Salida del estado: la entrada donde h.from === stage
+ * - Si aún está en ese estado (no hay salida), usa updatedAt como proxy
+ *
+ * Fallback para 'qualifying': si no hay historial, usa createdAt → siguiente transición.
+ */
+function calcularTiempoEnEtapa(
   refunds: RefundRequest[],
-  pairs: [RefundStatus, RefundStatus][]
-): number | null {
+  stage: RefundStatus
+): { promedio: number | null; muestra: number } {
   const tiempos: number[] = [];
 
   refunds.forEach(r => {
-    const history = r.statusHistory || [];
+    const history = [...(r.statusHistory || [])].sort(
+      (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()
+    );
 
-    for (const [from, to] of pairs) {
-      const entradaFrom = history.find(h => h.to === from);
-      const entradaTo = history.find(h => h.to === to);
+    // Cuándo ENTRÓ al estado
+    let entradaAt: string | null = null;
 
-      if (entradaFrom && entradaTo) {
-        const diff = dayjs(entradaTo.at).diff(dayjs(entradaFrom.at), 'hour') / 24;
-        if (diff >= 0) tiempos.push(diff);
+    if (history.length === 0) {
+      // Sin historial: si la solicitud está en este estado usamos createdAt
+      if ((r.status as string) === stage) {
+        entradaAt = r.createdAt;
       }
+    } else {
+      const entradaEntry = history.find(h => h.to === stage);
+      if (entradaEntry) {
+        entradaAt = entradaEntry.at;
+      } else if ((r.status as string) === stage) {
+        // Llegó a este estado pero sin registro explícito → usar createdAt
+        entradaAt = r.createdAt;
+      }
+    }
+
+    if (!entradaAt) return;
+
+    // Cuándo SALIÓ del estado
+    const salidaEntry = history.find(h => h.from === stage);
+    const salidaAt = salidaEntry ? salidaEntry.at : r.updatedAt;
+
+    const diff = dayjs(salidaAt).diff(dayjs(entradaAt), 'hour') / 24;
+    if (diff >= 0 && diff < 365) {
+      // Descartamos valores absurdos (>1 año = dato corrupto)
+      tiempos.push(diff);
     }
   });
 
-  if (tiempos.length === 0) return null;
-  return tiempos.reduce((a, b) => a + b, 0) / tiempos.length;
+  if (tiempos.length === 0) return { promedio: null, muestra: 0 };
+  const promedio = tiempos.reduce((a, b) => a + b, 0) / tiempos.length;
+  return { promedio, muestra: tiempos.length };
 }
 
 export function TabCuellosBotella() {
@@ -106,15 +128,15 @@ export function TabCuellosBotella() {
 
   const etapasConTiempos = STAGE_ORDER.map(key => {
     const cfg = STAGE_CONFIG[key];
-    const promedio = calcularTiempoPromedio(allRefunds, cfg.statusPairs as [RefundStatus, RefundStatus][]);
+    const { promedio, muestra } = calcularTiempoEnEtapa(allRefunds, key as RefundStatus);
     const tieneData = promedio !== null;
-    const excede = tieneData && promedio > cfg.objetivo;
-    const pct = tieneData ? (promedio / (cfg.objetivo * 1.5)) * 100 : 0;
+    const excede = tieneData && promedio! > cfg.objetivo;
+    const pct = tieneData ? (promedio! / (cfg.objetivo * 1.5)) * 100 : 0;
     const pctVsObjetivo = tieneData
-      ? ((promedio - cfg.objetivo) / cfg.objetivo) * 100
+      ? ((promedio! - cfg.objetivo) / cfg.objetivo) * 100
       : null;
 
-    return { key, cfg, promedio, tieneData, excede, pct: Math.min(pct, 100), pctVsObjetivo };
+    return { key, cfg, promedio, muestra, tieneData, excede, pct: Math.min(pct, 100), pctVsObjetivo };
   });
 
   return (
@@ -145,7 +167,7 @@ export function TabCuellosBotella() {
             </div>
           ) : (
             <div className="space-y-3">
-              {etapasConTiempos.map(({ key, cfg, promedio, tieneData, excede, pct, pctVsObjetivo }) => {
+              {etapasConTiempos.map(({ key, cfg, promedio, muestra, tieneData, excede, pct, pctVsObjetivo }) => {
                 const Icon = cfg.icon;
                 return (
                   <Tooltip key={key}>
@@ -211,7 +233,7 @@ export function TabCuellosBotella() {
                         </div>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[220px]">
+                    <TooltipContent side="right" className="max-w-[240px]">
                       <p className="font-semibold">{cfg.label}</p>
                       {tieneData ? (
                         <>
@@ -221,10 +243,13 @@ export function TabCuellosBotella() {
                           <p className="text-sm text-muted-foreground">
                             Objetivo: {cfg.objetivo} días
                           </p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">
+                            Calculado sobre {muestra} solicitud{muestra !== 1 ? 'es' : ''} con historial
+                          </p>
                         </>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          No hay historial suficiente para calcular el tiempo en esta etapa.
+                          Sin solicitudes con historial de estado para esta etapa aún.
                         </p>
                       )}
                     </TooltipContent>
