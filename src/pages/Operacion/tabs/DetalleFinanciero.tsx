@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { refundAdminApi } from '@/services/refundAdminApi';
 import {
@@ -15,7 +16,8 @@ import {
   ReferenceLine,
   Cell,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, DollarSign, ShieldCheck, Receipt, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, DollarSign, ShieldCheck, Receipt, BarChart2, Download } from 'lucide-react';
+import { exportXLSX } from '@/services/reportesService';
 import { format, parseISO, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -236,6 +238,23 @@ export function TabDetalleFinanciero() {
   const ytdMonto = isCurrentYear.reduce((s, d) => s + d.monto, 0);
   const ytdPrima = isCurrentYear.reduce((s, d) => s + d.prima, 0);
 
+  const handleExport = useCallback(() => {
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const rows = [...monthlyData].reverse().map(row => ({
+      'Mes': row.label,
+      'Solicitudes Pagadas': row.count,
+      'Monto Total Pagado (CLP)': row.monto,
+      'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
+      'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
+      'Δ Ticket Promedio (%)': row.ticketPct !== null ? Number(row.ticketPct.toFixed(2)) : '',
+      'Prima Total Recuperada (CLP)': Math.round(row.prima),
+      'Δ Prima (%)': row.primaPct !== null ? Number(row.primaPct.toFixed(2)) : '',
+      'Prima Promedio (CLP)': Math.round(row.primaPromedio),
+      'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
+    }));
+    exportXLSX(rows, `detalle-financiero-historico-${timestamp}`);
+  }, [monthlyData]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -261,6 +280,10 @@ export function TabDetalleFinanciero() {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero Histórico</h2>
         <div className="flex-1 h-px bg-border" />
         <Badge variant="outline" className="text-xs">Sin filtro de fechas · Vista completa</Badge>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Exportar Excel
+        </Button>
       </div>
 
       {/* KPIs superiores — fila 1: totales */}
