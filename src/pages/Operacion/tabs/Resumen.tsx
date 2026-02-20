@@ -85,8 +85,11 @@ export function TabResumen() {
     [filteredRefunds]
   );
 
+  // Usamos un hash estable de los IDs para evitar re-fetches por reordenamiento
+  const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds]);
+
   const { data: mandateStatuses, isLoading: loadingMandates } = useQuery({
-    queryKey: ['mandate-statuses-qualifying', qualifyingPublicIds],
+    queryKey: ['mandate-statuses-qualifying', qualifyingIdsKey],
     queryFn: async () => {
       const statuses: Record<string, any> = {};
       const BATCH_SIZE = 10;
