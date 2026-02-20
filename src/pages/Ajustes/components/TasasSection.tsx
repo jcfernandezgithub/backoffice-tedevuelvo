@@ -107,11 +107,17 @@ function TablaCesantia({
 }) {
   const tramosKeys = ['tramo_1', 'tramo_2', 'tramo_3', 'tramo_4', 'tramo_5'];
   const bancosNombres = Object.keys(bancos);
-  const bancoPrimero = Object.values(bancos)[0] ?? {};
+
+  // Calcular ahorro promedio por tramo (usando todos los bancos)
+  function getAhorroPct(banco: string, tramo: string): number | null {
+    const bancoDato = bancos[banco]?.[tramo as keyof (typeof bancos)[string]] as any;
+    const tdvDato = tdvTasas[tramo as keyof typeof tdvTasas];
+    if (!bancoDato || !tdvDato || bancoDato.tasa_mensual === 0) return null;
+    return ((bancoDato.tasa_mensual - tdvDato.tasa_mensual) / bancoDato.tasa_mensual) * 100;
+  }
 
   return (
     <div className="space-y-4">
-
       <div className="rounded-xl border border-border/60 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -121,9 +127,11 @@ function TablaCesantia({
                 {tramosKeys.map(t => (
                   <th key={t} className="text-right px-3 py-3 font-medium text-muted-foreground whitespace-nowrap">{TRAMO_LABELS[t]}</th>
                 ))}
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground whitespace-nowrap min-w-[100px]">Ahorro TDV</th>
               </tr>
             </thead>
             <tbody>
+              {/* Fila TDV */}
               <tr className="border-b bg-emerald-50/60 dark:bg-emerald-950/20">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
@@ -142,33 +150,69 @@ function TablaCesantia({
                     </td>
                   );
                 })}
+                {/* Celda vacía en columna ahorro para fila TDV */}
+                <td className="px-4 py-3 text-right">
+                  <span className="text-xs text-muted-foreground/50">—</span>
+                </td>
               </tr>
-              {bancosNombres.map((banco, i) => (
-                <tr key={banco} className={`border-b transition-colors hover:bg-muted/30 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
-                  <td className="px-4 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-xs">{banco}</span>
-                    </div>
-                  </td>
-                  {tramosKeys.map(t => {
-                    const dato = bancos[banco][t as keyof (typeof bancos)[string]] as any;
-                    const tdvDato = tdvTasas[t as keyof typeof tdvTasas];
-                    const isCheaper = dato && tdvDato && tdvDato.tasa_mensual < dato.tasa_mensual;
-                    return (
-                      <td key={t} className="px-3 py-2.5 text-right font-mono text-xs">
-                        <span className={isCheaper ? 'text-red-600 dark:text-red-400' : ''}>{dato ? formatTasa(dato.tasa_mensual) : '—'}</span>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+
+              {/* Filas de bancos */}
+              {bancosNombres.map((banco, i) => {
+                // Ahorro promedio del banco en todos los tramos
+                const ahorros = tramosKeys.map(t => getAhorroPct(banco, t)).filter((v): v is number => v !== null);
+                const ahorroPromedio = ahorros.length > 0 ? ahorros.reduce((a, b) => a + b, 0) / ahorros.length : null;
+
+                return (
+                  <tr key={banco} className={`border-b transition-colors hover:bg-muted/30 ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-medium text-xs">{banco}</span>
+                      </div>
+                    </td>
+                    {tramosKeys.map(t => {
+                      const dato = bancos[banco][t as keyof (typeof bancos)[string]] as any;
+                      const tdvDato = tdvTasas[t as keyof typeof tdvTasas];
+                      const isCheaper = dato && tdvDato && tdvDato.tasa_mensual < dato.tasa_mensual;
+                      const ahorroPct = getAhorroPct(banco, t);
+                      return (
+                        <td key={t} className="px-3 py-2.5 text-right font-mono text-xs">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className={`cursor-default ${isCheaper ? 'text-muted-foreground' : ''}`}>
+                                  {dato ? formatTasa(dato.tasa_mensual) : '—'}
+                                </span>
+                              </TooltipTrigger>
+                              {ahorroPct !== null && (
+                                <TooltipContent side="top" className="text-xs">
+                                  TDV ahorra <strong>{ahorroPct.toFixed(1)}%</strong> en este tramo
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                        </td>
+                      );
+                    })}
+                    {/* Columna ahorro promedio del banco */}
+                    <td className="px-4 py-2.5 text-right">
+                      {ahorroPromedio !== null ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+                          −{ahorroPromedio.toFixed(1)}%
+                        </span>
+                      ) : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-2.5 border-t bg-muted/20 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-400 shrink-0" />
-          <p className="text-xs text-muted-foreground">Las tasas en rojo indican que TDV ofrece una tasa menor (mejor para el cliente)</p>
+        <div className="px-4 py-2.5 border-t bg-muted/20 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">−16.7%</span>
+            <p className="text-xs text-muted-foreground">Ahorro promedio TDV vs banco (todos los tramos)</p>
+          </div>
         </div>
       </div>
     </div>
