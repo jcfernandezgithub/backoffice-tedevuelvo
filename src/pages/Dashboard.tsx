@@ -127,8 +127,7 @@ export default function Dashboard() {
 
   const [desde, setDesde] = useState<string>(() => {
     const d = new Date()
-    d.setDate(d.getDate() - 30)
-    return toLocalDateString(d)
+    return toLocalDateString(new Date(d.getFullYear(), d.getMonth(), 1))
   })
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
@@ -258,18 +257,23 @@ export default function Dashboard() {
   }
 
   // ── Preset de fechas ──
-  const applyPreset = (days: number | 'month') => {
-    const hoy = new Date()
-    if (days === 'month') {
-      setDesde(toLocalDateString(new Date(hoy.getFullYear(), hoy.getMonth(), 1)))
-      setHasta(toLocalDateString(hoy))
-    } else {
-      const from = new Date()
-      from.setDate(hoy.getDate() - days)
-      setDesde(toLocalDateString(from))
-      setHasta(toLocalDateString(hoy))
-    }
+  const applyDateRange = (d: string, h: string) => { setDesde(d); setHasta(h) }
+
+  const getActivePreset = () => {
+    const hoy = toLocalDateString(new Date())
+    const now = new Date()
+    const ayer = toLocalDateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+    const semanaAtras = toLocalDateString(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7))
+    const mesAtras = toLocalDateString(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()))
+    const primerDiaMes = toLocalDateString(new Date(now.getFullYear(), now.getMonth(), 1))
+    if (desde === hoy && hasta === hoy) return 'hoy'
+    if (desde === ayer && hasta === ayer) return 'ayer'
+    if (desde === semanaAtras && hasta === hoy) return 'semana'
+    if (desde === mesAtras && hasta === hoy) return 'ultimomes'
+    if (desde === primerDiaMes && hasta === hoy) return 'mesactual'
+    return null
   }
+  const activePreset = getActivePreset()
 
   if (isLoadingCounts) {
     return (
@@ -287,51 +291,64 @@ export default function Dashboard() {
     <main className="p-3 sm:p-4 md:p-6 space-y-6" role="main">
 
       {/* ── Header ── */}
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
-          </div>
-          {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+      <header className="flex items-center gap-2">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
         </div>
+        {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+      </header>
 
-        {/* Controles de fecha */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex flex-wrap gap-1">
+      {/* ── Panel de filtros de fecha ── */}
+      <Card>
+        <CardContent className="pt-4 pb-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">Fecha:</span>
             {[
-              { label: 'Hoy', action: () => { const h = toLocalDateString(new Date()); setDesde(h); setHasta(h) } },
-              { label: '7 días', action: () => applyPreset(7) },
-              { label: 'Este mes', action: () => applyPreset('month') },
-              { label: '30 días', action: () => applyPreset(30) },
+              { key: 'mesactual', label: 'Mes actual', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth(), 1)), toLocalDateString(n)) } },
+              { key: 'hoy', label: 'Hoy', action: () => { const h = toLocalDateString(new Date()); applyDateRange(h, h) } },
+              { key: 'ayer', label: 'Ayer', action: () => { const n = new Date(); const a = toLocalDateString(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1)); applyDateRange(a, a) } },
+              { key: 'semana', label: 'Última semana', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 7)), toLocalDateString(n)) } },
+              { key: 'ultimomes', label: 'Último mes', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth() - 1, n.getDate())), toLocalDateString(n)) } },
             ].map(p => (
-              <Button key={p.label} variant="outline" size="sm" className="h-7 text-xs px-2" onClick={p.action}>
+              <Button key={p.key} variant={activePreset === p.key ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={p.action}>
                 {p.label}
               </Button>
             ))}
+            {!activePreset && (desde || hasta) && (
+              <Badge variant="secondary" className="h-7 flex items-center text-xs">Rango personalizado</Badge>
+            )}
           </div>
-          <div className="flex gap-2">
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] text-muted-foreground">Desde</label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Desde</label>
               <input
                 type="date" value={desde} max={hasta}
                 onChange={e => setDesde(e.target.value)}
-                className="h-7 rounded border bg-background px-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${desde ? 'border-primary' : 'border-input'}`}
               />
             </div>
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] text-muted-foreground">Hasta</label>
+            <div>
+              <label className="text-sm text-muted-foreground block mb-1">Hasta</label>
               <input
                 type="date" value={hasta} min={desde}
                 onChange={e => setHasta(e.target.value)}
-                className="h-7 rounded border bg-background px-2 text-xs outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasta ? 'border-primary' : 'border-input'}`}
               />
             </div>
           </div>
-        </div>
-      </header>
+
+          {(desde || hasta) && (
+            <Button variant="outline" size="sm" onClick={() => { setDesde(''); setHasta('') }}>
+              Limpiar fechas
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ── KPIs de resumen ── */}
+
       <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3" aria-label="Resumen general">
         <SummaryKpi
           label="Total solicitudes"
