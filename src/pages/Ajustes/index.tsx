@@ -133,7 +133,7 @@ export default function AjustesPage() {
         </div>
 
         {/* Contenido de la sección activa */}
-        <div className="px-8 py-8 max-w-3xl">
+        <div className="px-8 py-8 max-w-5xl">
           {activeItem.component}
         </div>
       </main>
