@@ -259,21 +259,25 @@ function TablaDesgravamenBancos() {
         </div>
 
         {/* Tramo edad */}
-        <ToggleGroup
-          type="single"
-          value={tramoEdad}
-          onValueChange={(v) => v && setTramoEdad(v as 'hasta_55' | 'desde_56')}
-          className="border rounded-lg p-0.5 bg-muted/30"
-        >
-          <ToggleGroupItem value="hasta_55" className="gap-1.5 text-xs px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm">
-            <UserRound className="h-3.5 w-3.5" />
-            18 – 55 años
-          </ToggleGroupItem>
-          <ToggleGroupItem value="desde_56" className="gap-1.5 text-xs px-3 h-8 data-[state=on]:bg-background data-[state=on]:shadow-sm">
-            <Users className="h-3.5 w-3.5" />
-            56+ años
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <div className="flex rounded-lg border border-border overflow-hidden bg-muted/30">
+          {(['hasta_55', 'desde_56'] as const).map((val) => {
+            const isActive = tramoEdad === val;
+            return (
+              <button
+                key={val}
+                onClick={() => setTramoEdad(val)}
+                className={`flex items-center gap-1.5 text-xs px-3 h-8 transition-all font-medium
+                  ${isActive
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                  }`}
+              >
+                {val === 'hasta_55' ? <UserRound className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                {val === 'hasta_55' ? '18 – 55 años' : '56+ años'}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Leyenda de color */}
@@ -397,7 +401,7 @@ function TablaDesgravamenTDV() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="font-mono text-base font-bold text-primary cursor-default">
-                          {item.tasa.toFixed(7)}
+                          {(item.tasa * 100).toFixed(7)}%
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="left" className="text-xs max-w-[200px]">
