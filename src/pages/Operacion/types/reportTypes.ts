@@ -100,6 +100,7 @@ export interface SlaMetric {
 
 export interface FunnelStep {
   etapa: string;
+  label: string;
   cantidad: number;
   porcentaje: number;
 }
