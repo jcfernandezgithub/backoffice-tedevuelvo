@@ -122,11 +122,15 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
     const mesAtras = new Date();
     mesAtras.setMonth(new Date().getMonth() - 1);
     const mesAtrasStr = toLocalDateString(mesAtras);
+    // Primer día del mes actual
+    const hoyDate = new Date();
+    const primerDiaMes = toLocalDateString(new Date(hoyDate.getFullYear(), hoyDate.getMonth(), 1));
 
     if (filtros.fechaDesde === hoy && filtros.fechaHasta === hoy) return 'hoy';
     if (filtros.fechaDesde === ayerStr && filtros.fechaHasta === ayerStr) return 'ayer';
     if (filtros.fechaDesde === semanaAtrasStr && filtros.fechaHasta === hoy) return 'semana';
-    if (filtros.fechaDesde === mesAtrasStr && filtros.fechaHasta === hoy) return 'mes';
+    if (filtros.fechaDesde === mesAtrasStr && filtros.fechaHasta === hoy) return 'ultimomes';
+    if (filtros.fechaDesde === primerDiaMes && filtros.fechaHasta === hoy) return 'mesactual';
     return null;
   };
 
@@ -187,6 +191,18 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Fecha:</span>
             <Button
+              variant={activeQuickFilter === 'mesactual' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                const hoy = new Date();
+                const primerDia = toLocalDateString(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+                handleDateRangeChange(primerDia, toLocalDateString(hoy));
+              }}
+              className="h-7 text-xs px-2"
+            >
+              Mes actual
+            </Button>
+            <Button
               variant={activeQuickFilter === 'hoy' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
@@ -224,7 +240,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               Última semana
             </Button>
             <Button
-              variant={activeQuickFilter === 'mes' ? 'default' : 'outline'}
+              variant={activeQuickFilter === 'ultimomes' ? 'default' : 'outline'}
               size="sm"
               onClick={() => {
                 const hoy = new Date();

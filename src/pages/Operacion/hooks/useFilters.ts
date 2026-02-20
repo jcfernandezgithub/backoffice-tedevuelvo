@@ -9,14 +9,14 @@ export function useFilters() {
   // Derivar filtros directamente desde la URL (única fuente de verdad)
   const filtros = useMemo<FiltrosReporte>(() => {
     const hoy = dayjs();
-    const hace3Meses = hoy.subtract(3, 'month');
+    const primerDiaMesActual = hoy.startOf('month');
     
     // Obtener fechas de la URL
     let fechaDesde = searchParams.get('fechaDesde');
     let fechaHasta = searchParams.get('fechaHasta');
     
-    // Si no hay fechas, usar valores por defecto
-    if (!fechaDesde) fechaDesde = hace3Meses.format('YYYY-MM-DD');
+    // Si no hay fechas, usar el mes actual como valor por defecto
+    if (!fechaDesde) fechaDesde = primerDiaMesActual.format('YYYY-MM-DD');
     if (!fechaHasta) fechaHasta = hoy.format('YYYY-MM-DD');
     
     return {
@@ -55,7 +55,7 @@ export function useFilters() {
 
   const limpiarFiltros = useCallback(() => {
     const filtrosLimpios = {
-      fechaDesde: dayjs().subtract(3, 'month').format('YYYY-MM-DD'),
+      fechaDesde: dayjs().startOf('month').format('YYYY-MM-DD'),
       fechaHasta: dayjs().format('YYYY-MM-DD'),
     };
     
