@@ -19,55 +19,49 @@ import { useFunnelData } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import dayjs from 'dayjs';
 import type { RefundRequest } from '@/types/refund';
+import { readStageObjectives } from '@/hooks/useStageObjectives';
 
-// Mismos colores y nombres que el funnel
-const STAGE_CONFIG: Record<string, {
+// Metadatos estáticos por etapa (icono, gradiente, etapa previa)
+const STAGE_META: Record<string, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   gradient: string;
-  objetivo: number;       // días objetivo para la transición desde la etapa anterior
-  prevStage: string | null; // etapa anterior (null = desde createdAt)
+  prevStage: string | null;
 }> = {
   qualifying: {
     label: 'En Calificación',
     icon: ClipboardCheck,
     gradient: 'linear-gradient(135deg, hsl(43,96%,56%), hsl(38,92%,50%))',
-    objetivo: 3,
-    prevStage: null, // desde solicitud creada / requested
+    prevStage: null,
   },
   docs_received: {
     label: 'Docs Recibidos',
     icon: FileCheck2,
     gradient: 'linear-gradient(135deg, hsl(271,91%,65%), hsl(265,85%,58%))',
-    objetivo: 5,
     prevStage: 'qualifying',
   },
   submitted: {
     label: 'Ingresadas',
     icon: FileInput,
     gradient: 'linear-gradient(135deg, hsl(239,84%,67%), hsl(232,78%,60%))',
-    objetivo: 2,
     prevStage: 'docs_received',
   },
   approved: {
     label: 'Aprobadas',
     icon: CheckCircle,
     gradient: 'linear-gradient(135deg, hsl(142,71%,45%), hsl(138,65%,38%))',
-    objetivo: 14,
     prevStage: 'submitted',
   },
   payment_scheduled: {
     label: 'Pago Programado',
     icon: CalendarClock,
     gradient: 'linear-gradient(135deg, hsl(187,92%,45%), hsl(192,85%,38%))',
-    objetivo: 3,
     prevStage: 'approved',
   },
   paid: {
     label: 'Pagadas',
     icon: Banknote,
     gradient: 'linear-gradient(135deg, hsl(160,84%,39%), hsl(155,78%,32%))',
-    objetivo: 2,
     prevStage: 'payment_scheduled',
   },
 };
@@ -127,6 +121,15 @@ export function TabCuellosBotella() {
   const { filtros } = useFilters();
   const { data: funnelData, isLoading: loadingFunnel } = useFunnelData(filtros);
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
+
+  // Leer objetivos configurables desde localStorage (Ajustes)
+  const stageObjectives = readStageObjectives();
+  const objetivoMap = Object.fromEntries(stageObjectives.map(o => [o.key, o.objetivo]));
+
+  // Combinar metadatos estáticos con objetivos dinámicos
+  const STAGE_CONFIG = Object.fromEntries(
+    STAGE_ORDER.map(key => [key, { ...STAGE_META[key], objetivo: objetivoMap[key] ?? 3 }])
+  );
 
   const etapasConTiempos = STAGE_ORDER.map(key => {
     const cfg = STAGE_CONFIG[key];

@@ -23,6 +23,7 @@ import UsuariosPage from "@/pages/Usuarios";
 import RefundsList from "@/pages/Refunds/List";
 import RefundDetail from "@/pages/Refunds/Detail";
 import CalculadoraPage from "@/pages/Calculadora";
+import AjustesPage from "@/pages/Ajustes";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -62,7 +63,7 @@ const App = () => (
                 <Route path="/operacion" element={<Operacion />} />
                 <Route path="/usuarios" element={<UsuariosPage />} />
                 <Route path="/calculadora" element={<CalculadoraPage />} />
-                <Route path="/ajustes" element={<div className="p-4">Ajustes (en construcción)</div>} />
+                <Route path="/ajustes" element={<AjustesPage />} />
               </Route>
             </Route>
             <Route element={<AdminRoute />}>
