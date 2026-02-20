@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStageObjectives, DEFAULT_STAGE_OBJECTIVES } from '@/hooks/useStageObjectives';
+import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -206,6 +207,9 @@ export default function AjustesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sección plan de cumplimiento */}
+      <PlanCumplimientoForm />
     </div>
   );
 }
