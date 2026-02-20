@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   ShieldCheck,
   Briefcase,
-  TrendingDown,
+  
   Download,
   Info,
   Lock,
@@ -110,34 +110,7 @@ function TablaCesantia({
   const bancoPrimero = Object.values(bancos)[0] ?? {};
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {tramosKeys.slice(0, 3).map(tramo => {
-          const bancoDato = bancoPrimero[tramo as keyof typeof bancoPrimero] as any;
-          const tdvDato = tdvTasas[tramo as keyof typeof tdvTasas];
-          if (!bancoDato || !tdvDato) return null;
-          const ahorroPct = ((bancoDato.tasa_mensual - tdvDato.tasa_mensual) / bancoDato.tasa_mensual * 100);
-          return (
-            <div key={tramo} className="rounded-lg border border-border/60 bg-muted/20 p-3">
-              <p className="text-xs text-muted-foreground font-medium">{TRAMO_LABELS[tramo]}</p>
-              <div className="flex items-end justify-between mt-1">
-                <div>
-                  <p className="text-xs text-muted-foreground">Banco</p>
-                  <p className="font-mono text-sm font-semibold">{formatTasa(bancoDato.tasa_mensual)}</p>
-                </div>
-                <TrendingDown className="h-4 w-4 text-emerald-500" />
-                <div className="text-right">
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">TDV</p>
-                  <p className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatTasa(tdvDato.tasa_mensual)}</p>
-                </div>
-              </div>
-              <div className="mt-1.5 pt-1.5 border-t border-border/40">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Ahorro: {ahorroPct.toFixed(1)}% menos</p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="space-y-4">
 
       <div className="rounded-xl border border-border/60 overflow-hidden">
         <div className="overflow-x-auto">
