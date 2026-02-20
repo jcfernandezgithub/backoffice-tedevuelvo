@@ -13,6 +13,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Ba
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { 
   ClipboardCheck, 
+  FileCheck2,
   FileInput, 
   CheckCircle2, 
   XCircle, 
@@ -25,6 +26,7 @@ import {
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
   'En Calificación': 'hsl(43, 96%, 56%)',      // amber-500
+  'Docs Recibidos': 'hsl(271, 91%, 65%)',      // violet-500
   'Ingresadas': 'hsl(239, 84%, 67%)',          // indigo-500
   'Aprobadas': 'hsl(142, 71%, 45%)',           // green-500
   'Rechazadas': 'hsl(0, 84%, 60%)',            // red-500
@@ -168,6 +170,9 @@ export function TabResumen() {
     !mandateStatuses?.[r.publicId]?.hasSignedPdf
   );
 
+  // Filtrar solicitudes en estado "Documentos Recibidos"
+  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'documents_received');
+
   // Filtrar solicitudes en estado "Ingresado"
   const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
 
@@ -205,20 +210,21 @@ export function TabResumen() {
 
   // Datos para el gráfico de torta basados en las mismas categorías de las calugas
   const distribucionEstado = useMemo(() => {
-    const total = qualifyingRefunds.length + submittedRefunds.length + approvedRefunds.length + 
+    const total = qualifyingRefunds.length + docsReceivedRefunds.length + submittedRefunds.length + approvedRefunds.length + 
                   rejectedRefunds.length + paymentScheduledRefunds.length + paidRefunds.length;
     
     if (total === 0) return [];
     
     return [
       { categoria: 'En Calificación', valor: qualifyingRefunds.length, porcentaje: (qualifyingRefunds.length / total) * 100 },
+      { categoria: 'Docs Recibidos', valor: docsReceivedRefunds.length, porcentaje: (docsReceivedRefunds.length / total) * 100 },
       { categoria: 'Ingresadas', valor: submittedRefunds.length, porcentaje: (submittedRefunds.length / total) * 100 },
       { categoria: 'Aprobadas', valor: approvedRefunds.length, porcentaje: (approvedRefunds.length / total) * 100 },
       { categoria: 'Rechazadas', valor: rejectedRefunds.length, porcentaje: (rejectedRefunds.length / total) * 100 },
       { categoria: 'Pago Programado', valor: paymentScheduledRefunds.length, porcentaje: (paymentScheduledRefunds.length / total) * 100 },
       { categoria: 'Pagadas', valor: paidRefunds.length, porcentaje: (paidRefunds.length / total) * 100 },
     ].filter(item => item.valor > 0);
-  }, [qualifyingRefunds, submittedRefunds, approvedRefunds, rejectedRefunds, paymentScheduledRefunds, paidRefunds]);
+  }, [qualifyingRefunds, docsReceivedRefunds, submittedRefunds, approvedRefunds, rejectedRefunds, paymentScheduledRefunds, paidRefunds]);
 
   return (
     <div className="space-y-6">
@@ -273,6 +279,25 @@ export function TabResumen() {
                     <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Card: Documentos Recibidos */}
+            <Card 
+              className="border-l-4 border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate(buildRefundsUrl({ status: 'documents_received' }))}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Documentos Recibidos
+                  </CardTitle>
+                  <FileCheck2 className="h-5 w-5 text-violet-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-violet-700 dark:text-violet-400">{docsReceivedRefunds.length}</div>
+                <p className="text-xs text-muted-foreground mt-1">Listos para ingresar al banco</p>
               </CardContent>
             </Card>
 
