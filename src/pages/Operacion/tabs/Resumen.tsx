@@ -161,8 +161,10 @@ export function TabResumen() {
     montos: serieMontos?.[index]?.valor || 0,
   })) || [];
 
-  // Filtrar solicitudes en estado de calificación usando mandateStatuses
-  const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
+  // Para las calugas de pipeline usamos TODOS los refunds (sin filtro de fecha)
+  // ya que representan el estado ACTUAL de las solicitudes, no un histórico.
+  // El filtro de fecha aplica solo a los gráficos de tendencia.
+  const qualifyingRefunds = refunds.filter((r: any) => r.status === 'qualifying');
   const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
     mandateStatuses?.[r.publicId]?.hasSignedPdf === true
   );
@@ -171,23 +173,24 @@ export function TabResumen() {
   );
 
   // Filtrar solicitudes en estado "Documentos Recibidos"
-  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
+  const docsReceivedRefunds = refunds.filter((r: any) => r.status === 'docs_received');
 
   // Filtrar solicitudes en estado "Ingresado"
-  const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
+  const submittedRefunds = refunds.filter((r: any) => r.status === 'submitted');
 
   // Filtrar solicitudes en estado "Aprobado"
-  const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
+  const approvedRefunds = refunds.filter((r: any) => r.status === 'approved');
 
   // Filtrar solicitudes en estado "Rechazado"
-  const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
+  const rejectedRefunds = refunds.filter((r: any) => r.status === 'rejected');
 
   // Filtrar solicitudes en estado "Pago Programado"
-  const paymentScheduledRefunds = filteredRefunds.filter((r: any) => r.status === 'payment_scheduled');
+  const paymentScheduledRefunds = refunds.filter((r: any) => r.status === 'payment_scheduled');
   const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
   const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
 
   // Filtrar solicitudes en estado "Pagado" y calcular montos
+  // Pagados SÍ respeta el filtro de fecha (es un KPI histórico/financiero)
   const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
   const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => {
     // Buscar realAmount en statusHistory (payment_scheduled o paid)
