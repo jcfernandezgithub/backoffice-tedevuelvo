@@ -20,8 +20,11 @@ import {
   CalendarClock, 
   Banknote,
   PieChart as PieChartIcon,
-  BarChart3
+  BarChart3,
+  Zap,
+  Info,
 } from 'lucide-react';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
@@ -144,6 +147,17 @@ export function TabResumen() {
   // Filtrar solicitudes en estado "Pagado" y calcular montos
   // Pagados SÍ respeta el filtro de fecha (es un KPI histórico/financiero)
   const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
+
+  // ── Proceso Operativo: solicitudes "en vuelo" con potencial de venta ─────────
+  // Docs Recibidos + Ingresadas + Aprobadas + Pago Programado + Pagadas
+  const procesoOperativoRefunds = [
+    ...docsReceivedRefunds,
+    ...submittedRefunds,
+    ...approvedRefunds,
+    ...paymentScheduledRefunds,
+    ...paidRefunds,
+  ];
+  const procesoOperativoTotal = procesoOperativoRefunds.length;
   const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => {
     // Buscar realAmount en statusHistory (payment_scheduled o paid)
     const realAmountEntry = r.statusHistory?.slice().reverse().find(
@@ -184,12 +198,114 @@ export function TabResumen() {
   return (
     <div className="space-y-6">
 
-      {/* Pipeline de solicitudes */}
+      {/* ── Caluga destacada: Proceso Operativo ────────────────────────────── */}
       <div>
         <div className="flex items-center gap-2 mb-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de Solicitudes</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
+
+        {/* Banner Proceso Operativo */}
+        <TooltipProvider>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="relative mb-4 rounded-2xl overflow-hidden cursor-default select-none"
+                style={{
+                  background: 'linear-gradient(135deg, hsl(221,83%,53%) 0%, hsl(262,83%,58%) 50%, hsl(221,83%,53%) 100%)',
+                  backgroundSize: '200% 200%',
+                  boxShadow: '0 8px 32px hsla(221,83%,53%,0.35), 0 2px 8px hsla(262,83%,58%,0.2)',
+                }}
+              >
+                {/* Puntos decorativos de fondo */}
+                <div className="absolute inset-0 opacity-[0.07]" style={{
+                  backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+                  backgroundSize: '28px 28px',
+                }} />
+
+                <div className="relative flex items-center justify-between px-6 py-4 gap-6">
+                  {/* Lado izquierdo: icono + título */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
+                      <Zap className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-white font-bold text-base leading-none">En Proceso Operativo</p>
+                        <Info className="h-3.5 w-3.5 text-white/60" />
+                      </div>
+                      <p className="text-white/70 text-xs mt-1">
+                        Docs Recibidos · Ingresadas · Aprobadas · Pago Programado · Pagadas
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Lado derecho: desglose + número principal */}
+                  <div className="flex items-center gap-6">
+                    {/* Desglose compacto */}
+                    <div className="hidden sm:flex items-center gap-2">
+                      {[
+                        { label: 'Docs', count: docsReceivedRefunds.length },
+                        { label: 'Ingresadas', count: submittedRefunds.length },
+                        { label: 'Aprobadas', count: approvedRefunds.length },
+                        { label: 'Pago Prog.', count: paymentScheduledRefunds.length },
+                        { label: 'Pagadas', count: paidRefunds.length },
+                      ].map(({ label, count }) => (
+                        <div key={label} className="flex flex-col items-center px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
+                          <span className="text-white font-bold text-lg leading-none">{count}</span>
+                          <span className="text-white/65 text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
+                        </div>
+                      ))}
+                      <div className="w-px h-8 bg-white/25 mx-2" />
+                    </div>
+
+                    {/* Total grande */}
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-white font-black text-4xl leading-none tabular-nums">
+                        {procesoOperativoTotal.toLocaleString('es-CL')}
+                      </div>
+                      <div className="text-white/60 text-xs mt-1">solicitudes</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[340px] p-4">
+              <p className="font-bold text-sm mb-2 flex items-center gap-1.5">
+                <Zap className="h-4 w-4 text-primary" />
+                ¿Qué es "En Proceso Operativo"?
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                Representa la <strong>venta potencial del período</strong>: todas las solicitudes que ya superaron la calificación inicial y están activamente avanzando en el proceso.
+              </p>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: docsReceivedRefunds.length },
+                  { label: 'Ingresadas', desc: 'En evaluación bancaria', count: submittedRefunds.length },
+                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: approvedRefunds.length },
+                  { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: paymentScheduledRefunds.length },
+                  { label: 'Pagadas', desc: 'Devolución completada', count: paidRefunds.length },
+                ].map(({ label, desc, count }) => (
+                  <div key={label} className="flex items-center justify-between gap-3">
+                    <div>
+                      <span className="font-medium">{label}</span>
+                      <span className="text-muted-foreground/70 ml-1">— {desc}</span>
+                    </div>
+                    <span className="font-bold tabular-nums">{count}</span>
+                  </div>
+                ))}
+                <div className="border-t border-border mt-2 pt-2 flex items-center justify-between font-bold">
+                  <span>Total Proceso Operativo</span>
+                  <span className="text-primary">{procesoOperativoTotal}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground/60 mt-3 italic">
+                * No incluye solicitudes en calificación ni rechazadas, ya que aún no han entrado al proceso activo.
+              </p>
+            </TooltipContent>
+          </UITooltip>
+        </TooltipProvider>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {loadingRefunds || loadingMandates ? (
           <>
