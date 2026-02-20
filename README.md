@@ -1,8 +1,20 @@
 # Welcome to your Lovable project
 
-## Versión 2.3.0
+## Versión 2.3.1
 
 ## Changelog
+
+### Versión 2.3.1 - 2026-02-20
+
+#### Página Operación — Caluga "En Proceso Operativo"
+- **Nueva caluga destacada** en el pipeline de solicitudes (tab Resumen) que muestra el total de solicitudes en proceso operativo activo.
+  - Agrupa: **Documentos Recibidos + Ingresadas + Aprobadas + Pago Programado + Pagadas**.
+  - Diseño diferenciado: banner con gradiente azul-púrpura, textura de puntos, sombra profunda y número en tipografía bold 4xl para destacar visualmente sobre el resto de las calugas.
+  - Desglose compacto: chips individuales por cada etapa incluida con su conteo, visibles directamente en el banner.
+  - **Tooltip explicativo detallado**: al hacer hover muestra el propósito del indicador ("venta potencial del período"), el conteo por etapa con su descripción operativa y una nota aclaratoria sobre qué estados no se incluyen (En calificación y Rechazadas).
+  - El valor respeta el filtro de fechas activo, siendo consistente con el resto del pipeline.
+
+---
 
 ### Versión 2.3.0 - 2026-02-20
 
