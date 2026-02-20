@@ -138,11 +138,7 @@ export function AppSidebar() {
                                     {alertTooltipContent}
                                   </TooltipContent>
                                 </Tooltip>
-                              ) : item.status === 'live' ? (
-                                <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-[10px] px-1.5 py-0">
-                                  Productiva
-                                </Badge>
-                              ) : item.status === 'dev' ? (
+                              ) : item.status === 'dev' && item.url === '/usuarios' ? (
                                 <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
                                   En desarrollo
                                 </Badge>
