@@ -182,7 +182,8 @@ export function TabResumen() {
   const approvedRefunds = refunds.filter((r: any) => r.status === 'approved');
 
   // Filtrar solicitudes en estado "Rechazado"
-  const rejectedRefunds = refunds.filter((r: any) => r.status === 'rejected');
+  // Rechazadas es un estado TERMINAL/HISTÓRICO → respeta filtro de fecha
+  const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
 
   // Filtrar solicitudes en estado "Pago Programado"
   const paymentScheduledRefunds = refunds.filter((r: any) => r.status === 'payment_scheduled');
