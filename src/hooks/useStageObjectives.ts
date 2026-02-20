@@ -6,13 +6,13 @@ export interface StageObjective {
   objetivo: number; // días
 }
 
+// 'qualifying' se excluye: es el punto de entrada del proceso, no tiene etapa previa medible
 export const DEFAULT_STAGE_OBJECTIVES: StageObjective[] = [
-  { key: 'qualifying',        label: 'En Calificación',  objetivo: 3  },
-  { key: 'docs_received',     label: 'Docs Recibidos',   objetivo: 5  },
-  { key: 'submitted',         label: 'Ingresadas',        objetivo: 2  },
-  { key: 'approved',          label: 'Aprobadas',         objetivo: 14 },
-  { key: 'payment_scheduled', label: 'Pago Programado',  objetivo: 3  },
-  { key: 'paid',              label: 'Pagadas',           objetivo: 2  },
+  { key: 'docs_received',     label: 'Docs Recibidos',  objetivo: 5  },
+  { key: 'submitted',         label: 'Ingresadas',       objetivo: 2  },
+  { key: 'approved',          label: 'Aprobadas',        objetivo: 14 },
+  { key: 'payment_scheduled', label: 'Pago Programado', objetivo: 3  },
+  { key: 'paid',              label: 'Pagadas',          objetivo: 2  },
 ];
 
 const STORAGE_KEY = 'tdv:stage-objectives';

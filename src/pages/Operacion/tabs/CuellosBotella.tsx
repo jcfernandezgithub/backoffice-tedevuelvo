@@ -66,7 +66,8 @@ const STAGE_META: Record<string, {
   },
 };
 
-const STAGE_ORDER = ['qualifying', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
+// 'qualifying' se excluye: es el punto de entrada del proceso, no tiene etapa previa medible
+const STAGE_ORDER = ['docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
 
 /**
  * Mide el tiempo de TRANSICIÓN hacia una etapa:
