@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Money } from '@/components/common/Money'
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
   CartesianGrid, LineChart, Line, PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import {
@@ -17,6 +17,7 @@ import {
   FileCheck, Inbox, Building2, ThumbsUp, CalendarCheck, CircleOff,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmtCLP = (v: number) =>
@@ -36,8 +37,8 @@ const PHASES = [
     label: 'Captación',
     color: 'violet',
     stages: [
-      { key: 'datos_sin_simulacion', label: 'Datos sin simulación', sublabel: 'Lead inicial', icon: FileText, refundStatus: 'datos_sin_simulacion' },
-      { key: 'simulated', label: 'Simulado', sublabel: 'Cálculo completado', icon: FileCheck, refundStatus: 'simulated' },
+      { key: 'datos_sin_simulacion', label: 'Datos sin simulación', sublabel: 'Lead inicial', icon: FileText, refundStatus: 'datos_sin_simulacion', tooltip: 'El cliente ingresó sus datos personales pero aún no realizó una simulación de devolución. Es el primer contacto con el producto.' },
+      { key: 'simulated', label: 'Simulado', sublabel: 'Cálculo completado', icon: FileCheck, refundStatus: 'simulated', tooltip: 'El cliente completó la simulación y vio el monto estimado de devolución. Está evaluando si continuar con el proceso.' },
     ],
   },
   {
@@ -45,9 +46,9 @@ const PHASES = [
     label: 'Revisión y Docs',
     color: 'amber',
     stages: [
-      { key: 'qualifying', label: 'En calificación', sublabel: 'Revisión de analista', icon: Clock, refundStatus: 'qualifying' },
-      { key: 'docs_pending', label: 'Docs. pendientes', sublabel: 'Faltan requisitos', icon: AlertCircle, refundStatus: 'docs_pending' },
-      { key: 'docs_received', label: 'Docs. recibidos', sublabel: 'Carga completada', icon: FileSignature, refundStatus: 'docs_received' },
+      { key: 'qualifying', label: 'En calificación', sublabel: 'Revisión de analista', icon: Clock, refundStatus: 'qualifying', tooltip: 'Un analista interno está revisando la solicitud para verificar que cumple los requisitos y es elegible para la devolución.' },
+      { key: 'docs_pending', label: 'Docs. pendientes', sublabel: 'Faltan requisitos', icon: AlertCircle, refundStatus: 'docs_pending', tooltip: 'La solicitud está aprobada internamente, pero el cliente aún no ha subido los documentos requeridos (cédula, liquidaciones, etc.).' },
+      { key: 'docs_received', label: 'Docs. recibidos', sublabel: 'Carga completada', icon: FileSignature, refundStatus: 'docs_received', tooltip: 'El cliente subió todos los documentos solicitados. El equipo está verificando que estén completos y legibles antes de ingresar el trámite.' },
     ],
   },
   {
@@ -55,10 +56,10 @@ const PHASES = [
     label: 'Gestión Bancaria',
     color: 'sky',
     stages: [
-      { key: 'submitted', label: 'Ingresado', sublabel: 'Trámite en entidad', icon: Building2, refundStatus: 'submitted' },
-      { key: 'approved', label: 'Aprobado', sublabel: 'Dictamen positivo', icon: ThumbsUp, refundStatus: 'approved' },
-      { key: 'payment_scheduled', label: 'Pago programado', sublabel: 'Fondos en proceso', icon: CalendarCheck, refundStatus: 'payment_scheduled' },
-      { key: 'paid', label: 'Pagado', sublabel: 'Proceso finalizado', icon: CheckCircle2, refundStatus: 'paid' },
+      { key: 'submitted', label: 'Ingresado', sublabel: 'Trámite en entidad', icon: Building2, refundStatus: 'submitted', tooltip: 'La solicitud fue formalmente ingresada a la compañía de seguros o banco. Se está esperando su respuesta y resolución.' },
+      { key: 'approved', label: 'Aprobado', sublabel: 'Dictamen positivo', icon: ThumbsUp, refundStatus: 'approved', tooltip: 'La entidad financiera aprobó la devolución. Los fondos serán transferidos a Te Devuelvo para luego ser pagados al cliente.' },
+      { key: 'payment_scheduled', label: 'Pago programado', sublabel: 'Fondos en proceso', icon: CalendarCheck, refundStatus: 'payment_scheduled', tooltip: 'Los fondos fueron recibidos por Te Devuelvo. El pago al cliente está programado y pendiente de transferencia.' },
+      { key: 'paid', label: 'Pagado', sublabel: 'Proceso finalizado', icon: CheckCircle2, refundStatus: 'paid', tooltip: 'El cliente recibió exitosamente el monto de su devolución. El proceso está completamente finalizado.' },
     ],
   },
   {
@@ -66,8 +67,8 @@ const PHASES = [
     label: 'Salidas',
     color: 'red',
     stages: [
-      { key: 'rejected', label: 'Rechazado', sublabel: 'Entidad deniega', icon: XCircle, refundStatus: 'rejected' },
-      { key: 'canceled', label: 'Cancelado', sublabel: 'Proceso cancelado', icon: CircleOff, refundStatus: 'canceled' },
+      { key: 'rejected', label: 'Rechazado', sublabel: 'Entidad deniega', icon: XCircle, refundStatus: 'rejected', tooltip: 'La compañía de seguros o banco rechazó la solicitud de devolución. El cliente fue notificado con el motivo del rechazo.' },
+      { key: 'canceled', label: 'Cancelado', sublabel: 'Proceso cancelado', icon: CircleOff, refundStatus: 'canceled', tooltip: 'La solicitud fue cancelada, ya sea por decisión del cliente, por datos incorrectos o por vencimiento del plazo de gestión.' },
     ],
   },
 ]
@@ -401,24 +402,32 @@ export default function Dashboard() {
                     const isLast = stageIdx === phase.stages.length - 1
                     return (
                       <div key={stage.key} className="flex items-center gap-2">
-                        <button
-                          onClick={() => goToRefunds(stage.refundStatus)}
-                          className={`
-                            group flex items-center gap-3 rounded-lg border bg-background/80 p-3
-                            hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
-                            ${colors.cardHover} cursor-pointer min-w-[140px]
-                          `}
-                          title={`Ver solicitudes: ${stage.label}`}
-                        >
-                          <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
-                            <IconComp className="h-4 w-4" />
-                          </div>
-                          <div className="text-left min-w-0">
-                            <p className="text-xs text-muted-foreground leading-none truncate">{stage.label}</p>
-                            <p className="text-2xl font-bold leading-tight">{count}</p>
-                            <p className="text-[10px] text-muted-foreground/70 truncate">{stage.sublabel}</p>
-                          </div>
-                        </button>
+                        <TooltipProvider delayDuration={300}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => goToRefunds(stage.refundStatus)}
+                                className={`
+                                  group flex items-center gap-3 rounded-lg border bg-background/80 p-3
+                                  hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
+                                  ${colors.cardHover} cursor-pointer min-w-[140px]
+                                `}
+                              >
+                                <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
+                                  <IconComp className="h-4 w-4" />
+                                </div>
+                                <div className="text-left min-w-0">
+                                  <p className="text-xs text-muted-foreground leading-none truncate">{stage.label}</p>
+                                  <p className="text-2xl font-bold leading-tight">{count}</p>
+                                  <p className="text-[10px] text-muted-foreground/70 truncate">{stage.sublabel}</p>
+                                </div>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="max-w-[220px] text-center text-xs leading-relaxed">
+                              {stage.tooltip}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         {!isLast && (
                           <ArrowRight className={`h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
                         )}
@@ -469,7 +478,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                         <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                         <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                        <Tooltip
+                        <RechartsTooltip
                           formatter={(v: number) => [`${v} solicitudes`, 'Cantidad']}
                           labelFormatter={l => `Período: ${l}`}
                           contentStyle={{ borderRadius: 8, fontSize: 12 }}
@@ -491,7 +500,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                         <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                         <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
-                        <Tooltip
+                        <RechartsTooltip
                           formatter={(v: number) => [fmtCLP(v), 'Monto']}
                           contentStyle={{ borderRadius: 8, fontSize: 12 }}
                         />
@@ -522,7 +531,7 @@ export default function Dashboard() {
                             <Cell key={i} fill={entry.color} />
                           ))}
                         </Pie>
-                        <Tooltip
+                        <RechartsTooltip
                           content={({ active, payload }) => {
                             if (!active || !payload?.length) return null
                             const d = payload[0].payload
