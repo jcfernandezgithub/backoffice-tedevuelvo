@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { FileText, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { FiltersBar } from './components/FiltersBar';
 import { CacheIndicator } from './components/CacheIndicator';
 import { TabResumen } from './tabs/Resumen';
@@ -71,10 +71,6 @@ export default function Operacion() {
         </div>
         <div className="flex items-center gap-3">
           <CacheIndicator />
-          <Button variant="outline" size="sm">
-            <FileText className="h-4 w-4 mr-2" />
-            Programar reporte
-          </Button>
         </div>
       </div>
 
