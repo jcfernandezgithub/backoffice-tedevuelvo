@@ -338,6 +338,7 @@ export default function Dashboard() {
           value={totalSolicitudes}
           icon={Users}
           className="border-border"
+          tooltip="Suma de todas las solicitudes en el período seleccionado, en cualquier estado del flujo."
         />
         <SummaryKpi
           label="En proceso"
@@ -345,6 +346,7 @@ export default function Dashboard() {
           icon={Clock}
           className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
           valueClass="text-amber-700 dark:text-amber-300"
+          tooltip="Solicitudes activas actualmente: en calificación, con documentos pendientes o recibidos, ingresadas, aprobadas o con pago programado."
         />
         <SummaryKpi
           label="Pagados"
@@ -352,6 +354,7 @@ export default function Dashboard() {
           icon={CheckCircle2}
           className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
           valueClass="text-emerald-700 dark:text-emerald-300"
+          tooltip="Solicitudes cuyo pago fue transferido exitosamente al cliente dentro del período seleccionado."
         />
         <SummaryKpi
           label="Tasa de éxito"
@@ -359,6 +362,7 @@ export default function Dashboard() {
           icon={TrendingUp}
           className="border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/20"
           valueClass="text-sky-700 dark:text-sky-300"
+          tooltip="Porcentaje de solicitudes pagadas sobre el total que inició el proceso (excluye leads sin simulación)."
         />
         <SummaryKpi
           label="Monto pagado"
@@ -366,6 +370,7 @@ export default function Dashboard() {
           icon={Wallet}
           className="col-span-2 md:col-span-1 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
           valueClass="text-violet-700 dark:text-violet-300 text-lg"
+          tooltip="Suma del monto real pagado a clientes (campo realAmount del historial de estados). No es el monto estimado."
         />
       </section>
 
@@ -569,15 +574,16 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '',
+  label, value, icon: Icon, className = '', valueClass = '', tooltip,
 }: {
   label: string
   value: number | string | React.ReactNode
   icon: React.ElementType
   className?: string
   valueClass?: string
+  tooltip?: string
 }) {
-  return (
+  const card = (
     <Card className={`border ${className}`}>
       <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
         <div className="flex items-center justify-between">
@@ -587,6 +593,19 @@ function SummaryKpi({
         <div className={`text-xl sm:text-2xl font-bold ${valueClass}`}>{value}</div>
       </CardContent>
     </Card>
+  )
+
+  if (!tooltip) return card
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{card}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[220px] text-center text-xs leading-relaxed">
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
