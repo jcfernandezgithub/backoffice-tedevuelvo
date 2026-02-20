@@ -212,7 +212,7 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
 
         <CardContent>
           {/* ── Funnel centrado ────────────────────────────────────────────── */}
-          <div className="flex flex-col items-center gap-0 py-2">
+          <div className="py-2">
             {funnelSteps.map((step, index) => {
               const config = STAGE_CONFIG[step.etapa];
               const Icon = config?.icon ?? ClipboardCheck;
@@ -228,37 +228,43 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
 
               return (
                 <div key={step.etapa} className="w-full flex flex-col items-center">
-                  {/* Triángulo conector entre barras */}
+                  {/* Trapecio + badge de fuga — layout de 3 columnas */}
                   {index > 0 && (
-                    <div className="relative w-full flex justify-center" style={{ height: '18px' }}>
-                      {/* Triángulo SVG que une la barra anterior con la actual */}
-                      <svg
-                        viewBox="0 0 100 18"
-                        preserveAspectRatio="none"
-                        className="absolute"
-                        style={{
-                          width: `${getWidth(index - 1, funnelSteps.length)}%`,
-                          height: '18px',
-                          overflow: 'visible',
-                        }}
-                      >
-                        {/* Fondo del trapecio de transición */}
-                        <polygon
-                          points={`0,0 100,0 ${50 + (50 * getWidth(index, funnelSteps.length)) / getWidth(index - 1, funnelSteps.length)},18 ${50 - (50 * getWidth(index, funnelSteps.length)) / getWidth(index - 1, funnelSteps.length)},18`}
-                          className="fill-muted opacity-40"
-                        />
-                      </svg>
+                    <div className="w-full flex items-center" style={{ height: '28px' }}>
+                      {/* Columna izquierda: espacio simétrico al badge */}
+                      <div className="w-36 flex-shrink-0" />
 
-                      {/* Indicador de pérdida flotante */}
-                      {perdida > 0 && (
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 flex items-center gap-1 px-2 py-0.5 bg-destructive/10 border border-destructive/25 rounded-md text-xs z-10 whitespace-nowrap"
-                          style={{ right: `calc(50% - ${getWidth(index - 1, funnelSteps.length) / 2}% - 8px)`, transform: 'translateX(calc(100% + 8px)) translateY(-50%)' }}
+                      {/* Columna central: trapecio SVG */}
+                      <div className="flex-1 flex justify-center">
+                        <svg
+                          viewBox="0 0 100 28"
+                          preserveAspectRatio="none"
+                          style={{
+                            width: `${getWidth(index - 1, funnelSteps.length)}%`,
+                            height: '28px',
+                          }}
                         >
-                          <TrendingDown className="h-3 w-3 text-destructive flex-shrink-0" />
-                          <span className="font-semibold text-destructive">−{perdida.toLocaleString('es-CL')}</span>
-                          <span className="text-muted-foreground">({perdidaPct.toFixed(0)}%)</span>
-                        </div>
-                      )}
+                          <polygon
+                            points={`0,0 100,0 ${50 + (50 * widthPct) / getWidth(index - 1, funnelSteps.length)},28 ${50 - (50 * widthPct) / getWidth(index - 1, funnelSteps.length)},28`}
+                            className="fill-muted opacity-40"
+                          />
+                        </svg>
+                      </div>
+
+                      {/* Columna derecha: badge de fuga — ancho fijo, siempre visible */}
+                      <div className="w-36 flex-shrink-0 flex items-center pl-3">
+                        {perdida > 0 && (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-destructive/10 border border-destructive/25 rounded-md text-xs whitespace-nowrap">
+                            <TrendingDown className="h-3 w-3 text-destructive flex-shrink-0" />
+                            <span className="font-semibold text-destructive">
+                              −{perdida.toLocaleString('es-CL')}
+                            </span>
+                            <span className="text-muted-foreground">
+                              ({perdidaPct.toFixed(0)}%)
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -291,10 +297,9 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
                           </div>
                         </div>
 
-                        {/* Indicador de última etapa */}
                         {isLast && (
-                           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full opacity-60 bg-primary" />
-                         )}
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 rounded-full opacity-60 bg-primary" />
+                        )}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="left" className="max-w-[220px]">
