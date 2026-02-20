@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { dashboardService, type Aggregation } from '@/services/dashboardService'
+import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -162,34 +163,60 @@ export default function Dashboard() {
     retry: 3,
   })
 
-  const { data: solicitudesIds } = useQuery({
-    queryKey: ['dashboard', 'solicitudes-ids', desde, hasta],
-    queryFn: () => dashboardService.getSolicitudesParaMandato(desde, hasta),
-    staleTime: 30_000,
-    retry: 3,
-  })
+  // ── Dataset completo para sub-métricas de qualifying y payment_scheduled ──
+  const { data: allRefunds = [] } = useAllRefunds()
+
+  const filteredRefunds = useMemo(() => {
+    return allRefunds.filter((r: any) => {
+      if (!r.createdAt) return false
+      const dateStr = r.createdAt.split('T')[0]
+      if (desde && dateStr < desde) return false
+      if (hasta && dateStr > hasta) return false
+      return true
+    })
+  }, [allRefunds, desde, hasta])
+
+  // Qualifying: firmados vs pendientes de firma
+  const qualifyingRefunds = useMemo(() => filteredRefunds.filter((r: any) => r.status === 'qualifying'), [filteredRefunds])
+  const qualifyingPublicIds = useMemo(() => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean), [qualifyingRefunds])
+  const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds])
 
   const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
-    queryKey: ['dashboard', 'mandate-statuses', solicitudesIds?.join(',')],
+    queryKey: ['dashboard', 'mandate-statuses', qualifyingIdsKey],
     queryFn: async () => {
-      if (!solicitudesIds || solicitudesIds.length === 0) return {}
+      if (!qualifyingPublicIds.length) return {}
       const statuses: Record<string, any> = {}
-      await Promise.all(
-        solicitudesIds.map(async (publicId: string) => {
-          try {
-            const res = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            )
-            if (res.ok) statuses[publicId] = await res.json()
-          } catch { /* silencioso */ }
-        })
-      )
+      const BATCH = 10
+      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH) {
+        await Promise.all(
+          qualifyingPublicIds.slice(i, i + BATCH).map(async (publicId: string) => {
+            try {
+              const res = await fetch(`https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`)
+              if (res.ok) statuses[publicId] = await res.json()
+            } catch { /* silencioso */ }
+          })
+        )
+      }
       return statuses
     },
-    enabled: !!solicitudesIds && solicitudesIds.length > 0,
-    staleTime: 60_000,
+    enabled: qualifyingPublicIds.length > 0,
+    staleTime: 10 * 60 * 1000,
     retry: 2,
   })
+
+  const qualifyingFirmados = useMemo(() =>
+    qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
+    [qualifyingRefunds, mandateStatuses]
+  )
+  const qualifyingPendientes = useMemo(() =>
+    qualifyingRefunds.filter((r: any) => !mandateStatuses?.[r.publicId]?.hasSignedPdf).length,
+    [qualifyingRefunds, mandateStatuses]
+  )
+
+  // Payment scheduled: con/sin datos bancarios
+  const paymentScheduledRefunds = useMemo(() => filteredRefunds.filter((r: any) => r.status === 'payment_scheduled'), [filteredRefunds])
+  const paymentWithBank = useMemo(() => paymentScheduledRefunds.filter((r: any) => r.bankInfo).length, [paymentScheduledRefunds])
+  const paymentWithoutBank = useMemo(() => paymentScheduledRefunds.filter((r: any) => !r.bankInfo).length, [paymentScheduledRefunds])
 
   const isRefreshing = isFetchingCounts || isFetchingPaid || isFetchingPagos || isFetchingSolicitudes || isFetchingMandates
 
@@ -199,10 +226,7 @@ export default function Dashboard() {
     return Object.values(granularCounts).reduce((s, v) => s + v, 0)
   }, [granularCounts])
 
-  const solicitudesFirmadas = useMemo(() => {
-    if (!mandateStatuses) return 0
-    return Object.values(mandateStatuses).filter((s: any) => s?.hasSignedPdf === true).length
-  }, [mandateStatuses])
+  const solicitudesFirmadas = qualifyingFirmados
 
   const paidCount = granularCounts?.paid ?? 0
   const rejectedCount = (granularCounts?.rejected ?? 0) + (granularCounts?.canceled ?? 0)
@@ -422,6 +446,11 @@ export default function Dashboard() {
                     const count = granularCounts?.[stage.key] ?? 0
                     const IconComp = stage.icon
                     const isLast = stageIdx === phase.stages.length - 1
+
+                    // Sub-métricas especiales
+                    const isQualifying = stage.key === 'qualifying'
+                    const isPaymentScheduled = stage.key === 'payment_scheduled'
+
                     return (
                       <div key={stage.key} className="flex items-center gap-2">
                         <TooltipProvider delayDuration={300}>
@@ -430,18 +459,60 @@ export default function Dashboard() {
                               <button
                                 onClick={() => goToRefunds(stage.refundStatus)}
                                 className={`
-                                  group flex items-center gap-3 rounded-lg border bg-background/80 p-3
+                                  group flex items-start gap-3 rounded-lg border bg-background/80 p-3
                                   hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
                                   ${colors.cardHover} cursor-pointer min-w-[140px]
                                 `}
                               >
-                                <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
+                                <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0 mt-0.5`}>
                                   <IconComp className="h-4 w-4" />
                                 </div>
                                 <div className="text-left min-w-0">
                                   <p className="text-xs text-muted-foreground leading-none truncate">{stage.label}</p>
                                   <p className="text-2xl font-bold leading-tight">{count}</p>
                                   <p className="text-[10px] text-muted-foreground/70 truncate">{stage.sublabel}</p>
+
+                                  {/* Sub-métrica: En calificación — firmados / pendientes */}
+                                  {isQualifying && mandateStatuses && (
+                                    <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
+                                      <div
+                                        className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'signed', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                      >
+                                        <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">Firmado</Badge>
+                                        <span className="text-xs font-semibold">{qualifyingFirmados}</span>
+                                      </div>
+                                      <div
+                                        className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'pending', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                      >
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">Pendiente</Badge>
+                                        <span className="text-xs font-semibold">{qualifyingPendientes}</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Sub-métrica: Pago programado — con/sin banco */}
+                                  {isPaymentScheduled && (
+                                    <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
+                                      <div
+                                        className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'ready', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                      >
+                                        <Badge className={`text-[10px] px-1.5 py-0 h-4 ${paymentWithBank > 0 ? 'bg-red-500 animate-pulse text-white' : 'bg-emerald-600 text-white'}`}>
+                                          {paymentWithBank > 0 ? '⚠ Con datos' : 'Con datos'}
+                                        </Badge>
+                                        <span className="text-xs font-semibold">{paymentWithBank}</span>
+                                      </div>
+                                      <div
+                                        className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
+                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'pending', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                      >
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/15 text-amber-600 border-amber-500/30">Sin datos</Badge>
+                                        <span className="text-xs font-semibold">{paymentWithoutBank}</span>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </button>
                             </TooltipTrigger>
