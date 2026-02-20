@@ -290,7 +290,11 @@ export function TabResumen() {
 
             {/* Card: Documentos Recibidos */}
             <Card 
-              className="border-l-4 border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 cursor-pointer hover:shadow-md transition-shadow"
+              className={`border-l-4 cursor-pointer transition-all ${
+                docsReceivedRefunds.length >= 1
+                  ? 'border-l-orange-500 bg-orange-50/40 dark:bg-orange-950/15 hover:shadow-lg ring-1 ring-orange-300 dark:ring-orange-700'
+                  : 'border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 hover:shadow-md'
+              }`}
               onClick={() => navigate(buildRefundsUrl({ status: 'docs_received' }))}
             >
               <CardHeader className="pb-2">
@@ -298,12 +302,24 @@ export function TabResumen() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Documentos Recibidos
                   </CardTitle>
-                  <FileCheck2 className="h-5 w-5 text-violet-500" />
+                  <div className="flex items-center gap-2">
+                    {docsReceivedRefunds.length >= 1 && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
+                      </span>
+                    )}
+                    <FileCheck2 className={`h-5 w-5 ${docsReceivedRefunds.length >= 1 ? 'text-orange-500' : 'text-violet-500'}`} />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-violet-700 dark:text-violet-400">{docsReceivedRefunds.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">Listos para ingresar al banco</p>
+                <div className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
+                  {docsReceivedRefunds.length}
+                </div>
+                <p className={`text-xs mt-1 font-medium ${docsReceivedRefunds.length >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                  {docsReceivedRefunds.length >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
+                </p>
               </CardContent>
             </Card>
 
@@ -362,18 +378,30 @@ export function TabResumen() {
             </Card>
 
             {/* Card: Pago Programado - con sub-filtros clickeables */}
-            <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
+            <Card className={`border-l-4 transition-all ${
+              paymentScheduledWithBank.length > 0
+                ? 'border-l-red-500 bg-red-50/30 dark:bg-red-950/10 ring-1 ring-red-300 dark:ring-red-700'
+                : 'border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10'
+            }`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Pago Programado
                   </CardTitle>
-                  <CalendarClock className="h-5 w-5 text-cyan-500" />
+                  <div className="flex items-center gap-2">
+                    {paymentScheduledWithBank.length > 0 && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                      </span>
+                    )}
+                    <CalendarClock className={`h-5 w-5 ${paymentScheduledWithBank.length > 0 ? 'text-red-500' : 'text-cyan-500'}`} />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div 
-                  className="text-3xl font-bold text-cyan-700 dark:text-cyan-400 cursor-pointer hover:underline"
+                  className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
                   onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                 >
                   {paymentScheduledRefunds.length}
@@ -383,7 +411,9 @@ export function TabResumen() {
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'ready' }))}
                   >
-                    <Badge variant="default" className="bg-emerald-500 text-xs">Con datos para transferencia</Badge>
+                    <Badge variant="default" className={`text-xs ${paymentScheduledWithBank.length > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
+                      {paymentScheduledWithBank.length > 0 ? '⚠ Transferencia pendiente' : 'Con datos para transferencia'}
+                    </Badge>
                     <span className="font-semibold">{paymentScheduledWithBank.length}</span>
                   </div>
                   <div 
