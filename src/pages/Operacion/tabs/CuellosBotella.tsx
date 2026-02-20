@@ -17,66 +17,74 @@ import { useFilters } from '../hooks/useFilters';
 import { useFunnelData } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import dayjs from 'dayjs';
-import type { RefundRequest, RefundStatus } from '@/types/refund';
+import type { RefundRequest } from '@/types/refund';
 
 // Mismos colores y nombres que el funnel
 const STAGE_CONFIG: Record<string, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   gradient: string;
-  objetivo: number; // días objetivo en esta etapa
+  objetivo: number;       // días objetivo para la transición desde la etapa anterior
+  prevStage: string | null; // etapa anterior (null = desde createdAt)
 }> = {
   qualifying: {
     label: 'En Calificación',
     icon: ClipboardCheck,
     gradient: 'linear-gradient(135deg, hsl(43,96%,56%), hsl(38,92%,50%))',
     objetivo: 3,
+    prevStage: null, // desde solicitud creada / requested
   },
   docs_received: {
     label: 'Docs Recibidos',
     icon: FileCheck2,
     gradient: 'linear-gradient(135deg, hsl(271,91%,65%), hsl(265,85%,58%))',
     objetivo: 5,
+    prevStage: 'qualifying',
   },
   submitted: {
     label: 'Ingresadas',
     icon: FileInput,
     gradient: 'linear-gradient(135deg, hsl(239,84%,67%), hsl(232,78%,60%))',
-    objetivo: 4,
+    objetivo: 2,
+    prevStage: 'docs_received',
   },
   approved: {
     label: 'Aprobadas',
     icon: CheckCircle,
     gradient: 'linear-gradient(135deg, hsl(142,71%,45%), hsl(138,65%,38%))',
-    objetivo: 7,
+    objetivo: 14,
+    prevStage: 'submitted',
   },
   payment_scheduled: {
     label: 'Pago Programado',
     icon: CalendarClock,
     gradient: 'linear-gradient(135deg, hsl(187,92%,45%), hsl(192,85%,38%))',
     objetivo: 3,
+    prevStage: 'approved',
   },
   paid: {
     label: 'Pagadas',
     icon: Banknote,
     gradient: 'linear-gradient(135deg, hsl(160,84%,39%), hsl(155,78%,32%))',
     objetivo: 2,
+    prevStage: 'payment_scheduled',
   },
 };
 
 const STAGE_ORDER = ['qualifying', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
 
 /**
- * Mide cuántos días pasó cada solicitud EN un estado determinado.
- * - Entrada al estado: la entrada del historial donde h.to === stage
- * - Salida del estado: la entrada donde h.from === stage
- * - Si aún está en ese estado (no hay salida), usa updatedAt como proxy
+ * Mide el tiempo de TRANSICIÓN hacia una etapa:
+ * - Para qualifying: desde createdAt hasta que entró a qualifying
+ * - Para el resto: desde que entró a la etapa anterior hasta que entró a esta etapa
  *
- * Fallback para 'qualifying': si no hay historial, usa createdAt → siguiente transición.
+ * Solo se incluyen solicitudes que hayan alcanzado ambos puntos (origen y destino),
+ * lo que garantiza que el promedio refleja el tiempo real de proceso.
  */
-function calcularTiempoEnEtapa(
+function calcularTiempoTransicion(
   refunds: RefundRequest[],
-  stage: RefundStatus
+  stage: string,
+  prevStage: string | null,
 ): { promedio: number | null; muestra: number } {
   const tiempos: number[] = [];
 
@@ -85,33 +93,26 @@ function calcularTiempoEnEtapa(
       (a, b) => new Date(a.at).getTime() - new Date(b.at).getTime()
     );
 
-    // Cuándo ENTRÓ al estado
-    let entradaAt: string | null = null;
+    // Momento en que llegó a ESTE estado
+    const llegadaEntry = history.find(h => h.to === stage);
+    if (!llegadaEntry) return; // nunca llegó a esta etapa
 
-    if (history.length === 0) {
-      // Sin historial: si la solicitud está en este estado usamos createdAt
-      if ((r.status as string) === stage) {
-        entradaAt = r.createdAt;
-      }
+    const llegadaAt = llegadaEntry.at;
+
+    // Momento de ORIGEN (etapa anterior o creación)
+    let origenAt: string | null = null;
+    if (prevStage === null) {
+      // qualifying: se mide desde createdAt
+      origenAt = r.createdAt;
     } else {
-      const entradaEntry = history.find(h => h.to === stage);
-      if (entradaEntry) {
-        entradaAt = entradaEntry.at;
-      } else if ((r.status as string) === stage) {
-        // Llegó a este estado pero sin registro explícito → usar createdAt
-        entradaAt = r.createdAt;
-      }
+      const prevEntry = history.find(h => h.to === prevStage);
+      origenAt = prevEntry ? prevEntry.at : null;
     }
 
-    if (!entradaAt) return;
+    if (!origenAt) return; // no tenemos punto de origen
 
-    // Cuándo SALIÓ del estado
-    const salidaEntry = history.find(h => h.from === stage);
-    const salidaAt = salidaEntry ? salidaEntry.at : r.updatedAt;
-
-    const diff = dayjs(salidaAt).diff(dayjs(entradaAt), 'hour') / 24;
+    const diff = dayjs(llegadaAt).diff(dayjs(origenAt), 'hour') / 24;
     if (diff >= 0 && diff < 365) {
-      // Descartamos valores absurdos (>1 año = dato corrupto)
       tiempos.push(diff);
     }
   });
@@ -128,7 +129,7 @@ export function TabCuellosBotella() {
 
   const etapasConTiempos = STAGE_ORDER.map(key => {
     const cfg = STAGE_CONFIG[key];
-    const { promedio, muestra } = calcularTiempoEnEtapa(allRefunds, key as RefundStatus);
+    const { promedio, muestra } = calcularTiempoTransicion(allRefunds, key, cfg.prevStage);
     const tieneData = promedio !== null;
     const excede = tieneData && promedio! > cfg.objetivo;
     const pct = tieneData ? (promedio! / (cfg.objetivo * 1.5)) * 100 : 0;
@@ -238,18 +239,19 @@ export function TabCuellosBotella() {
                       {tieneData ? (
                         <>
                           <p className="text-sm text-muted-foreground">
-                            Promedio real: <strong>{promedio!.toFixed(1)} días</strong>
+                            Tiempo promedio: <strong>{promedio!.toFixed(1)} días</strong>
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Objetivo: {cfg.objetivo} días
                           </p>
                           <p className="text-xs text-muted-foreground/70 mt-1">
-                            Calculado sobre {muestra} solicitud{muestra !== 1 ? 'es' : ''} con historial
+                            Tiempo desde etapa anterior hasta llegar a {cfg.label.toLowerCase()},
+                            calculado sobre {muestra} solicitud{muestra !== 1 ? 'es' : ''}.
                           </p>
                         </>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Sin solicitudes con historial de estado para esta etapa aún.
+                          Sin solicitudes con transición completa hacia esta etapa aún.
                         </p>
                       )}
                     </TooltipContent>
