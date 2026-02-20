@@ -34,10 +34,16 @@ export function useAllRefunds() {
         }
       }
 
-      // Normalizar status a minúsculas
+      // Normalizar status Y statusHistory a minúsculas
+      // (la API devuelve los estados en MAYÚSCULAS, ej: "QUALIFYING", "DOCS_RECEIVED")
       return allItems.map(r => ({
         ...r,
         status: (r.status?.toLowerCase?.() || r.status) as any,
+        statusHistory: (r.statusHistory || []).map(h => ({
+          ...h,
+          to: (h.to?.toLowerCase?.() || h.to) as any,
+          from: h.from ? ((h.from?.toLowerCase?.() || h.from) as any) : h.from,
+        })),
       }));
     },
     staleTime: STALE_TIME,
