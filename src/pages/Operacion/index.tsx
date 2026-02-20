@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Download } from 'lucide-react';
 import { FiltersBar } from './components/FiltersBar';
 import { TabResumen } from './tabs/Resumen';
+import { TabDetalleFinanciero } from './tabs/DetalleFinanciero';
 import { TabTendencias } from './tabs/Tendencias';
 import { TabCuellosBotella } from './tabs/CuellosBotella';
 import { TabSegmentos } from './tabs/Segmentos';
@@ -81,8 +82,9 @@ export default function Operacion() {
       {/* Tabs principales */}
       <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
             <TabsTrigger value="resumen">Resumen</TabsTrigger>
+            <TabsTrigger value="detalle-financiero">Detalle Financiero</TabsTrigger>
             <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
             <TabsTrigger value="cuellos">Cuellos de botella</TabsTrigger>
             <TabsTrigger value="segmentos">Segmentos</TabsTrigger>
@@ -92,6 +94,10 @@ export default function Operacion() {
 
         <TabsContent value="resumen" className="space-y-6">
           <TabResumen />
+        </TabsContent>
+
+        <TabsContent value="detalle-financiero" className="space-y-6">
+          <TabDetalleFinanciero />
         </TabsContent>
 
         <TabsContent value="tendencias" className="space-y-6">
