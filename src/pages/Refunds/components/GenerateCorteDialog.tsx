@@ -136,7 +136,7 @@ function generateGenericPDF(
 // ──────────────────────────────────────────
 function generateSantanderPDF(
   refund: RefundRequest,
-  formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string },
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string },
 ) {
   const today = new Date()
   const day = today.getDate()
@@ -175,25 +175,29 @@ function generateSantanderPDF(
       <body>
         <div class="header">Santiago, ${day} de ${month} de ${year}</div>
         <div class="header">
-          Sres.: ${formData.companyName}<br>
-          Atención: Servicio al Cliente<br><br>
+          Sres.: ${formData.companyName}<br><br>
           Ref: Carta de Renuncia al seguro que indica
         </div>
         <div class="title">
-          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br>
-          Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
         </div>
         <div class="content">
           <p>
-            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> 
-            RUT: <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, actuando en representación y por cuenta de 
-            don (doña) <strong>${refund.fullName}</strong>, cédula de identidad 
-            <strong>${refund.rut}</strong>, comunicamos formalmente a esa Compañía 
-            Aseguradora<strong>${formData.companyName ? ' ' + formData.companyName : ''}</strong> la renuncia al seguro 
-            <strong>${formData.insuranceName}</strong> y su cobertura que fuera contratado junto 
-            con el crédito de consumo otorgado por el Banco <strong>${formData.bankName}</strong>, 
-            que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, 
-            todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.
+            Por medio de la presente, <strong>TDV SERVICIOS SPA</strong>, RUT N° <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, 
+            debidamente facultada y actuando en representación y por cuenta de don/doña 
+            <strong>${refund.fullName}</strong>, cédula de identidad N° <strong>${refund.rut}</strong>, 
+            viene en comunicar formalmente a esa Compañía Aseguradora <strong>${formData.companyName}</strong> 
+            la renuncia expresa al seguro <strong>${formData.insuranceName}</strong>, incluyendo todas sus coberturas asociadas.
+          </p>
+          <p>
+            El referido seguro fue contratado en conjunto con el crédito de consumo otorgado por el 
+            Banco <strong>${formData.bankName}</strong>, correspondiente a la operación de crédito 
+            N° <strong>${formData.creditNumber}</strong>, asociado a la Póliza N° <strong>${formData.policyNumber}</strong>.
+          </p>
+          <p>
+            La presente renuncia se formula conforme a lo dispuesto en el artículo 537 del Código de Comercio 
+            y demás normativa aplicable, solicitando se sirva proceder a la cancelación del seguro indicado 
+            y a la determinación y devolución de las primas no devengadas que correspondan.
           </p>
           <p>
             Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión 
@@ -323,7 +327,7 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
 // ──────────────────────────────────────────
 interface SantanderFormProps {
   refund: RefundRequest
-  onGenerate: (data: { creditNumber: string; bankName: string; companyName: string; insuranceName: string }) => void
+  onGenerate: (data: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string }) => void
 }
 
 function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
@@ -331,16 +335,17 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
   const derivedInsuranceName = getInsuranceName(rawInsuranceType)
 
   const [creditNumber, setCreditNumber] = useState('')
+  const [policyNumber, setPolicyNumber] = useState('')
   const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
   const [companyName, setCompanyName] = useState('')
   const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
 
   const handleGenerate = () => {
-    if (!creditNumber.trim() || !companyName.trim() || !insuranceName.trim()) {
+    if (!creditNumber.trim() || !policyNumber.trim() || !companyName.trim() || !insuranceName.trim()) {
       toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
       return
     }
-    onGenerate({ creditNumber, bankName, companyName, insuranceName })
+    onGenerate({ creditNumber, policyNumber, bankName, companyName, insuranceName })
   }
 
   return (
@@ -373,24 +378,30 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
           <Input id="s-creditNumber" value={creditNumber} onChange={e => setCreditNumber(e.target.value)} placeholder="Número de operación de crédito" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="s-bankName">Banco (Crédito)</Label>
-          <Input id="s-bankName" value={bankName} onChange={e => setBankName(e.target.value)} />
+          <Label htmlFor="s-policyNumber">Nº de Póliza *</Label>
+          <Input id="s-policyNumber" value={policyNumber} onChange={e => setPolicyNumber(e.target.value)} placeholder="Número de póliza" />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="s-insuranceName">
-          Tipo de Seguro *
-          {derivedInsuranceName && (
-            <span className="ml-2 text-xs text-muted-foreground font-normal">(precargado desde la solicitud)</span>
-          )}
-        </Label>
-        <Input
-          id="s-insuranceName"
-          value={insuranceName}
-          onChange={e => setInsuranceName(e.target.value)}
-          placeholder="Ej: Seguro de Desgravamen"
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="s-bankName">Banco (Crédito)</Label>
+          <Input id="s-bankName" value={bankName} onChange={e => setBankName(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="s-insuranceName">
+            Tipo de Seguro *
+            {derivedInsuranceName && (
+              <span className="ml-2 text-xs text-muted-foreground font-normal">(precargado desde la solicitud)</span>
+            )}
+          </Label>
+          <Input
+            id="s-insuranceName"
+            value={insuranceName}
+            onChange={e => setInsuranceName(e.target.value)}
+            placeholder="Ej: Seguro de Desgravamen"
+          />
+        </div>
       </div>
 
       <div className="flex gap-2 pt-4">
@@ -466,7 +477,7 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
 // ──────────────────────────────────────────
 interface SantanderPreviewProps {
   refund: RefundRequest
-  formData: { creditNumber: string; bankName: string; companyName: string; insuranceName: string }
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string }
   onEdit: () => void
   onDownload: () => void
 }
@@ -478,33 +489,44 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
       <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto text-sm">
         <p className="mb-4">Santiago, {today.getDate()} de {today.toLocaleDateString('es-CL', { month: 'long' })} de {today.getFullYear()}</p>
         <p>Sres.: {formData.companyName}</p>
-        <p>Atención: Servicio al Cliente</p>
         <p className="mt-2">Ref: Carta de Renuncia al seguro que indica</p>
         <h3 className="text-center font-bold my-4">
-          INFORMA TÉRMINO ANTICIPADO DE SEGURO<br />
-          Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
+          INFORMA TÉRMINO ANTICIPADO DE SEGURO Y SOLICITA DEVOLUCION DE PRIMA NO DEVENGADA
         </h3>
         <div className="space-y-3 text-justify">
           <p>
-            Por medio de la presente Carta de Renuncia, la sociedad <strong>TDV SERVICIOS SPA</strong> RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>,
-            actuando en representación y por cuenta de don (doña) <strong>{refund.fullName}</strong>, cédula de identidad <strong>{refund.rut}</strong>,
-            comunicamos formalmente a esa Compañía Aseguradora <strong>{formData.companyName}</strong> la renuncia al seguro{' '}
-            <strong>{formData.insuranceName}</strong> y su cobertura que fuera contratado junto
-            con el crédito de consumo otorgado por el Banco <strong>{formData.bankName}</strong>,
-            que corresponde a la operación de crédito N°<strong>{formData.creditNumber}</strong>,
-            todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.
+            Por medio de la presente, <strong>TDV SERVICIOS SPA</strong>, RUT N° <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>,
+            debidamente facultada y actuando en representación y por cuenta de don/doña{' '}
+            <strong>{refund.fullName}</strong>, cédula de identidad N° <strong>{refund.rut}</strong>,
+            viene en comunicar formalmente a esa Compañía Aseguradora <strong>{formData.companyName}</strong>{' '}
+            la renuncia expresa al seguro <strong>{formData.insuranceName}</strong>, incluyendo todas sus coberturas asociadas.
           </p>
           <p>
-            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión para el Mercado Financiero (CMF),
-            solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente
-            N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong> cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>,
-            RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>.
-            Se hace presente que el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.
+            El referido seguro fue contratado en conjunto con el crédito de consumo otorgado por el
+            Banco <strong>{formData.bankName}</strong>, correspondiente a la operación de crédito
+            N° <strong>{formData.creditNumber}</strong>, asociado a la Póliza N° <strong>{formData.policyNumber}</strong>.
           </p>
           <p>
-            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro
-            antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos
-            que se nos informe el resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número
+            La presente renuncia se formula conforme a lo dispuesto en el artículo 537 del Código de Comercio
+            y demás normativa aplicable, solicitando se sirva proceder a la cancelación del seguro indicado
+            y a la determinación y devolución de las primas no devengadas que correspondan.
+          </p>
+          <p>
+            Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión
+            para el Mercado Financiero (CMF), solicitamos la devolución de la prima pagada y no devengada o
+            consumida, la que deberá ser abonada a la cuenta corriente
+            N° <strong>{FIXED_ACCOUNT_DATA.accountNumber}</strong> del Banco <strong>{FIXED_ACCOUNT_DATA.accountBank}</strong>{' '}
+            cuyo titular es <strong>{FIXED_ACCOUNT_DATA.accountHolder}</strong>,
+            RUT: <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, correo electrónico{' '}
+            <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong>. Se hace presente que el monto a restituir
+            deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles,
+            conforme a la normativa vigente.
+          </p>
+          <p>
+            Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar
+            y tramitar la renuncia del seguro antes mencionado y recaudar a nombre del asegurado la
+            devolución de las primas pagadas no devengadas, por lo cual solicitamos que se nos informe el
+            resultado de esta gestión al correo electrónico <strong>{FIXED_ACCOUNT_DATA.contactEmail}</strong> y al número
             telefónico <strong>{FIXED_ACCOUNT_DATA.contactPhone}</strong>.
           </p>
           <p>Sin otro particular, se despiden atentamente,</p>
@@ -556,7 +578,7 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
   } | null>(null)
 
   const [santanderData, setSantanderData] = useState<{
-    creditNumber: string; bankName: string; companyName: string; insuranceName: string
+    creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string
   } | null>(null)
 
   const handleClose = () => {
