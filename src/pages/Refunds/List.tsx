@@ -79,42 +79,32 @@ const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
   return (lastEntry.to?.toLowerCase() || refund.status) as RefundStatus
 }
 
-// Verificar si una solicitud estuvo en un estado dado durante un rango de fechas
-// Recorre el statusHistory y determina si el estado objetivo se mantuvo activo
-// en algún momento dentro de [fromStr, toStr]
+// Verificar si una solicitud CAMBIÓ a un estado dado durante un rango de fechas
+// Busca en el statusHistory si existe una transición AL estado objetivo
+// cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
 const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
   if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
-    // Sin historial: comparar con el estado actual
-    return refund.status === targetStatus
+    // Sin historial: no hay cambio de estado registrado
+    return false
   }
 
   // Usar hora local (no UTC) para evitar desplazamiento de zona horaria
   const rangeStart = new Date(fromStr + 'T00:00:00').getTime()
   const rangeEnd = new Date(toStr + 'T23:59:59.999').getTime()
 
-  // Ordenar historial cronológicamente
-  const sorted = [...refund.statusHistory]
-    .sort((a: any, b: any) => new Date(a.at).getTime() - new Date(b.at).getTime())
-
-  // Construir intervalos: cada entrada define un período en el estado "to"
-  // desde entry.at hasta la siguiente entrada (o hasta ahora si es la última)
-  for (let i = 0; i < sorted.length; i++) {
-    const entry = sorted[i]
+  // Buscar si alguna entrada del historial representa un cambio AL estado objetivo
+  // dentro del rango de fechas
+  return refund.statusHistory.some((entry: any) => {
     const entryStatus = (entry.to?.toLowerCase() || '') as string
-    if (entryStatus !== targetStatus) continue
+    if (entryStatus !== targetStatus) return false
 
-    const statusStart = new Date(entry.at).getTime()
-    const statusEnd = i < sorted.length - 1
-      ? new Date(sorted[i + 1].at).getTime()
-      : Date.now() // sigue en ese estado
+    // Verificar que sea un cambio real (from !== to), no una nota informativa
+    const fromStatus = entry.from?.toLowerCase() || ''
+    if (fromStatus === entryStatus) return false
 
-    // Verificar si el intervalo [statusStart, statusEnd] se solapa con [rangeStart, rangeEnd]
-    if (statusStart <= rangeEnd && statusEnd >= rangeStart) {
-      return true
-    }
-  }
-
-  return false
+    const changeTime = new Date(entry.at).getTime()
+    return changeTime >= rangeStart && changeTime <= rangeEnd
+  })
 }
 
 const getStatusColors = (status: RefundStatus): string => {
