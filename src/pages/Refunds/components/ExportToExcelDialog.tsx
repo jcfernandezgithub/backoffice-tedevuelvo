@@ -38,6 +38,7 @@ interface ExportToExcelDialogProps {
   searchFilters?: SearchParams
   listFilters?: AdminQueryParams
   useSearchEndpoint?: boolean
+  historicalStatusMode?: boolean
 }
 
 function prepareExcelData(
@@ -185,6 +186,7 @@ export function ExportToExcelDialog({
   searchFilters,
   listFilters,
   useSearchEndpoint = false,
+  historicalStatusMode = false,
 }: ExportToExcelDialogProps) {
   const [open, setOpen] = useState(false)
   const { fetchAllRefunds, isExporting, progress } = useExportAllRefunds()
@@ -202,6 +204,9 @@ export function ExportToExcelDialog({
       if (hasSelection) {
         // Exportar solo los seleccionados de la página actual
         dataToExport = refunds.filter(r => selectedRefunds.has(r.id))
+      } else if (historicalStatusMode) {
+        // En modo histórico los datos ya están filtrados localmente — usar directamente
+        dataToExport = refunds
       } else {
         // Exportar TODO usando paginación paralela
         dataToExport = await fetchAllRefunds({

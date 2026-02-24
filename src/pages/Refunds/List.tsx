@@ -775,6 +775,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 searchFilters={useSearchEndpoint ? searchFilters : undefined}
                 listFilters={!useSearchEndpoint ? filters : undefined}
                 useSearchEndpoint={useSearchEndpoint}
+                historicalStatusMode={historicalStatusMode}
               />
               <GenerateExcelDialog 
                 selectedRefunds={getSelectedRefundsData()} 
