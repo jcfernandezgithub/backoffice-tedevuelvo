@@ -88,8 +88,9 @@ const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr
     return refund.status === targetStatus
   }
 
-  const rangeStart = new Date(fromStr + 'T00:00:00.000Z').getTime()
-  const rangeEnd = new Date(toStr + 'T23:59:59.999Z').getTime()
+  // Usar hora local (no UTC) para evitar desplazamiento de zona horaria
+  const rangeStart = new Date(fromStr + 'T00:00:00').getTime()
+  const rangeEnd = new Date(toStr + 'T23:59:59.999').getTime()
 
   // Ordenar historial cronológicamente
   const sorted = [...refund.statusHistory]
