@@ -231,69 +231,26 @@ export const reportsApiClient = {
   },
 
   getFunnelData(filtros: FiltrosReporte, allRefunds: RefundRequest[]): FunnelStep[] {
-    const refunds = filterActive(applyFiltros(allRefunds, filtros));
+    // Usar la misma lógica de filtrado que las calugas del Resumen:
+    // filtrar por fecha del último cambio al estado ACTUAL
+    const filtered = applyFiltros(allRefunds, filtros);
 
-    // Etapas del pipeline en orden cronológico (mismos nombres que el pipeline de Resumen)
-    const PIPELINE_STAGES: { key: RefundStatus[]; etapa: string; label: string }[] = [
-      { key: ['qualifying'],                     etapa: 'qualifying',         label: 'En Calificación' },
-      { key: ['docs_received'],                  etapa: 'docs_received',      label: 'Docs Recibidos' },
-      { key: ['submitted'],                      etapa: 'submitted',          label: 'Ingresadas' },
-      { key: ['approved'],                       etapa: 'approved',           label: 'Aprobadas' },
-      { key: ['rejected'],                       etapa: 'rejected',           label: 'Rechazadas' },
-      { key: ['payment_scheduled'],              etapa: 'payment_scheduled',  label: 'Pago Programado' },
-      { key: ['paid'],                           etapa: 'paid',               label: 'Pagadas' },
+    // Etapas del pipeline (mismo orden y nombres que las calugas de Resumen)
+    const PIPELINE_STAGES: { etapa: string; label: string }[] = [
+      { etapa: 'qualifying',         label: 'En Calificación' },
+      { etapa: 'docs_received',      label: 'Docs Recibidos' },
+      { etapa: 'submitted',          label: 'Ingresadas' },
+      { etapa: 'approved',           label: 'Aprobadas' },
+      { etapa: 'rejected',           label: 'Rechazadas' },
+      { etapa: 'payment_scheduled',  label: 'Pago Programado' },
+      { etapa: 'paid',               label: 'Pagadas' },
     ];
 
-    // Para el funnel acumulativo, contar cuántas solicitudes llegaron al menos a esa etapa
-    // usando el statusHistory para detectar si pasaron por ese estado
-    const ORDER = ['qualifying', 'docs_received', 'submitted', 'approved', 'payment_scheduled', 'paid'];
-
-    const getMaxOrder = (r: RefundRequest): number => {
-      // Revisar historial para detectar el estado más avanzado alcanzado
-      const historicalStatuses = [
-        r.status,
-        ...(r.statusHistory || []).map((h: any) => h.to?.toLowerCase()).filter(Boolean),
-      ];
-      let max = -1;
-      historicalStatuses.forEach(s => {
-        const idx = ORDER.indexOf(s);
-        if (idx > max) max = idx;
-      });
-      return max;
-    };
-
-    // Solicitudes que alguna vez pasaron por cada etapa (acumulativo)
-    const allWithStatus = filterActive(applyFiltros(allRefunds, filtros));
-    const totalBase = allWithStatus.length;
+    // Contar por estado ACTUAL (igual que las calugas)
+    const totalBase = filtered.length;
 
     return PIPELINE_STAGES.map(stage => {
-      let cantidad: number;
-
-      if (stage.etapa === 'rejected') {
-        // Rechazadas: solo las que están en ese estado actualmente
-        // (no son parte del funnel lineal sino una salida)
-        cantidad = allRefunds.filter(r => {
-          const passesFilter = !filtros.fechaDesde && !filtros.fechaHasta
-            ? true
-            : (() => {
-                if (!r.createdAt) return false;
-                const d = r.createdAt.split('T')[0];
-                if (filtros.fechaDesde && d < filtros.fechaDesde) return false;
-                if (filtros.fechaHasta && d > filtros.fechaHasta) return false;
-                return true;
-              })();
-          return passesFilter && r.status === 'rejected';
-        }).length;
-      } else {
-        // Para el resto: contar solicitudes que alguna vez llegaron a esa etapa o más avanzada
-        const stageOrder = ORDER.indexOf(stage.etapa);
-        if (stageOrder === -1) {
-          cantidad = allWithStatus.filter(r => r.status === stage.etapa).length;
-        } else {
-          cantidad = allWithStatus.filter(r => getMaxOrder(r) >= stageOrder).length;
-        }
-      }
-
+      const cantidad = filtered.filter(r => r.status === stage.etapa).length;
       return {
         etapa: stage.etapa,
         label: stage.label,
