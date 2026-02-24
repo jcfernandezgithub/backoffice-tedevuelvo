@@ -649,12 +649,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (historicalStatusMode && localFilters.status) {
       const fromDate = localFilters.from || '2000-01-01'
       const toDate = localFilters.to || toLocalDateString(new Date())
-      result = result.filter((r: any) => wasInStatusDuringRange(r, localFilters.status!, fromDate, toDate))
+      
+      // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
+      const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+      
+      result = result.filter((r: any) => 
+        statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
+      )
 
       // Consistencia visual/funcional: el estado mostrado en la fecha también debe coincidir
-      // con el estado filtrado para evitar incluir filas visibles en otro estado.
       if (localFilters.to) {
-        result = result.filter((r: any) => getStatusAtDate(r, localFilters.to!) === localFilters.status)
+        result = result.filter((r: any) => {
+          const statusAtDate = getStatusAtDate(r, localFilters.to!)
+          return statusList.includes(statusAtDate)
+        })
       }
     }
     
