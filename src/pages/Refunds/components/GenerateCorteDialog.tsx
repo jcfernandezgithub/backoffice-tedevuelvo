@@ -8,8 +8,9 @@ import { FileText, Download } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import firmaImg from '@/assets/firma-cng.jpeg'
-import cedulaFrenteImg from '@/assets/cedula-frente.jpg'
-import cedulaDorsoImg from '@/assets/cedula-dorso.jpg'
+import corteCedulaImg from '@/assets/corte-cedula-legalizada.jpg'
+import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
+import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 
@@ -143,19 +144,15 @@ function generateSantanderPDF(
   const month = today.toLocaleDateString('es-CL', { month: 'long' })
   const year = today.getFullYear()
 
-  const idPageContent = `
-    <div style="page-break-before: always;">
-      <h3 style="text-align: center; font-size: 12pt; margin-bottom: 20px;">CÉDULA DE IDENTIDAD</h3>
-      <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-        <div style="text-align: center; flex: 1; min-width: 220px;">
-          <p style="font-weight: bold; margin-bottom: 8px;">Frente</p>
-          <img src="${cedulaFrenteImg}" alt="Cédula Frente" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
-        </div>
-        <div style="text-align: center; flex: 1; min-width: 220px;">
-          <p style="font-weight: bold; margin-bottom: 8px;">Dorso</p>
-          <img src="${cedulaDorsoImg}" alt="Cédula Dorso" style="max-width: 100%; max-height: 280px; border: 1px solid #ccc; border-radius: 4px;" />
-        </div>
-      </div>
+  const attachedPages = `
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteCedulaImg}" alt="Cédula de Identidad Legalizada" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteNotarialImg}" alt="Certificado Notarial" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteConservadorImg}" alt="Certificado Conservador de Bienes Raíces" style="max-width: 100%; max-height: 95vh;" />
     </div>`
 
   const content = `
@@ -224,7 +221,7 @@ function generateSantanderPDF(
           <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán / Rut: 13040385-9</p>
           <p style="margin: 5px 0;">p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}</p>
         </div>
-        ${idPageContent}
+        ${attachedPages}
       </body>
     </html>
   `
@@ -537,18 +534,19 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
           <p>p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
         </div>
 
-        {/* Segunda página: Cédula de Identidad */}
-        <div className="mt-8 pt-6 border-t border-dashed border-border">
-          <h4 className="text-center font-bold mb-4 text-sm tracking-wide">— CÉDULA DE IDENTIDAD —</h4>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <div className="text-center flex-1 min-w-[180px]">
-              <p className="text-xs font-semibold mb-1">Frente</p>
-              <img src={cedulaFrenteImg} alt="Cédula Frente" className="max-h-48 w-auto border rounded mx-auto" />
-            </div>
-            <div className="text-center flex-1 min-w-[180px]">
-              <p className="text-xs font-semibold mb-1">Dorso</p>
-              <img src={cedulaDorsoImg} alt="Cédula Dorso" className="max-h-48 w-auto border rounded mx-auto" />
-            </div>
+        {/* Páginas adjuntas */}
+        <div className="mt-8 pt-6 border-t border-dashed border-border space-y-6">
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página 2: Cédula Legalizada —</h4>
+            <img src={corteCedulaImg} alt="Cédula de Identidad Legalizada" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página 3: Certificado Notarial —</h4>
+            <img src={corteNotarialImg} alt="Certificado Notarial" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página 4: Certificado Conservador —</h4>
+            <img src={corteConservadorImg} alt="Certificado Conservador" className="max-h-64 w-auto border rounded mx-auto" />
           </div>
         </div>
       </div>
