@@ -30,6 +30,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
+import { authService } from '@/services/authService'
 import { EditClientDialog } from './components/EditClientDialog'
 import { EditBankInfoDialog } from './components/EditBankInfoDialog'
 import { EditSnapshotDialog } from './components/EditSnapshotDialog'
@@ -143,15 +144,25 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     enabled: !!refund?.publicId,
   })
 
+  const fetchExperianStatus = async (publicId: string) => {
+    const token = authService.getAccessToken()
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+
+    const response = await fetch(
+      `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
+      { headers }
+    )
+
+    if (!response.ok) throw new Error('Error al obtener estado de mandato')
+    return response.json()
+  }
+
   const { data: experianStatus } = useQuery({
     queryKey: ['experian-status', refund?.publicId],
-    queryFn: async () => {
-      const response = await fetch(
-        `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${refund!.publicId}/experian/status`
-      )
-      if (!response.ok) throw new Error('Error al obtener estado de mandato')
-      return response.json()
-    },
+    queryFn: () => fetchExperianStatus(refund!.publicId),
     enabled: !!refund?.publicId,
   })
 
@@ -219,15 +230,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     if (!refund?.publicId) return
     
     try {
-      const response = await fetch(
-        `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${refund.publicId}/experian/status`
-      )
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener el mandato')
-      }
-      
-      const data = await response.json()
+      const data = await fetchExperianStatus(refund.publicId)
       
       if (data.signedPdfUrl) {
         const decodedUrl = decodeURIComponent(data.signedPdfUrl)
