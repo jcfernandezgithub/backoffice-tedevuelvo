@@ -175,7 +175,14 @@ class RefundAdminApiClient {
     const data = await response.json()
     return {
       ...data,
-      status: normalizeStatus(data.status)
+      status: normalizeStatus(data.status),
+      statusHistory: Array.isArray(data.statusHistory)
+        ? data.statusHistory.map((entry: any) => ({
+            ...entry,
+            from: entry.from ? normalizeStatus(entry.from) : null,
+            to: normalizeStatus(entry.to),
+          }))
+        : data.statusHistory,
     }
   }
 
