@@ -183,7 +183,7 @@ function generateSantanderPDF(
             Por medio de la presente, <strong>TDV SERVICIOS SPA</strong>, RUT N° <strong>${FIXED_ACCOUNT_DATA.accountHolderRut}</strong>, 
             debidamente facultada y actuando en representación y por cuenta de don/doña 
             <strong>${refund.fullName}</strong>, cédula de identidad N° <strong>${refund.rut}</strong>, 
-            viene en comunicar formalmente a esa Compañía Aseguradora <strong>${formData.companyName}</strong> 
+            viene a comunicar formalmente a esa Compañía Aseguradora <strong>${formData.companyName}</strong> 
             la renuncia expresa al seguro <strong>${formData.insuranceName}</strong>, incluyendo todas sus coberturas asociadas.
           </p>
           <p>
@@ -495,7 +495,7 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
             Por medio de la presente, <strong>TDV SERVICIOS SPA</strong>, RUT N° <strong>{FIXED_ACCOUNT_DATA.accountHolderRut}</strong>,
             debidamente facultada y actuando en representación y por cuenta de don/doña{' '}
             <strong>{refund.fullName}</strong>, cédula de identidad N° <strong>{refund.rut}</strong>,
-            viene en comunicar formalmente a esa Compañía Aseguradora <strong>{formData.companyName}</strong>{' '}
+            viene a comunicar formalmente a esa Compañía Aseguradora <strong>{formData.companyName}</strong>{' '}
             la renuncia expresa al seguro <strong>{formData.insuranceName}</strong>, incluyendo todas sus coberturas asociadas.
           </p>
           <p>
