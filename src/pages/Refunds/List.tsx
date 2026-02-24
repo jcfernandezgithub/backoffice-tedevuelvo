@@ -185,7 +185,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
-  const [historicalStatusMode, setHistoricalStatusMode] = useState(false)
+  const initialAutoSearch = searchParams.get('autoSearch') === 'true'
+  const [historicalStatusMode, setHistoricalStatusMode] = useState(initialAutoSearch)
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
@@ -551,6 +552,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   // Auto-ejecutar búsqueda si viene con autoSearch=true desde Operación
+  // historicalStatusMode ya se inicializa como true en ese caso (ver useState arriba)
   useEffect(() => {
     const autoSearch = searchParams.get('autoSearch')
     if (autoSearch === 'true') {
