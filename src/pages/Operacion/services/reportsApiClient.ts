@@ -34,10 +34,17 @@ function applyFiltros(items: RefundRequest[], filtros: FiltrosReporte): RefundRe
 
   if (filtros.fechaDesde || filtros.fechaHasta) {
     result = result.filter(r => {
-      if (!r.createdAt) return false;
-      const d = r.createdAt.split('T')[0];
-      if (filtros.fechaDesde && d < filtros.fechaDesde) return false;
-      if (filtros.fechaHasta && d > filtros.fechaHasta) return false;
+      // Filtrar por fecha del último cambio al estado actual (no por createdAt)
+      const history = (r as any).statusHistory;
+      if (!history?.length) return false;
+      const lastChange = [...history].reverse().find(
+        (entry: any) => entry.to === r.status && entry.from !== entry.to
+      );
+      if (!lastChange?.at) return false;
+      const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
+      const statusDate = match ? match[1] : lastChange.at.split('T')[0];
+      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
+      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
       return true;
     });
   }
