@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 2.3.1
+## Versión 3.2.2
 
 ## Changelog
+
+### Versión 3.2.2 - 2026-02-24
+
+#### Eliminación de alerta urgente del sidebar
+- **Removida alerta roja pulsante** del menú lateral en el ítem "Operación".
+  - Ya no se muestra badge con conteo de documentos recibidos ni pagos programados en el sidebar.
+  - Eliminado tooltip con desglose de alertas urgentes.
+  - El hook `useUrgentAlerts` permanece disponible para uso futuro si se requiere.
+
+#### Corrección de exportación Excel en modo histórico
+- **Exportación respeta filtros activos**: Al navegar desde Operación con filtro multi-estado (ej: "En Proceso Operativo"), la exportación a Excel ahora exporta exactamente los registros filtrados localmente.
+  - Antes: el botón mostraba "352" pero exportaba toda la base de datos.
+  - Ahora: sin selección manual, exporta el dataset filtrado completo; con selección, exporta solo las filas seleccionadas.
+  - Nuevo prop `historicalStatusMode` en `ExportToExcelDialog` para controlar el comportamiento.
+
+#### Corrección de filtro multi-estado en Solicitudes
+- **Filtro por múltiples estados funcional**: Al hacer clic en la caluga "En Proceso Operativo" desde Operación, el listado de Solicitudes ahora muestra correctamente las solicitudes en los 5 estados agrupados.
+  - Causa: el guardrail local hacía comparación estricta (`===`) contra un string con comas en lugar de tratarlo como lista.
+  - Solución: el filtro local ahora divide `status` por comas y verifica pertenencia con `.includes()`.
+
+---
 
 ### Versión 2.3.1 - 2026-02-20
 
