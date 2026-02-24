@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
+import { authService } from '@/services/authService'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
@@ -635,8 +636,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         await Promise.all(
           batch.map(async (publicId: string) => {
             try {
+              const token = authService.getAccessToken()
+              const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              }
               const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
+                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
+                { headers }
               )
               if (response.ok) {
                 statuses[publicId] = await response.json()
