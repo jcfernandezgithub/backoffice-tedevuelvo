@@ -848,15 +848,15 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                     <div key={idx} className={`flex gap-4 border-l-2 ${getBorderColor(entry.to)} pl-4 pb-4 relative`}>
                       <div className={`absolute w-3 h-3 rounded-full -left-[7px] top-1 ${getStatusColor(entry.to)}`} />
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {entry.from && (
                             <Badge variant="outline" className="text-xs">
-                              {statusLabels[entry.from]}
+                              {statusLabels[entry.from as RefundStatus] || entry.from}
                             </Badge>
                           )}
                           <span className="text-muted-foreground">→</span>
-                          <Badge variant={statusVariants[entry.to]} className="text-xs">
-                            {statusLabels[entry.to]}
+                          <Badge variant={statusVariants[entry.to as RefundStatus] || 'default'} className="text-xs">
+                            {statusLabels[entry.to as RefundStatus] || entry.to}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
