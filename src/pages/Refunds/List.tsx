@@ -629,7 +629,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     // Guardrail: si hay estado seleccionado, asegurar match por estado actual
     // (protege inconsistencias del backend en filtros por status)
     if (localFilters.status) {
-      result = result.filter((r: any) => (r.status?.toLowerCase() || '') === localFilters.status)
+      const statusList = String(localFilters.status)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+
+      result = result.filter((r: any) => statusList.includes((r.status?.toLowerCase() || '')))
     }
     
     // Filtro de banco (no soportado por servidor)
