@@ -278,11 +278,14 @@ export function TabResumen() {
                     </div>
 
                     {/* Total grande */}
-                    <div className="text-right flex-shrink-0">
+                    <div
+                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
+                    >
                       <div className="text-white font-black text-4xl leading-none tabular-nums">
                         {procesoOperativoTotal.toLocaleString('es-CL')}
                       </div>
-                      <div className="text-white/60 text-xs mt-1">solicitudes</div>
+                      <div className="text-white/60 text-xs mt-1 underline underline-offset-2">solicitudes</div>
                     </div>
                   </div>
                 </div>
