@@ -13,8 +13,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Badge } from '@/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useUrgentAlerts } from '@/hooks/useUrgentAlerts'
 
 const items = [
   { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
@@ -30,131 +28,61 @@ const items = [
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar()
   const { user } = useAuth()
-  const { urgentCount, docsReceived, paymentWithBank } = useUrgentAlerts()
   const collapsed = state === 'collapsed'
   const location = useLocation()
   const currentPath = location.pathname
   const isActive = (path: string) => currentPath === path || currentPath.startsWith(path + '/')
-  const isExpanded = items.some((i) => isActive(i.url))
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
 
-  // Filtrar items según email del usuario (restricción especial para Call Center)
   const isCallCenterUser = user?.email === 'admin@callcenter.cl'
   
   const visibleItems = items.filter(item => {
-    // Si el usuario es admin@callcenter.cl, mostrar Call Center y Calculadora
     if (isCallCenterUser) {
       return item.callCenterOnly || item.url === '/calculadora'
     }
-    // Para otros usuarios, aplicar filtro adminOnly
     return !item.adminOnly || user?.rol === 'ADMIN'
   })
 
-  // Cerrar sidebar en móvil al hacer clic en un enlace
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false)
     }
   }
 
-  const alertTooltipContent = urgentCount > 0 ? (
-    <div className="space-y-1.5 text-xs">
-      <p className="font-semibold text-sm">Alertas urgentes</p>
-      {docsReceived > 0 && (
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-muted-foreground">Docs recibidos · Ingresar banco</span>
-          <span className="font-bold">{docsReceived}</span>
-        </div>
-      )}
-      {paymentWithBank > 0 && (
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-muted-foreground">Pago programado · Transferir</span>
-          <span className="font-bold">{paymentWithBank}</span>
-        </div>
-      )}
-    </div>
-  ) : null
-
   return (
-    <TooltipProvider delayDuration={300}>
-      <Sidebar
-        className={collapsed ? 'w-14' : 'w-64'}
-        collapsible="icon"
-      >
-        <SidebarContent>
-          <SidebarGroup>
-            {!collapsed && <SidebarGroupLabel>Principal</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {visibleItems.map((item) => {
-                  const isOperacion = item.url === '/operacion'
-                  const showAlert = isOperacion && urgentCount > 0
-
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <NavLink to={item.url} className={getNavCls} onClick={handleLinkClick}>
-                          {/* Icono con badge pulsante en modo colapsado */}
-                          <div className="relative">
-                            {showAlert && collapsed ? (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="relative">
-                                    <item.icon className="h-4 w-4" />
-                                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-                                    </span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" className="max-w-[220px]">
-                                  {alertTooltipContent}
-                                </TooltipContent>
-                              </Tooltip>
-                            ) : (
-                              <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-                            )}
-                          </div>
-
-                          {!collapsed && (
-                            <div className="flex items-center justify-between flex-1 gap-2">
-                              <span>{item.title}</span>
-                              {/* Badge de alertas urgentes (tiene prioridad sobre el badge de estado) */}
-                              {showAlert ? (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="relative flex items-center gap-1 cursor-default">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-40" />
-                                      <Badge
-                                        variant="destructive"
-                                        className="relative text-[10px] px-1.5 py-0 min-w-[18px] text-center"
-                                      >
-                                        {urgentCount}
-                                      </Badge>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right" className="max-w-[240px]">
-                                    {alertTooltipContent}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ) : item.status === 'dev' && item.url === '/usuarios' ? (
-                                <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
-                                  En desarrollo
-                                </Badge>
-                              ) : null}
-                            </div>
+    <Sidebar
+      className={collapsed ? 'w-14' : 'w-64'}
+      collapsible="icon"
+    >
+      <SidebarContent>
+        <SidebarGroup>
+          {!collapsed && <SidebarGroupLabel>Principal</SidebarGroupLabel>}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink to={item.url} className={getNavCls} onClick={handleLinkClick}>
+                      <item.icon className={collapsed ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+                      {!collapsed && (
+                        <div className="flex items-center justify-between flex-1 gap-2">
+                          <span>{item.title}</span>
+                          {item.status === 'dev' && item.url === '/usuarios' && (
+                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
+                              En desarrollo
+                            </Badge>
                           )}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
-    </TooltipProvider>
+                        </div>
+                      )}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
   )
 }
