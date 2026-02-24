@@ -67,13 +67,31 @@ export function TabResumen() {
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
-  // Filtrar refunds por fechas según los filtros
+  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
+  // Busca la última entrada en statusHistory donde "to" === status actual y hubo cambio real
+  const getLastStatusChangeDate = (refund: any): string | null => {
+    const history = refund.statusHistory;
+    if (!history?.length) return null;
+    // Recorrer de más reciente a más antiguo
+    const lastChange = [...history].reverse().find(
+      (entry: any) => entry.to === refund.status && entry.from !== entry.to
+    );
+    if (lastChange?.at) {
+      // Extraer fecha local sin depender de timezone del navegador
+      const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
+      return match ? match[1] : lastChange.at.split('T')[0];
+    }
+    return null;
+  };
+
+  // Filtrar refunds: la solicitud aparece si la fecha en que entró a su estado actual
+  // cae dentro del rango de fechas del filtro
   const filteredRefunds = useMemo(() => {
     return allRefunds.filter((r: any) => {
-      if (!r.createdAt) return false;
-      const createdDateStr = r.createdAt.split('T')[0];
-      if (filtros.fechaDesde && createdDateStr < filtros.fechaDesde) return false;
-      if (filtros.fechaHasta && createdDateStr > filtros.fechaHasta) return false;
+      const statusDate = getLastStatusChangeDate(r);
+      if (!statusDate) return false;
+      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
+      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
       return true;
     });
   }, [allRefunds, filtros.fechaDesde, filtros.fechaHasta]);
