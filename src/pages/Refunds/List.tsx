@@ -620,45 +620,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return statusFilteredItems
   }, [statusFilteredItems])
   
-  // IDs para consultar mandatos - solo de la página actual (ya paginada por el servidor)
-  const idsToFetch = useMemo(() => {
-    return preSortedItems.map((r: any) => r.publicId).filter(Boolean)
-  }, [preSortedItems])
-  
-  const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
-    queryKey: ['mandate-statuses-page', idsToFetch],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {}
-      // Ejecutar en lotes de 10 para no saturar
-      const batchSize = 10
-      for (let i = 0; i < idsToFetch.length; i += batchSize) {
-        const batch = idsToFetch.slice(i, i + batchSize)
-        await Promise.all(
-          batch.map(async (publicId: string) => {
-            try {
-              const token = authService.getAccessToken()
-              const headers: HeadersInit = {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              }
-              const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
-                { headers }
-              )
-              if (response.ok) {
-                statuses[publicId] = await response.json()
-              }
-            } catch (error) {
-              // Silently fail for individual requests
-            }
-          })
-        )
-      }
-      return statuses
-    },
-    enabled: idsToFetch.length > 0,
-    staleTime: 2 * 60 * 1000, // Cache por 2 minutos
-  })
+  // Mandate query moved after paginatedItems (see below)
   
   // Aplicar filtros locales que el servidor no soporta (usando valores aplicados al presionar Buscar)
   const locallyFilteredItems = useMemo(() => {
@@ -716,6 +678,51 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     return locallyFilteredItems
   }, [locallyFilteredItems, historicalStatusMode, historicalPage, historicalPageSize])
+
+  // IDs para consultar mandatos - solo los items VISIBLES en la página actual
+  // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
+  const idsToFetch = useMemo(() => {
+    // Cuando el filtro de mandato está activo, extender a más items (hasta 200)
+    if (mandateFilter !== 'all') {
+      const extended = locallyFilteredItems.slice(0, 200)
+      return extended.map((r: any) => r.publicId).filter(Boolean)
+    }
+    return paginatedItems.map((r: any) => r.publicId).filter(Boolean)
+  }, [paginatedItems, locallyFilteredItems, mandateFilter])
+
+  const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
+    queryKey: ['mandate-statuses-page', idsToFetch],
+    queryFn: async () => {
+      const statuses: Record<string, any> = {}
+      const batchSize = 10
+      for (let i = 0; i < idsToFetch.length; i += batchSize) {
+        const batch = idsToFetch.slice(i, i + batchSize)
+        await Promise.all(
+          batch.map(async (publicId: string) => {
+            try {
+              const token = authService.getAccessToken()
+              const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              }
+              const response = await fetch(
+                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
+                { headers }
+              )
+              if (response.ok) {
+                statuses[publicId] = await response.json()
+              }
+            } catch (error) {
+              // Silently fail for individual requests
+            }
+          })
+        )
+      }
+      return statuses
+    },
+    enabled: idsToFetch.length > 0,
+    staleTime: 2 * 60 * 1000,
+  })
   
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
