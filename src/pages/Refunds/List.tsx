@@ -357,8 +357,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // y filtrar localmente por el estado que tenían en la fecha seleccionada
       status: historicalStatusMode ? undefined : (localFilters.status || undefined),
       sort: 'recent', // Por defecto más recientes
-      from: localFilters.from || undefined,
-      to: localFilters.to || undefined,
+      // En modo histórico, NO enviamos from/to al servidor porque filtra por fecha de creación.
+      // Necesitamos traer TODAS las solicitudes y filtrar localmente por statusHistory.
+      from: historicalStatusMode ? undefined : (localFilters.from || undefined),
+      to: historicalStatusMode ? undefined : (localFilters.to || undefined),
       page: 1,
       // En modo histórico pedimos más resultados ya que filtraremos localmente
       limit: historicalStatusMode ? 100 : (filters.pageSize || 20),
