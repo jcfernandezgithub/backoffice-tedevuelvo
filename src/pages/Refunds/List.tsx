@@ -681,6 +681,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       const fromDate = localFilters.from || '2000-01-01'
       const toDate = localFilters.to || toLocalDateString(new Date())
       result = result.filter((r: any) => wasInStatusDuringRange(r, localFilters.status!, fromDate, toDate))
+
+      // Consistencia visual/funcional: el estado mostrado en la fecha también debe coincidir
+      // con el estado filtrado para evitar incluir filas visibles en otro estado.
+      if (localFilters.to) {
+        result = result.filter((r: any) => getStatusAtDate(r, localFilters.to!) === localFilters.status)
+      }
     }
     
     return result
