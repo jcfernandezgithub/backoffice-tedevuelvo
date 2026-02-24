@@ -121,7 +121,24 @@ function calcularTiempoTransicion(
 export function TabCuellosBotella() {
   const { filtros } = useFilters();
   const { data: funnelData, isLoading: loadingFunnel } = useFunnelData(filtros);
-  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
+  const { data: allRefundsRaw = [], isLoading: loadingRefunds } = useAllRefunds();
+
+  // Filtrar por fecha del último cambio al estado actual (no por createdAt)
+  const allRefunds = useMemo(() => {
+    return allRefundsRaw.filter((r: any) => {
+      const history = r.statusHistory;
+      if (!history?.length) return false;
+      const lastChange = [...history].reverse().find(
+        (entry: any) => entry.to === r.status && entry.from !== entry.to
+      );
+      if (!lastChange?.at) return false;
+      const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
+      const statusDate = match ? match[1] : lastChange.at.split('T')[0];
+      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
+      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
+      return true;
+    });
+  }, [allRefundsRaw, filtros.fechaDesde, filtros.fechaHasta]);
 
   // Leer objetivos configurables desde localStorage (Ajustes)
   const stageObjectives = readStageObjectives();
