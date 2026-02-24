@@ -52,6 +52,53 @@ function filterByLocalDate(refunds: any[], desde?: string, hasta?: string): any[
   })
 }
 
+/**
+ * Determina si un refund estuvo en un estado específico durante el rango [desde, hasta].
+ * Construye intervalos a partir de statusHistory: cada entrada "to: X" en fecha T
+ * implica que el refund entró al estado X en T y salió cuando ocurrió la siguiente transición.
+ */
+function wasInStatusDuringRange(refund: any, targetStatus: string, desde?: string, hasta?: string): boolean {
+  if (!desde && !hasta) {
+    // Sin filtro de fecha: usar estado actual
+    return refund.status === targetStatus
+  }
+
+  const history = refund.statusHistory as Array<{ to?: string; date?: string; createdAt?: string }> | undefined
+  if (!history || history.length === 0) {
+    // Sin historial: fallback a estado actual + fecha creación
+    if (refund.status !== targetStatus) return false
+    const dateStr = (refund.createdAt || '').split('T')[0]
+    if (desde && dateStr < desde) return false
+    if (hasta && dateStr > hasta) return false
+    return true
+  }
+
+  // Ordenar por fecha ascendente
+  const sorted = [...history]
+    .map(h => ({ ...h, _date: (h.date || h.createdAt || '') }))
+    .sort((a, b) => a._date.localeCompare(b._date))
+
+  const rangeStart = desde || '0000-00-00'
+  const rangeEnd = hasta ? hasta + 'T23:59:59' : '9999-12-31'
+
+  for (let i = 0; i < sorted.length; i++) {
+    const entry = sorted[i]
+    if ((entry.to?.toLowerCase() || '') !== targetStatus) continue
+
+    // El refund entró a targetStatus en entry._date
+    const enteredAt = entry._date
+    // Salió cuando ocurrió la siguiente transición, o sigue ahí si es la última
+    const leftAt = i + 1 < sorted.length ? sorted[i + 1]._date : '9999-12-31'
+
+    // Verificar overlap: [enteredAt, leftAt) ∩ [rangeStart, rangeEnd]
+    if (enteredAt <= rangeEnd && leftAt >= rangeStart) {
+      return true
+    }
+  }
+
+  return false
+}
+
 // ─── Definición de fases del flujo ──────────────────────────────────────────
 const PHASES = [
   {
@@ -180,20 +227,26 @@ export default function Dashboard() {
     [allRefunds, desde, hasta]
   )
 
-  // Conteos granulares por estado
+  // Conteos granulares por estado (basado en statusHistory, no en createdAt)
   const granularCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      datos_sin_simulacion: 0, simulated: 0, requested: 0,
-      qualifying: 0, docs_pending: 0, docs_received: 0,
-      submitted: 0, approved: 0, rejected: 0,
-      payment_scheduled: 0, paid: 0, canceled: 0,
-    }
-    for (const r of filteredRefunds) {
-      const s = r.status as string
-      if (s in counts) counts[s]++
+    const statuses = [
+      'datos_sin_simulacion', 'simulated', 'requested',
+      'qualifying', 'docs_pending', 'docs_received',
+      'submitted', 'approved', 'rejected',
+      'payment_scheduled', 'paid', 'canceled',
+    ]
+    const counts: Record<string, number> = {}
+    for (const s of statuses) counts[s] = 0
+
+    for (const r of allRefunds) {
+      for (const s of statuses) {
+        if (wasInStatusDuringRange(r, s, desde || undefined, hasta || undefined)) {
+          counts[s]++
+        }
+      }
     }
     return counts
-  }, [filteredRefunds])
+  }, [allRefunds, desde, hasta])
 
   // Sub-métricas: qualifying (mandatos)
   const qualifyingRefunds = useMemo(
@@ -269,8 +322,8 @@ export default function Dashboard() {
     granularCounts.approved + granularCounts.payment_scheduled
 
   const totalPaidAmount = useMemo(() => {
-    return filteredRefunds
-      .filter((r: any) => r.status === 'paid')
+    return allRefunds
+      .filter((r: any) => wasInStatusDuringRange(r, 'paid', desde || undefined, hasta || undefined))
       .reduce((sum: number, r: any) => {
         const entry = r.statusHistory?.slice().reverse().find((h: any) => {
           const to = h.to?.toLowerCase()
@@ -278,7 +331,7 @@ export default function Dashboard() {
         })
         return sum + (entry?.realAmount || 0)
       }, 0)
-  }, [filteredRefunds])
+  }, [allRefunds, desde, hasta])
 
   const conversionRate = useMemo(() => {
     const base = totalSolicitudes - granularCounts.datos_sin_simulacion
@@ -507,8 +560,18 @@ export default function Dashboard() {
 
         {/* Pipeline de etapas */}
         <section aria-label="Pipeline de solicitudes">
-          <div className="mb-3">
+          <div className="mb-3 flex items-center gap-2">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 bg-muted/50 px-2 py-0.5 rounded-full cursor-help">
+                  <Clock className="h-3 w-3" /> Filtra por fecha de estado
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[260px] text-xs leading-relaxed">
+                Los conteos muestran solicitudes que <strong>estuvieron</strong> en cada estado durante el rango de fechas seleccionado, basado en el historial de transiciones. Una solicitud puede aparecer en múltiples estados si transitó entre ellos dentro del período.
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="space-y-4">
