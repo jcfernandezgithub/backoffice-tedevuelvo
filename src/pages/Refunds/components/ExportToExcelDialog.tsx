@@ -189,8 +189,11 @@ export function ExportToExcelDialog({
   const [open, setOpen] = useState(false)
   const { fetchAllRefunds, isExporting, progress } = useExportAllRefunds()
 
-  const hasSelection = selectedRefunds.size > 0
-  const exportCount = hasSelection ? selectedRefunds.size : totalCount
+  const selectionSize = selectedRefunds.size
+  const hasSelection = selectionSize > 0
+  const exportCount = hasSelection ? selectionSize : totalCount
+  
+  console.log('[ExportDialog] selectedRefunds.size:', selectionSize, 'totalCount:', totalCount, 'exportCount:', exportCount)
 
   const handleExport = async () => {
     try {
