@@ -656,6 +656,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Aplicar filtros locales que el servidor no soporta (usando valores aplicados al presionar Buscar)
   const locallyFilteredItems = useMemo(() => {
     let result = preSortedItems
+
+    // Guardrail: si hay estado seleccionado, asegurar match por estado actual
+    // (protege inconsistencias del backend en filtros por status)
+    if (localFilters.status) {
+      result = result.filter((r: any) => (r.status?.toLowerCase() || '') === localFilters.status)
+    }
     
     // Filtro de banco (no soportado por servidor)
     if (appliedLocalFilters.bank !== 'all') {
@@ -678,7 +684,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.to, localFilters.status])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.from, localFilters.to, localFilters.status])
   
   // Estado para paginación local en modo histórico
   const [historicalPage, setHistoricalPage] = useState(1)
