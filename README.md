@@ -6,6 +6,13 @@
 
 ### Versión 3.2.2 - 2026-02-24
 
+#### Carta de Corte Santander — Nuevo formato fidedigno
+- **Formato de Renuncia y Término Anticipado de Seguro V3**: Reescrita completamente la carta de corte para Banco Santander como copia fidedigna del formato oficial.
+  - Texto legal actualizado: "viene a comunicar formalmente a esa Compañía Aseguradora la renuncia expresa al seguro, incluyendo todas sus coberturas asociadas."
+  - Nuevo campo **Nº de Póliza** obligatorio en el formulario de generación (solo para Santander).
+  - **3 páginas de documentos adjuntos**: Cédula de identidad legalizada, Certificado Notarial y Certificado del Conservador de Bienes Raíces (imágenes estáticas idénticas para todos los casos).
+  - Reemplazadas las imágenes anteriores de cédula (frente/dorso) por los 3 nuevos documentos del formato oficial.
+
 #### Eliminación de alerta urgente del sidebar
 - **Removida alerta roja pulsante** del menú lateral en el ítem "Operación".
   - Ya no se muestra badge con conteo de documentos recibidos ni pagos programados en el sidebar.
