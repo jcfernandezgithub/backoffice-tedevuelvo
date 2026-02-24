@@ -82,23 +82,23 @@ const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
 // Verificar si una solicitud CAMBIÓ a un estado dado durante un rango de fechas
 // Busca en el statusHistory si existe una transición AL estado objetivo
 // cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
+// Y además valida que el estado ACTUAL de la solicitud coincida con el objetivo
 const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
+  // Verificar que el estado actual coincida con el objetivo
+  const currentStatus = (refund.status?.toLowerCase() || '') as string
+  if (currentStatus !== targetStatus) return false
+
   if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
-    // Sin historial: no hay cambio de estado registrado
     return false
   }
 
-  // Usar hora local (no UTC) para evitar desplazamiento de zona horaria
   const rangeStart = new Date(fromStr + 'T00:00:00').getTime()
   const rangeEnd = new Date(toStr + 'T23:59:59.999').getTime()
 
-  // Buscar si alguna entrada del historial representa un cambio AL estado objetivo
-  // dentro del rango de fechas
   return refund.statusHistory.some((entry: any) => {
     const entryStatus = (entry.to?.toLowerCase() || '') as string
     if (entryStatus !== targetStatus) return false
 
-    // Verificar que sea un cambio real (from !== to), no una nota informativa
     const fromStatus = entry.from?.toLowerCase() || ''
     if (fromStatus === entryStatus) return false
 
