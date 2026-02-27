@@ -30,12 +30,51 @@ function getRealAmount(r: RefundRequest): number {
   return r.estimatedAmountCLP || 0
 }
 
+/** Homologa nombres de banco del API al catálogo de la nómina */
+const BANK_HOMOLOGATION: Record<string, string> = {
+  'banco bci': 'BCI',
+  'bci': 'BCI',
+  'banco de chile': 'BANCO DE CHILE',
+  'banco chile': 'BANCO DE CHILE',
+  'banco estado': 'BANCO ESTADO',
+  'bancoestado': 'BANCO ESTADO',
+  'banco del estado': 'BANCO ESTADO',
+  'banco del estado de chile': 'BANCO ESTADO',
+  'scotiabank': 'SCOTIABANK CHILE',
+  'scotiabank chile': 'SCOTIABANK CHILE',
+  'banco santander': 'BANCO SANTANDER',
+  'banco santander chile': 'BANCO SANTANDER',
+  'santander': 'BANCO SANTANDER',
+  'banco itau': 'BANCO ITAU',
+  'banco itaú': 'BANCO ITAU',
+  'itaú': 'BANCO ITAU',
+  'itau': 'BANCO ITAU',
+  'banco itaú chile': 'BANCO ITAU',
+  'banco security': 'BANCO SECURITY',
+  'security': 'BANCO SECURITY',
+  'banco bice': 'BANCO BICE',
+  'bice': 'BANCO BICE',
+  'banco falabella': 'BANCO FALABELLA',
+  'falabella': 'BANCO FALABELLA',
+  'banco ripley': 'BANCO RIPLEY',
+  'ripley': 'BANCO RIPLEY',
+  'banco consorcio': 'BANCO CONSORCIO',
+  'coopeuch': 'COOPEUCH',
+  'banco internacional': 'BANCO INTERNACIONAL',
+}
+
+function homologateBank(apiBankName: string): string {
+  if (!apiBankName) return ''
+  const key = apiBankName.toLowerCase().trim()
+  return BANK_HOMOLOGATION[key] || apiBankName.toUpperCase()
+}
+
 function mapRefundToRow(r: RefundRequest): NominaRowInput {
   return {
     rutProveedor: r.rut || '',
     nombreProveedor: r.fullName || '',
     emailAviso: r.email || '',
-    bancoProveedor: r.bankInfo?.bank || '',
+    bancoProveedor: homologateBank(r.bankInfo?.bank || ''),
     cuentaProveedor: r.bankInfo?.accountNumber || '',
     formaPago: 'CTACTESCOTIABANK',
     tipoDocumento: 'VARIOS',
