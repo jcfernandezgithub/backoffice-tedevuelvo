@@ -106,6 +106,11 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
     return alreadyAddedSet.has((r.rut || '').toLowerCase().replace(/\./g, ''))
   }
 
+  function getRefundId(r: RefundRequest): string {
+    const anyRefund = r as RefundRequest & { _id?: string; id?: string }
+    return anyRefund.id || anyRefund._id || r.publicId || `${r.rut}-${r.createdAt}`
+  }
+
   function toggleSelect(id: string) {
     setSelected(prev => {
       const next = new Set(prev)
@@ -117,16 +122,16 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
 
   function toggleAll() {
     const selectable = filtered.filter(r => !isAlreadyAdded(r))
-    if (selectable.every(r => selected.has(r.id))) {
+    if (selectable.every(r => selected.has(getRefundId(r)))) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(selectable.map(r => r.id)))
+      setSelected(new Set(selectable.map(getRefundId)))
     }
   }
 
   function handleConfirm() {
     const rows = refunds
-      .filter(r => selected.has(r.id))
+      .filter(r => selected.has(getRefundId(r)))
       .map(mapRefundToRow)
     onAdd(rows)
     onClose()
@@ -182,7 +187,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                 onClick={toggleAll}
               >
                 <Checkbox
-                  checked={selectableCount > 0 && filtered.filter(r => !isAlreadyAdded(r)).every(r => selected.has(r.id))}
+                  checked={selectableCount > 0 && filtered.filter(r => !isAlreadyAdded(r)).every(r => selected.has(getRefundId(r)))}
                 />
                 Seleccionar todas ({selectableCount})
               </button>
@@ -194,18 +199,19 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                 {filtered.map(r => {
                   const added = isAlreadyAdded(r)
                   const amount = getRealAmount(r)
+                  const refundId = getRefundId(r)
                   return (
                     <div
-                      key={r.id}
+                      key={refundId}
                       className={cn(
                         'flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors cursor-pointer',
                         added && 'opacity-50 cursor-not-allowed',
-                        selected.has(r.id) && 'bg-primary/5'
+                        selected.has(refundId) && 'bg-primary/5'
                       )}
-                      onClick={() => !added && toggleSelect(r.id)}
+                      onClick={() => !added && toggleSelect(refundId)}
                     >
                       <Checkbox
-                        checked={selected.has(r.id)}
+                        checked={selected.has(refundId)}
                         disabled={added}
                         className="mt-0.5 pointer-events-none"
                       />
