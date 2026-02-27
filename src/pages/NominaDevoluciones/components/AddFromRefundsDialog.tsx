@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Search, AlertCircle, UserCheck } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import type { NominaRowInput } from '../logic/nomina_logic_complete'
@@ -233,7 +233,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
               <span>{selected.size} seleccionada{selected.size !== 1 ? 's' : ''}</span>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 max-h-[400px] border rounded-md">
+            <div className="flex-1 min-h-0 max-h-[52vh] overflow-y-auto border rounded-md">
               <div className="divide-y">
                 {filtered.map(r => {
                   const added = isAlreadyAdded(r)
@@ -272,7 +272,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                   )
                 })}
               </div>
-            </ScrollArea>
+            </div>
           </>
         )}
 
