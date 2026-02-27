@@ -65,12 +65,23 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
     setLoading(true)
     setError(null)
     try {
-      const res = await refundAdminApi.search({
-        status: 'payment_scheduled',
-        hasBankInfo: 1,
-        limit: 200,
-      })
-      setRefunds(res.items || [])
+      // API max limit is 100, paginate to get all
+      let allItems: RefundRequest[] = []
+      let page = 1
+      let hasMore = true
+      while (hasMore) {
+        const res = await refundAdminApi.search({
+          status: 'payment_scheduled',
+          hasBankInfo: 1,
+          limit: 100,
+          sort: 'recent',
+          page,
+        })
+        allItems = [...allItems, ...(res.items || [])]
+        hasMore = res.hasNext || false
+        page++
+      }
+      setRefunds(allItems)
     } catch (e: any) {
       setError(e.message || 'Error al cargar solicitudes')
       setRefunds([])
