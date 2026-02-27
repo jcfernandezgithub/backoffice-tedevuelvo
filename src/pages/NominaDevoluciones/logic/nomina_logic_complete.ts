@@ -116,9 +116,17 @@ export const DEFAULT_NOMINA_CATALOGS: NominaCatalogs = {
   bancos: [
     { name: 'SCOTIABANK CHILE', sbifCode: '014' },
     { name: 'BANCO DE CHILE', sbifCode: '001' },
+    { name: 'BANCO ESTADO', sbifCode: '012' },
     { name: 'BCI', sbifCode: '016' },
+    { name: 'BANCO SANTANDER', sbifCode: '037' },
+    { name: 'BANCO ITAU', sbifCode: '039' },
+    { name: 'BANCO SECURITY', sbifCode: '049' },
+    { name: 'BANCO BICE', sbifCode: '028' },
     { name: 'BANCO FALABELLA', sbifCode: '051' },
     { name: 'BANCO RIPLEY', sbifCode: '053' },
+    { name: 'BANCO CONSORCIO', sbifCode: '055' },
+    { name: 'BANCO INTERNACIONAL', sbifCode: '009' },
+    { name: 'COOPEUCH', sbifCode: '672' },
   ],
   formasPago: [
     { name: 'CUENTA OTRO BANCO', code: 'OB' },
