@@ -21,7 +21,7 @@ interface NominaDraft {
 const emptyHeader: NominaHeaderInput = {
   nombreEmpresa: 'TDV SERVICIOS SPA',
   rutEmpresa: '78168126-1',
-  convenio: '123',
+  convenio: '003',
   fechaProceso: new Date().toISOString().slice(0, 10),
 }
 
