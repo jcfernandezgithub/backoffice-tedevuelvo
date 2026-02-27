@@ -76,7 +76,7 @@ function mapRefundToRow(r: RefundRequest): NominaRowInput {
     emailAviso: r.email || '',
     bancoProveedor: homologateBank(r.bankInfo?.bank || ''),
     cuentaProveedor: r.bankInfo?.accountNumber || '',
-    formaPago: 'CTACTESCOTIABANK',
+    formaPago: 'CTACTE SCOTIABANK',
     tipoDocumento: 'VARIOS',
     numeroDocumento: '',
     monto: getRealAmount(r),
