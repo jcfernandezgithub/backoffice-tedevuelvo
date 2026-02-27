@@ -139,10 +139,10 @@ export function NominaTable({ rows, errors, selectedIndex, onSelect, onUpdate, o
               <div className="px-4 pb-4 pt-1 border-t bg-muted/20">
                 {/* Row 1: Identity */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-                  <Field label="RUT Proveedor" error={fieldHasError(idx, 'rutProveedor')}>
+                  <Field label="RUT Cliente" error={fieldHasError(idx, 'rutProveedor')}>
                     <Input className="h-8 text-sm" value={row.rutProveedor} onChange={e => onUpdate(idx, { rutProveedor: e.target.value })} />
                   </Field>
-                  <Field label="Nombre Proveedor" error={fieldHasError(idx, 'nombreProveedor')} className="sm:col-span-1 lg:col-span-2">
+                  <Field label="Nombre Cliente" error={fieldHasError(idx, 'nombreProveedor')} className="sm:col-span-1 lg:col-span-2">
                     <Input className="h-8 text-sm" value={row.nombreProveedor} onChange={e => onUpdate(idx, { nombreProveedor: e.target.value })} />
                   </Field>
                   <Field label="Email">
