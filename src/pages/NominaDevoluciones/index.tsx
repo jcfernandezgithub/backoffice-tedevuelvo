@@ -7,6 +7,7 @@ import { NominaToolbar } from './components/NominaToolbar'
 import { NominaTable } from './components/NominaTable'
 import { NominaErrorPanel } from './components/NominaErrorPanel'
 import { NominaCsvImportDialog } from './components/NominaCsvImportDialog'
+import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
 
@@ -21,6 +22,7 @@ export default function NominaDevoluciones() {
   const nom = useNomina()
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [csvOpen, setCsvOpen] = useState(false)
+  const [refundsOpen, setRefundsOpen] = useState(false)
 
   const handleValidate = useCallback(() => {
     const result = nom.validate()
@@ -68,6 +70,7 @@ export default function NominaDevoluciones() {
           hasSelection={selectedIndex !== null}
           selectedIndex={selectedIndex}
           onAdd={nom.addRow}
+          onAddFromRefunds={() => setRefundsOpen(true)}
           onDuplicate={() => selectedIndex !== null && nom.duplicateRow(selectedIndex)}
           onRemove={() => {
             if (selectedIndex !== null) {
@@ -102,6 +105,16 @@ export default function NominaDevoluciones() {
         )}
 
         <NominaCsvImportDialog open={csvOpen} onClose={() => setCsvOpen(false)} onImport={nom.importRows} />
+
+        <AddFromRefundsDialog
+          open={refundsOpen}
+          onClose={() => setRefundsOpen(false)}
+          onAdd={(rows) => {
+            nom.importRows(rows)
+            toast.success(`${rows.length} solicitud(es) agregada(s) a la nómina`)
+          }}
+          existingRuts={nom.rows.map(r => r.rutProveedor)}
+        />
       </div>
     </div>
   )
