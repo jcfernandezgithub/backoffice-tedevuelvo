@@ -81,7 +81,7 @@ function mapRefundToRow(r: RefundRequest): NominaRowInput {
     numeroDocumento: '',
     monto: getRealAmount(r),
     codigoSucursal: '000',
-    mensajeAviso: 'PAGO DEVOLUCION TEDEVUELVO',
+    mensajeAviso: 'Devolución Tedevuelvo',
   }
 }
 
