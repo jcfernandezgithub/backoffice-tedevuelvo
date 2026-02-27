@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator } from 'lucide-react'
+import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import {
   Sidebar,
@@ -22,6 +22,7 @@ const items = [
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
 ]
 
