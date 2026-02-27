@@ -195,19 +195,19 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                   const added = isAlreadyAdded(r)
                   const amount = getRealAmount(r)
                   return (
-                    <label
+                    <div
                       key={r.id}
                       className={cn(
                         'flex items-start gap-3 p-3 hover:bg-muted/50 transition-colors cursor-pointer',
                         added && 'opacity-50 cursor-not-allowed',
                         selected.has(r.id) && 'bg-primary/5'
                       )}
+                      onClick={() => !added && toggleSelect(r.id)}
                     >
                       <Checkbox
                         checked={selected.has(r.id)}
                         disabled={added}
-                        onCheckedChange={() => !added && toggleSelect(r.id)}
-                        className="mt-0.5"
+                        className="mt-0.5 pointer-events-none"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                       <span className="text-sm font-semibold tabular-nums whitespace-nowrap">
                         ${amount.toLocaleString('es-CL')}
                       </span>
-                    </label>
+                    </div>
                   )
                 })}
               </div>
