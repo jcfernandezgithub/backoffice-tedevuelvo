@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.2
+## Versión 3.2.3
 
 ## Changelog
+
+### Versión 3.2.3 - 2026-02-27
+
+#### Actualización de tasas Banco de Chile — Desgravamen
+- **Nuevas tasas planas** para seguro de desgravamen de Banco de Chile, sin variación por monto ni tramo de edad:
+  - 12 meses: 0.652% | 24 meses: 1.304% | 36 meses: 1.480% | 48 meses: 2.608% | 60 meses: 3.260%
+- Tasas anteriores (variables por monto y edad, ~0.80% a ~4.17%) reemplazadas en `tasas_formateadas_te_devuelvo.json`.
+
+---
 
 ### Versión 3.2.2 - 2026-02-24
 
