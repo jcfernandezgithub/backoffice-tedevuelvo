@@ -94,6 +94,11 @@ export default function NominaDevoluciones() {
           selectedIndex={selectedIndex}
           onSelect={setSelectedIndex}
           onUpdate={nom.updateRow}
+          onDuplicate={nom.duplicateRow}
+          onRemove={(idx) => {
+            nom.removeRow(idx)
+            if (selectedIndex === idx) setSelectedIndex(null)
+          }}
         />
 
         <NominaErrorPanel errors={nom.errors} onFocusRow={handleFocusRow} />
