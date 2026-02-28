@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
-import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown } from 'lucide-react'
+import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown, Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -197,6 +198,29 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     setSelectedKind('otros')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteDoc = async (docId: string) => {
+    try {
+      const token = authService.getAccessToken()
+      const response = await fetch(`${API_BASE_URL}/refund-documents/admin/${docId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al eliminar documento')
+      }
+
+      toast({ title: 'Documento eliminado' })
+      await refetchDocuments()
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
     }
   }
 
@@ -417,10 +441,20 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDownload(doc)}
-                        aria-label="Descargar PDF"
+                        aria-label="Descargar"
                       >
                         <Download className="w-4 h-4" />
                       </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button size="sm" variant="ghost" aria-label="Eliminar documento">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        }
+                        title="Eliminar documento"
+                        description={`¿Estás seguro de que deseas eliminar "${getFileName(doc.key)}"? Esta acción no se puede deshacer.`}
+                        onConfirm={() => handleDeleteDoc(doc.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
