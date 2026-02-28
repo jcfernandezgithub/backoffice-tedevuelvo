@@ -62,38 +62,22 @@ export function DocumentViewer({ open, onClose, title, getBlob, contentType }: D
           {blobUrl && !loading && !error && (
             <>
               {contentType.includes('pdf') ? (
-                <object
-                  data={blobUrl}
-                  type="application/pdf"
+                <iframe
+                  src={blobUrl}
                   className="w-full h-full border-0"
                   title={title}
-                  aria-label={`Visor de PDF: ${title}`}
-                >
-                  {/* Fallback: si el navegador no puede renderizar el PDF, intenta como imagen */}
-                  <img
-                    src={blobUrl}
-                    alt={title}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      // Si tampoco es imagen, muestra un enlace de descarga
-                      const parent = e.currentTarget.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `
-                          <div class="flex flex-col items-center justify-center h-full gap-4">
-                            <p class="text-muted-foreground">No se puede previsualizar este documento.</p>
-                            <a href="${blobUrl}" download class="text-primary underline">Descargar archivo</a>
-                          </div>
-                        `;
-                      }
-                    }}
-                  />
-                </object>
-              ) : (
+                />
+              ) : contentType.includes('image') ? (
                 <img
                   src={blobUrl}
                   alt={title}
                   className="w-full h-full object-contain"
                 />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                  <p className="text-muted-foreground">No se puede previsualizar este tipo de archivo.</p>
+                  <a href={blobUrl} download className="text-primary underline">Descargar archivo</a>
+                </div>
               )}
             </>
           )}
