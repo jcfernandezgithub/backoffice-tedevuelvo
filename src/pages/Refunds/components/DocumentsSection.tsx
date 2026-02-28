@@ -391,6 +391,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre del Archivo</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Tamaño</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -400,6 +401,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
                 {attachments.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-mono text-xs break-all">{getFileName(doc.key)}</TableCell>
+                    <TableCell className="text-sm">{docKindOptions.find(o => o.value === doc.kind)?.label ?? doc.kind}</TableCell>
                     <TableCell>{formatBytes(doc.size)}</TableCell>
                     <TableCell>{format(new Date(doc.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
                     <TableCell className="text-right space-x-2">
