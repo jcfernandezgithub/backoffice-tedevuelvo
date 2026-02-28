@@ -495,6 +495,23 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Select>
                 </div>
 
+                {updateForm.status === 'docs_received' && (
+                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 dark:bg-amber-950/30 dark:border-amber-700 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        Antes de continuar, verifica que:
+                      </p>
+                    </div>
+                    <ul className="ml-6 space-y-1 text-sm text-amber-700 dark:text-amber-400 list-disc">
+                      <li>El <strong>mandato</strong> esté firmado</li>
+                      <li>La imagen de <strong>cédula frontal</strong> esté cargada</li>
+                      <li>La imagen de <strong>cédula trasera</strong> esté cargada</li>
+                      <li>La <strong>carta de rechazo</strong> esté cargada con su tipo correspondiente</li>
+                    </ul>
+                  </div>
+                )}
+
                 {updateForm.status === 'payment_scheduled' && (
                   <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <Label className="text-primary font-medium">
