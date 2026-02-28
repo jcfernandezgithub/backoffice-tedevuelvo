@@ -233,7 +233,12 @@ class RefundAdminApiClient {
       throw new Error(error.message || 'Error al cargar documentos')
     }
 
-    return response.json()
+    const data = await response.json()
+    // Normalizar _id → id (MongoDB usa _id)
+    return (Array.isArray(data) ? data : []).map((doc: any) => ({
+      ...doc,
+      id: doc._id || doc.id,
+    }))
   }
 
   async downloadDoc(publicId: string, docId: string): Promise<void> {
