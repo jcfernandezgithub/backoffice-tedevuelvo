@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { DocumentViewer } from './DocumentViewer'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
@@ -44,11 +45,9 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'otros', label: 'Otros' },
   ]
 
-  const allKinds = docKindOptions.map(o => o.value).concat(['attachment'])
-
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
-    queryFn: () => publicFilesApi.listRefundDocuments(publicId, allKinds),
+    queryFn: () => refundAdminApi.listDocs(publicId),
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
