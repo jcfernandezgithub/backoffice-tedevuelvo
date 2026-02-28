@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
 import { DocumentViewer } from './DocumentViewer'
 import { useToast } from '@/hooks/use-toast'
@@ -29,9 +30,19 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   
   // Upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedKind, setSelectedKind] = useState<string>('otros')
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [isDownloadingAll, setIsDownloadingAll] = useState(false)
+
+  const docKindOptions = [
+    { value: 'cedula-frente', label: 'Cédula frontal' },
+    { value: 'cedula-trasera', label: 'Cédula trasera' },
+    { value: 'signed-mandate', label: 'Mandato' },
+    { value: 'carta-de-corte', label: 'Carta de corte' },
+    { value: 'certificado-de-cobertura', label: 'Certificado de cobertura' },
+    { value: 'otros', label: 'Otros' },
+  ]
 
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
@@ -182,6 +193,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
 
   const handleClearFile = () => {
     setSelectedFile(null)
+    setSelectedKind('otros')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -201,7 +213,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     try {
       const formData = new FormData()
       formData.append('file', selectedFile)
-      formData.append('kind', 'otro')
+      formData.append('kind', selectedKind)
 
       const token = authService.getAccessToken()
       const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
@@ -290,15 +302,25 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
                 </p>
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                <div className="flex items-center gap-3 min-w-0">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
                   <FileUp className="w-8 h-8 text-primary flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-medium truncate">{selectedFile.name}</p>
                     <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Select value={selectedKind} onValueChange={setSelectedKind}>
+                    <SelectTrigger className="h-8 w-full sm:w-[200px] text-sm">
+                      <SelectValue placeholder="Tipo de documento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {docKindOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     onClick={handleUpload}
                     disabled={isUploading}
