@@ -507,7 +507,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       <li>El <strong>mandato</strong> esté firmado</li>
                       <li>La imagen de <strong>cédula frontal</strong> esté cargada</li>
                       <li>La imagen de <strong>cédula trasera</strong> esté cargada</li>
-                      <li>La <strong>carta de rechazo</strong> esté cargada con su tipo correspondiente</li>
+                      <li>La <strong>carta de rechazo</strong> esté cargada</li>
+                      <li>Todos los documentos tengan su <strong>tipo correspondiente</strong> asignado</li>
                     </ul>
                   </div>
                 )}
