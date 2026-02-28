@@ -44,9 +44,11 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'otros', label: 'Otros' },
   ]
 
+  const allKinds = docKindOptions.map(o => o.value).concat(['attachment'])
+
   const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
-    queryFn: () => publicFilesApi.listRefundDocuments(publicId),
+    queryFn: () => publicFilesApi.listRefundDocuments(publicId, allKinds),
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
