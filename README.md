@@ -1,8 +1,36 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.3
+## Versión 3.2.4
 
 ## Changelog
+
+### Versión 3.2.4 - 2026-03-01
+
+#### Nuevo módulo: Nómina de Devoluciones
+- **Generación de archivos TXT para Scotiabank**: Nueva página `/nomina-devoluciones` para crear nóminas de pago desde datos manuales, CSV o solicitudes existentes.
+  - Importación directa desde solicitudes en estado "Pago Programado" con datos bancarios, mapeando RUT, nombre, email, banco y cuenta.
+  - Importación CSV con detección automática de separador (`,` o `;`).
+  - Generación de archivo TXT en modo normal o agrupado.
+  - Persistencia local de borradores con restauración automática.
+  - Header configurable: Nombre empresa (TDV SERVICIOS SPA), RUT (78168126-1), Convenio (003).
+  - Valores por defecto: CTACTE SCOTIABANK, VARIOS, sucursal 000, glosa "Devolución Tedevuelvo".
+  - Homologación automática de nombres de banco (ej: "Banco BCI" → "BCI").
+  - Vista responsive con modos Compacto/Expandido.
+
+#### Eliminación de documentos públicos
+- **Nuevo botón "Eliminar documento"** en la sección de documentos públicos del detalle de solicitud.
+  - Endpoint: `DELETE /api/v1/refund-requests/admin/:id`.
+  - Diálogo de confirmación antes de eliminar permanentemente.
+  - Recarga automática de la lista de documentos tras eliminación exitosa.
+
+#### Mejoras en validación de documentos
+- **Checklist actualizado** al cambiar estado a "Documentos recibidos": ahora incluye verificación de que todos los documentos tengan su **tipo correspondiente** asignado (no solo la carta de rechazo).
+
+#### Ajustes en sidebar
+- **Etiqueta "En desarrollo"** agregada al ítem "Nómina" en el menú lateral.
+- **Removida etiqueta "En desarrollo"** del ítem "Ajustes".
+
+---
 
 ### Versión 3.2.3 - 2026-02-27
 
