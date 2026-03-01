@@ -204,7 +204,7 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const handleDeleteDoc = async (docId: string) => {
     try {
       const token = authService.getAccessToken()
-      const response = await fetch(`${API_BASE_URL}/refund-documents/admin/${docId}`, {
+      const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${docId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
