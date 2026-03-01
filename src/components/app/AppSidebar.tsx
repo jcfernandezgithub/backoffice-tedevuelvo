@@ -22,7 +22,7 @@ const items = [
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
 ]
 
@@ -69,7 +69,7 @@ export function AppSidebar() {
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
                           <span>{item.title}</span>
-                          {item.status === 'dev' && item.url === '/usuarios' && (
+                          {item.status === 'dev' && (
                             <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
                               En desarrollo
                             </Badge>
