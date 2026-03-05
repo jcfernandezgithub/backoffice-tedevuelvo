@@ -214,8 +214,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const handleUpdateStatus = () => {
-    // Validar documentos obligatorios para estado "Ingresado" (submitted)
-    if (updateForm.status === 'submitted') {
+    // Validar documentos obligatorios para estados "Ingresado" o "Documentos recibidos"
+    // (el backend auto-promueve docs_received → submitted)
+    if (updateForm.status === 'submitted' || updateForm.status === 'docs_received') {
       const requiredKinds = [
         { kind: 'cedula-frente', label: 'Cédula frontal' },
         { kind: 'cedula-trasera', label: 'Cédula trasera' },
@@ -223,12 +224,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         { kind: 'carta-de-corte', label: 'Carta de corte' },
       ]
       const uploadedKinds = (documents || []).map((d: any) => d.kind)
-      console.log('[Validación Ingresado] Docs cargados:', uploadedKinds, '| Requeridos:', requiredKinds.map(r => r.kind))
       const missing = requiredKinds.filter(r => !uploadedKinds.includes(r.kind))
       if (missing.length > 0) {
         toast({
           title: 'Documentos faltantes',
-          description: `No se puede cambiar a "Ingresado". Faltan: ${missing.map(m => m.label).join(', ')}`,
+          description: `No se puede continuar. Faltan: ${missing.map(m => m.label).join(', ')}`,
           variant: 'destructive',
         })
         return
