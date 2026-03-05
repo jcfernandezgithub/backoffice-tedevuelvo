@@ -139,7 +139,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const { data: documents } = useQuery({
-    queryKey: ['refund-docs', refund?.publicId],
+    // Misma query key que DocumentsSection para mantener la validación sincronizada tras uploads/deletes
+    queryKey: ['refund-documents', refund?.publicId],
     queryFn: () => refundAdminApi.listDocs(refund!.publicId),
     enabled: !!refund?.publicId,
   })
