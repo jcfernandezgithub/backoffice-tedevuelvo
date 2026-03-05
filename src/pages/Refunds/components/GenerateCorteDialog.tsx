@@ -562,10 +562,9 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
         <Button onClick={onDownload} className="flex-1"><Download className="h-4 w-4 mr-2" />Descargar PDF</Button>
       </div>
       <Button
-        variant="secondary"
         onClick={handleUploadToClient}
         disabled={isUploading}
-        className="w-full"
+        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
       >
         {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
         {isUploading ? 'Subiendo...' : 'Subir a Carpeta del Cliente'}
@@ -679,10 +678,9 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
         </Button>
       </div>
       <Button
-        variant="secondary"
         onClick={handleUploadToClient}
         disabled={isUploading}
-        className="w-full"
+        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
       >
         {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
         {isUploading ? 'Subiendo...' : 'Subir a Carpeta del Cliente'}
