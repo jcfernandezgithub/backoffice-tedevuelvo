@@ -214,6 +214,26 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const handleUpdateStatus = () => {
+    // Validar documentos obligatorios para estado "Ingresado"
+    if (updateForm.status === 'submitted') {
+      const requiredKinds = [
+        { kind: 'cedula-frente', label: 'Cédula frontal' },
+        { kind: 'cedula-trasera', label: 'Cédula trasera' },
+        { kind: 'signed-mandate', label: 'Mandato firmado' },
+        { kind: 'carta-de-corte', label: 'Carta de corte' },
+      ]
+      const uploadedKinds = (documents || []).map((d: any) => d.kind)
+      const missing = requiredKinds.filter(r => !uploadedKinds.includes(r.kind))
+      if (missing.length > 0) {
+        toast({
+          title: 'Documentos faltantes',
+          description: `No se puede cambiar a "Ingresado". Faltan: ${missing.map(m => m.label).join(', ')}`,
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     // Validar monto real obligatorio para pago programado
     if (updateForm.status === 'payment_scheduled' && (!updateForm.realAmount || updateForm.realAmount <= 0)) {
       toast({
