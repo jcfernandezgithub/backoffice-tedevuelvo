@@ -4,15 +4,20 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { FileText, Download } from 'lucide-react'
+import { FileText, Download, Upload, Loader2 } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
+import { authService } from '@/services/authService'
+import jsPDF from 'jspdf'
 import firmaImg from '@/assets/firma-cng.jpeg'
 import corteCedulaImg from '@/assets/corte-cedula-legalizada.jpg'
 import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
 import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
@@ -245,6 +250,82 @@ function openPrintWindow(content: string) {
   }
 }
 
+// Helper: genera un PDF blob con jsPDF para subir al servidor
+function generateCortePdfBlob(
+  refund: RefundRequest,
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string },
+  hasPolicyNumber: boolean,
+): Blob {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const margin = 15
+  let y = 20
+
+  const today = new Date()
+  const dateStr = `Santiago, ${today.getDate()} de ${today.toLocaleDateString('es-CL', { month: 'long' })} de ${today.getFullYear()}`
+
+  doc.setFontSize(10)
+  doc.text(dateStr, margin, y); y += 10
+  doc.text(`Sres.: ${formData.companyName}`, margin, y); y += 5
+  doc.text('Atención: Servicio al Cliente (Post-Venta)', margin, y); y += 5
+  doc.text('Ref: Carta de Renuncia al seguro que indica', margin, y); y += 12
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.text('INFORMA TÉRMINO ANTICIPADO DE SEGURO', pageWidth / 2, y, { align: 'center' }); y += 5
+  doc.text('Y SOLICITA DEVOLUCIÓN DE PRIMA NO DEVENGADA', pageWidth / 2, y, { align: 'center' }); y += 10
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  const maxWidth = pageWidth - margin * 2
+
+  const p1 = `Por medio de la presente Carta de Renuncia, la sociedad TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}, actuando en representación y por cuenta de don (doña) ${refund.fullName}, cédula de identidad ${refund.rut}, comunicamos formalmente a esa Compañía Aseguradora la renuncia al seguro y su cobertura que fuera contratado junto con el crédito de consumo otorgado por el Banco ${formData.bankName}, que corresponde a la operación de crédito N°${formData.creditNumber}${hasPolicyNumber ? ` asociada a la Póliza N° ${formData.policyNumber}` : ''}, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
+  const lines1 = doc.splitTextToSize(p1, maxWidth)
+  doc.text(lines1, margin, y); y += lines1.length * 4.5 + 4
+
+  const p2 = `Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de 2013 de la Comisión para el Mercado Financiero (CMF), solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente N° ${FIXED_ACCOUNT_DATA.accountNumber} del Banco ${FIXED_ACCOUNT_DATA.accountBank} cuyo titular es ${FIXED_ACCOUNT_DATA.accountHolder}, RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}, correo electrónico ${FIXED_ACCOUNT_DATA.contactEmail}.`
+  const lines2 = doc.splitTextToSize(p2, maxWidth)
+  doc.text(lines2, margin, y); y += lines2.length * 4.5 + 4
+
+  const p3 = `Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos que se nos informe el resultado de esta gestión al correo electrónico ${FIXED_ACCOUNT_DATA.contactEmail} y al número telefónico ${FIXED_ACCOUNT_DATA.contactPhone}.`
+  const lines3 = doc.splitTextToSize(p3, maxWidth)
+  doc.text(lines3, margin, y); y += lines3.length * 4.5 + 8
+
+  doc.text('Sin otro particular, se despiden atentamente,', margin, y); y += 20
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Cristian Andrés Nieto Gavilán', pageWidth / 2, y, { align: 'center' }); y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.text(`p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}`, pageWidth / 2, y, { align: 'center' })
+
+  return doc.output('blob')
+}
+
+async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient: any) {
+  const token = authService.getAccessToken()
+  const formData = new FormData()
+  formData.append('file', pdfBlob, `carta-de-corte-${publicId}.pdf`)
+  formData.append('kind', 'carta-de-corte')
+
+  const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || 'Error al subir carta de corte')
+  }
+
+  // Invalidar cache de documentos
+  queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
+
+  toast({ title: 'Carta de corte subida', description: 'El documento está disponible en la carpeta del cliente' })
+}
+
 // ──────────────────────────────────────────
 // Formulario GENÉRICO
 // ──────────────────────────────────────────
@@ -421,6 +502,21 @@ interface GenericPreviewProps {
 
 function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload }: GenericPreviewProps) {
   const today = new Date()
+  const queryClient = useQueryClient()
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handleUploadToClient = async () => {
+    setIsUploading(true)
+    try {
+      const pdfBlob = generateCortePdfBlob(refund, formData, hasPolicyNumber)
+      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient)
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto text-sm">
@@ -465,6 +561,15 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
         <Button variant="outline" onClick={onEdit} className="flex-1">Editar</Button>
         <Button onClick={onDownload} className="flex-1"><Download className="h-4 w-4 mr-2" />Descargar PDF</Button>
       </div>
+      <Button
+        variant="secondary"
+        onClick={handleUploadToClient}
+        disabled={isUploading}
+        className="w-full"
+      >
+        {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+        {isUploading ? 'Subiendo...' : 'Subir a Carpeta del Cliente'}
+      </Button>
     </div>
   )
 }
@@ -481,6 +586,22 @@ interface SantanderPreviewProps {
 
 function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPreviewProps) {
   const today = new Date()
+  const queryClient = useQueryClient()
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handleUploadToClient = async () => {
+    setIsUploading(true)
+    try {
+      // Reusar generador genérico (sin póliza ya que Santander siempre tiene)
+      const pdfBlob = generateCortePdfBlob(refund, formData, true)
+      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient)
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="border rounded-lg p-6 bg-white text-black max-h-[60vh] overflow-y-auto text-sm">
@@ -557,6 +678,15 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
           Descargar PDF
         </Button>
       </div>
+      <Button
+        variant="secondary"
+        onClick={handleUploadToClient}
+        disabled={isUploading}
+        className="w-full"
+      >
+        {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+        {isUploading ? 'Subiendo...' : 'Subir a Carpeta del Cliente'}
+      </Button>
     </div>
   )
 }
