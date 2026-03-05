@@ -214,7 +214,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const handleUpdateStatus = () => {
-    // Validar documentos obligatorios para estado "Ingresado"
+    // Validar documentos obligatorios para estado "Ingresado" (submitted)
     if (updateForm.status === 'submitted') {
       const requiredKinds = [
         { kind: 'cedula-frente', label: 'Cédula frontal' },
@@ -223,6 +223,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         { kind: 'carta-de-corte', label: 'Carta de corte' },
       ]
       const uploadedKinds = (documents || []).map((d: any) => d.kind)
+      console.log('[Validación Ingresado] Docs cargados:', uploadedKinds, '| Requeridos:', requiredKinds.map(r => r.kind))
       const missing = requiredKinds.filter(r => !uploadedKinds.includes(r.kind))
       if (missing.length > 0) {
         toast({
