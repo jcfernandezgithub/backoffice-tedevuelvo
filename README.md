@@ -1,8 +1,22 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.4
+## Versión 3.2.5
 
 ## Changelog
+
+### Versión 3.2.5 - 2026-03-05
+
+#### Validación de documentos al cambiar estado
+- **Validación obligatoria** al cambiar a "Documentos recibidos" o "Ingresado": el sistema verifica que existan documentos con los kinds `cedula-frente`, `cedula-trasera`, `signed-mandate` y `carta-de-corte`. Si falta alguno, se informa cuál y se bloquea el cambio.
+- **Corrección de sincronización de cache**: unificada la query key de documentos (`refund-documents`) entre el detalle y la sección de documentos para que los archivos recién subidos se reflejen inmediatamente en la validación.
+
+#### Subir Carta de Corte a carpeta del cliente
+- **Nuevo botón "Subir a Carpeta del Cliente"** en la vista previa de la Carta de Corte (formatos genérico y Santander).
+  - Genera un PDF con jsPDF y lo sube automáticamente al endpoint `/upload-file` con kind `carta-de-corte`.
+  - Invalida el cache de documentos para disponibilidad inmediata en la sección de documentos.
+  - Botón con color verde esmeralda diferenciado para mejor experiencia visual.
+
+---
 
 ### Versión 3.2.4 - 2026-03-01
 
