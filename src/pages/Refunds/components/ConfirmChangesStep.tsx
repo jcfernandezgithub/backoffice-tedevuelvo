@@ -6,6 +6,7 @@ export interface FieldChange {
   label: string
   from: string
   to: string
+  isAutoCalculated?: boolean
 }
 
 interface ConfirmChangesStepProps {
