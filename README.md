@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.5
+## Versión 3.2.6
 
 ## Changelog
+
+### Versión 3.2.6 - 2026-03-07
+
+#### Auto-cálculo de primas y ahorros en editor de snapshot
+- **Recálculo automático** de los campos `currentMonthlyPremium`, `newMonthlyPremium`, `monthlySaving` y `totalSaving` al modificar datos del crédito (edad, monto, cuotas, tipo de seguro) en el editor de snapshot.
+- Los campos de primas y ahorros son ahora **solo lectura**, calculados con la lógica de `calcularDevolucion`.
+- **Confirmación visual diferenciada**: en el paso de confirmación de cambios, los campos auto-calculados se muestran en una sección separada con borde punteado e ícono de calculadora, distinguiéndolos de los campos editados manualmente.
+
+---
 
 ### Versión 3.2.5 - 2026-03-05
 
