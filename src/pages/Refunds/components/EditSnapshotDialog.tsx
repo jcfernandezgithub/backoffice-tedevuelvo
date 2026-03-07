@@ -119,6 +119,16 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
+  // Map institutionId to calculator-compatible bank name
+  const INSTITUTION_TO_CALC: Record<string, string> = {
+    santander: 'Santander', bci: 'BCI', scotiabank: 'Scotiabank',
+    chile: 'Chile', security: 'Security', itau: 'Itaú - Corpbanca',
+    'itau-corpbanca': 'Itaú - Corpbanca', bice: 'BICE', estado: 'Estado',
+    ripley: 'Banco Ripley', falabella: 'Falabella', consorcio: 'Consorcio',
+    coopeuch: 'Coopeuch', cencosud: 'Cencosud', 'lider-bci': 'Lider BCI',
+    forum: 'Forum', tanner: 'Tanner', cooperativas: 'Cooperativas',
+  }
+
   const calcAge = useCallback((dateStr: string): number | undefined => {
     if (!dateStr) return undefined
     const birth = new Date(dateStr)
@@ -165,6 +175,36 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     resolver: zodResolver(snapshotSchema),
     defaultValues: defaults,
   })
+
+  // Watch credit fields to auto-recalculate premiums
+  const watchedAge = form.watch('age')
+  const watchedTotalAmount = form.watch('totalAmount')
+  const watchedOriginalInstallments = form.watch('originalInstallments')
+  const watchedRemainingInstallments = form.watch('remainingInstallments')
+  const watchedInsuranceType = form.watch('insuranceToEvaluate')
+
+  useEffect(() => {
+    const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
+    const age = Number(watchedAge)
+    const monto = Number(watchedTotalAmount)
+    const cuotasTotales = Number(watchedOriginalInstallments)
+    const cuotasPendientes = Number(watchedRemainingInstallments)
+    const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+
+    if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
+
+    try {
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro)
+      if (result.error) return
+
+      form.setValue('currentMonthlyPremium', result.primaBanco)
+      form.setValue('newMonthlyPremium', result.primaPreferencial)
+      form.setValue('monthlySaving', result.ahorroMensual)
+      form.setValue('totalSaving', result.ahorroTotal)
+    } catch {
+      // Silently ignore calculation errors
+    }
+  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId])
 
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
