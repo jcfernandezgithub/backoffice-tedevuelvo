@@ -425,17 +425,72 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
-              <Section icon={Shield} title="Primas y seguros">
-                <NumberField name="currentMonthlyPremium" label="Prima mensual actual" prefix="$" />
-                <NumberField name="newMonthlyPremium" label="Nueva prima mensual" prefix="$" />
+              <Section icon={Shield} title="Primas y seguros (auto-calculado)">
+                <FormField
+                  control={form.control}
+                  name="currentMonthlyPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Prima mensual actual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="newMonthlyPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Nueva prima mensual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </Section>
 
               <Separator />
 
-              <Section icon={TrendingUp} title="Ahorros calculados">
-                <NumberField name="monthlySaving" label="Ahorro mensual" prefix="$" />
-                <NumberField name="totalSaving" label="Ahorro total" prefix="$" />
-              </Section>
+              <Section icon={TrendingUp} title="Ahorros calculados (auto-calculado)">
+                <FormField
+                  control={form.control}
+                  name="monthlySaving"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Ahorro mensual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="totalSaving"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Ahorro total</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
 
               <Separator />
 
