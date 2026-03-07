@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
+import { calcularDevolucion } from '@/lib/calculadoraUtils'
 import {
   Dialog,
   DialogContent,
@@ -118,6 +119,16 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
+  // Map institutionId to calculator-compatible bank name
+  const INSTITUTION_TO_CALC: Record<string, string> = {
+    santander: 'Santander', bci: 'BCI', scotiabank: 'Scotiabank',
+    chile: 'Chile', security: 'Security', itau: 'Itaú - Corpbanca',
+    'itau-corpbanca': 'Itaú - Corpbanca', bice: 'BICE', estado: 'Estado',
+    ripley: 'Banco Ripley', falabella: 'Falabella', consorcio: 'Consorcio',
+    coopeuch: 'Coopeuch', cencosud: 'Cencosud', 'lider-bci': 'Lider BCI',
+    forum: 'Forum', tanner: 'Tanner', cooperativas: 'Cooperativas',
+  }
+
   const calcAge = useCallback((dateStr: string): number | undefined => {
     if (!dateStr) return undefined
     const birth = new Date(dateStr)
@@ -164,6 +175,36 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     resolver: zodResolver(snapshotSchema),
     defaultValues: defaults,
   })
+
+  // Watch credit fields to auto-recalculate premiums
+  const watchedAge = form.watch('age')
+  const watchedTotalAmount = form.watch('totalAmount')
+  const watchedOriginalInstallments = form.watch('originalInstallments')
+  const watchedRemainingInstallments = form.watch('remainingInstallments')
+  const watchedInsuranceType = form.watch('insuranceToEvaluate')
+
+  useEffect(() => {
+    const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
+    const age = Number(watchedAge)
+    const monto = Number(watchedTotalAmount)
+    const cuotasTotales = Number(watchedOriginalInstallments)
+    const cuotasPendientes = Number(watchedRemainingInstallments)
+    const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+
+    if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
+
+    try {
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro)
+      if (result.error) return
+
+      form.setValue('currentMonthlyPremium', result.primaBanco)
+      form.setValue('newMonthlyPremium', result.primaPreferencial)
+      form.setValue('monthlySaving', result.ahorroMensual)
+      form.setValue('totalSaving', result.ahorroTotal)
+    } catch {
+      // Silently ignore calculation errors
+    }
+  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId])
 
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
@@ -384,16 +425,72 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
-              <Section icon={Shield} title="Primas y seguros">
-                <NumberField name="currentMonthlyPremium" label="Prima mensual actual" prefix="$" />
-                <NumberField name="newMonthlyPremium" label="Nueva prima mensual" prefix="$" />
+              <Section icon={Shield} title="Primas y seguros (auto-calculado)">
+                <FormField
+                  control={form.control}
+                  name="currentMonthlyPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Prima mensual actual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="newMonthlyPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Nueva prima mensual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </Section>
 
               <Separator />
 
-              <Section icon={TrendingUp} title="Ahorros calculados">
-                <NumberField name="monthlySaving" label="Ahorro mensual" prefix="$" />
-                <NumberField name="totalSaving" label="Ahorro total" prefix="$" />
+              <Section icon={TrendingUp} title="Ahorros calculados (auto-calculado)">
+                <FormField
+                  control={form.control}
+                  name="monthlySaving"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Ahorro mensual</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="totalSaving"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Ahorro total</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </Section>
 
               <Separator />
