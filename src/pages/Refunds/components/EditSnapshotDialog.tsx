@@ -491,6 +491,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     </FormItem>
                   )}
                 />
+              </Section>
 
               <Separator />
 
