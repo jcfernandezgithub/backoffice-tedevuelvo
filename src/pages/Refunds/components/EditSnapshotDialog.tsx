@@ -206,6 +206,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
   }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId])
 
+  const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
+    'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
+  ]
+
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
     for (const [key, value] of Object.entries(data) as [keyof SnapshotFormValues, any][]) {
@@ -215,6 +219,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         label: FIELD_LABELS[key] || key,
         from: String(original ?? ''),
         to: String(value),
+        isAutoCalculated: AUTO_CALCULATED_FIELDS.includes(key),
       })
     }
     return changes
