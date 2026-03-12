@@ -183,7 +183,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const form = useForm<SnapshotFormValues>({
     resolver: zodResolver(snapshotSchema),
     defaultValues: defaults,
-  })
+
+  const getResetValues = () => {
+    const savedValues = latestSavedValuesRef.current
+    const savedAt = latestSavedAtRef.current
+    const isRecentSave = !!savedValues && !!savedAt && Date.now() - savedAt < 15000
+    return isRecentSave ? savedValues : defaults
+  }
+
 
   // Si llegan datos frescos mientras el modal está abierto, sincronizar formulario.
   useEffect(() => {
