@@ -187,7 +187,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // Si llegan datos frescos mientras el modal está abierto, sincronizar formulario.
   useEffect(() => {
     if (!open) return
-    form.reset(defaults)
+    form.reset(latestSavedValuesRef.current ?? defaults)
   }, [open, defaults])
 
   // Watch credit fields to auto-recalculate premiums
