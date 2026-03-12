@@ -713,8 +713,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <Tabs defaultValue="solicitudes">
-                <TabsList className="grid w-full grid-cols-3 h-8 text-xs">
+                <TabsList className="grid w-full grid-cols-4 h-8 text-xs">
                   <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
+                  <TabsTrigger value="callcenter" className="text-xs">Call Center</TabsTrigger>
                   <TabsTrigger value="pagos" className="text-xs">Montos pagados</TabsTrigger>
                   <TabsTrigger value="distribucion" className="text-xs">Distribución</TabsTrigger>
                 </TabsList>
