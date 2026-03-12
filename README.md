@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.7
+## Versión 3.2.8
 
 ## Changelog
+
+### Versión 3.2.8 - 2026-03-12
+
+#### Métricas Call Center en Dashboard
+- **Nueva sección dedicada**: se añadió un bloque exclusivo de KPIs para Call Center con "Total primas estimadas" y "Ticket promedio".
+- **Cálculo correcto de primas**: la prima total se calcula como `newMonthlyPremium × remainingInstallments` desde el `calculationSnapshot`, reemplazando el uso incorrecto de `estimatedAmountCLP`.
+- **Reorganización de calugas principales**: se removió la caluga Call Center de la fila principal y se ajustó el grid a 5 columnas para mejor distribución visual.
+
+---
 
 ### Versión 3.2.7 - 2026-03-12
 
