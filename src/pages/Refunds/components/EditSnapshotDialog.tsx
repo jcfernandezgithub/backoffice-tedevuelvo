@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -119,6 +119,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [pendingData, setPendingData] = useState<SnapshotFormValues | null>(null)
   const [overridePrimas, setOverridePrimas] = useState(false)
   const [overrideAhorros, setOverrideAhorros] = useState(false)
+  const latestSavedValuesRef = useRef<SnapshotFormValues | null>(null)
+  const latestSavedAtRef = useRef<number | null>(null)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
@@ -183,10 +185,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     defaultValues: defaults,
   })
 
+  const getResetValues = () => {
+    const savedValues = latestSavedValuesRef.current
+    const savedAt = latestSavedAtRef.current
+    const isRecentSave = !!savedValues && !!savedAt && Date.now() - savedAt < 15000
+    return isRecentSave ? savedValues : defaults
+  }
+
   // Si llegan datos frescos mientras el modal está abierto, sincronizar formulario.
   useEffect(() => {
     if (!open) return
-    form.reset(defaults)
+    form.reset(getResetValues())
   }, [open, defaults])
 
   // Watch credit fields to auto-recalculate premiums
@@ -196,7 +205,21 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const watchedRemainingInstallments = form.watch('remainingInstallments')
   const watchedInsuranceType = form.watch('insuranceToEvaluate')
 
+  const dirtyFields = form.formState.dirtyFields
+  const hasCreditFieldEdits = Boolean(
+    dirtyFields.age ||
+    dirtyFields.birthDate ||
+    dirtyFields.totalAmount ||
+    dirtyFields.originalInstallments ||
+    dirtyFields.remainingInstallments ||
+    dirtyFields.insuranceToEvaluate
+  )
+
   useEffect(() => {
+    // Evita sobreescribir valores guardados al abrir el modal;
+    // recalcula solo cuando el usuario cambia campos base del crédito.
+    if (!hasCreditFieldEdits) return
+
     const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
     const age = Number(watchedAge)
     const monto = Number(watchedTotalAmount)
@@ -221,7 +244,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch {
       // Silently ignore calculation errors
     }
-  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId, overridePrimas, overrideAhorros])
+  }, [
+    watchedAge,
+    watchedTotalAmount,
+    watchedOriginalInstallments,
+    watchedRemainingInstallments,
+    watchedInsuranceType,
+    hasCreditFieldEdits,
+    refund.institutionId,
+    overridePrimas,
+    overrideAhorros,
+  ])
 
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
@@ -280,9 +313,13 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     onSuccess: async () => {
       const changes = getChanges(pendingData!)
 
-      // Aplicar patch optimista en detalle usando los datos enviados
-      // (no depender de la forma de respuesta del backend)
       if (pendingData) {
+        // Guardar último estado confirmado para reapertura inmediata del modal
+        latestSavedValuesRef.current = { ...pendingData }
+        latestSavedAtRef.current = Date.now()
+
+        // Aplicar patch optimista en detalle usando los datos enviados
+        // (no depender de la forma de respuesta del backend)
         const rootPatch: Record<string, any> = {}
         const snapshotPatch: Record<string, any> = {}
         const ROOT_FIELDS: (keyof SnapshotFormValues)[] = ['estimatedAmountCLP', 'realAmount']
@@ -347,7 +384,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      form.reset(defaults)
+      form.reset(getResetValues())
       setStep('form')
       setPendingData(null)
       setOverridePrimas(false)
