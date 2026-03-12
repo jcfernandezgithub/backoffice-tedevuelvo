@@ -353,6 +353,40 @@ export default function Dashboard() {
       .map(({ bucket, value }) => ({ bucket, value }))
   }, [filteredRefunds, agg])
 
+  const callCenterAggSeries = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const r of allRefunds) {
+      if (!r.statusHistory?.length) continue
+      for (const h of r.statusHistory as any[]) {
+        const to = h.to?.toLowerCase()
+        if (to !== 'docs_received') continue
+        const from = h.from?.toLowerCase() || ''
+        if (from === to) continue
+        if (!h.at) continue
+        const transDate = h.at.split('T')[0]
+        if (desde && transDate < desde) continue
+        if (hasta && transDate > hasta) continue
+        let key = transDate
+        if (agg === 'week') {
+          const d = dayjs.tz(transDate)
+          key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
+        }
+        if (agg === 'month') key = dayjs.tz(transDate).format('YYYY-MM')
+        map.set(key, (map.get(key) ?? 0) + 1)
+        break // contar solo la primera transición válida por solicitud por bucket
+      }
+    }
+    const toDate = (b: string) => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
+      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
+      return dayjs.tz(b + '-01')
+    }
+    return [...map.entries()]
+      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
+      .sort((a, b) => a._s - b._s)
+      .map(({ bucket, value }) => ({ bucket, value }))
+  }, [allRefunds, desde, hasta, agg])
+
   const pagosAggSeries = useMemo(() => {
     const map = new Map<string, number>()
     for (const r of paidRefunds) {
@@ -679,8 +713,9 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <Tabs defaultValue="solicitudes">
-                <TabsList className="grid w-full grid-cols-3 h-8 text-xs">
+                <TabsList className="grid w-full grid-cols-4 h-8 text-xs">
                   <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
+                  <TabsTrigger value="callcenter" className="text-xs">Call Center</TabsTrigger>
                   <TabsTrigger value="pagos" className="text-xs">Montos pagados</TabsTrigger>
                   <TabsTrigger value="distribucion" className="text-xs">Distribución</TabsTrigger>
                 </TabsList>
@@ -699,6 +734,28 @@ export default function Dashboard() {
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
                           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <EmptyChart />
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="callcenter" className="mt-4">
+                  <div className="h-64">
+                    {callCenterAggSeries.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={callCenterAggSeries} barSize={14}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                          <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
+                          <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                          <RechartsTooltip
+                            formatter={(v: number) => [`${v} gestiones`, 'Call Center']}
+                            labelFormatter={l => `Período: ${l}`}
+                            contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                          />
+                          <Bar dataKey="value" fill="hsl(172,66%,50%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
