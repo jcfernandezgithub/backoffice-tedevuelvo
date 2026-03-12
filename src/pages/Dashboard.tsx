@@ -16,7 +16,7 @@ import {
 import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
-  FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff,
+  FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -280,6 +280,24 @@ export default function Dashboard() {
       }, 0)
   }, [filteredRefunds])
 
+  // Call Center: solicitudes que transitaron a docs_received en el período (por statusHistory)
+  const callCenterCount = useMemo(() => {
+    if (!allRefunds.length) return 0
+    return allRefunds.filter((r: any) => {
+      if (!r.statusHistory?.length) return false
+      return r.statusHistory.some((h: any) => {
+        const to = h.to?.toLowerCase()
+        if (to !== 'docs_received') return false
+        if (!h.at) return false
+        // Usar fecha local de la transición
+        const transDate = h.at.split('T')[0]
+        if (desde && transDate < desde) return false
+        if (hasta && transDate > hasta) return false
+        return true
+      })
+    }).length
+  }, [allRefunds, desde, hasta])
+
   const conversionRate = useMemo(() => {
     const base = totalSolicitudes - granularCounts.datos_sin_simulacion
     if (!base) return 0
@@ -459,7 +477,7 @@ export default function Dashboard() {
         </Card>
 
         {/* KPIs de resumen */}
-        <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3" aria-label="Resumen general">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
@@ -474,6 +492,14 @@ export default function Dashboard() {
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
             tooltip="Solicitudes activas actualmente: en calificación, con documentos pendientes o recibidos, ingresadas, aprobadas o con pago programado."
+          />
+          <SummaryKpi
+            label="Call Center"
+            value={callCenterCount}
+            icon={Headphones}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300"
+            tooltip="Solicitudes que pasaron al estado 'Docs. recibidos' dentro del período seleccionado. Refleja la gestión del Call Center independiente de la fecha de creación."
           />
           <SummaryKpi
             label="Pagados"
