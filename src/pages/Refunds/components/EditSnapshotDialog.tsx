@@ -273,8 +273,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       // Aplicar patch optimista en detalle usando los datos enviados
       // (no depender de la forma de respuesta del backend)
       if (pendingData) {
-        const rootPatch: Partial<SnapshotFormValues> = {}
-        const snapshotPatch: Partial<SnapshotFormValues> = {}
+        const rootPatch: Record<string, any> = {}
+        const snapshotPatch: Record<string, any> = {}
         const ROOT_FIELDS: (keyof SnapshotFormValues)[] = ['estimatedAmountCLP', 'realAmount']
 
         for (const [key, value] of Object.entries(pendingData) as [keyof SnapshotFormValues, any][]) {
