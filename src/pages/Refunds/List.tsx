@@ -84,13 +84,11 @@ const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
 // Busca en el statusHistory si existe una transición AL estado objetivo
 // cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
 // NO requiere que el estado actual coincida — captura toda solicitud que pasó por ese estado en el período
+// Usa comparación de strings ISO (split('T')[0]) para evitar problemas de timezone
 const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
   if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
     return false
   }
-
-  const rangeStart = new Date(fromStr + 'T00:00:00').getTime()
-  const rangeEnd = new Date(toStr + 'T23:59:59.999').getTime()
 
   return refund.statusHistory.some((entry: any) => {
     const entryStatus = (entry.to?.toLowerCase() || '') as string
@@ -99,8 +97,11 @@ const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr
     const fromStatus = entry.from?.toLowerCase() || ''
     if (fromStatus === entryStatus) return false
 
-    const changeTime = new Date(entry.at).getTime()
-    return changeTime >= rangeStart && changeTime <= rangeEnd
+    if (!entry.at) return false
+    const transDate = entry.at.split('T')[0]
+    if (fromStr && transDate < fromStr) return false
+    if (toStr && transDate > toStr) return false
+    return true
   })
 }
 
