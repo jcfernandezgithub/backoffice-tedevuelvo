@@ -80,15 +80,11 @@ const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
   return (lastEntry.to?.toLowerCase() || refund.status) as RefundStatus
 }
 
-// Verificar si una solicitud CAMBIÓ a un estado dado durante un rango de fechas
+// Verificar si una solicitud TRANSITÓ a un estado dado durante un rango de fechas
 // Busca en el statusHistory si existe una transición AL estado objetivo
 // cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
-// Y además valida que el estado ACTUAL de la solicitud coincida con el objetivo
+// NO requiere que el estado actual coincida — captura toda solicitud que pasó por ese estado en el período
 const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
-  // Verificar que el estado actual coincida con el objetivo
-  const currentStatus = (refund.status?.toLowerCase() || '') as string
-  if (currentStatus !== targetStatus) return false
-
   if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
     return false
   }
@@ -649,8 +645,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
     
-    // En modo histórico, filtrar por solicitudes que estuvieron en el estado seleccionado
-    // durante el rango de fechas [from, to]
+    // En modo histórico, filtrar por solicitudes que TRANSITARON al estado seleccionado
+    // durante el rango de fechas [from, to], sin importar su estado actual
     if (historicalStatusMode && localFilters.status) {
       const fromDate = localFilters.from || '2000-01-01'
       const toDate = localFilters.to || toLocalDateString(new Date())
@@ -661,14 +657,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => 
         statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
       )
-
-      // Consistencia visual/funcional: el estado mostrado en la fecha también debe coincidir
-      if (localFilters.to) {
-        result = result.filter((r: any) => {
-          const statusAtDate = getStatusAtDate(r, localFilters.to!)
-          return statusList.includes(statusAtDate)
-        })
-      }
     }
     
     return result
