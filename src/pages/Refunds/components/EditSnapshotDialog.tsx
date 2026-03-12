@@ -211,7 +211,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch {
       // Silently ignore calculation errors
     }
-  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId])
+  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId, overridePrimas, overrideAhorros])
 
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
