@@ -267,33 +267,40 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
       return refundAdminApi.updateData(refund.publicId, payload)
     },
-    onSuccess: async (updatedRefund) => {
+    onSuccess: async () => {
       const changes = getChanges(pendingData!)
 
-      // Sincronizar cache inmediatamente para evitar reabrir con datos stale
-      if (updatedRefund?.publicId) {
+      // Aplicar patch optimista en detalle usando los datos enviados
+      // (no depender de la forma de respuesta del backend)
+      if (pendingData) {
+        const rootPatch: Record<string, any> = {}
+        const snapshotPatch: Record<string, any> = {}
+        const ROOT_FIELDS: (keyof SnapshotFormValues)[] = ['estimatedAmountCLP', 'realAmount']
+
+        for (const [key, value] of Object.entries(pendingData) as [keyof SnapshotFormValues, any][]) {
+          const original = defaults[key]
+          if (value === original || value === '' || value === undefined) continue
+
+          if (ROOT_FIELDS.includes(key)) {
+            rootPatch[key] = value
+          } else {
+            snapshotPatch[key] =
+              key === 'birthDate' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+                ? `${value}T12:00:00`
+                : value
+          }
+        }
+
         queryClient.setQueriesData({ queryKey: ['refund'] }, (cached: any) => {
-          if (!cached || cached.publicId !== updatedRefund.publicId) return cached
-          return { ...cached, ...updatedRefund }
-        })
-
-        queryClient.setQueriesData({ queryKey: ['refunds'] }, (cached: any) => {
-          if (!cached) return cached
-          if (Array.isArray(cached)) {
-            return cached.map((item) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item)
+          if (!cached || cached.publicId !== refund.publicId) return cached
+          return {
+            ...cached,
+            ...rootPatch,
+            calculationSnapshot:
+              Object.keys(snapshotPatch).length > 0
+                ? { ...(cached.calculationSnapshot || {}), ...snapshotPatch }
+                : cached.calculationSnapshot,
           }
-          if (Array.isArray(cached.items)) {
-            return {
-              ...cached,
-              items: cached.items.map((item: any) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item),
-            }
-          }
-          return cached
-        })
-
-        queryClient.setQueriesData({ queryKey: ['operacion-all-refunds'] }, (cached: any) => {
-          if (!Array.isArray(cached)) return cached
-          return cached.map((item) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item)
         })
       }
 
