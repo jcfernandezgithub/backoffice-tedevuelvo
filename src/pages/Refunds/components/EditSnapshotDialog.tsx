@@ -490,10 +490,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="hipotecario">Hipotecario</SelectItem>
                           <SelectItem value="consumo">Consumo</SelectItem>
                           <SelectItem value="automotriz">Automotriz</SelectItem>
-                          <SelectItem value="comercial">Comercial</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
