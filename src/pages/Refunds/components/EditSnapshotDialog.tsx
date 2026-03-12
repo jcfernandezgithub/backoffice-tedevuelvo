@@ -200,10 +200,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro)
       if (result.error) return
 
-      form.setValue('currentMonthlyPremium', result.primaBanco)
-      form.setValue('newMonthlyPremium', result.primaPreferencial)
-      form.setValue('monthlySaving', result.ahorroMensual)
-      form.setValue('totalSaving', result.ahorroTotal)
+      if (!overridePrimas) {
+        form.setValue('currentMonthlyPremium', result.primaBanco)
+        form.setValue('newMonthlyPremium', result.primaPreferencial)
+      }
+      if (!overrideAhorros) {
+        form.setValue('monthlySaving', result.ahorroMensual)
+        form.setValue('totalSaving', result.ahorroTotal)
+      }
     } catch {
       // Silently ignore calculation errors
     }
