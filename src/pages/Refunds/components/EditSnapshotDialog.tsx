@@ -205,7 +205,21 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const watchedRemainingInstallments = form.watch('remainingInstallments')
   const watchedInsuranceType = form.watch('insuranceToEvaluate')
 
+  const dirtyFields = form.formState.dirtyFields
+  const hasCreditFieldEdits = Boolean(
+    dirtyFields.age ||
+    dirtyFields.birthDate ||
+    dirtyFields.totalAmount ||
+    dirtyFields.originalInstallments ||
+    dirtyFields.remainingInstallments ||
+    dirtyFields.insuranceToEvaluate
+  )
+
   useEffect(() => {
+    // Evita sobreescribir valores guardados al abrir el modal;
+    // recalcula solo cuando el usuario cambia campos base del crédito.
+    if (!hasCreditFieldEdits) return
+
     const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
     const age = Number(watchedAge)
     const monto = Number(watchedTotalAmount)
@@ -230,7 +244,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch {
       // Silently ignore calculation errors
     }
-  }, [watchedAge, watchedTotalAmount, watchedOriginalInstallments, watchedRemainingInstallments, watchedInsuranceType, refund.institutionId, overridePrimas, overrideAhorros])
+  }, [
+    watchedAge,
+    watchedTotalAmount,
+    watchedOriginalInstallments,
+    watchedRemainingInstallments,
+    watchedInsuranceType,
+    hasCreditFieldEdits,
+    refund.institutionId,
+    overridePrimas,
+    overrideAhorros,
+  ])
 
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
