@@ -288,6 +288,9 @@ export default function Dashboard() {
       return r.statusHistory.some((h: any) => {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') return false
+        // Validar que sea un cambio real (from !== to)
+        const from = h.from?.toLowerCase() || ''
+        if (from === to) return false
         if (!h.at) return false
         // Usar fecha local de la transición
         const transDate = h.at.split('T')[0]
