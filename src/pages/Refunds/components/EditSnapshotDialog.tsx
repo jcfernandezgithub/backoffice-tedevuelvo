@@ -183,6 +183,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const form = useForm<SnapshotFormValues>({
     resolver: zodResolver(snapshotSchema),
     defaultValues: defaults,
+  })
 
   const getResetValues = () => {
     const savedValues = latestSavedValuesRef.current
@@ -191,11 +192,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     return isRecentSave ? savedValues : defaults
   }
 
-
   // Si llegan datos frescos mientras el modal está abierto, sincronizar formulario.
   useEffect(() => {
     if (!open) return
-    form.reset(latestSavedValuesRef.current ?? defaults)
+    form.reset(getResetValues())
   }, [open, defaults])
 
   // Watch credit fields to auto-recalculate premiums
