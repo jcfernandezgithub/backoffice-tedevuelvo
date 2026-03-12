@@ -281,10 +281,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     onSuccess: async () => {
       const changes = getChanges(pendingData!)
 
-      // Aplicar patch optimista en detalle usando los datos enviados
-      // (no depender de la forma de respuesta del backend)
       if (pendingData) {
-        const rootPatch: Record<string, any> = {}
+        // Guardar último estado confirmado para reapertura inmediata del modal
+        latestSavedValuesRef.current = { ...pendingData }
+
+        // Aplicar patch optimista en detalle usando los datos enviados
+        // (no depender de la forma de respuesta del backend)
         const snapshotPatch: Record<string, any> = {}
         const ROOT_FIELDS: (keyof SnapshotFormValues)[] = ['estimatedAmountCLP', 'realAmount']
 
