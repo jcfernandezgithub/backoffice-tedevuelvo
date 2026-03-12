@@ -292,6 +292,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       if (pendingData) {
         // Guardar último estado confirmado para reapertura inmediata del modal
         latestSavedValuesRef.current = { ...pendingData }
+        latestSavedAtRef.current = Date.now()
 
         // Aplicar patch optimista en detalle usando los datos enviados
         // (no depender de la forma de respuesta del backend)
