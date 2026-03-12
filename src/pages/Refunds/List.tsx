@@ -5,6 +5,7 @@ import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { authService } from '@/services/authService'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
+import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -199,13 +200,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
 
+  // Fuente compartida con Dashboard/Operación para modo histórico
+  const {
+    data: allRefunds = [],
+    isLoading: isAllRefundsLoading,
+    error: allRefundsError,
+    refetch: refetchAllRefunds,
+  } = useAllRefunds()
+
   // Query para listado inicial (listV2)
   const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
     queryKey: ['refunds-list', filters],
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
     staleTime: 30 * 1000,
-    enabled: !useSearchEndpoint,
+    enabled: !useSearchEndpoint && !historicalStatusMode,
   })
   
   // Query para búsqueda (search endpoint)
@@ -238,14 +247,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     },
     retry: false,
     staleTime: 30 * 1000,
-    enabled: useSearchEndpoint,
+    enabled: useSearchEndpoint && !historicalStatusMode,
   })
+
+  const historicalData = useMemo(() => ({
+    total: allRefunds.length,
+    page: 1,
+    pageSize: allRefunds.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+    items: allRefunds,
+  }), [allRefunds])
   
-  // Unificar datos según el endpoint usado
-  const data = useSearchEndpoint ? searchData : listData
-  const isLoading = useSearchEndpoint ? isSearchLoading : isListLoading
-  const error = useSearchEndpoint ? searchError : listError
-  const refetch = useSearchEndpoint ? refetchSearch : refetchList
+  // Unificar datos según el endpoint/modo usado
+  const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
+  const isLoading = historicalStatusMode ? isAllRefundsLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
+  const error = historicalStatusMode ? allRefundsError : (useSearchEndpoint ? searchError : listError)
+  const refetch = historicalStatusMode ? refetchAllRefunds : (useSearchEndpoint ? refetchSearch : refetchList)
 
   // Fetch partners para mostrar nombres de alianzas
   const { data: partnersData } = useQuery({
@@ -361,7 +380,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     setSearchFilters(newSearchFilters)
-    setUseSearchEndpoint(true)
+    setUseSearchEndpoint(!historicalStatusMode)
     
     // Guardar filtros locales aplicados (los que no soporta el servidor)
     setAppliedLocalFilters({
@@ -625,7 +644,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
     // Guardrail: si hay estado seleccionado, asegurar match por estado actual
     // (protege inconsistencias del backend en filtros por status)
-    if (localFilters.status) {
+    // En modo histórico NO aplica: ahí debe contar transiciones aunque el estado final sea distinto
+    if (!historicalStatusMode && localFilters.status) {
       const statusList = String(localFilters.status)
         .split(',')
         .map(s => s.trim())
