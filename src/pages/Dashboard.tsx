@@ -764,6 +764,7 @@ export default function Dashboard() {
                   </div>
                 </TabsContent>
 
+                <TabsContent value="pagos" className="mt-4">
                   <div className="h-64">
                     {pagosAggSeries.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
