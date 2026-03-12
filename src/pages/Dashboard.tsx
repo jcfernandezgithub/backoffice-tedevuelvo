@@ -16,7 +16,7 @@ import {
 import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
-  FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff,
+  FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
