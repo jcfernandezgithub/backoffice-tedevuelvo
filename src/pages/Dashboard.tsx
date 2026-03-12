@@ -281,27 +281,35 @@ export default function Dashboard() {
   }, [filteredRefunds])
 
   // Call Center: solicitudes que transitaron a docs_received en el período (por statusHistory)
-  const callCenterCount = useMemo(() => {
-    if (!allRefunds.length) return 0
+  const callCenterRefunds = useMemo(() => {
+    if (!allRefunds.length) return []
     return allRefunds.filter((r: any) => {
       if (!r.statusHistory?.length) return false
-      // Omitir solicitudes en estado cancelado
       if (r.status?.toLowerCase() === 'canceled') return false
       return r.statusHistory.some((h: any) => {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') return false
-        // Validar que sea un cambio real (from !== to)
         const from = h.from?.toLowerCase() || ''
         if (from === to) return false
         if (!h.at) return false
-        // Usar fecha local de la transición
         const transDate = h.at.split('T')[0]
         if (desde && transDate < desde) return false
         if (hasta && transDate > hasta) return false
         return true
       })
-    }).length
+    })
   }, [allRefunds, desde, hasta])
+
+  const callCenterCount = callCenterRefunds.length
+
+  const callCenterTotalPrimas = useMemo(() => {
+    return callCenterRefunds.reduce((sum: number, r: any) => sum + (r.estimatedAmountCLP || 0), 0)
+  }, [callCenterRefunds])
+
+  const callCenterTicketPromedio = useMemo(() => {
+    if (!callCenterRefunds.length) return 0
+    return Math.round(callCenterTotalPrimas / callCenterRefunds.length)
+  }, [callCenterRefunds, callCenterTotalPrimas])
 
   const conversionRate = useMemo(() => {
     const base = totalSolicitudes - granularCounts.datos_sin_simulacion
