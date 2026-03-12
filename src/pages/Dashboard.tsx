@@ -17,6 +17,7 @@ import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
   FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
+  DollarSign, Receipt,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -281,27 +282,35 @@ export default function Dashboard() {
   }, [filteredRefunds])
 
   // Call Center: solicitudes que transitaron a docs_received en el período (por statusHistory)
-  const callCenterCount = useMemo(() => {
-    if (!allRefunds.length) return 0
+  const callCenterRefunds = useMemo(() => {
+    if (!allRefunds.length) return []
     return allRefunds.filter((r: any) => {
       if (!r.statusHistory?.length) return false
-      // Omitir solicitudes en estado cancelado
       if (r.status?.toLowerCase() === 'canceled') return false
       return r.statusHistory.some((h: any) => {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') return false
-        // Validar que sea un cambio real (from !== to)
         const from = h.from?.toLowerCase() || ''
         if (from === to) return false
         if (!h.at) return false
-        // Usar fecha local de la transición
         const transDate = h.at.split('T')[0]
         if (desde && transDate < desde) return false
         if (hasta && transDate > hasta) return false
         return true
       })
-    }).length
+    })
   }, [allRefunds, desde, hasta])
+
+  const callCenterCount = callCenterRefunds.length
+
+  const callCenterTotalPrimas = useMemo(() => {
+    return callCenterRefunds.reduce((sum: number, r: any) => sum + (r.estimatedAmountCLP || 0), 0)
+  }, [callCenterRefunds])
+
+  const callCenterTicketPromedio = useMemo(() => {
+    if (!callCenterRefunds.length) return 0
+    return Math.round(callCenterTotalPrimas / callCenterRefunds.length)
+  }, [callCenterRefunds, callCenterTotalPrimas])
 
   const conversionRate = useMemo(() => {
     const base = totalSolicitudes - granularCounts.datos_sin_simulacion
@@ -518,7 +527,7 @@ export default function Dashboard() {
         </Card>
 
         {/* KPIs de resumen */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" aria-label="Resumen general">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
@@ -533,15 +542,6 @@ export default function Dashboard() {
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
             tooltip="Solicitudes activas actualmente: en calificación, con documentos pendientes o recibidos, ingresadas, aprobadas o con pago programado."
-          />
-          <SummaryKpi
-            label="Call Center"
-            value={callCenterCount}
-            icon={Headphones}
-            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
-            valueClass="text-teal-700 dark:text-teal-300"
-            tooltip="Solicitudes que pasaron al estado 'Docs. recibidos' dentro del período seleccionado. Refleja la gestión del Call Center independiente de la fecha de creación."
-            onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
             label="Pagados"
@@ -567,13 +567,45 @@ export default function Dashboard() {
             label="Monto pagado"
             value={<Money value={totalPaidAmount} />}
             icon={Wallet}
-            className="col-span-2 md:col-span-1 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
+            className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
             tooltip="Suma del monto real pagado a clientes (campo realAmount del historial de estados). No es el monto estimado."
           />
         </section>
 
-        {/* Pipeline de etapas */}
+        {/* KPIs Call Center */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-3" aria-label="Métricas Call Center">
+          <div className="md:col-span-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Headphones className="h-3.5 w-3.5" /> Call Center
+            </h2>
+          </div>
+          <SummaryKpi
+            label="Solicitudes gestionadas"
+            value={callCenterCount}
+            icon={Headphones}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300"
+            tooltip="Solicitudes que transitaron a 'Docs. recibidos' en el período (excluye canceladas)."
+            onClick={() => goToRefunds('docs_received')}
+          />
+          <SummaryKpi
+            label="Total primas estimadas"
+            value={<Money value={callCenterTotalPrimas} />}
+            icon={DollarSign}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300 text-lg"
+            tooltip="Suma de la devolución estimada (estimatedAmountCLP) de las solicitudes gestionadas por Call Center en el período."
+          />
+          <SummaryKpi
+            label="Ticket promedio"
+            value={<Money value={callCenterTicketPromedio} />}
+            icon={Receipt}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300 text-lg"
+            tooltip="Promedio de la devolución estimada por solicitud gestionada por Call Center en el período."
+          />
+        </section>
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
