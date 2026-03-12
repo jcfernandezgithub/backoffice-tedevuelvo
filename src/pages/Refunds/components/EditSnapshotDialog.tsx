@@ -296,6 +296,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       form.reset(defaults)
       setStep('form')
       setPendingData(null)
+      setOverridePrimas(false)
+      setOverrideAhorros(false)
     }
     setOpen(isOpen)
   }
