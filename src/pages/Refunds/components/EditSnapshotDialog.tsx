@@ -267,14 +267,18 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
       return refundAdminApi.updateData(refund.publicId, payload)
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       const changes = getChanges(pendingData!)
       toast({
         title: '✅ Snapshot actualizado',
         description: `${changes.length} campo${changes.length > 1 ? 's' : ''} del cálculo actualizado${changes.length > 1 ? 's' : ''}`,
       })
-      queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] })
-      queryClient.invalidateQueries({ queryKey: ['refunds'] })
+      // Await refetch so the parent re-renders with fresh data before closing
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] }),
+        queryClient.invalidateQueries({ queryKey: ['refunds'] }),
+        queryClient.invalidateQueries({ queryKey: ['operacion-all-refunds'] }),
+      ])
       setOpen(false)
     },
     onError: (error: Error) => {
