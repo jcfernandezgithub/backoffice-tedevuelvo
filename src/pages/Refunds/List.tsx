@@ -250,15 +250,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     enabled: useSearchEndpoint && !historicalStatusMode,
   })
 
-  const historicalData = useMemo(() => ({
-    total: allRefunds.length,
-    page: 1,
-    pageSize: allRefunds.length,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-    items: allRefunds,
-  }), [allRefunds])
+  const historicalData = useMemo(() => {
+    // Omitir solicitudes canceladas del cálculo Call Center
+    const filtered = allRefunds.filter((r: any) => r.status?.toLowerCase() !== 'canceled')
+    return {
+      total: filtered.length,
+      page: 1,
+      pageSize: filtered.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      items: filtered,
+    }
+  }, [allRefunds])
   
   // Unificar datos según el endpoint/modo usado
   const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
