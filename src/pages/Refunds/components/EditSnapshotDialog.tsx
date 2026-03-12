@@ -117,6 +117,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'confirm'>('form')
   const [pendingData, setPendingData] = useState<SnapshotFormValues | null>(null)
+  const [overridePrimas, setOverridePrimas] = useState(false)
+  const [overrideAhorros, setOverrideAhorros] = useState(false)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
