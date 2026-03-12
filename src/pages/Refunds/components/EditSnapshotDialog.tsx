@@ -291,8 +291,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
           }
         }
 
-        queryClient.setQueryData<RefundRequest>(['refund', refund.publicId], (cached) => {
-          if (!cached) return cached
+        queryClient.setQueriesData({ queryKey: ['refund'] }, (cached: any) => {
+          if (!cached || cached.publicId !== refund.publicId) return cached
           return {
             ...cached,
             ...rootPatch,
