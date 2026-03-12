@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -143,41 +143,51 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     return age
   }, [])
 
-  const defaults: SnapshotFormValues = {
-    creditType: (snapshot.creditType || '').toLowerCase(),
-    insuranceToEvaluate: (snapshot.insuranceToEvaluate || '').toLowerCase(),
-    totalAmount: snapshot.totalAmount ?? undefined,
-    averageInsuredBalance: snapshot.averageInsuredBalance ?? undefined,
-    originalInstallments: snapshot.originalInstallments ?? undefined,
-    remainingInstallments: snapshot.remainingInstallments ?? undefined,
-    currentMonthlyPremium: snapshot.currentMonthlyPremium ?? undefined,
-    newMonthlyPremium: snapshot.newMonthlyPremium ?? undefined,
-    monthlySaving: snapshot.monthlySaving ?? undefined,
-    totalSaving: snapshot.totalSaving ?? undefined,
-    birthDate: snapshot.birthDate ? (() => {
-      const d = new Date(snapshot.birthDate)
-      if (isNaN(d.getTime())) return snapshot.birthDate.slice(0, 10)
-      const yyyy = d.getFullYear()
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-      return `${yyyy}-${mm}-${dd}`
-    })() : '',
-    age: snapshot.age ?? undefined,
-    rateSet: snapshot.rateSet || '',
-    estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
-    realAmount: (() => {
-      if ((refund as any).realAmount) return (refund as any).realAmount
-      const entry = [...(refund.statusHistory || [])].reverse().find(
-        (e) => (e.to === 'payment_scheduled' || e.to === 'paid') && e.realAmount
-      )
-      return entry?.realAmount ?? undefined
-    })(),
-  }
+  const defaults = useMemo<SnapshotFormValues>(() => {
+    const currentSnapshot = refund.calculationSnapshot || {}
+
+    return {
+      creditType: (currentSnapshot.creditType || '').toLowerCase(),
+      insuranceToEvaluate: (currentSnapshot.insuranceToEvaluate || '').toLowerCase(),
+      totalAmount: currentSnapshot.totalAmount ?? undefined,
+      averageInsuredBalance: currentSnapshot.averageInsuredBalance ?? undefined,
+      originalInstallments: currentSnapshot.originalInstallments ?? undefined,
+      remainingInstallments: currentSnapshot.remainingInstallments ?? undefined,
+      currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
+      newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
+      monthlySaving: currentSnapshot.monthlySaving ?? undefined,
+      totalSaving: currentSnapshot.totalSaving ?? undefined,
+      birthDate: currentSnapshot.birthDate ? (() => {
+        const d = new Date(currentSnapshot.birthDate)
+        if (isNaN(d.getTime())) return currentSnapshot.birthDate.slice(0, 10)
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        return `${yyyy}-${mm}-${dd}`
+      })() : '',
+      age: currentSnapshot.age ?? undefined,
+      rateSet: currentSnapshot.rateSet || '',
+      estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
+      realAmount: (() => {
+        if ((refund as any).realAmount) return (refund as any).realAmount
+        const entry = [...(refund.statusHistory || [])].reverse().find(
+          (e) => (e.to === 'payment_scheduled' || e.to === 'paid') && e.realAmount
+        )
+        return entry?.realAmount ?? undefined
+      })(),
+    }
+  }, [refund])
 
   const form = useForm<SnapshotFormValues>({
     resolver: zodResolver(snapshotSchema),
     defaultValues: defaults,
   })
+
+  // Si llegan datos frescos mientras el modal está abierto, sincronizar formulario.
+  useEffect(() => {
+    if (!open) return
+    form.reset(defaults)
+  }, [open, defaults])
 
   // Watch credit fields to auto-recalculate premiums
   const watchedAge = form.watch('age')
