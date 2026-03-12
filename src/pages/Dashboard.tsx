@@ -285,6 +285,8 @@ export default function Dashboard() {
     if (!allRefunds.length) return 0
     return allRefunds.filter((r: any) => {
       if (!r.statusHistory?.length) return false
+      // Omitir solicitudes en estado cancelado
+      if (r.status?.toLowerCase() === 'canceled') return false
       return r.statusHistory.some((h: any) => {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') return false
@@ -357,6 +359,8 @@ export default function Dashboard() {
     const map = new Map<string, number>()
     for (const r of allRefunds) {
       if (!r.statusHistory?.length) continue
+      // Omitir solicitudes en estado cancelado
+      if ((r as any).status?.toLowerCase() === 'canceled') continue
       for (const h of r.statusHistory as any[]) {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') continue
