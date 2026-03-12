@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Calculator } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Calculator, Unlock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 
@@ -7,6 +7,7 @@ export interface FieldChange {
   from: string
   to: string
   isAutoCalculated?: boolean
+  isManualOverride?: boolean
 }
 
 interface ConfirmChangesStepProps {
@@ -37,29 +38,37 @@ export function ConfirmChangesStep({
       </div>
 
       {(() => {
-        const manualChanges = changes.filter(c => !c.isAutoCalculated)
+        const manualChanges = changes.filter(c => !c.isAutoCalculated && !c.isManualOverride)
         const autoChanges = changes.filter(c => c.isAutoCalculated)
+        const overrideChanges = changes.filter(c => c.isManualOverride)
+
+        const ChangeRow = ({ change }: { change: FieldChange }) => (
+          <div className="px-4 py-3 space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">{change.label}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground line-through max-w-[40%] truncate">
+                {change.from || '(vacío)'}
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span className="font-medium text-foreground max-w-[40%] truncate">
+                {change.to || '(vacío)'}
+              </span>
+            </div>
+          </div>
+        )
+
         return (
           <>
-            <div className="space-y-0 rounded-lg border bg-muted/30">
-              {manualChanges.map((change, i) => (
-                <div key={change.label}>
-                  {i > 0 && <Separator />}
-                  <div className="px-4 py-3 space-y-1">
-                    <p className="text-xs font-medium text-muted-foreground">{change.label}</p>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground line-through max-w-[40%] truncate">
-                        {change.from || '(vacío)'}
-                      </span>
-                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="font-medium text-foreground max-w-[40%] truncate">
-                        {change.to || '(vacío)'}
-                      </span>
-                    </div>
+            {manualChanges.length > 0 && (
+              <div className="space-y-0 rounded-lg border bg-muted/30">
+                {manualChanges.map((change, i) => (
+                  <div key={change.label}>
+                    {i > 0 && <Separator />}
+                    <ChangeRow change={change} />
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {autoChanges.length > 0 && (
               <div className="space-y-2">
@@ -89,9 +98,41 @@ export function ConfirmChangesStep({
               </div>
             )}
 
+            {overrideChanges.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs text-destructive">
+                  <Unlock className="h-3.5 w-3.5" />
+                  <span className="font-medium">Sobrescritura manual de campos auto-calculados</span>
+                </div>
+                <div className="space-y-0 rounded-lg border border-destructive/40 bg-destructive/5">
+                  {overrideChanges.map((change, i) => (
+                    <div key={change.label}>
+                      {i > 0 && <Separator />}
+                      <div className="px-4 py-2.5 space-y-1">
+                        <p className="text-xs font-medium text-destructive/80">{change.label}</p>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground line-through max-w-[40%] truncate">
+                            {change.from || '(vacío)'}
+                          </span>
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                          <span className="font-medium text-destructive max-w-[40%] truncate">
+                            {change.to || '(vacío)'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-destructive/70 italic">
+                  ⚠ Estos valores fueron ingresados manualmente y no coinciden con el cálculo del sistema.
+                </p>
+              </div>
+            )}
+
             <p className="text-xs text-center text-muted-foreground">
-              {manualChanges.length} campo{manualChanges.length > 1 ? 's' : ''} editado{manualChanges.length > 1 ? 's' : ''}
-              {autoChanges.length > 0 && ` · ${autoChanges.length} recalculado${autoChanges.length > 1 ? 's' : ''}`}
+              {manualChanges.length > 0 && `${manualChanges.length} campo${manualChanges.length > 1 ? 's' : ''} editado${manualChanges.length > 1 ? 's' : ''}`}
+              {autoChanges.length > 0 && `${manualChanges.length > 0 ? ' · ' : ''}${autoChanges.length} recalculado${autoChanges.length > 1 ? 's' : ''}`}
+              {overrideChanges.length > 0 && `${(manualChanges.length > 0 || autoChanges.length > 0) ? ' · ' : ''}${overrideChanges.length} sobrescrito${overrideChanges.length > 1 ? 's' : ''}`}
             </p>
           </>
         )
