@@ -742,7 +742,28 @@ export default function Dashboard() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="pagos" className="mt-4">
+                <TabsContent value="callcenter" className="mt-4">
+                  <div className="h-64">
+                    {callCenterAggSeries.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={callCenterAggSeries} barSize={14}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                          <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
+                          <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                          <RechartsTooltip
+                            formatter={(v: number) => [`${v} gestiones`, 'Call Center']}
+                            labelFormatter={l => `Período: ${l}`}
+                            contentStyle={{ borderRadius: 8, fontSize: 12 }}
+                          />
+                          <Bar dataKey="value" fill="hsl(172,66%,50%)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <EmptyChart />
+                    )}
+                  </div>
+                </TabsContent>
+
                   <div className="h-64">
                     {pagosAggSeries.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
