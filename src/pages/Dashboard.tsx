@@ -582,7 +582,39 @@ export default function Dashboard() {
           />
         </section>
 
-        {/* Pipeline de etapas */}
+        {/* KPIs Call Center */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-3" aria-label="Métricas Call Center">
+          <div className="md:col-span-3">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <Headphones className="h-3.5 w-3.5" /> Call Center
+            </h2>
+          </div>
+          <SummaryKpi
+            label="Solicitudes gestionadas"
+            value={callCenterCount}
+            icon={Headphones}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300"
+            tooltip="Solicitudes que transitaron a 'Docs. recibidos' en el período (excluye canceladas)."
+            onClick={() => goToRefunds('docs_received')}
+          />
+          <SummaryKpi
+            label="Total primas estimadas"
+            value={<Money value={callCenterTotalPrimas} />}
+            icon={DollarSign}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300 text-lg"
+            tooltip="Suma de la devolución estimada (estimatedAmountCLP) de las solicitudes gestionadas por Call Center en el período."
+          />
+          <SummaryKpi
+            label="Ticket promedio"
+            value={<Money value={callCenterTicketPromedio} />}
+            icon={Receipt}
+            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
+            valueClass="text-teal-700 dark:text-teal-300 text-lg"
+            tooltip="Promedio de la devolución estimada por solicitud gestionada por Call Center en el período."
+          />
+        </section>
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
