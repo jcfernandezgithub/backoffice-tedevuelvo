@@ -645,8 +645,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
     
-    // En modo histórico, filtrar por solicitudes que estuvieron en el estado seleccionado
-    // durante el rango de fechas [from, to]
+    // En modo histórico, filtrar por solicitudes que TRANSITARON al estado seleccionado
+    // durante el rango de fechas [from, to], sin importar su estado actual
     if (historicalStatusMode && localFilters.status) {
       const fromDate = localFilters.from || '2000-01-01'
       const toDate = localFilters.to || toLocalDateString(new Date())
@@ -657,14 +657,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => 
         statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
       )
-
-      // Consistencia visual/funcional: el estado mostrado en la fecha también debe coincidir
-      if (localFilters.to) {
-        result = result.filter((r: any) => {
-          const statusAtDate = getStatusAtDate(r, localFilters.to!)
-          return statusList.includes(statusAtDate)
-        })
-      }
     }
     
     return result
