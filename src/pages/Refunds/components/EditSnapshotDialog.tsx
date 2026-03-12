@@ -267,13 +267,41 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
       return refundAdminApi.updateData(refund.publicId, payload)
     },
-    onSuccess: async () => {
+    onSuccess: async (updatedRefund) => {
       const changes = getChanges(pendingData!)
+
+      // Sincronizar cache inmediatamente para evitar reabrir con datos stale
+      if (updatedRefund?.publicId) {
+        queryClient.setQueriesData({ queryKey: ['refund'] }, (cached: any) => {
+          if (!cached || cached.publicId !== updatedRefund.publicId) return cached
+          return { ...cached, ...updatedRefund }
+        })
+
+        queryClient.setQueriesData({ queryKey: ['refunds'] }, (cached: any) => {
+          if (!cached) return cached
+          if (Array.isArray(cached)) {
+            return cached.map((item) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item)
+          }
+          if (Array.isArray(cached.items)) {
+            return {
+              ...cached,
+              items: cached.items.map((item: any) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item),
+            }
+          }
+          return cached
+        })
+
+        queryClient.setQueriesData({ queryKey: ['operacion-all-refunds'] }, (cached: any) => {
+          if (!Array.isArray(cached)) return cached
+          return cached.map((item) => item.publicId === updatedRefund.publicId ? { ...item, ...updatedRefund } : item)
+        })
+      }
+
       toast({
         title: '✅ Snapshot actualizado',
         description: `${changes.length} campo${changes.length > 1 ? 's' : ''} del cálculo actualizado${changes.length > 1 ? 's' : ''}`,
       })
-      // Await refetch so the parent re-renders with fresh data before closing
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] }),
         queryClient.invalidateQueries({ queryKey: ['refunds'] }),
