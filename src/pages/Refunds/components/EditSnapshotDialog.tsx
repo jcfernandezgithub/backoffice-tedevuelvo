@@ -439,73 +439,187 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
-              <Section icon={Shield} title="Primas y seguros (auto-calculado)">
-                <FormField
-                  control={form.control}
-                  name="currentMonthlyPremium"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Prima mensual actual</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="newMonthlyPremium"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Nueva prima mensual</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </Section>
+              {/* ---- Primas y seguros ---- */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                      Primas y seguros
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={overridePrimas ? 'destructive' : 'ghost'}
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={() => setOverridePrimas(!overridePrimas)}
+                  >
+                    {overridePrimas ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    {overridePrimas ? 'Modo manual' : 'Desbloquear'}
+                  </Button>
+                </div>
+
+                {overridePrimas && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Estás sobrescribiendo valores auto-calculados. Los cambios en datos del crédito no actualizarán estos campos.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField
+                    control={form.control}
+                    name="currentMonthlyPremium"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Prima mensual actual</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                            {overridePrimas ? (
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="numeric"
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                                  field.onChange(val === '' ? '' : val)
+                                }}
+                                className="pl-7 border-destructive/50 focus-visible:ring-destructive/30"
+                              />
+                            ) : (
+                              <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                            )}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="newMonthlyPremium"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Nueva prima mensual</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                            {overridePrimas ? (
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="numeric"
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                                  field.onChange(val === '' ? '' : val)
+                                }}
+                                className="pl-7 border-destructive/50 focus-visible:ring-destructive/30"
+                              />
+                            ) : (
+                              <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                            )}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
               <Separator />
 
-              <Section icon={TrendingUp} title="Ahorros calculados (auto-calculado)">
-                <FormField
-                  control={form.control}
-                  name="monthlySaving"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Ahorro mensual</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="totalSaving"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Ahorro total</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </Section>
+              {/* ---- Ahorros calculados ---- */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                      Ahorros calculados
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={overrideAhorros ? 'destructive' : 'ghost'}
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={() => setOverrideAhorros(!overrideAhorros)}
+                  >
+                    {overrideAhorros ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+                    {overrideAhorros ? 'Modo manual' : 'Desbloquear'}
+                  </Button>
+                </div>
+
+                {overrideAhorros && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Estás sobrescribiendo valores auto-calculados. Los cambios en datos del crédito no actualizarán estos campos.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <FormField
+                    control={form.control}
+                    name="monthlySaving"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Ahorro mensual</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                            {overrideAhorros ? (
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="numeric"
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                                  field.onChange(val === '' ? '' : val)
+                                }}
+                                className="pl-7 border-destructive/50 focus-visible:ring-destructive/30"
+                              />
+                            ) : (
+                              <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                            )}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="totalSaving"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Ahorro total</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                            {overrideAhorros ? (
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="numeric"
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                                  field.onChange(val === '' ? '' : val)
+                                }}
+                                className="pl-7 border-destructive/50 focus-visible:ring-destructive/30"
+                              />
+                            ) : (
+                              <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                            )}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
               <Separator />
 
