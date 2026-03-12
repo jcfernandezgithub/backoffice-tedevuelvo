@@ -359,6 +359,8 @@ export default function Dashboard() {
     const map = new Map<string, number>()
     for (const r of allRefunds) {
       if (!r.statusHistory?.length) continue
+      // Omitir solicitudes en estado cancelado
+      if ((r as any).status?.toLowerCase() === 'canceled') continue
       for (const h of r.statusHistory as any[]) {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') continue
