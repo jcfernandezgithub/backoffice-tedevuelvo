@@ -119,6 +119,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [pendingData, setPendingData] = useState<SnapshotFormValues | null>(null)
   const [overridePrimas, setOverridePrimas] = useState(false)
   const [overrideAhorros, setOverrideAhorros] = useState(false)
+  const latestSavedValuesRef = useRef<SnapshotFormValues | null>(null)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
 
