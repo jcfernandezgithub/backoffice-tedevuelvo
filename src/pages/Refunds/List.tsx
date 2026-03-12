@@ -80,15 +80,11 @@ const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
   return (lastEntry.to?.toLowerCase() || refund.status) as RefundStatus
 }
 
-// Verificar si una solicitud CAMBIÓ a un estado dado durante un rango de fechas
+// Verificar si una solicitud TRANSITÓ a un estado dado durante un rango de fechas
 // Busca en el statusHistory si existe una transición AL estado objetivo
 // cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
-// Y además valida que el estado ACTUAL de la solicitud coincida con el objetivo
+// NO requiere que el estado actual coincida — captura toda solicitud que pasó por ese estado en el período
 const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
-  // Verificar que el estado actual coincida con el objetivo
-  const currentStatus = (refund.status?.toLowerCase() || '') as string
-  if (currentStatus !== targetStatus) return false
-
   if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
     return false
   }
