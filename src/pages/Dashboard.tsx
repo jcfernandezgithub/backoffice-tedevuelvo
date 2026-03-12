@@ -503,6 +503,7 @@ export default function Dashboard() {
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
             tooltip="Solicitudes que pasaron al estado 'Docs. recibidos' dentro del período seleccionado. Refleja la gestión del Call Center independiente de la fecha de creación."
+            onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
             label="Pagados"
