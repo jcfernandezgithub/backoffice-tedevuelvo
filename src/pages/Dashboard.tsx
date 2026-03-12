@@ -527,7 +527,7 @@ export default function Dashboard() {
         </Card>
 
         {/* KPIs de resumen */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" aria-label="Resumen general">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
@@ -542,15 +542,6 @@ export default function Dashboard() {
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
             tooltip="Solicitudes activas actualmente: en calificación, con documentos pendientes o recibidos, ingresadas, aprobadas o con pago programado."
-          />
-          <SummaryKpi
-            label="Call Center"
-            value={callCenterCount}
-            icon={Headphones}
-            className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
-            valueClass="text-teal-700 dark:text-teal-300"
-            tooltip="Solicitudes que pasaron al estado 'Docs. recibidos' dentro del período seleccionado. Refleja la gestión del Call Center independiente de la fecha de creación."
-            onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
             label="Pagados"
