@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.6
+## Versión 3.2.7
 
 ## Changelog
+
+### Versión 3.2.7 - 2026-03-12
+
+#### Corrección de datos obsoletos al reabrir editor de snapshot
+- **Protección contra datos stale**: al reabrir inmediatamente el editor de snapshot tras guardar, los valores guardados se mantienen correctamente gracias a un puente de estado local (`latestSavedValuesRef`) con ventana de 15 segundos.
+- **Recálculo condicional**: la auto-calculación de primas y ahorros ahora solo se ejecuta cuando el usuario modifica explícitamente campos de crédito (`age`, `totalAmount`, `originalInstallments`, `remainingInstallments`), evitando sobrescribir valores recién guardados al montar el modal.
+
+#### Simplificación de tipos de crédito
+- **Eliminación de opciones no utilizadas**: se removieron "Hipotecario" y "Comercial" del combo de tipo de crédito en el editor de snapshot, dejando solo "Consumo" y "Automotriz".
+
+---
 
 ### Versión 3.2.6 - 2026-03-07
 
