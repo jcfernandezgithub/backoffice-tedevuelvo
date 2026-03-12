@@ -784,7 +784,7 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false,
+  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick,
 }: {
   label: string
   value: number | string | React.ReactNode
@@ -793,9 +793,10 @@ function SummaryKpi({
   valueClass?: string
   tooltip?: string
   alert?: boolean
+  onClick?: () => void
 }): React.ReactElement {
   const card = (
-    <Card className={`border relative ${className}`}>
+    <Card className={`border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       {alert && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
