@@ -360,7 +360,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      form.reset(latestSavedValuesRef.current ?? defaults)
+      form.reset(getResetValues())
       setStep('form')
       setPendingData(null)
       setOverridePrimas(false)
