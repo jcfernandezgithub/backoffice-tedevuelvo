@@ -280,6 +280,24 @@ export default function Dashboard() {
       }, 0)
   }, [filteredRefunds])
 
+  // Call Center: solicitudes que transitaron a docs_received en el período (por statusHistory)
+  const callCenterCount = useMemo(() => {
+    if (!allRefunds.length) return 0
+    return allRefunds.filter((r: any) => {
+      if (!r.statusHistory?.length) return false
+      return r.statusHistory.some((h: any) => {
+        const to = h.to?.toLowerCase()
+        if (to !== 'docs_received') return false
+        if (!h.at) return false
+        // Usar fecha local de la transición
+        const transDate = h.at.split('T')[0]
+        if (desde && transDate < desde) return false
+        if (hasta && transDate > hasta) return false
+        return true
+      })
+    }).length
+  }, [allRefunds, desde, hasta])
+
   const conversionRate = useMemo(() => {
     const base = totalSolicitudes - granularCounts.datos_sin_simulacion
     if (!base) return 0
