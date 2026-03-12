@@ -380,7 +380,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     setSearchFilters(newSearchFilters)
-    setUseSearchEndpoint(true)
+    setUseSearchEndpoint(!historicalStatusMode)
     
     // Guardar filtros locales aplicados (los que no soporta el servidor)
     setAppliedLocalFilters({
