@@ -200,13 +200,21 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
 
+  // Fuente compartida con Dashboard/Operación para modo histórico
+  const {
+    data: allRefunds = [],
+    isLoading: isAllRefundsLoading,
+    error: allRefundsError,
+    refetch: refetchAllRefunds,
+  } = useAllRefunds()
+
   // Query para listado inicial (listV2)
   const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
     queryKey: ['refunds-list', filters],
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
     staleTime: 30 * 1000,
-    enabled: !useSearchEndpoint,
+    enabled: !useSearchEndpoint && !historicalStatusMode,
   })
   
   // Query para búsqueda (search endpoint)
@@ -239,14 +247,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     },
     retry: false,
     staleTime: 30 * 1000,
-    enabled: useSearchEndpoint,
+    enabled: useSearchEndpoint && !historicalStatusMode,
   })
+
+  const historicalData = useMemo(() => ({
+    total: allRefunds.length,
+    page: 1,
+    pageSize: allRefunds.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+    items: allRefunds,
+  }), [allRefunds])
   
-  // Unificar datos según el endpoint usado
-  const data = useSearchEndpoint ? searchData : listData
-  const isLoading = useSearchEndpoint ? isSearchLoading : isListLoading
-  const error = useSearchEndpoint ? searchError : listError
-  const refetch = useSearchEndpoint ? refetchSearch : refetchList
+  // Unificar datos según el endpoint/modo usado
+  const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
+  const isLoading = historicalStatusMode ? isAllRefundsLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
+  const error = historicalStatusMode ? allRefundsError : (useSearchEndpoint ? searchError : listError)
+  const refetch = historicalStatusMode ? refetchAllRefunds : (useSearchEndpoint ? refetchSearch : refetchList)
 
   // Fetch partners para mostrar nombres de alianzas
   const { data: partnersData } = useQuery({
