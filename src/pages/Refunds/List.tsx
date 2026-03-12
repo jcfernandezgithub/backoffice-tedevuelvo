@@ -644,7 +644,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
     // Guardrail: si hay estado seleccionado, asegurar match por estado actual
     // (protege inconsistencias del backend en filtros por status)
-    if (localFilters.status) {
+    // En modo histórico NO aplica: ahí debe contar transiciones aunque el estado final sea distinto
+    if (!historicalStatusMode && localFilters.status) {
       const statusList = String(localFilters.status)
         .split(',')
         .map(s => s.trim())
