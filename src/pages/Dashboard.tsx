@@ -285,6 +285,8 @@ export default function Dashboard() {
     if (!allRefunds.length) return 0
     return allRefunds.filter((r: any) => {
       if (!r.statusHistory?.length) return false
+      // Omitir solicitudes en estado cancelado
+      if (r.status?.toLowerCase() === 'canceled') return false
       return r.statusHistory.some((h: any) => {
         const to = h.to?.toLowerCase()
         if (to !== 'docs_received') return false
