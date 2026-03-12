@@ -567,7 +567,7 @@ export default function Dashboard() {
             label="Monto pagado"
             value={<Money value={totalPaidAmount} />}
             icon={Wallet}
-            className="col-span-2 md:col-span-1 border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
+            className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
             tooltip="Suma del monto real pagado a clientes (campo realAmount del historial de estados). No es el monto estimado."
           />
