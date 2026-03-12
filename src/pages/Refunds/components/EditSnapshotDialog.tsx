@@ -222,11 +222,16 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     for (const [key, value] of Object.entries(data) as [keyof SnapshotFormValues, any][]) {
       const original = defaults[key]
       if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      const isAutoField = AUTO_CALCULATED_FIELDS.includes(key)
+      const isManuallyOverridden = 
+        (key === 'currentMonthlyPremium' || key === 'newMonthlyPremium') ? overridePrimas :
+        (key === 'monthlySaving' || key === 'totalSaving') ? overrideAhorros : false
       changes.push({
         label: FIELD_LABELS[key] || key,
         from: String(original ?? ''),
         to: String(value),
-        isAutoCalculated: AUTO_CALCULATED_FIELDS.includes(key),
+        isAutoCalculated: isAutoField && !isManuallyOverridden,
+        isManualOverride: isAutoField && isManuallyOverridden,
       })
     }
     return changes
