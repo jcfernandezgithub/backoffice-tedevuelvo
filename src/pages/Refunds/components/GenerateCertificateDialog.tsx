@@ -479,13 +479,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     
-    // Primero intentar usar Prima Única directa desde snapshot (newMonthlyPremium × remainingInstallments)
-    const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
-    if (primaUnicaDirecta !== null) {
-      return Math.round(primaUnicaDirecta)
-    }
-    
-    // Fallback: calcular usando TBM
+    // Siempre calcular usando la fórmula legal: Saldo × TBM/1000 × Nper
     const tbm = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
