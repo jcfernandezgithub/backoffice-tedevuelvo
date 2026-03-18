@@ -75,7 +75,7 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   originalInstallments: 'Cuotas originales',
   remainingInstallments: 'Cuotas restantes',
   confirmedTotalAmount: 'Monto total crédito (confirmado)',
-  confirmedAverageInsuredBalance: 'Saldo asegurado promedio (confirmado)',
+  confirmedAverageInsuredBalance: 'Saldo insoluto (confirmado)',
   confirmedOriginalInstallments: 'Cuotas originales (confirmado)',
   confirmedRemainingInstallments: 'Cuotas restantes (confirmado)',
   currentMonthlyPremium: 'Prima mensual actual',
