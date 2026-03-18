@@ -986,9 +986,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const totalSaving = snap.totalSaving || 0
                             const primaTotalBanco = currentPremium * remaining
                             const primaTotalTDV = newPremium * remaining
+                            const MARGEN_FIJO = 10
                             const devolucionBruta = primaTotalBanco - primaTotalTDV
-                            const margen = devolucionBruta > 0 ? Math.round((1 - totalSaving / devolucionBruta) * 100) : 10
-                            const margenEfectivo = margen >= 0 ? margen : 10
+                            const totalCalculado = Math.round(devolucionBruta * (1 - MARGEN_FIJO / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
