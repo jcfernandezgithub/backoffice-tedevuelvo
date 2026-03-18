@@ -986,9 +986,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const totalSaving = snap.totalSaving || 0
                             const primaTotalBanco = currentPremium * remaining
                             const primaTotalTDV = newPremium * remaining
+                            const MARGEN_FIJO = 10
                             const devolucionBruta = primaTotalBanco - primaTotalTDV
-                            const margen = devolucionBruta > 0 ? Math.round((1 - totalSaving / devolucionBruta) * 100) : 10
-                            const margenEfectivo = margen >= 0 ? margen : 10
+                            const totalCalculado = Math.round(devolucionBruta * (1 - MARGEN_FIJO / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1028,10 +1028,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   {/* Step 3: Apply margin */}
                                   <div className="space-y-1">
-                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenEfectivo}%)</p>
+                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({MARGEN_FIJO}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - margenEfectivo) / 100).toFixed(2)}</p>
-                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalSaving.toLocaleString('es-CL')} CLP</p>
+                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - MARGEN_FIJO) / 100).toFixed(2)}</p>
+                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalCalculado.toLocaleString('es-CL')} CLP</p>
                                     </div>
                                   </div>
                                 </div>
