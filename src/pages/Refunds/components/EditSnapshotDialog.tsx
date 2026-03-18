@@ -576,7 +576,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   name="averageInsuredBalance"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs">Saldo asegurado promedio</FormLabel>
+                      <FormLabel className="text-xs">Saldo insoluto</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
