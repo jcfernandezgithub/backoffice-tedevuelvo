@@ -164,9 +164,9 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         }
       }
       
-      // Código de producto según monto del crédito
-      const montoCredito = calculation.totalAmount || 0
-      const codigoProducto = montoCredito < 20000000 ? '342' : '344'
+      // Código de producto según saldo insoluto del crédito
+      const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
+      const codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
       
       // Prima seguro = nueva prima mensual * cuotas restantes
       const cuotasRestantes = calculation.remainingInstallments || 0
