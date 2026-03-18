@@ -278,16 +278,15 @@ export const calcularDevolucion = (
       }
 
       const { tasa: tasaActual, cuotasUtilizadas, montoRedondeado } = resultadoTasa;
-      const tasaPreferencial = montoCredito > UMBRAL_MONTO_ALTO
+      const tasaPreferencial = saldo > UMBRAL_MONTO_ALTO
         ? (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55_ALTO : TASA_PREFERENCIAL_DESDE_56_ALTO)
         : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
 
-      const primaUnicaActual = montoCredito * tasaActual;
+      const primaUnicaActual = saldo * tasaActual;
       const seguroTotalActual = (primaUnicaActual / cuotasUtilizadas) * cuotasTotales;
       const primaMensualActual = seguroTotalActual / cuotasTotales;
       const seguroRestanteActual = primaMensualActual * cuotasPendientes;
-      const montoRestanteCredito = Math.round((montoCredito * (cuotasPendientes / cuotasTotales)));
-      const seguroTotalPreferencial = montoRestanteCredito * tasaPreferencial * cuotasPendientes;
+      const seguroTotalPreferencial = saldo * tasaPreferencial * cuotasPendientes;
       const primaMensualPreferencial = seguroTotalPreferencial / cuotasPendientes;
       const seguroRestantePreferencial = primaMensualPreferencial * cuotasPendientes;
       const devolucionDesgravamen = seguroRestanteActual - seguroRestantePreferencial;
@@ -300,7 +299,7 @@ export const calcularDevolucion = (
         tasaPreferencial,
         cuotasUtilizadas,
         montoRedondeado,
-        montoRestanteCredito,
+        montoRestanteCredito: saldo,
         primaUnicaBanco: Math.round(primaUnicaActual),
         seguroTotalBanco: Math.round(seguroTotalActual),
         seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
