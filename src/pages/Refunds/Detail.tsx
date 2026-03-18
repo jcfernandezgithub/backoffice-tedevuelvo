@@ -873,6 +873,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         </div>
                       )
                     })()}
+                    </>
                   ) : (
                     <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
                       {JSON.stringify(refund.calculationSnapshot, null, 2)}
