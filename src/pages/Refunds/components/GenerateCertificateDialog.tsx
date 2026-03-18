@@ -267,7 +267,7 @@ const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
   
   // newMonthlyPremium es la nueva prima mensual preferencial
   const newMonthlyPremium = snapshot?.newMonthlyPremium
-  const remainingInstallments = snapshot?.remainingInstallments
+  const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
   
   if (typeof newMonthlyPremium === 'number' && typeof remainingInstallments === 'number' && newMonthlyPremium > 0 && remainingInstallments > 0) {
     const primaUnica = newMonthlyPremium * remainingInstallments
@@ -284,7 +284,7 @@ const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
 const getTasaFromPrimaUnica = (refund: RefundRequest, saldoInsoluto: number): number | null => {
   const snapshot = refund.calculationSnapshot
   const primaUnica = getPrimaUnicaFromSnapshot(refund)
-  const remainingInstallments = snapshot?.remainingInstallments
+  const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
   
   if (primaUnica && saldoInsoluto > 0 && remainingInstallments && remainingInstallments > 0) {
     // TBM = (Prima Única / (Saldo Insoluto × Nper)) × 1000
