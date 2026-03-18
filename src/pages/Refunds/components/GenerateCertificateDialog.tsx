@@ -479,13 +479,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     
-    // Primero intentar usar Prima Única directa desde snapshot (newMonthlyPremium × remainingInstallments)
-    const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
-    if (primaUnicaDirecta !== null) {
-      return Math.round(primaUnicaDirecta)
-    }
-    
-    // Fallback: calcular usando TBM
+    // Siempre calcular usando la fórmula legal: Saldo × TBM/1000 × Nper
     const tbm = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
@@ -545,14 +539,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     const ageValue = refund.calculationSnapshot?.age
     const tcValue = getTasaBrutaMensualPrime(ageValue)
     
-    // Prima Única: primero intentar desde snapshot (newMonthlyPremium × remainingInstallments), luego calcular
-    let primaUnica: number
-    const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
-    if (primaUnicaDirecta !== null) {
-      primaUnica = Math.round(primaUnicaDirecta)
-    } else {
-      primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
-    }
+    // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
+    const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
     const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
     // ===================== CARÁTULA - PAGE 1 =====================
@@ -1689,14 +1677,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
       const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       
-      // Prima Única: primero intentar desde snapshot, luego calcular
-      let primaUnica: number
-      const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
-      if (primaUnicaDirecta !== null) {
-        primaUnica = Math.round(primaUnicaDirecta)
-      } else {
-        primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
-      }
+      // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
+      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
       // ===================== CARÁTULA - PAGE 1 =====================

@@ -165,16 +165,9 @@ export const generateBancoChilePrimePDF = async (
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual344(ageValue)
   
-  // Prima Única: primero intentar desde snapshot (newMonthlyPremium × remainingInstallments), luego calcular
-  let primaUnica: number
-  const newMonthlyPremium = refund.calculationSnapshot?.newMonthlyPremium
-  if (typeof newMonthlyPremium === 'number' && newMonthlyPremium > 0 && nperValue > 0) {
-    primaUnica = Math.round(newMonthlyPremium * nperValue)
-    console.log('Banco Chile Prime PDF - Prima Única desde snapshot:', { newMonthlyPremium, nperValue, primaUnica })
-  } else {
-    primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
-    console.log('Banco Chile Prime PDF - Prima Única calculada con TBM:', { saldoInsoluto, tcValue, nperValue, primaUnica })
-  }
+  // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
+  const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+  console.log('Banco Chile Prime PDF - Prima Única calculada con TBM:', { saldoInsoluto, tcValue, nperValue, primaUnica })
   const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
   // ===================== CARÁTULA - PAGE 1 =====================
@@ -1517,16 +1510,9 @@ export const generateBancoChileStandardPDF = async (
   const ageValue = refund.calculationSnapshot?.age
   const tcValue = getTasaBrutaMensual342(ageValue)
   
-  // Prima Única: primero intentar desde snapshot (newMonthlyPremium × remainingInstallments), luego calcular
-  let primaUnica: number
-  const newMonthlyPremium = refund.calculationSnapshot?.newMonthlyPremium
-  if (typeof newMonthlyPremium === 'number' && newMonthlyPremium > 0 && nperValue > 0) {
-    primaUnica = Math.round(newMonthlyPremium * nperValue)
-    console.log('Banco Chile Standard PDF - Prima Única desde snapshot:', { newMonthlyPremium, nperValue, primaUnica })
-  } else {
-    primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
-    console.log('Banco Chile Standard PDF - Prima Única calculada con TBM:', { saldoInsoluto, tcValue, nperValue, primaUnica })
-  }
+  // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
+  const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+  console.log('Banco Chile Standard PDF - Prima Única calculada con TBM:', { saldoInsoluto, tcValue, nperValue, primaUnica })
   const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
   // ===================== CARÁTULA - PAGE 1 =====================
