@@ -1688,7 +1688,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
       // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
-      const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
+      const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
       const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       
       // Prima Única: primero intentar desde snapshot, luego calcular
