@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, memo } from 'react'
+import type { Control } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
@@ -117,6 +118,61 @@ function Section({
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
+
+/* ---- Extracted NumberField to avoid re-mount on parent re-render ---- */
+const NumberField = memo(function NumberField({
+  name,
+  label,
+  prefix,
+  suffix,
+  className,
+  control,
+}: {
+  name: keyof SnapshotFormValues
+  label: string
+  prefix?: string
+  suffix?: string
+  className?: string
+  control: Control<SnapshotFormValues>
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel className="text-xs">{label}</FormLabel>
+          <FormControl>
+            <div className="relative">
+              {prefix && (
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {prefix}
+                </span>
+              )}
+              <Input
+                {...field}
+                value={field.value ?? ''}
+                type="text"
+                inputMode="numeric"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                  field.onChange(val === '' ? '' : val)
+                }}
+                className={prefix ? 'pl-7' : ''}
+              />
+              {suffix && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {suffix}
+                </span>
+              )}
+            </div>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+})
 
 interface EditSnapshotDialogProps {
   refund: RefundRequest
@@ -251,12 +307,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       if (result.error) return
 
       if (!overridePrimas) {
-        form.setValue('currentMonthlyPremium', result.primaBanco)
-        form.setValue('newMonthlyPremium', result.primaPreferencial)
+        form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false })
+        form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false })
       }
       if (!overrideAhorros) {
-        form.setValue('monthlySaving', result.ahorroMensual)
-        form.setValue('totalSaving', result.ahorroTotal)
+        form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false })
+        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false })
       }
     } catch {
       // Silently ignore calculation errors
@@ -413,56 +469,6 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     setOpen(isOpen)
   }
 
-  /* ---- Field helpers ---- */
-
-  const NumberField = ({
-    name,
-    label,
-    prefix,
-    suffix,
-    className,
-  }: {
-    name: keyof SnapshotFormValues
-    label: string
-    prefix?: string
-    suffix?: string
-    className?: string
-  }) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem className={className}>
-          <FormLabel className="text-xs">{label}</FormLabel>
-          <FormControl>
-            <div className="relative">
-              {prefix && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {prefix}
-                </span>
-              )}
-              <Input
-                {...field}
-                type="text"
-                inputMode="numeric"
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.]/g, '')
-                  field.onChange(val === '' ? '' : val)
-                }}
-                className={prefix ? 'pl-7' : ''}
-              />
-              {suffix && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {suffix}
-                </span>
-              )}
-            </div>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -628,10 +634,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   Confirma los valores definitivos del crédito. Puedes copiar los datos de la simulación o ingresarlos manualmente.
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <NumberField name="confirmedTotalAmount" label="Monto total crédito" prefix="$" />
-                  <NumberField name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
-                  <NumberField name="confirmedOriginalInstallments" label="Cuotas originales" />
-                  <NumberField name="confirmedRemainingInstallments" label="Cuotas restantes" />
+                  <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito" prefix="$" />
+                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
+                  <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales" />
+                  <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes" />
                 </div>
               </div>
 
@@ -822,8 +828,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
               <Separator />
 
               <Section icon={TrendingUp} title="Montos de devolución">
-                <NumberField name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
-                <NumberField name="realAmount" label="Monto real devolución" prefix="$" />
+                <NumberField control={form.control} name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
+                <NumberField control={form.control} name="realAmount" label="Monto real devolución" prefix="$" />
               </Section>
 
               <Separator />
