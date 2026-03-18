@@ -48,11 +48,11 @@ const snapshotSchema = z.object({
   averageInsuredBalance: z.coerce.number().min(0).optional(),
   originalInstallments: z.coerce.number().int().min(0).optional(),
   remainingInstallments: z.coerce.number().int().min(0).optional(),
-  // Confirmed credit fields (definitive values)
-  confirmedTotalAmount: z.coerce.number().min(0).optional(),
-  confirmedAverageInsuredBalance: z.coerce.number().min(0).optional(),
-  confirmedOriginalInstallments: z.coerce.number().int().min(0).optional(),
-  confirmedRemainingInstallments: z.coerce.number().int().min(0).optional(),
+  // Confirmed credit fields (required - must be filled before saving)
+  confirmedTotalAmount: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
+  confirmedAverageInsuredBalance: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
+  confirmedOriginalInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
+  confirmedRemainingInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
