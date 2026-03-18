@@ -48,11 +48,11 @@ const snapshotSchema = z.object({
   averageInsuredBalance: z.coerce.number().min(0).optional(),
   originalInstallments: z.coerce.number().int().min(0).optional(),
   remainingInstallments: z.coerce.number().int().min(0).optional(),
-  // Confirmed credit fields (definitive values)
-  confirmedTotalAmount: z.coerce.number().min(0).optional(),
-  confirmedAverageInsuredBalance: z.coerce.number().min(0).optional(),
-  confirmedOriginalInstallments: z.coerce.number().int().min(0).optional(),
-  confirmedRemainingInstallments: z.coerce.number().int().min(0).optional(),
+  // Confirmed credit fields (required - must be filled before saving)
+  confirmedTotalAmount: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
+  confirmedAverageInsuredBalance: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
+  confirmedOriginalInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
+  confirmedRemainingInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
@@ -220,10 +220,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       averageInsuredBalance: currentSnapshot.averageInsuredBalance ?? undefined,
       originalInstallments: currentSnapshot.originalInstallments ?? undefined,
       remainingInstallments: currentSnapshot.remainingInstallments ?? undefined,
-      confirmedTotalAmount: currentSnapshot.confirmedTotalAmount ?? undefined,
-      confirmedAverageInsuredBalance: currentSnapshot.confirmedAverageInsuredBalance ?? undefined,
-      confirmedOriginalInstallments: currentSnapshot.confirmedOriginalInstallments ?? undefined,
-      confirmedRemainingInstallments: currentSnapshot.confirmedRemainingInstallments ?? undefined,
+      confirmedTotalAmount: currentSnapshot.confirmedTotalAmount ?? '',
+      confirmedAverageInsuredBalance: currentSnapshot.confirmedAverageInsuredBalance ?? '',
+      confirmedOriginalInstallments: currentSnapshot.confirmedOriginalInstallments ?? '',
+      confirmedRemainingInstallments: currentSnapshot.confirmedRemainingInstallments ?? '',
       currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
       newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
       monthlySaving: currentSnapshot.monthlySaving ?? undefined,
@@ -361,10 +361,16 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       const snapshotPatch: Record<string, any> = {}
       const rootPatch: Record<string, any> = {}
       const ROOT_FIELDS = ['estimatedAmountCLP', 'realAmount']
+      const ALWAYS_SEND_FIELDS = [
+        'confirmedTotalAmount', 'confirmedAverageInsuredBalance',
+        'confirmedOriginalInstallments', 'confirmedRemainingInstallments',
+      ]
 
       for (const [key, value] of Object.entries(values) as [keyof SnapshotFormValues, any][]) {
         const original = defaults[key]
-        if (value === original || value === '' || value === undefined) continue
+        const isAlwaysSend = ALWAYS_SEND_FIELDS.includes(key)
+        if (!isAlwaysSend && (value === original || value === '' || value === undefined)) continue
+        if (value === '' || value === undefined) continue
         
         if (ROOT_FIELDS.includes(key)) {
           rootPatch[key] = value
@@ -631,13 +637,13 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Confirma los valores definitivos del crédito. Puedes copiar los datos de la simulación o ingresarlos manualmente.
+                  Confirma los valores definitivos del crédito. Estos campos son <span className="font-semibold text-foreground">obligatorios</span> para guardar cambios.
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito" prefix="$" />
-                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
-                  <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales" />
-                  <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes" />
+                  <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales *" />
+                  <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes *" />
                 </div>
               </div>
 
