@@ -738,6 +738,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </div>
                   
                   {snapshotView === 'parsed' ? (
+                    <>
                     <div className="grid grid-cols-2 gap-3 bg-muted p-4 rounded">
                       <div>
                         <p className="text-xs text-muted-foreground">Tipo de crédito</p>
