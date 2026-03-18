@@ -39,6 +39,57 @@ import { GenerateCertificateDialog } from './components/GenerateCertificateDialo
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
 import { Money } from '@/components/common/Money'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
+import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+
+const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
+  santander: 'BANCO SANTANDER', bci: 'BANCO BCI', 'lider-bci': 'LIDER-BCI',
+  scotiabank: 'SCOTIABANK', chile: 'BANCO CHILE', security: 'BANCO SECURITY',
+  'itau-corpbanca': 'BANCO ITAU-CORPBANCA', bice: 'BANCO BICE', estado: 'BANCO ESTADO',
+  ripley: 'BANCO RIPLEY', falabella: 'BANCO FALABELLA', consorcio: 'BANCO CONSORCIO',
+  coopeuch: 'COOPEUCH', cencosud: 'BANCO CENCOSUD', forum: 'FORUM', tanner: 'TANNER',
+  cooperativas: 'COOPERATIVAS',
+}
+
+const UMBRAL_MONTO_ALTO_DETAIL = 20000000
+const TASA_PREF_HASTA_55 = 0.0003
+const TASA_PREF_DESDE_56 = 0.00039
+const TASA_PREF_HASTA_55_ALTO = 0.000344
+const TASA_PREF_DESDE_56_ALTO = 0.000343
+
+function getRatesForSnapshot(snapshot: any): { tasaBanco: number | null; tasaTDV: number | null } {
+  if (!snapshot) return { tasaBanco: null, tasaTDV: null }
+  const institutionId = (snapshot.institutionId || '').toLowerCase()
+  const bancoKey = MAPEO_INSTITUCIONES_DETAIL[institutionId] || institutionId.toUpperCase()
+  const edad = snapshot.age || 0
+  const monto = snapshot.totalAmount || 0
+  const saldo = snapshot.confirmedAverageInsuredBalance || snapshot.averageInsuredBalance || monto
+  const cuotas = snapshot.originalInstallments || 0
+  const tramo = edad <= 55 ? 'hasta_55' : 'desde_56'
+
+  let tasaBanco: number | null = null
+  try {
+    const datosBanco = (tasasSeguro as any)[bancoKey]
+    if (datosBanco) {
+      const datosTramo = datosBanco[tramo]
+      const montoRedondeado = Math.min(Math.max(Math.round(monto / 1000000) * 1000000, 2000000), 60000000)
+      const datosMonto = datosTramo?.[montoRedondeado.toString()]
+      if (datosMonto) {
+        tasaBanco = datosMonto[cuotas.toString()] ?? null
+        if (tasaBanco === null) {
+          const disponibles = Object.keys(datosMonto).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b)
+          const cercana = disponibles.reduce((prev, curr) => Math.abs(curr - cuotas) < Math.abs(prev - cuotas) ? curr : prev, disponibles[0])
+          if (cercana) tasaBanco = datosMonto[cercana.toString()] ?? null
+        }
+      }
+    }
+  } catch { /* ignore */ }
+
+  const tasaTDV = saldo > UMBRAL_MONTO_ALTO_DETAIL
+    ? (edad <= 55 ? TASA_PREF_HASTA_55_ALTO : TASA_PREF_DESDE_56_ALTO)
+    : (edad <= 55 ? TASA_PREF_HASTA_55 : TASA_PREF_DESDE_56)
+
+  return { tasaBanco, tasaTDV }
+}
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
