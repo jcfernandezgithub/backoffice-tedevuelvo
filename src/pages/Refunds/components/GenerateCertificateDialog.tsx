@@ -1677,14 +1677,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
       const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       
-      // Prima Única: primero intentar desde snapshot, luego calcular
-      let primaUnica: number
-      const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
-      if (primaUnicaDirecta !== null) {
-        primaUnica = Math.round(primaUnicaDirecta)
-      } else {
-        primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
-      }
+      // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
+      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
       // ===================== CARÁTULA - PAGE 1 =====================
