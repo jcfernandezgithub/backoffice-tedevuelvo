@@ -47,6 +47,11 @@ const snapshotSchema = z.object({
   averageInsuredBalance: z.coerce.number().min(0).optional(),
   originalInstallments: z.coerce.number().int().min(0).optional(),
   remainingInstallments: z.coerce.number().int().min(0).optional(),
+  // Confirmed credit fields (definitive values)
+  confirmedTotalAmount: z.coerce.number().min(0).optional(),
+  confirmedAverageInsuredBalance: z.coerce.number().min(0).optional(),
+  confirmedOriginalInstallments: z.coerce.number().int().min(0).optional(),
+  confirmedRemainingInstallments: z.coerce.number().int().min(0).optional(),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
