@@ -71,11 +71,11 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   creditType: 'Tipo de crédito',
   insuranceToEvaluate: 'Seguro a evaluar',
   totalAmount: 'Monto total crédito',
-  averageInsuredBalance: 'Saldo asegurado promedio',
+  averageInsuredBalance: 'Saldo insoluto',
   originalInstallments: 'Cuotas originales',
   remainingInstallments: 'Cuotas restantes',
   confirmedTotalAmount: 'Monto total crédito (confirmado)',
-  confirmedAverageInsuredBalance: 'Saldo asegurado promedio (confirmado)',
+  confirmedAverageInsuredBalance: 'Saldo insoluto (confirmado)',
   confirmedOriginalInstallments: 'Cuotas originales (confirmado)',
   confirmedRemainingInstallments: 'Cuotas restantes (confirmado)',
   currentMonthlyPremium: 'Prima mensual actual',
@@ -576,7 +576,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   name="averageInsuredBalance"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs">Saldo asegurado promedio</FormLabel>
+                      <FormLabel className="text-xs">Saldo insoluto</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
@@ -645,7 +645,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito *" prefix="$" />
-                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo insoluto *" prefix="$" />
                   <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales *" />
                   <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes *" />
                 </div>

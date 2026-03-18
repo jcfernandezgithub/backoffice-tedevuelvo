@@ -382,7 +382,7 @@ export default function SolicitudesList() {
         Institucion: getInstitutionDisplayName(item.institutionId || item.cliente?.banco),
         'Prima Mensual Entidad Financiera': primaMensualActual,
         'Monto Estimado Devolucion': item.estimatedAmountCLP || item.montoADevolverEstimado || 0,
-        'Saldo Asegurado Promedio': nuevaPrimaMensual * cuotasRestantes,
+        'Saldo Insoluto': nuevaPrimaMensual * cuotasRestantes,
         'Costo Nuevo Seguro TDV': nuevaPrimaMensual,
         'Cuotas Restantes': cuotasRestantes,
         'Fecha Creacion': item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-CL') : '',
