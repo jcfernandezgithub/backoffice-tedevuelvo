@@ -469,8 +469,6 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     setOpen(isOpen)
   }
 
-  /* ---- Field helpers ---- */
-  // NumberField extracted outside component to avoid focus loss (see SnapshotNumberField below)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
