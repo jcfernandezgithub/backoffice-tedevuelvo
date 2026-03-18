@@ -361,10 +361,16 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       const snapshotPatch: Record<string, any> = {}
       const rootPatch: Record<string, any> = {}
       const ROOT_FIELDS = ['estimatedAmountCLP', 'realAmount']
+      const ALWAYS_SEND_FIELDS = [
+        'confirmedTotalAmount', 'confirmedAverageInsuredBalance',
+        'confirmedOriginalInstallments', 'confirmedRemainingInstallments',
+      ]
 
       for (const [key, value] of Object.entries(values) as [keyof SnapshotFormValues, any][]) {
         const original = defaults[key]
-        if (value === original || value === '' || value === undefined) continue
+        const isAlwaysSend = ALWAYS_SEND_FIELDS.includes(key)
+        if (!isAlwaysSend && (value === original || value === '' || value === undefined)) continue
+        if (value === '' || value === undefined) continue
         
         if (ROOT_FIELDS.includes(key)) {
           rootPatch[key] = value
