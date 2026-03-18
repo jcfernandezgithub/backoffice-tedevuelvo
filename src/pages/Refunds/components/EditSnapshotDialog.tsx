@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle } from 'lucide-react'
+import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
@@ -47,6 +47,11 @@ const snapshotSchema = z.object({
   averageInsuredBalance: z.coerce.number().min(0).optional(),
   originalInstallments: z.coerce.number().int().min(0).optional(),
   remainingInstallments: z.coerce.number().int().min(0).optional(),
+  // Confirmed credit fields (definitive values)
+  confirmedTotalAmount: z.coerce.number().min(0).optional(),
+  confirmedAverageInsuredBalance: z.coerce.number().min(0).optional(),
+  confirmedOriginalInstallments: z.coerce.number().int().min(0).optional(),
+  confirmedRemainingInstallments: z.coerce.number().int().min(0).optional(),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
@@ -68,6 +73,10 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   averageInsuredBalance: 'Saldo asegurado promedio',
   originalInstallments: 'Cuotas originales',
   remainingInstallments: 'Cuotas restantes',
+  confirmedTotalAmount: 'Monto total crédito (confirmado)',
+  confirmedAverageInsuredBalance: 'Saldo asegurado promedio (confirmado)',
+  confirmedOriginalInstallments: 'Cuotas originales (confirmado)',
+  confirmedRemainingInstallments: 'Cuotas restantes (confirmado)',
   currentMonthlyPremium: 'Prima mensual actual',
   newMonthlyPremium: 'Nueva prima mensual',
   monthlySaving: 'Ahorro mensual',
@@ -155,6 +164,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       averageInsuredBalance: currentSnapshot.averageInsuredBalance ?? undefined,
       originalInstallments: currentSnapshot.originalInstallments ?? undefined,
       remainingInstallments: currentSnapshot.remainingInstallments ?? undefined,
+      confirmedTotalAmount: currentSnapshot.confirmedTotalAmount ?? undefined,
+      confirmedAverageInsuredBalance: currentSnapshot.confirmedAverageInsuredBalance ?? undefined,
+      confirmedOriginalInstallments: currentSnapshot.confirmedOriginalInstallments ?? undefined,
+      confirmedRemainingInstallments: currentSnapshot.confirmedRemainingInstallments ?? undefined,
       currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
       newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
       monthlySaving: currentSnapshot.monthlySaving ?? undefined,
@@ -198,8 +211,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     form.reset(getResetValues())
   }, [open, defaults])
 
-  // Watch credit fields to auto-recalculate premiums
+  // Watch confirmed credit fields (preferred) and simulation fields as fallback
   const watchedAge = form.watch('age')
+  const watchedConfirmedTotalAmount = form.watch('confirmedTotalAmount')
+  const watchedConfirmedOriginalInstallments = form.watch('confirmedOriginalInstallments')
+  const watchedConfirmedRemainingInstallments = form.watch('confirmedRemainingInstallments')
   const watchedTotalAmount = form.watch('totalAmount')
   const watchedOriginalInstallments = form.watch('originalInstallments')
   const watchedRemainingInstallments = form.watch('remainingInstallments')
@@ -209,22 +225,23 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const hasCreditFieldEdits = Boolean(
     dirtyFields.age ||
     dirtyFields.birthDate ||
-    dirtyFields.totalAmount ||
-    dirtyFields.originalInstallments ||
-    dirtyFields.remainingInstallments ||
+    dirtyFields.confirmedTotalAmount ||
+    dirtyFields.confirmedOriginalInstallments ||
+    dirtyFields.confirmedRemainingInstallments ||
     dirtyFields.insuranceToEvaluate
   )
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
-    // recalcula solo cuando el usuario cambia campos base del crédito.
+    // recalcula solo cuando el usuario cambia campos confirmados del crédito.
     if (!hasCreditFieldEdits) return
 
     const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
     const age = Number(watchedAge)
-    const monto = Number(watchedTotalAmount)
-    const cuotasTotales = Number(watchedOriginalInstallments)
-    const cuotasPendientes = Number(watchedRemainingInstallments)
+    // Use confirmed values if available, fallback to simulation
+    const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
+    const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
+    const cuotasPendientes = Number(watchedConfirmedRemainingInstallments || watchedRemainingInstallments)
     const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
 
     if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
@@ -246,6 +263,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
   }, [
     watchedAge,
+    watchedConfirmedTotalAmount,
+    watchedConfirmedOriginalInstallments,
+    watchedConfirmedRemainingInstallments,
     watchedTotalAmount,
     watchedOriginalInstallments,
     watchedRemainingInstallments,
@@ -475,8 +495,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
-              {/* ---- Datos del crédito ---- */}
-              <Section icon={CreditCard} title="Datos del crédito">
+              {/* ---- Datos del crédito (simulación - solo lectura) ---- */}
+              <Section icon={CreditCard} title="Datos del crédito (simulación)">
                 <FormField
                   control={form.control}
                   name="creditType"
@@ -520,11 +540,100 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     </FormItem>
                   )}
                 />
-                <NumberField name="totalAmount" label="Monto total crédito" prefix="$" />
-                <NumberField name="averageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
-                <NumberField name="originalInstallments" label="Cuotas originales" />
-                <NumberField name="remainingInstallments" label="Cuotas restantes" />
+                <FormField
+                  control={form.control}
+                  name="totalAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Monto total crédito</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="averageInsuredBalance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Saldo asegurado promedio</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input {...field} readOnly tabIndex={-1} className="pl-7 bg-muted cursor-not-allowed" />
+                        </div>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="originalInstallments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Cuotas originales</FormLabel>
+                      <FormControl>
+                        <Input {...field} readOnly tabIndex={-1} className="bg-muted cursor-not-allowed" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="remainingInstallments"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Cuotas restantes</FormLabel>
+                      <FormControl>
+                        <Input {...field} readOnly tabIndex={-1} className="bg-muted cursor-not-allowed" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </Section>
+
+              <Separator />
+
+              {/* ---- Datos confirmados del crédito ---- */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                      Datos confirmados del crédito
+                    </h4>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs"
+                    onClick={() => {
+                      const simValues = form.getValues()
+                      form.setValue('confirmedTotalAmount', simValues.totalAmount, { shouldDirty: true })
+                      form.setValue('confirmedAverageInsuredBalance', simValues.averageInsuredBalance, { shouldDirty: true })
+                      form.setValue('confirmedOriginalInstallments', simValues.originalInstallments, { shouldDirty: true })
+                      form.setValue('confirmedRemainingInstallments', simValues.remainingInstallments, { shouldDirty: true })
+                    }}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    Confirmar datos de simulación
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Confirma los valores definitivos del crédito. Puedes copiar los datos de la simulación o ingresarlos manualmente.
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  <NumberField name="confirmedTotalAmount" label="Monto total crédito" prefix="$" />
+                  <NumberField name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
+                  <NumberField name="confirmedOriginalInstallments" label="Cuotas originales" />
+                  <NumberField name="confirmedRemainingInstallments" label="Cuotas restantes" />
+                </div>
+              </div>
 
               <Separator />
 
