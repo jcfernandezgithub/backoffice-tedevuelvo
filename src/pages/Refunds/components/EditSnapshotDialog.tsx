@@ -71,7 +71,7 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   creditType: 'Tipo de crédito',
   insuranceToEvaluate: 'Seguro a evaluar',
   totalAmount: 'Monto total crédito',
-  averageInsuredBalance: 'Saldo asegurado promedio',
+  averageInsuredBalance: 'Saldo insoluto',
   originalInstallments: 'Cuotas originales',
   remainingInstallments: 'Cuotas restantes',
   confirmedTotalAmount: 'Monto total crédito (confirmado)',
