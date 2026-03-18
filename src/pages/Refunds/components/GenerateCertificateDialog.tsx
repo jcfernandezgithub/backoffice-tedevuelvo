@@ -351,7 +351,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     nroOperacion: '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
-    saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
+    saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
     beneficiarioNombre: '',
     beneficiarioRut: '',
   })
