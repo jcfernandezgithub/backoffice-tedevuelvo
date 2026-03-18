@@ -939,18 +939,105 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                               ${(refund.calculationSnapshot.newMonthlyPremium || 0).toLocaleString('es-CL')} CLP
                             </p>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Ahorro mensual</p>
-                            <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                              ${(refund.calculationSnapshot.monthlySaving || 0).toLocaleString('es-CL')} CLP
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Ahorro total</p>
-                            <p className="font-semibold text-lg text-emerald-600 dark:text-emerald-400">
-                              ${(refund.calculationSnapshot.totalSaving || 0).toLocaleString('es-CL')} CLP
-                            </p>
-                          </div>
+                          {/* ── Ahorro mensual con desglose ── */}
+                          {(() => {
+                            const snap = refund.calculationSnapshot
+                            const currentPremium = snap.currentMonthlyPremium || 0
+                            const newPremium = snap.newMonthlyPremium || 0
+                            const monthlySaving = snap.monthlySaving || 0
+                            return (
+                              <div className="col-span-2 mt-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-xs text-muted-foreground">Ahorro mensual</p>
+                                </div>
+                                <p className="font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
+                                  ${monthlySaving.toLocaleString('es-CL')} CLP
+                                </p>
+                                <div className="p-3 rounded-md bg-muted/40 border border-dashed border-muted-foreground/15 space-y-1.5">
+                                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <Calculator className="h-3 w-3" />
+                                    Fórmula: Prima banco − Prima TDV
+                                  </p>
+                                  <div className="grid grid-cols-3 gap-2 text-xs">
+                                    <div className="text-center p-2 rounded bg-background border">
+                                      <p className="text-muted-foreground mb-0.5">Prima banco</p>
+                                      <p className="font-mono font-semibold">${currentPremium.toLocaleString('es-CL')}</p>
+                                    </div>
+                                    <div className="flex items-center justify-center text-muted-foreground font-bold text-base">−</div>
+                                    <div className="text-center p-2 rounded bg-background border">
+                                      <p className="text-muted-foreground mb-0.5">Prima TDV</p>
+                                      <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${newPremium.toLocaleString('es-CL')}</p>
+                                    </div>
+                                  </div>
+                                  <div className="text-center pt-1 border-t border-dashed border-muted-foreground/15">
+                                    <p className="text-xs text-muted-foreground">= <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${monthlySaving.toLocaleString('es-CL')} CLP</span></p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })()}
+
+                          {/* ── Ahorro total con desglose ── */}
+                          {(() => {
+                            const snap = refund.calculationSnapshot
+                            const currentPremium = snap.currentMonthlyPremium || 0
+                            const newPremium = snap.newMonthlyPremium || 0
+                            const remaining = snap.remainingInstallments || 0
+                            const totalSaving = snap.totalSaving || 0
+                            const primaTotalBanco = currentPremium * remaining
+                            const primaTotalTDV = newPremium * remaining
+                            const devolucionBruta = primaTotalBanco - primaTotalTDV
+                            const margen = devolucionBruta > 0 ? Math.round((1 - totalSaving / devolucionBruta) * 100) : 10
+                            const margenEfectivo = margen >= 0 ? margen : 10
+                            return (
+                              <div className="col-span-2 mt-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-xs text-muted-foreground">Ahorro total (devolución al cliente)</p>
+                                </div>
+                                <p className="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">
+                                  ${totalSaving.toLocaleString('es-CL')} CLP
+                                </p>
+                                <div className="p-3 rounded-md bg-muted/40 border border-dashed border-muted-foreground/15 space-y-2">
+                                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <Calculator className="h-3 w-3" />
+                                    Fórmula: (Prima total banco − Prima total TDV) × (1 − margen)
+                                  </p>
+                                  {/* Step 1: Prima totals */}
+                                  <div className="space-y-1">
+                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 1: Primas totales restantes</p>
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                      <div className="p-2 rounded bg-background border">
+                                        <p className="text-muted-foreground mb-0.5">Prima banco × Cuotas</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${currentPremium.toLocaleString('es-CL')} × {remaining}</p>
+                                        <p className="font-mono font-semibold mt-0.5">= ${primaTotalBanco.toLocaleString('es-CL')}</p>
+                                      </div>
+                                      <div className="p-2 rounded bg-background border">
+                                        <p className="text-muted-foreground mb-0.5">Prima TDV × Cuotas</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${newPremium.toLocaleString('es-CL')} × {remaining}</p>
+                                        <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${primaTotalTDV.toLocaleString('es-CL')}</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {/* Step 2: Gross refund */}
+                                  <div className="space-y-1">
+                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 2: Devolución bruta</p>
+                                    <div className="p-2 rounded bg-background border text-xs">
+                                      <p className="font-mono text-[11px] text-muted-foreground">${primaTotalBanco.toLocaleString('es-CL')} − ${primaTotalTDV.toLocaleString('es-CL')}</p>
+                                      <p className="font-mono font-semibold mt-0.5">= ${devolucionBruta.toLocaleString('es-CL')} CLP</p>
+                                    </div>
+                                  </div>
+                                  {/* Step 3: Apply margin */}
+                                  <div className="space-y-1">
+                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenEfectivo}%)</p>
+                                    <div className="p-2 rounded bg-background border text-xs">
+                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - margenEfectivo) / 100).toFixed(2)}</p>
+                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalSaving.toLocaleString('es-CL')} CLP</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })()}
                           {refund.calculationSnapshot.rateSet && (
                             <div>
                               <p className="text-xs text-muted-foreground">Versión tarifas</p>
