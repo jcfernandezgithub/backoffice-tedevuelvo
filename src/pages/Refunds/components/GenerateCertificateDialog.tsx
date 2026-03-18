@@ -284,7 +284,7 @@ const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
 const getTasaFromPrimaUnica = (refund: RefundRequest, saldoInsoluto: number): number | null => {
   const snapshot = refund.calculationSnapshot
   const primaUnica = getPrimaUnicaFromSnapshot(refund)
-  const remainingInstallments = snapshot?.remainingInstallments
+  const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
   
   if (primaUnica && saldoInsoluto > 0 && remainingInstallments && remainingInstallments > 0) {
     // TBM = (Prima Única / (Saldo Insoluto × Nper)) × 1000
