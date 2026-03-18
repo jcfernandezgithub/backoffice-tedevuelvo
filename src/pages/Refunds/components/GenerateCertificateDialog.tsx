@@ -1145,12 +1145,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     doc.rect(margin, y - 3, 70, 5, 'S')
     doc.rect(margin + 70, y - 3, 50, 5, 'S')
     doc.text('18 – 55 años', margin + 2, y)
-    doc.text('0,34', margin + 72, y)
+    doc.text('0,3267', margin + 72, y)
     y += 5
     doc.rect(margin, y - 3, 70, 5, 'S')
     doc.rect(margin + 70, y - 3, 50, 5, 'S')
     doc.text('56 – 65 años', margin + 2, y)
-    doc.text('0,34', margin + 72, y)
+    doc.text('0,4106', margin + 72, y)
     y += 7
 
     // Asegurados section
@@ -1328,12 +1328,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     doc.rect(margin, y - 3, 70, 5, 'S')
     doc.rect(margin + 70, y - 3, 50, 5, 'S')
     doc.text('18 – 55 años', margin + 2, y)
-    doc.text('0,34', margin + 72, y)
+    doc.text('0,3267', margin + 72, y)
     y += 5
     doc.rect(margin, y - 3, 70, 5, 'S')
     doc.rect(margin + 70, y - 3, 50, 5, 'S')
     doc.text('56 – 65 años', margin + 2, y)
-    doc.text('0,34', margin + 72, y)
+    doc.text('0,4106', margin + 72, y)
     y += 8
 
     // Exclusiones
@@ -2310,12 +2310,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
       doc.text('18 – 55 años', margin + 2, y)
-      doc.text('0,30', margin + 72, y)
+      doc.text('0,2970', margin + 72, y)
       y += 5
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
       doc.text('56 – 65 años', margin + 2, y)
-      doc.text('0,39', margin + 72, y)
+      doc.text('0,3733', margin + 72, y)
       y += 7
 
       // Asegurados section
@@ -2510,12 +2510,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
       doc.text('18 – 55 años', margin + 2, y)
-      doc.text('0,30', margin + 72, y)
+      doc.text('0,2970', margin + 72, y)
       y += 5
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
       doc.text('56 – 65 años', margin + 2, y)
-      doc.text('0,39', margin + 72, y)
+      doc.text('0,3733', margin + 72, y)
       y += 8
 
       // ===================== PAGE 3 =====================
