@@ -502,8 +502,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     return parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
   }
 
-  // Check if Prime format should be used (credit > 20 million)
-  const isPrimeFormat = (refund.calculationSnapshot?.totalAmount || 0) > 20000000
+  // Check if Prime format should be used (saldo insoluto > 20 million)
+  const isPrimeFormat = getSaldoInsolutoValue() > 20000000
 
   // Tasa Bruta Mensual para Póliza 344 (Prime)
   const getTasaBrutaMensualPrime = (age?: number): number => {
