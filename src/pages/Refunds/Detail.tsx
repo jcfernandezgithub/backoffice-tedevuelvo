@@ -466,10 +466,21 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
               const showDesgravamen = insuranceType === 'desgravamen' || insuranceType === 'ambos'
               const showCesantia = insuranceType === 'cesantia' || insuranceType === 'ambos'
               
+              // Validate confirmed fields exist and are non-zero
+              const snap = refund.calculationSnapshot
+              const hasConfirmedData = !!(
+                snap?.confirmedTotalAmount && snap.confirmedTotalAmount > 0 &&
+                snap?.confirmedAverageInsuredBalance && snap.confirmedAverageInsuredBalance > 0 &&
+                snap?.confirmedOriginalInstallments && snap.confirmedOriginalInstallments > 0 &&
+                snap?.confirmedRemainingInstallments && snap.confirmedRemainingInstallments > 0
+              )
+              
+              const missingFieldsTooltip = 'Los datos confirmados del crédito deben estar completos. Edite el snapshot de cálculo para confirmar: Monto, Saldo Insoluto, Cuotas Originales y Cuotas Restantes.'
+              
               return (
                 <>
                   {/* Certificado Desgravamen */}
-                  {!showDesgravamen ? (
+                  {!showDesgravamen || !hasConfirmedData ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
@@ -484,8 +495,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {!insuranceType ? 'Tipo de seguro no disponible' : 'No aplica - Solicitud de tipo cesantía'}
+                      <TooltipContent className="max-w-xs">
+                        {!insuranceType ? 'Tipo de seguro no disponible' 
+                          : !showDesgravamen ? 'No aplica - Solicitud de tipo cesantía' 
+                          : missingFieldsTooltip}
                       </TooltipContent>
                     </Tooltip>
                   ) : (
@@ -497,7 +510,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   )}
                   
                   {/* Certificado Cesantía */}
-                  {!showCesantia ? (
+                  {!showCesantia || !hasConfirmedData ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span>
@@ -512,8 +525,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           </Button>
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        {!insuranceType ? 'Tipo de seguro no disponible' : 'No aplica - Solicitud de tipo desgravamen'}
+                      <TooltipContent className="max-w-xs">
+                        {!insuranceType ? 'Tipo de seguro no disponible' 
+                          : !showCesantia ? 'No aplica - Solicitud de tipo desgravamen'
+                          : missingFieldsTooltip}
                       </TooltipContent>
                     </Tooltip>
                   ) : (
