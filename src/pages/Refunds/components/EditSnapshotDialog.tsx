@@ -323,6 +323,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }, [
     watchedAge,
     watchedConfirmedTotalAmount,
+    watchedConfirmedAverageInsuredBalance,
     watchedConfirmedOriginalInstallments,
     watchedConfirmedRemainingInstallments,
     watchedTotalAmount,
