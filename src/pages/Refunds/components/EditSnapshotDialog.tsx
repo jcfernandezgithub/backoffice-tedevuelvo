@@ -270,6 +270,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // Watch confirmed credit fields (preferred) and simulation fields as fallback
   const watchedAge = form.watch('age')
   const watchedConfirmedTotalAmount = form.watch('confirmedTotalAmount')
+  const watchedConfirmedAverageInsuredBalance = form.watch('confirmedAverageInsuredBalance')
   const watchedConfirmedOriginalInstallments = form.watch('confirmedOriginalInstallments')
   const watchedConfirmedRemainingInstallments = form.watch('confirmedRemainingInstallments')
   const watchedTotalAmount = form.watch('totalAmount')
