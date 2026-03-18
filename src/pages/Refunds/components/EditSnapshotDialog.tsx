@@ -414,55 +414,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }
 
   /* ---- Field helpers ---- */
-
-  const NumberField = ({
-    name,
-    label,
-    prefix,
-    suffix,
-    className,
-  }: {
-    name: keyof SnapshotFormValues
-    label: string
-    prefix?: string
-    suffix?: string
-    className?: string
-  }) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem className={className}>
-          <FormLabel className="text-xs">{label}</FormLabel>
-          <FormControl>
-            <div className="relative">
-              {prefix && (
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {prefix}
-                </span>
-              )}
-              <Input
-                {...field}
-                type="text"
-                inputMode="numeric"
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.]/g, '')
-                  field.onChange(val === '' ? '' : val)
-                }}
-                className={prefix ? 'pl-7' : ''}
-              />
-              {suffix && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                  {suffix}
-                </span>
-              )}
-            </div>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  )
+  // NumberField extracted outside component to avoid focus loss (see SnapshotNumberField below)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
