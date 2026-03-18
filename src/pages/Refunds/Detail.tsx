@@ -903,7 +903,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Saldo asegurado promedio</p>
+                            <p className="text-xs text-muted-foreground">Saldo insoluto</p>
                             <p className="font-medium">
                               ${(refund.calculationSnapshot.averageInsuredBalance || 0).toLocaleString('es-CL')} CLP
                             </p>

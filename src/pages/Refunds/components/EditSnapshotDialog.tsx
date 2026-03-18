@@ -645,7 +645,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito *" prefix="$" />
-                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo insoluto *" prefix="$" />
                   <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales *" />
                   <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes *" />
                 </div>
