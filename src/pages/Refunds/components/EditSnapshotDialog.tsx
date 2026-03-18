@@ -830,8 +830,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
               <Separator />
 
               <Section icon={TrendingUp} title="Montos de devolución">
-                <NumberField name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
-                <NumberField name="realAmount" label="Monto real devolución" prefix="$" />
+                <NumberField control={form.control} name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
+                <NumberField control={form.control} name="realAmount" label="Monto real devolución" prefix="$" />
               </Section>
 
               <Separator />
