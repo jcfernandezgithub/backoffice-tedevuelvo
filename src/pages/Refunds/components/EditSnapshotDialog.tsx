@@ -119,6 +119,61 @@ function Section({
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
+/* ---- Extracted NumberField to avoid re-mount on parent re-render ---- */
+const NumberField = memo(function NumberField({
+  name,
+  label,
+  prefix,
+  suffix,
+  className,
+  control,
+}: {
+  name: keyof SnapshotFormValues
+  label: string
+  prefix?: string
+  suffix?: string
+  className?: string
+  control: Control<SnapshotFormValues>
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel className="text-xs">{label}</FormLabel>
+          <FormControl>
+            <div className="relative">
+              {prefix && (
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {prefix}
+                </span>
+              )}
+              <Input
+                {...field}
+                value={field.value ?? ''}
+                type="text"
+                inputMode="numeric"
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9.]/g, '')
+                  field.onChange(val === '' ? '' : val)
+                }}
+                className={prefix ? 'pl-7' : ''}
+              />
+              {suffix && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {suffix}
+                </span>
+              )}
+            </div>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+})
+
 interface EditSnapshotDialogProps {
   refund: RefundRequest
 }
