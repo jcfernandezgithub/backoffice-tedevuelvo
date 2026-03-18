@@ -251,12 +251,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       if (result.error) return
 
       if (!overridePrimas) {
-        form.setValue('currentMonthlyPremium', result.primaBanco)
-        form.setValue('newMonthlyPremium', result.primaPreferencial)
+        form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false })
+        form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false })
       }
       if (!overrideAhorros) {
-        form.setValue('monthlySaving', result.ahorroMensual)
-        form.setValue('totalSaving', result.ahorroTotal)
+        form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false })
+        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false })
       }
     } catch {
       // Silently ignore calculation errors
