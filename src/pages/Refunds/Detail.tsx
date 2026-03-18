@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { authService } from '@/services/authService'
@@ -696,27 +696,29 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             <CardHeader>
               <CardTitle>Cálculo</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Institución</p>
-                <p className="font-medium">{getInstitutionDisplayName(refund.institutionId)}</p>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Institución</p>
+                  <p className="font-medium">{getInstitutionDisplayName(refund.institutionId)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Monto estimado</p>
+                  <p className="font-medium text-lg">
+                    {typeof refund.estimatedAmountCLP === 'number' ? (
+                      <>
+                        <Money value={refund.estimatedAmountCLP} /> {refund.currency}
+                      </>
+                    ) : (
+                      'N/A'
+                    )}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Monto estimado</p>
-                <p className="font-medium text-lg">
-                  {typeof refund.estimatedAmountCLP === 'number' ? (
-                    <>
-                      <Money value={refund.estimatedAmountCLP} /> {refund.currency}
-                    </>
-                  ) : (
-                    'N/A'
-                  )}
-                </p>
 
-              </div>
               {refund.calculationSnapshot && (
-                <div className="col-span-2">
-                  <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-muted-foreground">Snapshot de cálculo</p>
                     <div className="flex gap-1">
                       <EditSnapshotDialog refund={refund} />
@@ -738,142 +740,157 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </div>
                   
                   {snapshotView === 'parsed' ? (
-                    <>
-                    <div className="grid grid-cols-2 gap-3 bg-muted p-4 rounded">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Tipo de crédito</p>
-                        <p className="font-medium capitalize">{refund.calculationSnapshot.creditType || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Seguro evaluado</p>
-                        <p className="font-medium capitalize">{refund.calculationSnapshot.insuranceToEvaluate || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Monto total crédito</p>
-                        <p className="font-medium">
-                          ${(refund.calculationSnapshot.totalAmount || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Saldo asegurado promedio</p>
-                        <p className="font-medium">
-                          ${(refund.calculationSnapshot.averageInsuredBalance || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Cuotas originales</p>
-                        <p className="font-medium">{refund.calculationSnapshot.originalInstallments || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Cuotas restantes</p>
-                        <p className="font-medium">{refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Prima mensual actual</p>
-                        <p className="font-medium">
-                          ${(refund.calculationSnapshot.currentMonthlyPremium || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Nueva prima mensual</p>
-                        <p className="font-medium text-green-600">
-                          ${(refund.calculationSnapshot.newMonthlyPremium || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Ahorro mensual</p>
-                        <p className="font-medium text-green-600">
-                          ${(refund.calculationSnapshot.monthlySaving || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Ahorro total</p>
-                        <p className="font-semibold text-lg text-green-600">
-                          ${(refund.calculationSnapshot.totalSaving || 0).toLocaleString('es-CL')} CLP
-                        </p>
-                      </div>
-                      {refund.calculationSnapshot.rateSet && (
-                        <div>
-                          <p className="text-xs text-muted-foreground">Versión tarifas</p>
-                          <p className="font-medium">{refund.calculationSnapshot.rateSet}</p>
-                        </div>
-                      )}
-                      {refund.calculationSnapshot.createdAt && (
-                        <div>
-                          <p className="text-xs text-muted-foreground">Creado</p>
-                          <p className="font-medium">
-                            {new Date(refund.calculationSnapshot.createdAt).toLocaleString('es-CL')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <div className="space-y-5">
+                      {/* ── Datos confirmados del crédito ── */}
+                      {(() => {
+                        const snap = refund.calculationSnapshot
+                        const hasConfirmed = snap.confirmedTotalAmount || snap.confirmedAverageInsuredBalance || snap.confirmedOriginalInstallments || snap.confirmedRemainingInstallments
+                        const allConfirmed = snap.confirmedTotalAmount && snap.confirmedAverageInsuredBalance && snap.confirmedOriginalInstallments && snap.confirmedRemainingInstallments
 
-                    {/* Datos confirmados del crédito */}
-                    {(() => {
-                      const snap = refund.calculationSnapshot
-                      const hasConfirmed = snap.confirmedTotalAmount || snap.confirmedAverageInsuredBalance || snap.confirmedOriginalInstallments || snap.confirmedRemainingInstallments
-                      const allConfirmed = snap.confirmedTotalAmount && snap.confirmedAverageInsuredBalance && snap.confirmedOriginalInstallments && snap.confirmedRemainingInstallments
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-semibold text-foreground">Datos confirmados del crédito</h4>
+                              {allConfirmed ? (
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-xs">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Completado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700 text-xs">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Pendiente
+                                </Badge>
+                              )}
+                            </div>
 
-                      return (
-                        <div className="mt-4 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-semibold text-foreground">Datos confirmados del crédito</h4>
-                            {allConfirmed && (
-                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-xs">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Completado
-                              </Badge>
+                            {!hasConfirmed ? (
+                              <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/30">
+                                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                                    Datos confirmados pendientes
+                                  </p>
+                                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                                    Aún no se han confirmado los datos reales del crédito. Edita el snapshot para completar esta información antes de avanzar con la solicitud.
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className={`grid grid-cols-2 gap-3 p-4 rounded-lg border ${allConfirmed ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'}`}>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Monto total confirmado</p>
+                                  <p className="font-medium">
+                                    {snap.confirmedTotalAmount
+                                      ? `$${Number(snap.confirmedTotalAmount).toLocaleString('es-CL')} CLP`
+                                      : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Saldo insoluto confirmado</p>
+                                  <p className="font-medium">
+                                    {snap.confirmedAverageInsuredBalance
+                                      ? `$${Number(snap.confirmedAverageInsuredBalance).toLocaleString('es-CL')} CLP`
+                                      : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Cuotas originales confirmadas</p>
+                                  <p className="font-medium">
+                                    {snap.confirmedOriginalInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Cuotas restantes confirmadas</p>
+                                  <p className="font-medium">
+                                    {snap.confirmedRemainingInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                  </p>
+                                </div>
+                              </div>
                             )}
                           </div>
+                        )
+                      })()}
 
-                          {!hasConfirmed ? (
-                            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/30">
-                              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
-                              <div className="space-y-1">
-                                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                                  Datos confirmados pendientes
-                                </p>
-                                <p className="text-xs text-amber-700 dark:text-amber-400">
-                                  Aún no se han confirmado los datos reales del crédito. Edita el snapshot para completar esta información antes de avanzar con la solicitud.
-                                </p>
-                              </div>
+                      {/* ── Datos de simulación ── */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-semibold text-muted-foreground">Datos de simulación</h4>
+                          <Badge variant="secondary" className="text-xs">
+                            <Calculator className="h-3 w-3 mr-1" />
+                            Simulado
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 p-4 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/40">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Tipo de crédito</p>
+                            <p className="font-medium capitalize">{refund.calculationSnapshot.creditType || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Seguro evaluado</p>
+                            <p className="font-medium capitalize">{refund.calculationSnapshot.insuranceToEvaluate || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Monto total crédito</p>
+                            <p className="font-medium">
+                              ${(refund.calculationSnapshot.totalAmount || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Saldo asegurado promedio</p>
+                            <p className="font-medium">
+                              ${(refund.calculationSnapshot.averageInsuredBalance || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Cuotas originales</p>
+                            <p className="font-medium">{refund.calculationSnapshot.originalInstallments || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Cuotas restantes</p>
+                            <p className="font-medium">{refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Prima mensual actual</p>
+                            <p className="font-medium">
+                              ${(refund.calculationSnapshot.currentMonthlyPremium || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Nueva prima mensual</p>
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                              ${(refund.calculationSnapshot.newMonthlyPremium || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Ahorro mensual</p>
+                            <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                              ${(refund.calculationSnapshot.monthlySaving || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Ahorro total</p>
+                            <p className="font-semibold text-lg text-emerald-600 dark:text-emerald-400">
+                              ${(refund.calculationSnapshot.totalSaving || 0).toLocaleString('es-CL')} CLP
+                            </p>
+                          </div>
+                          {refund.calculationSnapshot.rateSet && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Versión tarifas</p>
+                              <p className="font-medium">{refund.calculationSnapshot.rateSet}</p>
                             </div>
-                          ) : (
-                            <div className={`grid grid-cols-2 gap-3 p-4 rounded-lg border ${allConfirmed ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'}`}>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Monto total confirmado</p>
-                                <p className="font-medium">
-                                  {snap.confirmedTotalAmount
-                                    ? `$${Number(snap.confirmedTotalAmount).toLocaleString('es-CL')} CLP`
-                                    : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Saldo insoluto confirmado</p>
-                                <p className="font-medium">
-                                  {snap.confirmedAverageInsuredBalance
-                                    ? `$${Number(snap.confirmedAverageInsuredBalance).toLocaleString('es-CL')} CLP`
-                                    : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Cuotas originales confirmadas</p>
-                                <p className="font-medium">
-                                  {snap.confirmedOriginalInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Cuotas restantes confirmadas</p>
-                                <p className="font-medium">
-                                  {snap.confirmedRemainingInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
-                                </p>
-                              </div>
+                          )}
+                          {refund.calculationSnapshot.createdAt && (
+                            <div>
+                              <p className="text-xs text-muted-foreground">Creado</p>
+                              <p className="font-medium">
+                                {new Date(refund.calculationSnapshot.createdAt).toLocaleString('es-CL')}
+                              </p>
                             </div>
                           )}
                         </div>
-                      )
-                    })()}
-                    </>
+                      </div>
+                    </div>
                   ) : (
                     <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
                       {JSON.stringify(refund.calculationSnapshot, null, 2)}
