@@ -479,7 +479,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Saldo Insoluto = Valor ingresado en el formulario o el valor por defecto
     const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     // Nper = Cuotas restantes por pagar
-    const nper = refund.calculationSnapshot?.remainingInstallments || 0
+    const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     
     // Primero intentar usar Prima Única directa desde snapshot (newMonthlyPremium × remainingInstallments)
     const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
