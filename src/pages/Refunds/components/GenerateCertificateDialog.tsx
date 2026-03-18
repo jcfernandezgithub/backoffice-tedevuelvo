@@ -3148,7 +3148,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
