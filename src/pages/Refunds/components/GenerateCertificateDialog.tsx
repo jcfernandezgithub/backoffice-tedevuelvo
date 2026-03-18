@@ -267,7 +267,7 @@ const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
   
   // newMonthlyPremium es la nueva prima mensual preferencial
   const newMonthlyPremium = snapshot?.newMonthlyPremium
-  const remainingInstallments = snapshot?.remainingInstallments
+  const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
   
   if (typeof newMonthlyPremium === 'number' && typeof remainingInstallments === 'number' && newMonthlyPremium > 0 && remainingInstallments > 0) {
     const primaUnica = newMonthlyPremium * remainingInstallments
