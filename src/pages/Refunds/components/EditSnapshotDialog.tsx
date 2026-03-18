@@ -282,6 +282,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     dirtyFields.age ||
     dirtyFields.birthDate ||
     dirtyFields.confirmedTotalAmount ||
+    dirtyFields.confirmedAverageInsuredBalance ||
     dirtyFields.confirmedOriginalInstallments ||
     dirtyFields.confirmedRemainingInstallments ||
     dirtyFields.insuranceToEvaluate
