@@ -901,6 +901,32 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             <p className="text-xs text-muted-foreground">Cuotas restantes</p>
                             <p className="font-medium">{refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
                           </div>
+
+                          {/* ── Tasas utilizadas ── */}
+                          {(() => {
+                            const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
+                            const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
+                            const formatTasa = (t: number | null) => t !== null ? `${(t * 100).toFixed(4)}%` : 'N/A'
+                            return (
+                              <div className="col-span-2 mt-1 p-3 rounded-md bg-muted/60 border border-dashed border-muted-foreground/20">
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <TrendingDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tasas desgravamen utilizadas</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Tasa banco</p>
+                                    <p className="font-mono font-semibold text-sm">{formatTasa(tasaBanco)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Tasa preferencial TDV</p>
+                                    <p className="font-mono font-semibold text-sm text-emerald-600 dark:text-emerald-400">{formatTasa(tasaTDV)}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })()}
+
                           <div>
                             <p className="text-xs text-muted-foreground">Prima mensual actual</p>
                             <p className="font-medium">
