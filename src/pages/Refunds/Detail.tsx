@@ -1028,10 +1028,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   {/* Step 3: Apply margin */}
                                   <div className="space-y-1">
-                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenEfectivo}%)</p>
+                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({MARGEN_FIJO}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - margenEfectivo) / 100).toFixed(2)}</p>
-                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalSaving.toLocaleString('es-CL')} CLP</p>
+                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - MARGEN_FIJO) / 100).toFixed(2)}</p>
+                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalCalculado.toLocaleString('es-CL')} CLP</p>
                                     </div>
                                   </div>
                                 </div>
