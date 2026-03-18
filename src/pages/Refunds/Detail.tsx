@@ -927,18 +927,78 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             )
                           })()}
 
-                          <div>
-                            <p className="text-xs text-muted-foreground">Prima mensual actual</p>
-                            <p className="font-medium">
-                              ${(refund.calculationSnapshot.currentMonthlyPremium || 0).toLocaleString('es-CL')} CLP
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Nueva prima mensual</p>
-                            <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                              ${(refund.calculationSnapshot.newMonthlyPremium || 0).toLocaleString('es-CL')} CLP
-                            </p>
-                          </div>
+                          {/* ── Primas con tooltip de fórmula ── */}
+                          {(() => {
+                            const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
+                            const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
+                            const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
+                            const cuotasOrig = snap.originalInstallments || 0
+                            const cuotasUsadas = snap.originalInstallments || 0 // closest match
+                            const currentPremium = snap.currentMonthlyPremium || 0
+                            const newPremium = snap.newMonthlyPremium || 0
+                            const remaining = snap.remainingInstallments || 0
+
+                            // Intermediate values for bank premium
+                            const primaUnica = tasaBanco ? saldo * tasaBanco : 0
+                            const seguroTotal = cuotasUsadas ? (primaUnica / cuotasUsadas) * cuotasOrig : 0
+
+                            return (
+                              <>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-xs text-muted-foreground">Prima mensual actual</p>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                          <AlertCircle className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs p-3 space-y-1.5 text-xs">
+                                        <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima banco</p>
+                                        <div className="space-y-0.5 font-mono text-[11px]">
+                                          <p><span className="text-muted-foreground">Prima única =</span> Saldo × Tasa banco</p>
+                                          <p className="text-muted-foreground pl-2">${saldo.toLocaleString('es-CL')} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${Math.round(primaUnica).toLocaleString('es-CL')}</p>
+                                          <p><span className="text-muted-foreground">Seguro total =</span> (Prima única / Cuotas tabla) × Cuotas orig.</p>
+                                          <p className="text-muted-foreground pl-2">(${Math.round(primaUnica).toLocaleString('es-CL')} / {cuotasUsadas}) × {cuotasOrig} = ${Math.round(seguroTotal).toLocaleString('es-CL')}</p>
+                                          <p><span className="text-muted-foreground">Prima mensual =</span> Seguro total / Cuotas orig.</p>
+                                          <p className="text-muted-foreground pl-2">${Math.round(seguroTotal).toLocaleString('es-CL')} / {cuotasOrig} = <span className="font-semibold text-foreground">${Math.round(seguroTotal / (cuotasOrig || 1)).toLocaleString('es-CL')}</span></p>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <p className="font-medium">
+                                    ${currentPremium.toLocaleString('es-CL')} CLP
+                                  </p>
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-xs text-muted-foreground">Nueva prima mensual</p>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button type="button" className="text-muted-foreground/50 hover:text-muted-foreground transition-colors">
+                                          <AlertCircle className="h-3 w-3" />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs p-3 space-y-1.5 text-xs">
+                                        <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima TDV</p>
+                                        <div className="space-y-0.5 font-mono text-[11px]">
+                                          <p><span className="text-muted-foreground">Nueva prima =</span> Saldo × Tasa TDV</p>
+                                          <p className="text-muted-foreground pl-2">${saldo.toLocaleString('es-CL')} × {tasaTDV ? (tasaTDV * 100).toFixed(4) + '%' : 'N/A'}</p>
+                                          <p className="text-muted-foreground pl-2">= <span className="font-semibold text-emerald-600">${Math.round(saldo * (tasaTDV || 0)).toLocaleString('es-CL')}</span></p>
+                                        </div>
+                                        <div className="border-t border-dashed pt-1 mt-1">
+                                          <p className="text-muted-foreground text-[10px]">Tasa {saldo > 20000000 ? '> 20M' : '≤ 20M'}, edad {(snap.age || 0) <= 55 ? '≤ 55' : '> 55'}</p>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <p className="font-medium text-emerald-600 dark:text-emerald-400">
+                                    ${newPremium.toLocaleString('es-CL')} CLP
+                                  </p>
+                                </div>
+                              </>
+                            )
+                          })()}
                           {/* ── Ahorro mensual con desglose ── */}
                           {(() => {
                             const snap = refund.calculationSnapshot
