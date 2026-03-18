@@ -3297,7 +3297,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
