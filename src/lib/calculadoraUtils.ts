@@ -332,7 +332,7 @@ export const calcularDevolucion = (
     // Solo desgravamen
     const tramo = edad <= 55 ? "hasta_55" : "desde_56";
     const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
-    const resultadoTasa = obtenerTasaBanco(bancoMapeado, edad, montoCredito, cuotasTotales);
+    const resultadoTasa = obtenerTasaBanco(bancoMapeado, edad, saldo, cuotasTotales);
 
     if (resultadoTasa === null) {
       return {
