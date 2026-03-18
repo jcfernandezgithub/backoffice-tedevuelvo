@@ -296,19 +296,9 @@ const getTasaFromPrimaUnica = (refund: RefundRequest, saldoInsoluto: number): nu
   return null
 }
 
-// Get TBM - priority: derived from snapshot, then fallback to hardcoded
-const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean, saldoInsoluto?: number): number => {
-  // 1. Try to derive TBM from newMonthlyPremium × remainingInstallments
-  if (saldoInsoluto && saldoInsoluto > 0) {
-    const tbmDerivada = getTasaFromPrimaUnica(refund, saldoInsoluto)
-    if (tbmDerivada !== null) {
-      return tbmDerivada
-    }
-  }
-  
-  // 2. Fallback to hardcoded rates
+// Get TBM - always use the official policy rates based on age and policy type
+const getTasaFromSnapshot = (refund: RefundRequest, isPrime: boolean, _saldoInsoluto?: number): number => {
   const age = refund.calculationSnapshot?.age
-  console.warn('Using fallback TBM rate - no data found in snapshot')
   return getTasaBrutaMensualFallback(age, isPrime)
 }
 
