@@ -3255,11 +3255,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Monto Crédito:</span>
-                      <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span>
+                      <span className="font-medium">${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Plazo (meses):</span>
-                      <span className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</span>
+                      <span className="font-medium">{refund.calculationSnapshot?.confirmedOriginalInstallments || refund.calculationSnapshot?.originalInstallments || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
