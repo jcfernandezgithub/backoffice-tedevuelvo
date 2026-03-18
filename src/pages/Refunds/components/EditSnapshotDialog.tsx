@@ -270,6 +270,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // Watch confirmed credit fields (preferred) and simulation fields as fallback
   const watchedAge = form.watch('age')
   const watchedConfirmedTotalAmount = form.watch('confirmedTotalAmount')
+  const watchedConfirmedAverageInsuredBalance = form.watch('confirmedAverageInsuredBalance')
   const watchedConfirmedOriginalInstallments = form.watch('confirmedOriginalInstallments')
   const watchedConfirmedRemainingInstallments = form.watch('confirmedRemainingInstallments')
   const watchedTotalAmount = form.watch('totalAmount')
@@ -282,6 +283,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     dirtyFields.age ||
     dirtyFields.birthDate ||
     dirtyFields.confirmedTotalAmount ||
+    dirtyFields.confirmedAverageInsuredBalance ||
     dirtyFields.confirmedOriginalInstallments ||
     dirtyFields.confirmedRemainingInstallments ||
     dirtyFields.insuranceToEvaluate
@@ -296,6 +298,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     const age = Number(watchedAge)
     // Use confirmed values if available, fallback to simulation
     const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
+    const saldoInsoluto = Number(watchedConfirmedAverageInsuredBalance || form.watch('averageInsuredBalance'))
     const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
     const cuotasPendientes = Number(watchedConfirmedRemainingInstallments || watchedRemainingInstallments)
     const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
@@ -303,7 +306,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
 
     try {
-      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro)
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined)
       if (result.error) return
 
       if (!overridePrimas) {
@@ -320,6 +323,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }, [
     watchedAge,
     watchedConfirmedTotalAmount,
+    watchedConfirmedAverageInsuredBalance,
     watchedConfirmedOriginalInstallments,
     watchedConfirmedRemainingInstallments,
     watchedTotalAmount,
