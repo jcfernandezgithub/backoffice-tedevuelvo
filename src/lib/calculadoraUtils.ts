@@ -373,7 +373,7 @@ export const calcularDevolucion = (
       tasaPreferencial,
       cuotasUtilizadas,
       montoRedondeado,
-      montoRestanteCredito,
+      montoRestanteCredito: saldo,
       primaUnicaBanco: Math.round(primaUnicaActual),
       seguroTotalBanco: Math.round(seguroTotalActual),
       seguroTotalPreferencial: Math.round(seguroTotalPreferencial),
