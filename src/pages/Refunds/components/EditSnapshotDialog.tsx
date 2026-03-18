@@ -298,7 +298,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     const age = Number(watchedAge)
     // Use confirmed values if available, fallback to simulation
     const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
-    const saldoInsoluto = Number(form.watch('confirmedAverageInsuredBalance') || form.watch('averageInsuredBalance'))
+    const saldoInsoluto = Number(watchedConfirmedAverageInsuredBalance || form.watch('averageInsuredBalance'))
     const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
     const cuotasPendientes = Number(watchedConfirmedRemainingInstallments || watchedRemainingInstallments)
     const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
