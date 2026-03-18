@@ -211,8 +211,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     form.reset(getResetValues())
   }, [open, defaults])
 
-  // Watch credit fields to auto-recalculate premiums
+  // Watch confirmed credit fields (preferred) and simulation fields as fallback
   const watchedAge = form.watch('age')
+  const watchedConfirmedTotalAmount = form.watch('confirmedTotalAmount')
+  const watchedConfirmedOriginalInstallments = form.watch('confirmedOriginalInstallments')
+  const watchedConfirmedRemainingInstallments = form.watch('confirmedRemainingInstallments')
   const watchedTotalAmount = form.watch('totalAmount')
   const watchedOriginalInstallments = form.watch('originalInstallments')
   const watchedRemainingInstallments = form.watch('remainingInstallments')
@@ -222,22 +225,23 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const hasCreditFieldEdits = Boolean(
     dirtyFields.age ||
     dirtyFields.birthDate ||
-    dirtyFields.totalAmount ||
-    dirtyFields.originalInstallments ||
-    dirtyFields.remainingInstallments ||
+    dirtyFields.confirmedTotalAmount ||
+    dirtyFields.confirmedOriginalInstallments ||
+    dirtyFields.confirmedRemainingInstallments ||
     dirtyFields.insuranceToEvaluate
   )
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
-    // recalcula solo cuando el usuario cambia campos base del crédito.
+    // recalcula solo cuando el usuario cambia campos confirmados del crédito.
     if (!hasCreditFieldEdits) return
 
     const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
     const age = Number(watchedAge)
-    const monto = Number(watchedTotalAmount)
-    const cuotasTotales = Number(watchedOriginalInstallments)
-    const cuotasPendientes = Number(watchedRemainingInstallments)
+    // Use confirmed values if available, fallback to simulation
+    const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
+    const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
+    const cuotasPendientes = Number(watchedConfirmedRemainingInstallments || watchedRemainingInstallments)
     const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
 
     if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
@@ -259,6 +263,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
   }, [
     watchedAge,
+    watchedConfirmedTotalAmount,
+    watchedConfirmedOriginalInstallments,
+    watchedConfirmedRemainingInstallments,
     watchedTotalAmount,
     watchedOriginalInstallments,
     watchedRemainingInstallments,
