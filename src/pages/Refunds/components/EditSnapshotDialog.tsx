@@ -631,13 +631,13 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Confirma los valores definitivos del crédito. Puedes copiar los datos de la simulación o ingresarlos manualmente.
+                  Confirma los valores definitivos del crédito. Estos campos son <span className="font-semibold text-foreground">obligatorios</span> para guardar cambios.
                 </p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito" prefix="$" />
-                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio" prefix="$" />
-                  <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales" />
-                  <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes" />
+                  <NumberField control={form.control} name="confirmedTotalAmount" label="Monto total crédito *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo asegurado promedio *" prefix="$" />
+                  <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales *" />
+                  <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes *" />
                 </div>
               </div>
 
