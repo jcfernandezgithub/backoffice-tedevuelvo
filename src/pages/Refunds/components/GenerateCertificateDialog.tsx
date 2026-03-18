@@ -2920,11 +2920,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Monto Crédito</span>
-                      <p className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
+                      <p className="font-medium">${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Cuotas Pendientes</span>
-                      <p className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 'N/A'}</p>
+                      <p className="font-medium">{refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
