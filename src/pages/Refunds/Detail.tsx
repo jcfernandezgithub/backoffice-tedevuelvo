@@ -806,6 +806,72 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         </div>
                       )}
                     </div>
+
+                    {/* Datos confirmados del crédito */}
+                    {(() => {
+                      const snap = refund.calculationSnapshot
+                      const hasConfirmed = snap.confirmedTotalAmount || snap.confirmedAverageInsuredBalance || snap.confirmedOriginalInstallments || snap.confirmedRemainingInstallments
+                      const allConfirmed = snap.confirmedTotalAmount && snap.confirmedAverageInsuredBalance && snap.confirmedOriginalInstallments && snap.confirmedRemainingInstallments
+
+                      return (
+                        <div className="mt-4 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-semibold text-foreground">Datos confirmados del crédito</h4>
+                            {allConfirmed && (
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-xs">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Completado
+                              </Badge>
+                            )}
+                          </div>
+
+                          {!hasConfirmed ? (
+                            <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/30">
+                              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                                  Datos confirmados pendientes
+                                </p>
+                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                  Aún no se han confirmado los datos reales del crédito. Edita el snapshot para completar esta información antes de avanzar con la solicitud.
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`grid grid-cols-2 gap-3 p-4 rounded-lg border ${allConfirmed ? 'bg-emerald-50/50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800' : 'bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'}`}>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Monto total confirmado</p>
+                                <p className="font-medium">
+                                  {snap.confirmedTotalAmount
+                                    ? `$${Number(snap.confirmedTotalAmount).toLocaleString('es-CL')} CLP`
+                                    : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Saldo insoluto confirmado</p>
+                                <p className="font-medium">
+                                  {snap.confirmedAverageInsuredBalance
+                                    ? `$${Number(snap.confirmedAverageInsuredBalance).toLocaleString('es-CL')} CLP`
+                                    : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Cuotas originales confirmadas</p>
+                                <p className="font-medium">
+                                  {snap.confirmedOriginalInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Cuotas restantes confirmadas</p>
+                                <p className="font-medium">
+                                  {snap.confirmedRemainingInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
                   ) : (
                     <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-64">
                       {JSON.stringify(refund.calculationSnapshot, null, 2)}
