@@ -351,7 +351,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     nroOperacion: '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
-    saldoInsoluto: (refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
+    saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
     beneficiarioNombre: '',
     beneficiarioRut: '',
   })
@@ -479,7 +479,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     // Saldo Insoluto = Valor ingresado en el formulario o el valor por defecto
     const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     // Nper = Cuotas restantes por pagar
-    const nper = refund.calculationSnapshot?.remainingInstallments || 0
+    const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     
     // Primero intentar usar Prima Única directa desde snapshot (newMonthlyPremium × remainingInstallments)
     const primaUnicaDirecta = getPrimaUnicaFromSnapshot(refund)
@@ -543,7 +543,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
     // Valores calculados para Prime (Póliza 344) - Prima Única usa saldoInsoluto del formulario
     const saldoInsoluto = getSaldoInsolutoValue()
-    const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
+    const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     const ageValue = refund.calculationSnapshot?.age
     const tcValue = getTasaBrutaMensualPrime(ageValue)
     
@@ -1688,7 +1688,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
       // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
-      const nperValue = refund.calculationSnapshot?.remainingInstallments || 0
+      const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
       const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       
       // Prima Única: primero intentar desde snapshot, luego calcular
@@ -2920,11 +2920,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Monto Crédito</span>
-                      <p className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
+                      <p className="font-medium">${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground text-xs">Cuotas Pendientes</span>
-                      <p className="font-medium">{refund.calculationSnapshot?.remainingInstallments || 'N/A'}</p>
+                      <p className="font-medium">{refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -3148,7 +3148,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${getSaldoInsolutoValue().toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
@@ -3255,11 +3255,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Monto Crédito:</span>
-                      <span className="font-medium">${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span>
+                      <span className="font-medium">${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Plazo (meses):</span>
-                      <span className="font-medium">{refund.calculationSnapshot?.originalInstallments || 'N/A'}</span>
+                      <span className="font-medium">{refund.calculationSnapshot?.confirmedOriginalInstallments || refund.calculationSnapshot?.originalInstallments || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -3297,7 +3297,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                   Fórmula: Saldo insoluto × TBM × Nper
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  ${(refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.remainingInstallments || 0} cuotas
+                  ${(refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || 0).toLocaleString('es-CL')} × {getTbmForDisplay().toFixed(4)} por mil × {refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0} cuotas
                 </p>
               </div>
             </div>
