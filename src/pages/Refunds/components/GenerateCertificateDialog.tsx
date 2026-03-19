@@ -2490,7 +2490,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
       doc.text('18 – 55 años', margin + 2, y)
-      doc.text('0,2970', margin + 72, y)
+      doc.text('0,3000', margin + 72, y)
       y += 5
       doc.rect(margin, y - 3, 70, 5, 'S')
       doc.rect(margin + 70, y - 3, 50, 5, 'S')
