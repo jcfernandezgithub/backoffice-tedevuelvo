@@ -12,6 +12,11 @@
 - **Saldo Insoluto estimado**: cuando no se provee, se estima proporcionalmente como `montoCredito × (cuotasPendientes / cuotasTotales)`.
 - **Fórmulas en detalle de solicitud**: la sección de desglose de cálculos ahora usa `confirmedRemainingInstallments` (cuotas confirmadas) en lugar de las cuotas de simulación.
 
+#### Actualización de Tasas Comerciales Brutas Mensuales (TC/TBM por mil)
+- **Póliza 342 (Estándar, ≤20M)**: tasa 18-55 años actualizada de 0.2970 → **0.3000**; tasa 56-65 años de 0.3733 → **0.3900**.
+- **Póliza 344 (Prime, >20M)**: tasa 18-55 años actualizada de 0.3267 → **0.3440**; tasa 56-65 años de 0.4106 → **0.3430**.
+- Cambio aplicado en certificados genéricos (`GenerateCertificateDialog`) y en el generador específico de Banco de Chile (`bancoChilePdfGenerator`).
+
 ---
 
 ### Versión 3.2.8 - 2026-03-12
