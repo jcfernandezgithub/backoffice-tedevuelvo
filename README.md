@@ -17,10 +17,15 @@
 - **Póliza 344 (Prime, >20M)**: tasa 18-55 años actualizada de 0.3267 → **0.3440**; tasa 56-65 años de 0.4106 → **0.3430**.
 - Cambio aplicado en certificados genéricos (`GenerateCertificateDialog`) y en el generador específico de Banco de Chile (`bancoChilePdfGenerator`).
 
-#### Fix: tablas de tasas hardcodeadas en PDF
+#### Fix: tablas de tasas hardcodeadas en PDF (GenerateCertificateDialog)
 - **Póliza 344 (Prime)**: las tablas visuales del PDF mostraban valores antiguos (0,3267 / 0,4106); corregidas a **0,3440 / 0,3430**.
 - **Póliza 342 (Estándar)**: las tablas visuales del PDF mostraban valores antiguos (0,2970 / 0,3733); corregidas a **0,3000 / 0,3900**.
 - Se actualizaron las 8 instancias de tablas hardcodeadas en `GenerateCertificateDialog` (4 tablas × 2 rangos de edad).
+
+#### Fix: tablas de tasas hardcodeadas en PDF Banco de Chile (bancoChilePdfGenerator)
+- **Póliza 344 (Prime)**: las tablas visuales mostraban `0,34` para ambos rangos; corregidas a **0,3440** (18-55 años) y **0,3430** (56-65 años).
+- Se actualizaron las 4 instancias en 2 tablas de tasas y el ejemplo de cálculo (`$367.200` → **`$371.520`**).
+- Las tasas de Póliza 342 (Estándar) ya estaban correctas (`0,30` / `0,39`).
 
 ---
 
