@@ -283,7 +283,7 @@ export const calcularDevolucion = (
         : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
 
       const primaUnicaActual = saldo * tasaActual;
-      const seguroTotalActual = (primaUnicaActual / cuotasUtilizadas) * cuotasTotales;
+      const seguroTotalActual = primaUnicaActual;
       const primaMensualActual = seguroTotalActual / cuotasTotales;
       const seguroRestanteActual = primaMensualActual * cuotasPendientes;
       const seguroTotalPreferencial = saldo * tasaPreferencial * cuotasPendientes;
@@ -356,7 +356,7 @@ export const calcularDevolucion = (
       : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
 
     const primaUnicaActual = saldo * tasaActual;
-    const seguroTotalActual = (primaUnicaActual / cuotasUtilizadas) * cuotasTotales;
+    const seguroTotalActual = primaUnicaActual;
     const primaMensualActual = seguroTotalActual / cuotasTotales;
     const seguroRestanteActual = primaMensualActual * cuotasPendientes;
     const seguroTotalPreferencial = saldo * tasaPreferencial * cuotasPendientes;
