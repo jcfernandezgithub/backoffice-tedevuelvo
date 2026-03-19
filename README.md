@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.8
+## Versión 3.2.9
 
 ## Changelog
+
+### Versión 3.2.9 - 2026-03-19
+
+#### Corrección de lógica de cálculo de primas (calculadora y editor de snapshot)
+- **Prima Única Banco**: corregida para calcularse sobre el monto total del crédito (`montoCredito × tasaActual`) en lugar del saldo insoluto.
+- **Prima Mensual Banco**: ahora se divide la prima única por las cuotas utilizadas de la tabla de tasas (`primaUnica / cuotasUtilizadas`).
+- **Saldo Insoluto estimado**: cuando no se provee, se estima proporcionalmente como `montoCredito × (cuotasPendientes / cuotasTotales)`.
+- **Fórmulas en detalle de solicitud**: la sección de desglose de cálculos ahora usa `confirmedRemainingInstallments` (cuotas confirmadas) en lugar de las cuotas de simulación.
+
+---
 
 ### Versión 3.2.8 - 2026-03-12
 
