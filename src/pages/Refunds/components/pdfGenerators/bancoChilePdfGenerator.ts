@@ -1022,7 +1022,7 @@ export const generateBancoChilePrimePDF = async (
   doc.text(`Por ejemplo, un asegurado de 50 años, con una deuda inicial de $30.000.000, y un crédito a 36 meses:`, margin, y)
   y += 4
   doc.setFont('helvetica', 'bold')
-  doc.text('Prima Única = $30.000.000 * 0,34/1000 * 36 = $367.200 Pesos', margin, y)
+  doc.text('Prima Única = $30.000.000 * 0,3440/1000 * 36 = $371.520 Pesos', margin, y)
   y += 8
 
   // Exclusiones
