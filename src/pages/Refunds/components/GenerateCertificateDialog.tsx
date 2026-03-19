@@ -499,10 +499,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
   // Tasa Bruta Mensual para Póliza 344 (Prime)
   const getTasaBrutaMensualPrime = (age?: number): number => {
-    if (!age) return 0.3267
-    if (age >= 18 && age <= 55) return 0.3267
-    if (age >= 56 && age <= 65) return 0.4106
-    return 0.3267
+    if (!age) return 0.3440
+    if (age >= 18 && age <= 55) return 0.3440
+    if (age >= 56 && age <= 65) return 0.3430
+    return 0.3440
   }
 
   const generatePrimePDF = async () => {

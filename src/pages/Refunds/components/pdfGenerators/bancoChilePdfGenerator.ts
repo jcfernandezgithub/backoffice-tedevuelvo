@@ -62,8 +62,8 @@ const BANCO_CHILE_CONFIG = {
     vigenciaFin: '30/11/2028',
     capitalMaximo: 60000000,
     tasas: {
-      '18-55': 0.3267,
-      '56-65': 0.4106,
+      '18-55': 0.3440,
+      '56-65': 0.3430,
     },
     corredor: {
       nombre: 'Prime Corredores de Seguros SPA',
