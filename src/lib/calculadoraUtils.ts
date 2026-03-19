@@ -234,8 +234,8 @@ export const calcularDevolucion = (
   tipoSeguro: "desgravamen" | "cesantia" | "ambos" = "desgravamen",
   saldoInsoluto?: number,
 ): CalculationResult => {
-  // Si no se provee saldo insoluto, se usa el monto del crédito como fallback
-  const saldo = saldoInsoluto || montoCredito;
+  // Saldo insoluto: si no se provee, se estima proporcionalmente
+  const saldo = saldoInsoluto || Math.round(montoCredito * (cuotasPendientes / cuotasTotales));
   try {
     if (tipoSeguro === "cesantia") {
       const cesantia = calcularCesantia(banco, montoCredito, cuotasPendientes);
