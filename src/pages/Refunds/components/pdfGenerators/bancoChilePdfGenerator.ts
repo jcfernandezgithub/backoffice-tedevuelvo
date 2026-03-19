@@ -1010,7 +1010,7 @@ export const generateBancoChilePrimePDF = async (
   doc.rect(margin, y - 3, 60, 4, 'S')
   doc.rect(margin + 60, y - 3, 40, 4, 'S')
   doc.text('18 – 55 años', margin + 2, y)
-  doc.text('0,34', margin + 62, y)
+  doc.text('0,3440', margin + 62, y)
   y += 4
   doc.rect(margin, y - 3, 60, 4, 'S')
   doc.rect(margin + 60, y - 3, 40, 4, 'S')
