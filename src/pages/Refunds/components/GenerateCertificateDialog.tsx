@@ -3350,10 +3350,27 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handlePreview} className="gap-2">
-                <Eye className="h-4 w-4" />
-                Previsualizar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button 
+                        onClick={handlePreview} 
+                        className="gap-2" 
+                        disabled={!formData.folio || isAssigningFolio}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Previsualizar
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {(!formData.folio || isAssigningFolio) && (
+                    <TooltipContent>
+                      {isAssigningFolio ? 'Asignando folio...' : 'Se requiere un folio asignado para previsualizar'}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </>
           ) : (
             <>
