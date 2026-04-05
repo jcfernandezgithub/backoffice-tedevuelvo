@@ -2848,15 +2848,33 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.line(pageWidth / 2 - 25, y, pageWidth / 2 + 25, y)
       doc.line(pageWidth - margin - 45, y, pageWidth - margin, y)
 
-      // Download and return blob
+      // Download and get blob
       const fileName = `Certificado_Cobertura_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
-      const pdfBlob = doc.output('blob') as Blob
+      pdfBlob = doc.output('blob') as Blob
+      }
 
-      toast({
-        title: 'Certificado generado',
-        description: 'El certificado de cobertura se descargó correctamente',
-      })
+      // Upload to client folder
+      if (pdfBlob) {
+        setIsUploading(true)
+        try {
+          await uploadCertificateToClient(pdfBlob)
+          toast({
+            title: 'Certificado confirmado',
+            description: 'El certificado se descargó y subió a la carpeta del cliente',
+          })
+        } catch (uploadError: any) {
+          console.error('Error uploading certificate:', uploadError)
+          toast({
+            title: 'Certificado descargado',
+            description: 'Se descargó correctamente pero no se pudo subir a la carpeta del cliente',
+            variant: 'destructive',
+          })
+        } finally {
+          setIsUploading(false)
+        }
+      }
+
       setOpen(false)
     } catch (error) {
       console.error('Error generating certificate:', error)
