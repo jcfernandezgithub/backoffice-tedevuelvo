@@ -250,7 +250,7 @@ function openPrintWindow(content: string) {
   }
 }
 
-// Helper: genera un PDF blob con jsPDF para subir al servidor
+// Helper: genera un PDF blob con jsPDF para subir al servidor (formato genérico)
 function generateCortePdfBlob(
   refund: RefundRequest,
   formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string },
@@ -297,6 +297,101 @@ function generateCortePdfBlob(
   doc.text('Cristian Andrés Nieto Gavilán', pageWidth / 2, y, { align: 'center' }); y += 5
   doc.setFont('helvetica', 'normal')
   doc.text(`p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}`, pageWidth / 2, y, { align: 'center' })
+
+  return doc.output('blob')
+}
+
+// Helper: genera un PDF blob con formato SANTANDER V3 para subir al servidor
+async function generateSantanderCortePdfBlob(
+  refund: RefundRequest,
+  formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string },
+): Promise<Blob> {
+  const doc = new jsPDF()
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 20
+  let y = 20
+  const maxWidth = pageWidth - margin * 2
+
+  const today = new Date()
+  const dateStr = `Santiago, ${today.getDate()} de ${today.toLocaleDateString('es-CL', { month: 'long' })} de ${today.getFullYear()}`
+
+  // Página 1: Carta principal
+  doc.setFontSize(10)
+  doc.text(dateStr, margin, y); y += 10
+  doc.text(`Sres.: ${formData.companyName}`, margin, y); y += 7
+  doc.text('Ref: Carta de Renuncia al seguro que indica', margin, y); y += 12
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.text('INFORMA TÉRMINO ANTICIPADO DE SEGURO Y SOLICITA', pageWidth / 2, y, { align: 'center' }); y += 5
+  doc.text('DEVOLUCIÓN DE PRIMA NO DEVENGADA', pageWidth / 2, y, { align: 'center' }); y += 10
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+
+  const p1 = `Por medio de la presente, TDV SERVICIOS SPA, RUT N° ${FIXED_ACCOUNT_DATA.accountHolderRut}, debidamente facultada y actuando en representación y por cuenta de don/doña ${refund.fullName}, cédula de identidad N° ${refund.rut}, viene a comunicar formalmente a esa Compañía Aseguradora ${formData.companyName} la renuncia expresa al seguro ${formData.insuranceName}, incluyendo todas sus coberturas asociadas.`
+  const lines1 = doc.splitTextToSize(p1, maxWidth)
+  doc.text(lines1, margin, y); y += lines1.length * 4.5 + 4
+
+  const p2 = `El referido seguro fue contratado en conjunto con el crédito de consumo otorgado por el Banco ${formData.bankName}, correspondiente a la operación de crédito N° ${formData.creditNumber}, asociado a la Póliza N° ${formData.policyNumber}.`
+  const lines2 = doc.splitTextToSize(p2, maxWidth)
+  doc.text(lines2, margin, y); y += lines2.length * 4.5 + 4
+
+  const p3 = `La presente renuncia se formula conforme a lo dispuesto en el artículo 537 del Código de Comercio y demás normativa aplicable, solicitando se sirva proceder a la cancelación del seguro indicado y a la determinación y devolución de las primas no devengadas que correspondan.`
+  const lines3 = doc.splitTextToSize(p3, maxWidth)
+  doc.text(lines3, margin, y); y += lines3.length * 4.5 + 4
+
+  const p4 = `Asimismo, de acuerdo con lo estipulado en la Circular N°2114 de fecha año 2013 de la Comisión para el Mercado Financiero (CMF), solicitamos la devolución de la prima pagada y no devengada o consumida, la que deberá ser abonada a la cuenta corriente N° ${FIXED_ACCOUNT_DATA.accountNumber} del Banco ${FIXED_ACCOUNT_DATA.accountBank} cuyo titular es ${FIXED_ACCOUNT_DATA.accountHolder}, RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}, correo electrónico ${FIXED_ACCOUNT_DATA.contactEmail}. Se hace presente que el monto a restituir deberá abonarse en la cuenta bancaria señalada dentro de los próximos 10 días hábiles, conforme a la normativa vigente.`
+  const lines4 = doc.splitTextToSize(p4, maxWidth)
+  doc.text(lines4, margin, y); y += lines4.length * 4.5 + 4
+
+  const p5 = `Finalmente, se adjunta a la presente carta una copia del mandato que nos faculta para solicitar y tramitar la renuncia del seguro antes mencionado y recaudar a nombre del asegurado la devolución de las primas pagadas no devengadas, por lo cual solicitamos que se nos informe el resultado de esta gestión al correo electrónico ${FIXED_ACCOUNT_DATA.contactEmail} y al número telefónico ${FIXED_ACCOUNT_DATA.contactPhone}.`
+  const lines5 = doc.splitTextToSize(p5, maxWidth)
+  doc.text(lines5, margin, y); y += lines5.length * 4.5 + 4
+
+  doc.text('Sin otro particular, se despiden atentamente,', margin, y); y += 20
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Cristian Andrés Nieto Gavilán / Rut: 13040385-9', pageWidth / 2, y, { align: 'center' }); y += 5
+  doc.setFont('helvetica', 'normal')
+  doc.text(`p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}`, pageWidth / 2, y, { align: 'center' })
+
+  // Helper para agregar imagen como página completa
+  const addImagePage = (imgSrc: string, altText: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        doc.addPage()
+        const imgRatio = img.width / img.height
+        const pageRatio = (pageWidth - 20) / (pageHeight - 20)
+        let imgW: number, imgH: number
+        if (imgRatio > pageRatio) {
+          imgW = pageWidth - 20
+          imgH = imgW / imgRatio
+        } else {
+          imgH = pageHeight - 20
+          imgW = imgH * imgRatio
+        }
+        const x = (pageWidth - imgW) / 2
+        const yPos = (pageHeight - imgH) / 2
+        doc.addImage(img, 'JPEG', x, yPos, imgW, imgH)
+        resolve()
+      }
+      img.onerror = () => {
+        doc.addPage()
+        doc.setFontSize(12)
+        doc.text(altText, pageWidth / 2, pageHeight / 2, { align: 'center' })
+        resolve()
+      }
+      img.src = imgSrc
+    })
+  }
+
+  // Agregar las 3 páginas adjuntas
+  await addImagePage(corteCedulaImg, 'Cédula de Identidad Legalizada')
+  await addImagePage(corteNotarialImg, 'Certificado Notarial')
+  await addImagePage(corteConservadorImg, 'Certificado Conservador de Bienes Raíces')
 
   return doc.output('blob')
 }
