@@ -1658,7 +1658,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   const uploadCertificateToClient = async (pdfBlob: Blob) => {
     const token = authService.getAccessToken()
     const uploadFormData = new FormData()
-    uploadFormData.append('file', pdfBlob, `certificado-cobertura-${refund.publicId}.pdf`)
+    const folioSuffix = formData.folio ? `-folio-${formData.folio}` : ''
+    const timestamp = Date.now()
+    uploadFormData.append('file', pdfBlob, `certificado-cobertura-${refund.publicId}${folioSuffix}-${timestamp}.pdf`)
     uploadFormData.append('kind', 'certificado-cobertura')
 
     const response = await fetch(`${CERT_API_BASE_URL}/refund-requests/${refund.publicId}/upload-file`, {
@@ -1674,7 +1676,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       throw new Error(errorData.message || 'Error al subir certificado')
     }
 
-    queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.publicId] })
+    // Forzar refetch inmediato de documentos para ver el nuevo archivo
+    await queryClient.refetchQueries({ queryKey: ['refund-documents', refund.publicId] })
   }
 
   const generatePDF = async () => {
