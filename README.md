@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 3.2.9
+## Versión 3.3.0
 
 ## Changelog
+
+### Versión 3.3.0 - 2026-04-05
+
+#### Folio automático en Certificados de Cobertura
+- **Asignación automática de folio**: al abrir el diálogo de generación de certificados, el sistema asigna automáticamente un número de folio único vía API (`PATCH /assign-folio`).
+- **Reasignación de folio**: se agregó un botón para solicitar un nuevo correlativo (`?reassign=true`), invalidando el folio anterior.
+- **Bloqueo de vista previa**: la previsualización del documento queda bloqueada hasta que el folio se asigne exitosamente, garantizando trazabilidad.
+
+#### Alertas de tiempo excedido en Operación (Resumen)
+- **Badges visuales en pipeline**: se agregaron indicadores rojos con ícono de alerta en las calugas del pipeline de Resumen, mostrando cuántas solicitudes han superado los días objetivo configurados en Ajustes → Objetivos por Etapa.
+- **Tooltips informativos**: al pasar el cursor sobre el badge se muestra el detalle de la cantidad y los días objetivo.
+- **Consistencia con filtros**: los contadores de overdue se calculan sobre el mismo universo de datos filtrados por fecha que las calugas del pipeline.
+
+#### Nómina - Nº Documento por defecto
+- **Valor por defecto**: al agregar solicitudes desde "Agregar desde solicitudes", el campo "Nº Documento" ahora se autocompleta con el valor "1".
+
+#### Fix: Carta de Corte Banco Santander — PDF subido con formato incorrecto
+- **Problema**: al subir la carta de corte a la carpeta del cliente, el PDF se generaba con el formato genérico antiguo en lugar del formato Santander V3 previsualizado.
+- **Solución**: se creó `generateSantanderCortePdfBlob` que genera el PDF con el formato V3 completo (texto legal "viene a comunicar", 4 páginas con imágenes institucionales adjuntas), y se actualizó el handler de subida para usarlo.
+
+---
 
 ### Versión 3.2.9 - 2026-03-19
 
