@@ -93,8 +93,8 @@ export function TabResumen() {
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
-  // Detectar solicitudes con tiempo excedido (usa TODOS los refunds, no filtrados por fecha)
-  const { overdueStages } = useOverdueData(allRefunds);
+  // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
+  const { overdueStages } = useOverdueData(filteredRefunds);
   const stageObjectives = readStageObjectives();
   const overdueByStage = useMemo(() => {
     const map: Record<string, { count: number; objetivo: number }> = {};
