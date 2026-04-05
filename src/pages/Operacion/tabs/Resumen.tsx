@@ -40,6 +40,28 @@ const ESTADO_COLORS: Record<string, string> = {
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
 };
 
+/** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
+function OverdueBadge({ count, stageLabel, objetivo }: { count: number; stageLabel: string; objetivo?: number }) {
+  if (!count) return null;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <UITooltip>
+        <TooltipTrigger asChild>
+          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 animate-pulse cursor-default">
+            <AlertTriangle className="h-3 w-3 text-red-500" />
+            <span className="text-[10px] font-bold text-red-600 dark:text-red-400 tabular-nums">{count}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[240px]">
+          <p className="text-xs">
+            <strong>{count}</strong> solicitud{count !== 1 ? 'es' : ''} en "{stageLabel}" {objetivo ? `superan los ${objetivo} días objetivo` : 'superan el tiempo objetivo'}.
+          </p>
+        </TooltipContent>
+      </UITooltip>
+    </TooltipProvider>
+  );
+}
+
 export function TabResumen() {
   const { filtros } = useFilters();
   const navigate = useNavigate();
