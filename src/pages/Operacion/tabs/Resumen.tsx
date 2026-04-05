@@ -70,7 +70,13 @@ export function TabResumen() {
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
-  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
+  // Detectar solicitudes con tiempo excedido (usa TODOS los refunds, no filtrados por fecha)
+  const { overdueStages } = useOverdueData(allRefunds);
+  const overdueByStage = useMemo(() => {
+    const map: Record<string, number> = {};
+    overdueStages.forEach(s => { map[s.stageKey] = s.overdueCount; });
+    return map;
+  }, [overdueStages]);
   // Busca la última entrada en statusHistory donde "to" === status actual y hubo cambio real
   const getLastStatusChangeDate = (refund: any): string | null => {
     const history = refund.statusHistory;
