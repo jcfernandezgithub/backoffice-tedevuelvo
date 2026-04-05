@@ -1256,7 +1256,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(() => {
                             const displayStatus = getDisplayStatus(refund)
                             return (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge className={getStatusColors(displayStatus)}>
                                   {statusLabels[displayStatus] || displayStatus}
                                 </Badge>
@@ -1265,6 +1265,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                     <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
                                   </span>
                                 )}
+                                <OverdueRowIndicator refund={refund} />
                               </div>
                             )
                           })()}
