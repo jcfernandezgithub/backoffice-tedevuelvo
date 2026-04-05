@@ -200,6 +200,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     limit: 20,
   })
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
+  const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
 
   // Fuente compartida con Dashboard/Operación para modo histórico
   const {
