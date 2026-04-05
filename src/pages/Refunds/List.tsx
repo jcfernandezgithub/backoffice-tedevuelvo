@@ -773,10 +773,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
   const hasNextPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage < totalPages : normalizedData.hasNext
-  const hasPrevPage = historicalStatusMode ? historicalPage > 1 : normalizedData.hasPrev
+  const hasPrevPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage > 1 : normalizedData.hasPrev
 
-  const currentPage = historicalStatusMode ? historicalPage : normalizedData.page
-  const startIndex = (currentPage - 1) * (historicalStatusMode ? historicalPageSize : normalizedData.pageSize)
+  const currentPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * ((historicalStatusMode || activeOverdueFilter) ? historicalPageSize : normalizedData.pageSize)
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
