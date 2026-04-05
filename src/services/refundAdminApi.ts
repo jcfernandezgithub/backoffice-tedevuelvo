@@ -295,8 +295,9 @@ class RefundAdminApiClient {
     return { ...result, status: normalizeStatus(result.status) }
   }
 
-  async assignFolio(publicId: string): Promise<{ ok: boolean; publicId: string; nroFolio: string; alreadyAssigned: boolean }> {
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/assign-folio`, {
+  async assignFolio(publicId: string, reassign = false): Promise<{ ok: boolean; publicId: string; nroFolio: string; alreadyAssigned: boolean; reassigned?: boolean }> {
+    const query = reassign ? '?reassign=true' : ''
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/assign-folio${query}`, {
       method: 'PATCH',
       headers: await this.getAuthHeaders(),
     })

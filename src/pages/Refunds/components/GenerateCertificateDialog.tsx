@@ -379,12 +379,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     }
   }, [open, refund])
 
-  const assignFolio = useCallback(async () => {
+  const assignFolio = useCallback(async (reassign = false) => {
     if (!refund.publicId) return
     setIsAssigningFolio(true)
     setFolioError(undefined)
     try {
-      const result = await refundAdminApi.assignFolio(refund.publicId)
+      const result = await refundAdminApi.assignFolio(refund.publicId, reassign)
       if (result.ok && result.nroFolio) {
         setFormData(prev => ({ ...prev, folio: result.nroFolio }))
         if (result.alreadyAssigned) {
@@ -3011,7 +3011,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                                 onClick={() => {
                                   if (window.confirm(`¿Reasignar un nuevo folio?\n\nEl folio actual (${formData.folio}) será reemplazado por uno nuevo. Esta acción no se puede deshacer.`)) {
                                     setFormData(prev => ({ ...prev, folio: '' }))
-                                    assignFolio()
+                                    assignFolio(true)
                                   }
                                 }}
                               >
@@ -3031,7 +3031,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                           variant="outline"
                           size="sm"
                           className="w-full h-9 gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10"
-                          onClick={assignFolio}
+                          onClick={() => assignFolio()}
                         >
                           <AlertCircle className="h-3.5 w-3.5" />
                           Reintentar asignar folio
