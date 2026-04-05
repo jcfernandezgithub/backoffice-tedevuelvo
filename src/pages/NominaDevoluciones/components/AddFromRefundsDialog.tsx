@@ -78,7 +78,7 @@ function mapRefundToRow(r: RefundRequest): NominaRowInput {
     cuentaProveedor: r.bankInfo?.accountNumber || '',
     formaPago: 'CTACTE SCOTIABANK',
     tipoDocumento: 'VARIOS',
-    numeroDocumento: '',
+    numeroDocumento: '1',
     monto: getRealAmount(r),
     codigoSucursal: '000',
     mensajeAviso: 'Devolución Tedevuelvo',
