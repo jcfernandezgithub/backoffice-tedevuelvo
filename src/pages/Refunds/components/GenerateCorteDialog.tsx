@@ -686,8 +686,7 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
   const handleUploadToClient = async () => {
     setIsUploading(true)
     try {
-      // Reusar generador genérico (sin póliza ya que Santander siempre tiene)
-      const pdfBlob = generateCortePdfBlob(refund, formData, true)
+      const pdfBlob = await generateSantanderCortePdfBlob(refund, formData)
       await uploadCorteToClient(refund.publicId, pdfBlob, queryClient)
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
