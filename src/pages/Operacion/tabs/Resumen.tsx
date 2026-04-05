@@ -95,11 +95,15 @@ export function TabResumen() {
 
   // Detectar solicitudes con tiempo excedido (usa TODOS los refunds, no filtrados por fecha)
   const { overdueStages } = useOverdueData(allRefunds);
+  const stageObjectives = readStageObjectives();
   const overdueByStage = useMemo(() => {
-    const map: Record<string, number> = {};
-    overdueStages.forEach(s => { map[s.stageKey] = s.overdueCount; });
+    const map: Record<string, { count: number; objetivo: number }> = {};
+    overdueStages.forEach(s => {
+      const obj = stageObjectives.find(o => o.key === s.stageKey);
+      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    });
     return map;
-  }, [overdueStages]);
+  }, [overdueStages, stageObjectives]);
   // Busca la última entrada en statusHistory donde "to" === status actual y hubo cambio real
   const getLastStatusChangeDate = (refund: any): string | null => {
     const history = refund.statusHistory;
