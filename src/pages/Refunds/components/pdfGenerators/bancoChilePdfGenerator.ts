@@ -129,7 +129,7 @@ export const generateBancoChilePrimePDF = async (
   firmaBase64: string,
   firmaTdvBase64: string,
   firmaCngBase64: string
-): Promise<void> => {
+): Promise<Blob> => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 15
@@ -1475,7 +1475,7 @@ export const generateBancoChileStandardPDF = async (
   firmaBase64: string,
   firmaTdvBase64: string,
   firmaCngBase64: string
-): Promise<void> => {
+): Promise<Blob> => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 15
