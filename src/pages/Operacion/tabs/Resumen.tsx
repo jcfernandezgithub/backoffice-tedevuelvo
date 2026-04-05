@@ -162,6 +162,17 @@ export function TabResumen() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
+  const { overdueStages } = useOverdueData(filteredRefunds);
+  const stageObjectives = readStageObjectives();
+  const overdueByStage = useMemo(() => {
+    const map: Record<string, { count: number; objetivo: number }> = {};
+    overdueStages.forEach(s => {
+      const obj = stageObjectives.find(o => o.key === s.stageKey);
+      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    });
+    return map;
+  }, [overdueStages, stageObjectives]);
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
     fecha: punto.fecha,
