@@ -489,7 +489,10 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</span>
+                  <OverdueBadge count={overdueByStage.approved?.count || 0} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
+                </div>
               </CardContent>
             </Card>
 
