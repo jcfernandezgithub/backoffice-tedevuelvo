@@ -537,11 +537,14 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div 
-                  className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
-                  onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
-                >
-                  {paymentScheduledRefunds.length}
+                <div className="flex items-center gap-2">
+                  <span 
+                    className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
+                  >
+                    {paymentScheduledRefunds.length}
+                  </span>
+                  <OverdueBadge count={overdueByStage.payment_scheduled?.count || 0} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
