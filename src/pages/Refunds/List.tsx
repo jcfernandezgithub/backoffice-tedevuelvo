@@ -1058,6 +1058,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         </div>
       )}
 
+      {/* Banner de alertas de tiempo excedido */}
+      <OverdueAlertsBanner
+        refunds={locallyFilteredItems}
+        activeOverdueFilter={activeOverdueFilter}
+        onFilterByOverdue={(stageKey) => {
+          setActiveOverdueFilter(stageKey)
+          setHistoricalPage(1)
+        }}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>
