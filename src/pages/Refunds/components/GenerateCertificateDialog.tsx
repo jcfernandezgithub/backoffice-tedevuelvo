@@ -370,6 +370,29 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     }
   }, [open, refund])
 
+  const assignFolio = useCallback(async () => {
+    if (!refund.publicId) return
+    setIsAssigningFolio(true)
+    setFolioError(undefined)
+    try {
+      const result = await refundAdminApi.assignFolio(refund.publicId)
+      if (result.ok && result.nroFolio) {
+        setFormData(prev => ({ ...prev, folio: result.nroFolio }))
+        if (result.alreadyAssigned) {
+          toast({ title: 'Folio existente', description: `Folio ${result.nroFolio} ya estaba asignado` })
+        } else {
+          toast({ title: 'Folio asignado', description: `Folio ${result.nroFolio} asignado correctamente` })
+        }
+      }
+    } catch (error: any) {
+      console.error('Error asignando folio:', error)
+      setFolioError(error.message || 'Error al asignar folio')
+      toast({ title: 'Error al asignar folio', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsAssigningFolio(false)
+    }
+  }, [refund.publicId])
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     if (!newOpen) {
