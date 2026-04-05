@@ -3427,17 +3427,25 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleBackToEdit} className="gap-2">
+              <Button variant="outline" onClick={handleBackToEdit} disabled={isGenerating || isUploading} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Volver a Editar
               </Button>
-              <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
+              <Button onClick={generatePDF} disabled={isGenerating || isUploading} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 {isGenerating ? (
-                  'Generando...'
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generando...
+                  </>
+                ) : isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Subiendo...
+                  </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
-                    Descargar PDF
+                    <CheckCircle2 className="h-4 w-4" />
+                    Confirmar y Descargar
                   </>
                 )}
               </Button>
