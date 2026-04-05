@@ -379,7 +379,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     }
   }, [open, refund])
 
-  const assignFolio = useCallback(async () => {
+  const assignFolio = useCallback(async (reassign = false) => {
     if (!refund.publicId) return
     setIsAssigningFolio(true)
     setFolioError(undefined)
