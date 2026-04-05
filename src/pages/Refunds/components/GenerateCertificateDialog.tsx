@@ -1644,9 +1644,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     doc.text('AuguStar Seguros de Vida', 75, y)
     doc.text('Asegurado', 145, y)
 
-    // Download
+    // Download and return blob
     const fileName = `Certificado_Prime_344_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
     doc.save(fileName)
+    return doc.output('blob') as Blob
   }
 
   const generatePDF = async () => {
@@ -2837,9 +2838,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.line(pageWidth / 2 - 25, y, pageWidth / 2 + 25, y)
       doc.line(pageWidth - margin - 45, y, pageWidth - margin, y)
 
-      // Download
+      // Download and return blob
       const fileName = `Certificado_Cobertura_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
+      const pdfBlob = doc.output('blob') as Blob
 
       toast({
         title: 'Certificado generado',

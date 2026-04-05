@@ -1458,9 +1458,10 @@ export const generateBancoChilePrimePDF = async (
 
   doc.text('Impugnado el informe, el Liquidador o la compañía dispondrá de un plazo de 6 días hábiles para responder la impugnación.', margin, y)
 
-  // Download
+  // Download and return blob
   const fileName = `Certificado_BancoChile_Prime_${config.numero}_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
   doc.save(fileName)
+  return doc.output('blob') as Blob
 }
 
 /**
@@ -2809,9 +2810,10 @@ export const generateBancoChileStandardPDF = async (
   y += impugnacion9Lines.length * 3 + 2
   doc.text('Impugnado el informe, el Liquidador o la compañía dispondrá de un plazo de 6 días hábiles para responder la impugnación.', margin, y)
 
-  // Download
+  // Download and return blob
   const fileName = `Certificado_BancoChile_Standard_${config.numero}_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
   doc.save(fileName)
+  return doc.output('blob') as Blob
 }
 
 /**
