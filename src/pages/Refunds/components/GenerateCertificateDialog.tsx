@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,10 +11,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -323,6 +324,8 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 export function GenerateCertificateDialog({ refund, isMandateSigned = false, certificateType = 'desgravamen' }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
+  const [isAssigningFolio, setIsAssigningFolio] = useState(false)
+  const [folioError, setFolioError] = useState<string | undefined>(undefined)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [firmaBase64, setFirmaBase64] = useState<string>('')
@@ -364,8 +367,35 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     if (open) {
       const freshSaldo = (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString()
       setFormData(prev => ({ ...prev, saldoInsoluto: freshSaldo, celular: refund.phone || prev.celular }))
+      // Auto-assign folio when dialog opens if not already set
+      if (!formData.folio) {
+        assignFolio()
+      }
     }
   }, [open, refund])
+
+  const assignFolio = useCallback(async () => {
+    if (!refund.publicId) return
+    setIsAssigningFolio(true)
+    setFolioError(undefined)
+    try {
+      const result = await refundAdminApi.assignFolio(refund.publicId)
+      if (result.ok && result.nroFolio) {
+        setFormData(prev => ({ ...prev, folio: result.nroFolio }))
+        if (result.alreadyAssigned) {
+          toast({ title: 'Folio existente', description: `Folio ${result.nroFolio} ya estaba asignado` })
+        } else {
+          toast({ title: 'Folio asignado', description: `Folio ${result.nroFolio} asignado correctamente` })
+        }
+      }
+    } catch (error: any) {
+      console.error('Error asignando folio:', error)
+      setFolioError(error.message || 'Error al asignar folio')
+      toast({ title: 'Error al asignar folio', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsAssigningFolio(false)
+    }
+  }, [refund.publicId])
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
@@ -375,6 +405,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   }
 
   const handlePreview = () => {
+    if (!formData.folio) {
+      toast({
+        title: 'Folio requerido',
+        description: 'Debe asignarse un folio antes de previsualizar el certificado',
+        variant: 'destructive',
+      })
+      return
+    }
+    
     const saldoInsolutoValue = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     if (saldoInsolutoValue === 0) {
       toast({
@@ -2918,13 +2957,34 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Folio</Label>
-                    <Input
-                      value={formData.folio}
-                      onChange={(e) => handleChange('folio', e.target.value)}
-                      placeholder="N° folio"
-                      className="h-9"
-                    />
+                    <Label className="text-xs">Folio <span className="text-destructive">*</span></Label>
+                    {isAssigningFolio ? (
+                      <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-muted">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Asignando...</span>
+                      </div>
+                    ) : formData.folio ? (
+                      <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-muted">
+                        <Hash className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-sm font-medium">{formData.folio}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-9 gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={assignFolio}
+                        >
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Reintentar asignar folio
+                        </Button>
+                        {folioError && (
+                          <p className="text-[10px] text-destructive">{folioError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Nro. Operación</Label>
@@ -3290,10 +3350,27 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handlePreview} className="gap-2">
-                <Eye className="h-4 w-4" />
-                Previsualizar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button 
+                        onClick={handlePreview} 
+                        className="gap-2" 
+                        disabled={!formData.folio || isAssigningFolio}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Previsualizar
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {(!formData.folio || isAssigningFolio) && (
+                    <TooltipContent>
+                      {isAssigningFolio ? 'Asignando folio...' : 'Se requiere un folio asignado para previsualizar'}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </>
           ) : (
             <>

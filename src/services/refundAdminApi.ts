@@ -295,6 +295,24 @@ class RefundAdminApiClient {
     return { ...result, status: normalizeStatus(result.status) }
   }
 
+  async assignFolio(publicId: string): Promise<{ ok: boolean; publicId: string; nroFolio: string; alreadyAssigned: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/assign-folio`, {
+      method: 'PATCH',
+      headers: await this.getAuthHeaders(),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al asignar folio' }))
+      throw new Error(error.message || 'Error al asignar folio')
+    }
+
+    return response.json()
+  }
+
   async listByPartner(partnerId: string): Promise<RefundRequest[]> {
     const response = await fetch(`${API_BASE_URL}/partner-refunds/partner/${partnerId}`, {
       headers: await this.getAuthHeaders(),
