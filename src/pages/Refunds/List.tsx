@@ -690,6 +690,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return result
   }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.from, localFilters.to, localFilters.status])
   
+  // Calcular solicitudes con tiempo excedido
+  const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
+
+  // Filtrar por overdue si hay filtro activo
+  const overdueFilteredItems = useMemo(() => {
+    if (!activeOverdueFilter) return locallyFilteredItems
+    const stage = overdueStages.find(s => s.stageKey === activeOverdueFilter)
+    if (!stage) return locallyFilteredItems
+    return locallyFilteredItems.filter((r: any) => stage.overdueIds.has(r.id || r.publicId))
+  }, [locallyFilteredItems, activeOverdueFilter, overdueStages])
+
   // Estado para paginación local en modo histórico
   const [historicalPage, setHistoricalPage] = useState(1)
   const historicalPageSize = filters.pageSize || 20
@@ -697,16 +708,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Reset página histórica cuando cambian los filtros
   useEffect(() => {
     setHistoricalPage(1)
-  }, [locallyFilteredItems.length])
+  }, [overdueFilteredItems.length])
 
   // En modo histórico, paginar localmente; en modo normal, usar datos del servidor
   const paginatedItems = useMemo(() => {
-    if (historicalStatusMode) {
+    if (historicalStatusMode || activeOverdueFilter) {
       const start = (historicalPage - 1) * historicalPageSize
-      return locallyFilteredItems.slice(start, start + historicalPageSize)
+      return overdueFilteredItems.slice(start, start + historicalPageSize)
     }
-    return locallyFilteredItems
-  }, [locallyFilteredItems, historicalStatusMode, historicalPage, historicalPageSize])
+    return overdueFilteredItems
+  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
 
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
   // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
