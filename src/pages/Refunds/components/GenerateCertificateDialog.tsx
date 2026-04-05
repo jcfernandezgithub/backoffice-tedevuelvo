@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash, RefreshCw } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash, RefreshCw, Upload, CheckCircle2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
