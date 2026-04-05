@@ -405,6 +405,15 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   }
 
   const handlePreview = () => {
+    if (!formData.folio) {
+      toast({
+        title: 'Folio requerido',
+        description: 'Debe asignarse un folio antes de previsualizar el certificado',
+        variant: 'destructive',
+      })
+      return
+    }
+    
     const saldoInsolutoValue = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
     if (saldoInsolutoValue === 0) {
       toast({
