@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
+import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -23,6 +25,8 @@ import {
   BarChart3,
   Zap,
   Info,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -36,6 +40,28 @@ const ESTADO_COLORS: Record<string, string> = {
   'Pago Programado': 'hsl(187, 92%, 69%)',     // cyan-400
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
 };
+
+/** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
+function OverdueBadge({ count, stageLabel, objetivo }: { count: number; stageLabel: string; objetivo?: number }) {
+  if (!count) return null;
+  return (
+    <TooltipProvider delayDuration={200}>
+      <UITooltip>
+        <TooltipTrigger asChild>
+          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 animate-pulse cursor-default">
+            <AlertTriangle className="h-3 w-3 text-red-500" />
+            <span className="text-[10px] font-bold text-red-600 dark:text-red-400 tabular-nums">{count}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[240px]">
+          <p className="text-xs">
+            <strong>{count}</strong> solicitud{count !== 1 ? 'es' : ''} en "{stageLabel}" {objetivo ? `superan los ${objetivo} días objetivo` : 'superan el tiempo objetivo'}.
+          </p>
+        </TooltipContent>
+      </UITooltip>
+    </TooltipProvider>
+  );
+}
 
 export function TabResumen() {
   const { filtros } = useFilters();
@@ -67,7 +93,17 @@ export function TabResumen() {
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
-  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
+  // Detectar solicitudes con tiempo excedido (usa TODOS los refunds, no filtrados por fecha)
+  const { overdueStages } = useOverdueData(allRefunds);
+  const stageObjectives = readStageObjectives();
+  const overdueByStage = useMemo(() => {
+    const map: Record<string, { count: number; objetivo: number }> = {};
+    overdueStages.forEach(s => {
+      const obj = stageObjectives.find(o => o.key === s.stageKey);
+      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    });
+    return map;
+  }, [overdueStages, stageObjectives]);
   // Busca la última entrada en statusHistory donde "to" === status actual y hubo cambio real
   const getLastStatusChangeDate = (refund: any): string | null => {
     const history = refund.statusHistory;
@@ -406,8 +442,11 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
-                  {docsReceivedRefunds.length}
+                <div className="flex items-center gap-2">
+                  <span className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
+                    {docsReceivedRefunds.length}
+                  </span>
+                  <OverdueBadge count={overdueByStage.docs_received?.count || 0} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
                 </div>
                 <p className={`text-xs mt-1 font-medium ${docsReceivedRefunds.length >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
                   {docsReceivedRefunds.length >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
@@ -429,7 +468,10 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</span>
+                  <OverdueBadge count={overdueByStage.submitted?.count || 0} stageLabel="Ingresadas" objetivo={overdueByStage.submitted?.objetivo} />
+                </div>
               </CardContent>
             </Card>
 
@@ -447,7 +489,10 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</span>
+                  <OverdueBadge count={overdueByStage.approved?.count || 0} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
+                </div>
               </CardContent>
             </Card>
 
@@ -492,11 +537,14 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div 
-                  className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
-                  onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
-                >
-                  {paymentScheduledRefunds.length}
+                <div className="flex items-center gap-2">
+                  <span 
+                    className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
+                    onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
+                  >
+                    {paymentScheduledRefunds.length}
+                  </span>
+                  <OverdueBadge count={overdueByStage.payment_scheduled?.count || 0} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
@@ -533,7 +581,10 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</span>
+                  <OverdueBadge count={overdueByStage.paid?.count || 0} stageLabel="Pagadas" objetivo={overdueByStage.paid?.objetivo} />
+                </div>
               </CardContent>
             </Card>
           </>
