@@ -7,6 +7,7 @@ import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
+import { OverdueAlertsBanner, OverdueRowIndicator, useOverdueData } from './components/OverdueAlertsBanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -199,6 +200,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     limit: 20,
   })
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
+  const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
 
   // Fuente compartida con Dashboard/Operación para modo histórico
   const {
@@ -410,7 +412,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handlePageChange = (newPage: number) => {
-    if (historicalStatusMode) {
+    if (historicalStatusMode || activeOverdueFilter) {
       // En modo histórico, paginación local
       setHistoricalPage(newPage)
       return
@@ -462,6 +464,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       insuranceType: 'all',
       alliance: 'all',
     })
+    setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
   }
   
@@ -687,6 +690,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return result
   }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.from, localFilters.to, localFilters.status])
   
+  // Calcular solicitudes con tiempo excedido
+  const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
+
+  // Filtrar por overdue si hay filtro activo
+  const overdueFilteredItems = useMemo(() => {
+    if (!activeOverdueFilter) return locallyFilteredItems
+    const stage = overdueStages.find(s => s.stageKey === activeOverdueFilter)
+    if (!stage) return locallyFilteredItems
+    return locallyFilteredItems.filter((r: any) => stage.overdueIds.has(r.id || r.publicId))
+  }, [locallyFilteredItems, activeOverdueFilter, overdueStages])
+
   // Estado para paginación local en modo histórico
   const [historicalPage, setHistoricalPage] = useState(1)
   const historicalPageSize = filters.pageSize || 20
@@ -694,16 +708,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Reset página histórica cuando cambian los filtros
   useEffect(() => {
     setHistoricalPage(1)
-  }, [locallyFilteredItems.length])
+  }, [overdueFilteredItems.length])
 
   // En modo histórico, paginar localmente; en modo normal, usar datos del servidor
   const paginatedItems = useMemo(() => {
-    if (historicalStatusMode) {
+    if (historicalStatusMode || activeOverdueFilter) {
       const start = (historicalPage - 1) * historicalPageSize
-      return locallyFilteredItems.slice(start, start + historicalPageSize)
+      return overdueFilteredItems.slice(start, start + historicalPageSize)
     }
-    return locallyFilteredItems
-  }, [locallyFilteredItems, historicalStatusMode, historicalPage, historicalPageSize])
+    return overdueFilteredItems
+  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
 
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
   // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
@@ -753,16 +767,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
-  // Usar paginación del servidor, pero en modo histórico el total es local
-  const totalFiltered = historicalStatusMode ? locallyFilteredItems.length : normalizedData.total
-  const totalPages = historicalStatusMode 
-    ? Math.max(1, Math.ceil(locallyFilteredItems.length / historicalPageSize))
+  // Usar paginación del servidor, pero en modo histórico/overdue el total es local
+  const totalFiltered = (historicalStatusMode || activeOverdueFilter) ? overdueFilteredItems.length : normalizedData.total
+  const totalPages = (historicalStatusMode || activeOverdueFilter)
+    ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
-  const hasNextPage = historicalStatusMode ? historicalPage < totalPages : normalizedData.hasNext
-  const hasPrevPage = historicalStatusMode ? historicalPage > 1 : normalizedData.hasPrev
+  const hasNextPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage < totalPages : normalizedData.hasNext
+  const hasPrevPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage > 1 : normalizedData.hasPrev
 
-  const currentPage = historicalStatusMode ? historicalPage : normalizedData.page
-  const startIndex = (currentPage - 1) * (historicalStatusMode ? historicalPageSize : normalizedData.pageSize)
+  const currentPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * ((historicalStatusMode || activeOverdueFilter) ? historicalPageSize : normalizedData.pageSize)
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
@@ -1044,6 +1058,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         </div>
       )}
 
+      {/* Banner de alertas de tiempo excedido */}
+      <OverdueAlertsBanner
+        refunds={locallyFilteredItems}
+        activeOverdueFilter={activeOverdueFilter}
+        onFilterByOverdue={(stageKey) => {
+          setActiveOverdueFilter(stageKey)
+          setHistoricalPage(1)
+        }}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle>
@@ -1232,7 +1256,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(() => {
                             const displayStatus = getDisplayStatus(refund)
                             return (
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge className={getStatusColors(displayStatus)}>
                                   {statusLabels[displayStatus] || displayStatus}
                                 </Badge>
@@ -1241,6 +1265,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                     <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
                                   </span>
                                 )}
+                                <OverdueRowIndicator refund={refund} />
                               </div>
                             )
                           })()}
