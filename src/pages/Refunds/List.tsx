@@ -412,7 +412,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handlePageChange = (newPage: number) => {
-    if (historicalStatusMode) {
+    if (historicalStatusMode || activeOverdueFilter) {
       // En modo histórico, paginación local
       setHistoricalPage(newPage)
       return
