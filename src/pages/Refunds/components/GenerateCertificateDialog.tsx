@@ -324,6 +324,8 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 export function GenerateCertificateDialog({ refund, isMandateSigned = false, certificateType = 'desgravamen' }: GenerateCertificateDialogProps) {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
+  const [isAssigningFolio, setIsAssigningFolio] = useState(false)
+  const [folioError, setFolioError] = useState<string | undefined>(undefined)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [firmaBase64, setFirmaBase64] = useState<string>('')
