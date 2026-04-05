@@ -442,8 +442,11 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
-                  {docsReceivedRefunds.length}
+                <div className="flex items-center gap-2">
+                  <span className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
+                    {docsReceivedRefunds.length}
+                  </span>
+                  <OverdueBadge count={overdueByStage.docs_received?.count || 0} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
                 </div>
                 <p className={`text-xs mt-1 font-medium ${docsReceivedRefunds.length >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
                   {docsReceivedRefunds.length >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
