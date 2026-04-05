@@ -1655,39 +1655,44 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     return doc.output('blob') as Blob
   }
 
+  const uploadCertificateToClient = async (pdfBlob: Blob) => {
+    const token = authService.getAccessToken()
+    const uploadFormData = new FormData()
+    uploadFormData.append('file', pdfBlob, `certificado-cobertura-${refund.publicId}.pdf`)
+    uploadFormData.append('kind', 'certificado-cobertura')
+
+    const response = await fetch(`${CERT_API_BASE_URL}/refund-requests/${refund.publicId}/upload-file`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: uploadFormData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Error al subir certificado')
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.publicId] })
+  }
+
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
+      let pdfBlob: Blob | undefined
+
       // Check if this is Banco de Chile - use specific generators
       if (isBancoChileRefund) {
         if (isPrimeFormat) {
-          await generateBancoChilePrimePDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
-          toast({
-            title: 'Certificado Banco de Chile generado',
-            description: 'El certificado de cobertura (Póliza 344 - Banco de Chile) se descargó correctamente',
-          })
+          pdfBlob = await generateBancoChilePrimePDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
         } else {
-          await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
-          toast({
-            title: 'Certificado Banco de Chile generado',
-            description: 'El certificado de cobertura (Póliza 342 - Banco de Chile) se descargó correctamente',
-          })
+          pdfBlob = await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
         }
-        setOpen(false)
-        setIsGenerating(false)
-        return
-      }
-
-      // Use Prime format for credits > 20 million (non-Banco de Chile)
-      if (isPrimeFormat) {
-        await generatePrimePDF()
-        toast({
-          title: 'Certificado Prime generado',
-          description: 'El certificado de cobertura (Póliza 344) se descargó correctamente',
-        })
-        setOpen(false)
-        return
-      }
+      } else if (isPrimeFormat) {
+        // Use Prime format for credits > 20 million (non-Banco de Chile)
+        pdfBlob = await generatePrimePDF()
+      } else {
 
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
