@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash, RefreshCw } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -2964,9 +2964,34 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                         <span className="text-xs text-muted-foreground">Asignando...</span>
                       </div>
                     ) : formData.folio ? (
-                      <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-muted">
-                        <Hash className="h-3.5 w-3.5 text-primary" />
-                        <span className="text-sm font-medium">{formData.folio}</span>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 h-9 px-3 border rounded-md bg-muted">
+                          <Hash className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-medium flex-1">{formData.folio}</span>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0"
+                                  onClick={() => {
+                                    if (window.confirm(`¿Reasignar un nuevo folio?\n\nEl folio actual (${formData.folio}) será reemplazado por uno nuevo. Esta acción no se puede deshacer.`)) {
+                                      setFormData(prev => ({ ...prev, folio: '' }))
+                                      assignFolio()
+                                    }
+                                  }}
+                                >
+                                  <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="text-xs">Reasignar nuevo folio</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-1">
