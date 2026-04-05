@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash, RefreshCw } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash, RefreshCw, Upload, CheckCircle2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -321,12 +322,16 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
   })
 }
 
+const CERT_API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+
 export function GenerateCertificateDialog({ refund, isMandateSigned = false, certificateType = 'desgravamen' }: GenerateCertificateDialogProps) {
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isAssigningFolio, setIsAssigningFolio] = useState(false)
   const [folioError, setFolioError] = useState<string | undefined>(undefined)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [firmaBase64, setFirmaBase64] = useState<string>('')
   const [firmaTdvBase64, setFirmaTdvBase64] = useState<string>('')
@@ -1644,44 +1649,50 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     doc.text('AuguStar Seguros de Vida', 75, y)
     doc.text('Asegurado', 145, y)
 
-    // Download
+    // Download and return blob
     const fileName = `Certificado_Prime_344_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
     doc.save(fileName)
+    return doc.output('blob') as Blob
+  }
+
+  const uploadCertificateToClient = async (pdfBlob: Blob) => {
+    const token = authService.getAccessToken()
+    const uploadFormData = new FormData()
+    uploadFormData.append('file', pdfBlob, `certificado-cobertura-${refund.publicId}.pdf`)
+    uploadFormData.append('kind', 'certificado-cobertura')
+
+    const response = await fetch(`${CERT_API_BASE_URL}/refund-requests/${refund.publicId}/upload-file`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: uploadFormData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Error al subir certificado')
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.publicId] })
   }
 
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
+      let pdfBlob: Blob | undefined
+
       // Check if this is Banco de Chile - use specific generators
       if (isBancoChileRefund) {
         if (isPrimeFormat) {
-          await generateBancoChilePrimePDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
-          toast({
-            title: 'Certificado Banco de Chile generado',
-            description: 'El certificado de cobertura (Póliza 344 - Banco de Chile) se descargó correctamente',
-          })
+          pdfBlob = await generateBancoChilePrimePDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
         } else {
-          await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
-          toast({
-            title: 'Certificado Banco de Chile generado',
-            description: 'El certificado de cobertura (Póliza 342 - Banco de Chile) se descargó correctamente',
-          })
+          pdfBlob = await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
         }
-        setOpen(false)
-        setIsGenerating(false)
-        return
-      }
-
-      // Use Prime format for credits > 20 million (non-Banco de Chile)
-      if (isPrimeFormat) {
-        await generatePrimePDF()
-        toast({
-          title: 'Certificado Prime generado',
-          description: 'El certificado de cobertura (Póliza 344) se descargó correctamente',
-        })
-        setOpen(false)
-        return
-      }
+      } else if (isPrimeFormat) {
+        // Use Prime format for credits > 20 million (non-Banco de Chile)
+        pdfBlob = await generatePrimePDF()
+      } else {
 
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
@@ -2837,14 +2848,33 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.line(pageWidth / 2 - 25, y, pageWidth / 2 + 25, y)
       doc.line(pageWidth - margin - 45, y, pageWidth - margin, y)
 
-      // Download
+      // Download and get blob
       const fileName = `Certificado_Cobertura_${refund.rut.replace(/\./g, '').replace('-', '_')}_${new Date().toISOString().split('T')[0]}.pdf`
       doc.save(fileName)
+      pdfBlob = doc.output('blob') as Blob
+      }
 
-      toast({
-        title: 'Certificado generado',
-        description: 'El certificado de cobertura se descargó correctamente',
-      })
+      // Upload to client folder
+      if (pdfBlob) {
+        setIsUploading(true)
+        try {
+          await uploadCertificateToClient(pdfBlob)
+          toast({
+            title: 'Certificado confirmado',
+            description: 'El certificado se descargó y subió a la carpeta del cliente',
+          })
+        } catch (uploadError: any) {
+          console.error('Error uploading certificate:', uploadError)
+          toast({
+            title: 'Certificado descargado',
+            description: 'Se descargó correctamente pero no se pudo subir a la carpeta del cliente',
+            variant: 'destructive',
+          })
+        } finally {
+          setIsUploading(false)
+        }
+      }
+
       setOpen(false)
     } catch (error) {
       console.error('Error generating certificate:', error)
@@ -3397,17 +3427,25 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleBackToEdit} className="gap-2">
+              <Button variant="outline" onClick={handleBackToEdit} disabled={isGenerating || isUploading} className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Volver a Editar
               </Button>
-              <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
+              <Button onClick={generatePDF} disabled={isGenerating || isUploading} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
                 {isGenerating ? (
-                  'Generando...'
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generando...
+                  </>
+                ) : isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Subiendo...
+                  </>
                 ) : (
                   <>
-                    <Download className="h-4 w-4" />
-                    Descargar PDF
+                    <CheckCircle2 className="h-4 w-4" />
+                    Confirmar y Descargar
                   </>
                 )}
               </Button>
