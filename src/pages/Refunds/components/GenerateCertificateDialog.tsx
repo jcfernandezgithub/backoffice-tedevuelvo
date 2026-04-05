@@ -2957,13 +2957,34 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Folio</Label>
-                    <Input
-                      value={formData.folio}
-                      onChange={(e) => handleChange('folio', e.target.value)}
-                      placeholder="N° folio"
-                      className="h-9"
-                    />
+                    <Label className="text-xs">Folio <span className="text-destructive">*</span></Label>
+                    {isAssigningFolio ? (
+                      <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-muted">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Asignando...</span>
+                      </div>
+                    ) : formData.folio ? (
+                      <div className="flex items-center gap-2 h-9 px-3 border rounded-md bg-muted">
+                        <Hash className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-sm font-medium">{formData.folio}</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-9 gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={assignFolio}
+                        >
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Reintentar asignar folio
+                        </Button>
+                        {folioError && (
+                          <p className="text-[10px] text-destructive">{folioError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Nro. Operación</Label>
