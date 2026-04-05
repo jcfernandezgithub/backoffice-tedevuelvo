@@ -767,12 +767,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
-  // Usar paginación del servidor, pero en modo histórico el total es local
-  const totalFiltered = historicalStatusMode ? locallyFilteredItems.length : normalizedData.total
-  const totalPages = historicalStatusMode 
-    ? Math.max(1, Math.ceil(locallyFilteredItems.length / historicalPageSize))
+  // Usar paginación del servidor, pero en modo histórico/overdue el total es local
+  const totalFiltered = (historicalStatusMode || activeOverdueFilter) ? overdueFilteredItems.length : normalizedData.total
+  const totalPages = (historicalStatusMode || activeOverdueFilter)
+    ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
-  const hasNextPage = historicalStatusMode ? historicalPage < totalPages : normalizedData.hasNext
+  const hasNextPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage < totalPages : normalizedData.hasNext
   const hasPrevPage = historicalStatusMode ? historicalPage > 1 : normalizedData.hasPrev
 
   const currentPage = historicalStatusMode ? historicalPage : normalizedData.page
