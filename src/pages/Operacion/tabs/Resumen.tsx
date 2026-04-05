@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -23,6 +24,8 @@ import {
   BarChart3,
   Zap,
   Info,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
