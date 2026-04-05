@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,10 +11,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle } from 'lucide-react'
+import { FileText, Download, Search, User, MapPin, CreditCard, ArrowLeft, Eye, Shield, AlertCircle, Loader2, Hash } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
