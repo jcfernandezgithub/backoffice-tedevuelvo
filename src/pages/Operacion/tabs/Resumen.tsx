@@ -93,18 +93,7 @@ export function TabResumen() {
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
 
-  // Detectar solicitudes con tiempo excedido (usa TODOS los refunds, no filtrados por fecha)
-  const { overdueStages } = useOverdueData(allRefunds);
-  const stageObjectives = readStageObjectives();
-  const overdueByStage = useMemo(() => {
-    const map: Record<string, { count: number; objetivo: number }> = {};
-    overdueStages.forEach(s => {
-      const obj = stageObjectives.find(o => o.key === s.stageKey);
-      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
-    });
-    return map;
-  }, [overdueStages, stageObjectives]);
-  // Busca la última entrada en statusHistory donde "to" === status actual y hubo cambio real
+  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
   const getLastStatusChangeDate = (refund: any): string | null => {
     const history = refund.statusHistory;
     if (!history?.length) return null;
@@ -173,6 +162,17 @@ export function TabResumen() {
     staleTime: 10 * 60 * 1000,
   });
 
+  // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
+  const { overdueStages } = useOverdueData(filteredRefunds);
+  const stageObjectives = readStageObjectives();
+  const overdueByStage = useMemo(() => {
+    const map: Record<string, { count: number; objetivo: number }> = {};
+    overdueStages.forEach(s => {
+      const obj = stageObjectives.find(o => o.key === s.stageKey);
+      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    });
+    return map;
+  }, [overdueStages, stageObjectives]);
 
   const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
     fecha: punto.fecha,
