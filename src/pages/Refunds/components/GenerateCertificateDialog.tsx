@@ -367,6 +367,10 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     if (open) {
       const freshSaldo = (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString()
       setFormData(prev => ({ ...prev, saldoInsoluto: freshSaldo, celular: refund.phone || prev.celular }))
+      // Auto-assign folio when dialog opens if not already set
+      if (!formData.folio) {
+        assignFolio()
+      }
     }
   }, [open, refund])
 
