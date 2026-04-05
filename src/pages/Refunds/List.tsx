@@ -464,6 +464,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       insuranceType: 'all',
       alliance: 'all',
     })
+    setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
   }
   
