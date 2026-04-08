@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
@@ -28,6 +28,14 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   const [open, setOpen] = useState(false)
   const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
+  const [dialogPage, setDialogPage] = useState(1)
+  const DIALOG_PAGE_SIZE = 20
+
+  const dialogTotalPages = Math.max(1, Math.ceil(selectedRefunds.length / DIALOG_PAGE_SIZE))
+  const visibleRefunds = useMemo(() => {
+    const start = (dialogPage - 1) * DIALOG_PAGE_SIZE
+    return selectedRefunds.slice(start, start + DIALOG_PAGE_SIZE)
+  }, [selectedRefunds, dialogPage])
 
   const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
     setRefundData(prev => ({
@@ -214,7 +222,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setDialogPage(1) }}>
       <DialogTrigger asChild>
         <Button 
           variant="default"
@@ -234,9 +242,28 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           </DialogDescription>
         </DialogHeader>
 
+        {/* Paginación interna del diálogo */}
+        {dialogTotalPages > 1 && (
+          <div className="flex items-center justify-between px-1 pb-2">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, selectedRefunds.length)} de {selectedRefunds.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => setDialogPage(p => Math.max(1, p - 1))} disabled={dialogPage === 1}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm px-2">{dialogPage}/{dialogTotalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setDialogPage(p => Math.min(dialogTotalPages, p + 1))} disabled={dialogPage === dialogTotalPages}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="max-h-[50vh] pr-4">
           <Accordion type="single" collapsible className="w-full">
-            {selectedRefunds.map((refund, index) => {
+            {visibleRefunds.map((refund, index) => {
+              const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
               const data = refundData[refund.id] || { policyNumber: '', creditCode: '', sexo: '', direccion: '', comuna: '' }
               const isComplete = (data.policyNumber?.trim() || '') !== '' && 
                                 (data.creditCode?.trim() || '') !== '' &&
@@ -249,7 +276,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                       <div className={`h-2 w-2 rounded-full ${isComplete ? 'bg-green-500' : 'bg-yellow-500'}`} />
                       <div>
                         <div className="font-medium">
-                          Solicitud {index + 1}: {refund.fullName}
+                          Solicitud {globalIndex + 1}: {refund.fullName}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {refund.publicId} • {refund.rut}
