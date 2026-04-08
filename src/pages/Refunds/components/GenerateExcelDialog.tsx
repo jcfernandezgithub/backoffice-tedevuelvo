@@ -276,7 +276,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                       <div className={`h-2 w-2 rounded-full ${isComplete ? 'bg-green-500' : 'bg-yellow-500'}`} />
                       <div>
                         <div className="font-medium">
-                          Solicitud {index + 1}: {refund.fullName}
+                          Solicitud {globalIndex + 1}: {refund.fullName}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {refund.publicId} • {refund.rut}
