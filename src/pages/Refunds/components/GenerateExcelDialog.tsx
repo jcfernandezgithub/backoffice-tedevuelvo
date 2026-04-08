@@ -359,7 +359,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
               )
             })}
           </Accordion>
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
