@@ -22,7 +22,7 @@ const items = [
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'live' as const, adminOnly: false, callCenterOnly: false },
 ]
 
