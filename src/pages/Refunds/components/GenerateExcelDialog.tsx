@@ -8,7 +8,6 @@ import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { authService } from '@/services/authService'
 
 interface RefundExcelData {
@@ -260,7 +259,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           </div>
         )}
 
-        <ScrollArea className="max-h-[50vh] pr-4">
+        <div className="max-h-[50vh] overflow-y-auto pr-2">
           <Accordion type="single" collapsible className="w-full">
             {visibleRefunds.map((refund, index) => {
               const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
@@ -359,7 +358,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
               )
             })}
           </Accordion>
-        </ScrollArea>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
