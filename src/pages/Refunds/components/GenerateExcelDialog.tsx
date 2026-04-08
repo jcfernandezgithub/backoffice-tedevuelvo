@@ -8,7 +8,7 @@ import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { authService } from '@/services/authService'
 import { authService } from '@/services/authService'
 
 interface RefundExcelData {
