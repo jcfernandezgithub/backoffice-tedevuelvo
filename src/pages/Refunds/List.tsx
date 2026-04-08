@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft, Loader2 } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -193,6 +193,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Estado para selección de solicitudes
   const [selectedRefunds, setSelectedRefunds] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
+  
+  // Estado para selección multi-página (estilo Gmail)
+  const [allPagesSelected, setAllPagesSelected] = useState(false)
+  const [allPagesRefunds, setAllPagesRefunds] = useState<RefundRequest[]>([])
+  const [isLoadingAllPages, setIsLoadingAllPages] = useState(false)
+  const allPagesAbortRef = useRef<AbortController | null>(null)
   
   // Estado para parámetros de búsqueda (nuevo endpoint search)
   const [searchFilters, setSearchFilters] = useState<SearchParams>({
@@ -502,7 +508,75 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     } else {
       setSelectedRefunds(new Set())
       setSelectAll(false)
+      setAllPagesSelected(false)
+      setAllPagesRefunds([])
     }
+  }
+
+  // Cargar todas las solicitudes de todas las páginas
+  const handleSelectAllPages = async () => {
+    setIsLoadingAllPages(true)
+    
+    // Cancelar fetch anterior si existe
+    if (allPagesAbortRef.current) {
+      allPagesAbortRef.current.abort()
+    }
+    allPagesAbortRef.current = new AbortController()
+
+    try {
+      // En modo histórico, ya tenemos todos los datos localmente
+      if (historicalStatusMode || activeOverdueFilter) {
+        const allIds = new Set(overdueFilteredItems.map((r: any) => r.id))
+        setSelectedRefunds(allIds)
+        setAllPagesRefunds(overdueFilteredItems as RefundRequest[])
+        setAllPagesSelected(true)
+        setIsLoadingAllPages(false)
+        return
+      }
+
+      // Fetch paralelo de todas las páginas (similar a ExportToExcelDialog)
+      const PAGE_SIZE = 100
+      const fetchFn = useSearchEndpoint 
+        ? (page: number) => refundAdminApi.search({ ...searchFilters, page, limit: PAGE_SIZE })
+        : (page: number) => refundAdminApi.list({ ...filters, page, pageSize: PAGE_SIZE })
+
+      const firstPage = await fetchFn(1)
+      const total = firstPage.total || 0
+      const totalFetchPages = Math.ceil(total / PAGE_SIZE)
+      let allItems = [...(firstPage.items || [])]
+
+      if (totalFetchPages > 1) {
+        const remainingPages = Array.from({ length: totalFetchPages - 1 }, (_, i) => i + 2)
+        const BATCH_SIZE = 10
+        for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
+          const batch = remainingPages.slice(i, i + BATCH_SIZE)
+          const results = await Promise.all(batch.map(p => fetchFn(p)))
+          results.forEach(r => { allItems = allItems.concat(r.items || []) })
+        }
+      }
+
+      const allIds = new Set(allItems.map((r: any) => r.id))
+      setSelectedRefunds(allIds)
+      setAllPagesRefunds(allItems as RefundRequest[])
+      setAllPagesSelected(true)
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar todas las solicitudes',
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsLoadingAllPages(false)
+    }
+  }
+
+  const handleClearAllPagesSelection = () => {
+    setSelectedRefunds(new Set())
+    setSelectAll(false)
+    setAllPagesSelected(false)
+    setAllPagesRefunds([])
   }
 
   const handleSelectRefund = (refundId: string, checked: boolean) => {
