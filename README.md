@@ -23,7 +23,11 @@
 - **Problema**: al subir la carta de corte a la carpeta del cliente, el PDF se generaba con el formato genérico antiguo en lugar del formato Santander V3 previsualizado.
 - **Solución**: se creó `generateSantanderCortePdfBlob` que genera el PDF con el formato V3 completo (texto legal "viene a comunicar", 4 páginas con imágenes institucionales adjuntas), y se actualizó el handler de subida para usarlo.
 
----
+#### Nómina - Descarga dual TXT + Excel
+- **Exportación automática a Excel**: al presionar "TXT Normal", ahora se descargan simultáneamente el archivo TXT (sin cambios en su lógica) y un archivo XLSX con las mismas filas de la nómina, incluyendo RUT, nombre, banco, cuenta, monto y demás campos.
+
+#### Nómina - Etiqueta "En desarrollo" removida
+- **Módulo listo para producción**: se removió la etiqueta "En desarrollo" del ítem "Nómina" en el menú lateral, marcándolo como `live`.
 
 ### Versión 3.2.9 - 2026-03-19
 
