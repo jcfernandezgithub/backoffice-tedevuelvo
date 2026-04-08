@@ -34,7 +34,25 @@ export default function NominaDevoluciones() {
   const handleGenerate = useCallback((grouped: boolean) => {
     const res = nom.generate(grouped)
     if (res) {
-      toast.success(`Archivo ${res.fileName} descargado (${res.lineCount} líneas)`)
+      // Export Excel with the same row data (without touching TXT logic)
+      const excelRows = nom.rows.map((r, i) => ({
+        '#': i + 1,
+        'RUT Cliente': r.rutProveedor,
+        'Nombre Cliente': r.nombreProveedor,
+        'Banco': r.bancoProveedor,
+        'Cuenta': r.cuentaProveedor,
+        'Forma Pago': r.formaPago,
+        'Tipo Documento': r.tipoDocumento,
+        'Nº Documento': r.numeroDocumento,
+        'Monto': r.monto,
+        'Sucursal': r.codigoSucursal || '000',
+        'Email Aviso': r.emailAviso || '',
+        'Mensaje Aviso': r.mensajeAviso || '',
+      }))
+      const xlsxName = res.fileName.replace('.txt', '')
+      exportXLSX(excelRows, xlsxName)
+
+      toast.success(`${res.fileName} + Excel descargados (${res.lineCount} líneas)`)
     }
   }, [nom])
 
