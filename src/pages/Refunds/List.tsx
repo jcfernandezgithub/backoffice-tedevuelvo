@@ -620,6 +620,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const handleExcelGenerated = () => {
     setSelectedRefunds(new Set())
     setSelectAll(false)
+    setAllPagesSelected(false)
+    setAllPagesRefunds([])
   }
 
   const handleSort = (field: string) => {
