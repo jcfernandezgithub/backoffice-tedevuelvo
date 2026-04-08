@@ -1172,6 +1172,43 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
             </div>
           ) : (
             <>
+              {/* Banner de selección multi-página (estilo Gmail) */}
+              {selectAll && totalFiltered > paginatedItems.length && !allPagesSelected && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-4 py-2 mb-3 flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span>
+                    Se seleccionaron <strong>{paginatedItems.length}</strong> solicitudes de esta página.
+                  </span>
+                  {isLoadingAllPages ? (
+                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Cargando todas las solicitudes...
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleSelectAllPages}
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    >
+                      Seleccionar las {totalFiltered} solicitudes que coinciden con los filtros
+                    </button>
+                  )}
+                </div>
+              )}
+              {allPagesSelected && (
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md px-4 py-2 mb-3 flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span>
+                    Se seleccionaron <strong>las {selectedRefunds.size}</strong> solicitudes que coinciden con los filtros.
+                  </span>
+                  <button
+                    onClick={handleClearAllPagesSelection}
+                    className="text-green-700 dark:text-green-400 hover:underline font-medium"
+                  >
+                    Limpiar selección
+                  </button>
+                </div>
+              )}
+
               {/* Vista Desktop - Tabla */}
               <div className="hidden md:block">
                 <Table>
