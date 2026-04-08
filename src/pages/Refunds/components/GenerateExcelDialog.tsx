@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { FileSpreadsheet } from 'lucide-react'
+import { FileSpreadsheet, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
@@ -28,6 +28,14 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   const [open, setOpen] = useState(false)
   const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
+  const [dialogPage, setDialogPage] = useState(1)
+  const DIALOG_PAGE_SIZE = 20
+
+  const dialogTotalPages = Math.max(1, Math.ceil(selectedRefunds.length / DIALOG_PAGE_SIZE))
+  const visibleRefunds = useMemo(() => {
+    const start = (dialogPage - 1) * DIALOG_PAGE_SIZE
+    return selectedRefunds.slice(start, start + DIALOG_PAGE_SIZE)
+  }, [selectedRefunds, dialogPage])
 
   const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
     setRefundData(prev => ({
