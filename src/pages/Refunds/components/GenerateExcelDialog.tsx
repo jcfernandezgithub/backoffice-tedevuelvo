@@ -242,9 +242,28 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           </DialogDescription>
         </DialogHeader>
 
+        {/* Paginación interna del diálogo */}
+        {dialogTotalPages > 1 && (
+          <div className="flex items-center justify-between px-1 pb-2">
+            <span className="text-sm text-muted-foreground">
+              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, selectedRefunds.length)} de {selectedRefunds.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="sm" onClick={() => setDialogPage(p => Math.max(1, p - 1))} disabled={dialogPage === 1}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm px-2">{dialogPage}/{dialogTotalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setDialogPage(p => Math.min(dialogTotalPages, p + 1))} disabled={dialogPage === dialogTotalPages}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         <ScrollArea className="max-h-[50vh] pr-4">
           <Accordion type="single" collapsible className="w-full">
-            {selectedRefunds.map((refund, index) => {
+            {visibleRefunds.map((refund, index) => {
+              const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
               const data = refundData[refund.id] || { policyNumber: '', creditCode: '', sexo: '', direccion: '', comuna: '' }
               const isComplete = (data.policyNumber?.trim() || '') !== '' && 
                                 (data.creditCode?.trim() || '') !== '' &&
