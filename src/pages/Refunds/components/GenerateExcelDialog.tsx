@@ -222,7 +222,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setDialogPage(1) }}>
       <DialogTrigger asChild>
         <Button 
           variant="default"
