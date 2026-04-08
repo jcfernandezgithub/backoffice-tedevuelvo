@@ -260,7 +260,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           </div>
         )}
 
-        <ScrollArea className="max-h-[50vh] pr-4">
+        <div className="max-h-[50vh] overflow-y-auto pr-2">
           <Accordion type="single" collapsible className="w-full">
             {visibleRefunds.map((refund, index) => {
               const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
