@@ -10,6 +10,7 @@ import { NominaCsvImportDialog } from './components/NominaCsvImportDialog'
 import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
+import { exportXLSX } from '@/services/reportesService'
 
 
 const CSV_TEMPLATE_HEADERS = [
