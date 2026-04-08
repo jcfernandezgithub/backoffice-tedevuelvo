@@ -9,7 +9,6 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { authService } from '@/services/authService'
-import { authService } from '@/services/authService'
 
 interface RefundExcelData {
   policyNumber: string
