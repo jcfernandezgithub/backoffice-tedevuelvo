@@ -586,26 +586,32 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     } else {
       newSelected.delete(refundId)
       setSelectAll(false)
+      setAllPagesSelected(false)
     }
     setSelectedRefunds(newSelected)
   }
 
   const getSelectedRefundsData = (): RefundRequest[] => {
-    const selected = paginatedItems.filter((r: any) => selectedRefunds.has(r.id))
+    // Si se seleccionaron todas las páginas, usar allPagesRefunds
+    const sourceItems = allPagesSelected ? allPagesRefunds : paginatedItems
+    const selected = sourceItems.filter((r: any) => selectedRefunds.has(r.id))
     
-    // Validar que todas tengan mandato firmado
-    const withoutMandate = selected.filter((r: any) => {
-      const status = mandateStatuses?.[r.publicId]
-      return !status?.hasSignedPdf
-    })
-
-    if (withoutMandate.length > 0) {
-      toast({
-        title: 'Error',
-        description: `${withoutMandate.length} solicitud(es) seleccionada(s) no tiene(n) mandato firmado`,
-        variant: 'destructive',
+    // Nota: cuando se seleccionan todas las páginas, no tenemos mandateStatuses 
+    // para items fuera de la página actual, así que omitimos la validación de mandato
+    if (!allPagesSelected) {
+      const withoutMandate = selected.filter((r: any) => {
+        const status = mandateStatuses?.[r.publicId]
+        return !status?.hasSignedPdf
       })
-      return []
+
+      if (withoutMandate.length > 0) {
+        toast({
+          title: 'Error',
+          description: `${withoutMandate.length} solicitud(es) seleccionada(s) no tiene(n) mandato firmado`,
+          variant: 'destructive',
+        })
+        return []
+      }
     }
 
     return selected as RefundRequest[]
