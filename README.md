@@ -29,6 +29,11 @@
 #### Nómina - Etiqueta "En desarrollo" removida
 - **Módulo listo para producción**: se removió la etiqueta "En desarrollo" del ítem "Nómina" en el menú lateral, marcándolo como `live`.
 
+#### Fix: Diálogo Archivo Altas CIA — Acordeones no expandibles
+- **Problema**: las solicitudes dentro del modal de generación de Altas CIA no podían desplegarse para completar datos faltantes, debido a que el componente `ScrollArea` de Radix interceptaba los eventos de clic del `AccordionTrigger`.
+- **Solución**: se reemplazó el `Accordion` de Radix por una lista expandible personalizada con estado controlado, y se sustituyó `ScrollArea` por un `div` con `overflow-y-auto`.
+- **Paginación interna**: se agregó paginación de 20 ítems por página dentro del diálogo para evitar bloqueos del DOM al procesar cientos de registros.
+
 ### Versión 3.2.9 - 2026-03-19
 
 #### Corrección de lógica de cálculo de primas (calculadora y editor de snapshot)
