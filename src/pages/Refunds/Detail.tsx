@@ -662,23 +662,37 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       </ul>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-muted/50 border space-y-3">
-                      <p className="text-sm font-medium">Datos del crédito (opcionales)</p>
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-primary shrink-0" />
+                        <p className="text-sm font-semibold text-primary">
+                          Datos del crédito <span className="text-destructive">*</span>
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Estos datos son obligatorios para generar la carta de corte y continuar el proceso.
+                      </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Nº de Póliza</Label>
+                          <Label className="text-xs">
+                            Nº de Póliza <span className="text-destructive">*</span>
+                          </Label>
                           <Input
                             value={snapshotFields.nroPoliza}
                             onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroPoliza: e.target.value }))}
                             placeholder="Ej: 123456"
+                            className={!snapshotFields.nroPoliza?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Nº de Crédito</Label>
+                          <Label className="text-xs">
+                            Nº de Crédito <span className="text-destructive">*</span>
+                          </Label>
                           <Input
                             value={snapshotFields.nroCredito}
                             onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroCredito: e.target.value }))}
                             placeholder="Ej: 789012"
+                            className={!snapshotFields.nroCredito?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
                           />
                         </div>
                       </div>
