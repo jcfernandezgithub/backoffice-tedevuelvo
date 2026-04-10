@@ -765,7 +765,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
     
-    // En modo histórico, filtrar por solicitudes que TRANSITARON al estado seleccionado
+    // Filtro por Nº Póliza (busca en calculationSnapshot.nroPoliza)
+    if (appliedLocalFilters.nroPoliza) {
+      const search = appliedLocalFilters.nroPoliza.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroPoliza || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+    
+    // Filtro por Nº Crédito (busca en calculationSnapshot.nroCredito)
+    if (appliedLocalFilters.nroCredito) {
+      const search = appliedLocalFilters.nroCredito.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroCredito || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+
     // durante el rango de fechas [from, to], sin importar su estado actual
     if (historicalStatusMode && localFilters.status) {
       const fromDate = localFilters.from || '2000-01-01'
