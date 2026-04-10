@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.2
+## Versión 3.3.3
 
 ## Changelog
+
+### Versión 3.3.3 - 2026-04-10
+
+#### Nº Póliza y Nº Crédito en búsqueda, grilla y exportación
+- **Filtros de búsqueda**: Se agregaron campos de filtro por "Nº Póliza" y "Nº Crédito" en la sección de filtros de solicitudes, permitiendo buscar solicitudes por estos datos del snapshot.
+- **Columnas en grilla**: Se añadieron las columnas "Nº Póliza" y "Nº Crédito" en la tabla de solicitudes (desktop y mobile) después de "Institución".
+- **Exportación a Excel**: Los campos "Nº Póliza" y "Nº Crédito" se incluyen en la exportación a Excel dentro de la sección "Datos del crédito".
+
+#### Corrección de selección individual de solicitudes
+- **Bug fix**: Se corrigió un error donde al seleccionar una solicitud individual se marcaban todas. El problema se debía a que el campo `id` (MongoDB `_id`) no se normalizaba correctamente en las respuestas de los endpoints `list` y `search`, causando que todos los items compartieran un identificador `undefined`.
 
 ### Versión 3.3.2 - 2026-04-10
 
