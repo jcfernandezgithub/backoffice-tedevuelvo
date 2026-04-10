@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator, TrendingDown } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator, TrendingDown, Mail } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { authService } from '@/services/authService'
@@ -544,6 +544,26 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           {/* Corte: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
             <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+          )}
+          {/* Reenviar email datos bancarios - solo en payment_scheduled */}
+          {refund.status === 'payment_scheduled' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span>
+                  <Button
+                    variant="outline"
+                    disabled
+                    className="gap-1.5"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Solicitar datos bancarios
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-sm">Próximamente — Envía un correo al cliente para que ingrese sus datos de transferencia</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
             <DialogTrigger asChild>
