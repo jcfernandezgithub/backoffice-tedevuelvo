@@ -431,8 +431,9 @@ interface GenericFormProps {
 
 function GenericForm({ refund, onGenerate }: GenericFormProps) {
   const [hasPolicyNumber, setHasPolicyNumber] = useState(true)
-  const [creditNumber, setCreditNumber] = useState('')
-  const [policyNumber, setPolicyNumber] = useState('')
+  const snapshot = refund.calculationSnapshot || {}
+  const [creditNumber, setCreditNumber] = useState(snapshot.nroCredito || '')
+  const [policyNumber, setPolicyNumber] = useState(snapshot.nroPoliza || '')
   const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
   const [companyName, setCompanyName] = useState('')
 
@@ -507,8 +508,9 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
   const rawInsuranceType = getInsuranceType(refund.calculationSnapshot)
   const derivedInsuranceName = getInsuranceName(rawInsuranceType)
 
-  const [creditNumber, setCreditNumber] = useState('')
-  const [policyNumber, setPolicyNumber] = useState('')
+  const snapshot = refund.calculationSnapshot || {}
+  const [creditNumber, setCreditNumber] = useState(snapshot.nroCredito || '')
+  const [policyNumber, setPolicyNumber] = useState(snapshot.nroPoliza || '')
   const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
   const [companyName, setCompanyName] = useState('')
   const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
