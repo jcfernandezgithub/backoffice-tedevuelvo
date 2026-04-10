@@ -1332,6 +1332,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="institutionId" />
                         </div>
                       </TableHead>
+                      <TableHead>Nº Póliza</TableHead>
+                      <TableHead>Nº Crédito</TableHead>
                       <TableHead>Origen</TableHead>
                       <TableHead>Gestor</TableHead>
                       <TableHead 
@@ -1582,6 +1584,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           )}
                         </TableCell>
                         <TableCell className="text-sm">{getInstitutionDisplayName(refund.institutionId)}</TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroPoliza || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroCredito || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
                         <TableCell>
                           {refund.partnerId ? (
                             <Badge 
