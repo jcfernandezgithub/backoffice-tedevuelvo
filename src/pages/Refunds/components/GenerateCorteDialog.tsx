@@ -563,12 +563,33 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
   const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
   const [companyName, setCompanyName] = useState('')
   const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
+  const [isSaving, setIsSaving] = useState(false)
 
-  const handleGenerate = () => {
+  const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim()
+
+  const handleGenerate = async () => {
     if (!creditNumber.trim() || !policyNumber.trim() || !companyName.trim() || !insuranceName.trim()) {
       toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
       return
     }
+
+    // Guardar nroPoliza y nroCredito en el snapshot
+    setIsSaving(true)
+    try {
+      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
+        calculationSnapshot: {
+          ...(refund.calculationSnapshot || {}),
+          nroPoliza: policyNumber.trim(),
+          nroCredito: creditNumber.trim(),
+        }
+      })
+    } catch (err) {
+      toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
+      setIsSaving(false)
+      return
+    }
+    setIsSaving(false)
+
     onGenerate({ creditNumber, policyNumber, bankName, companyName, insuranceName })
   }
 
@@ -578,6 +599,44 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
       <div className="flex items-center gap-2 p-3 border rounded-lg bg-primary/10 border-primary/30">
         <FileText className="h-4 w-4 text-primary shrink-0" />
         <span className="text-sm text-primary font-medium">Formato especial Banco Santander</span>
+      </div>
+
+      {/* Sección obligatoria de datos del crédito */}
+      <div className={`p-3 rounded-lg border space-y-3 ${creditDataComplete ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-700' : 'bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700'}`}>
+        <div className="flex items-center gap-2">
+          {creditDataComplete
+            ? <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            : <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          }
+          <p className={`text-sm font-semibold ${creditDataComplete ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>
+            Datos del crédito <span className="text-destructive">*</span>
+          </p>
+        </div>
+        {!creditDataComplete && (
+          <p className="text-xs text-amber-700 dark:text-amber-400 ml-6">
+            Estos datos son obligatorios para generar la carta de corte. Se guardarán automáticamente en la solicitud.
+          </p>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Nº de Crédito <span className="text-destructive">*</span></Label>
+            <Input
+              value={creditNumber}
+              onChange={e => setCreditNumber(e.target.value)}
+              placeholder="Número de operación de crédito"
+              className={!creditNumber.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-emerald-500/50'}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nº de Póliza <span className="text-destructive">*</span></Label>
+            <Input
+              value={policyNumber}
+              onChange={e => setPolicyNumber(e.target.value)}
+              placeholder="Número de póliza"
+              className={!policyNumber.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-emerald-500/50'}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -594,17 +653,6 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
       <div className="space-y-2">
         <Label htmlFor="s-companyName">Compañía de Seguros *</Label>
         <Input id="s-companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ej: BCI Seguros Generales S.A." />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="s-creditNumber">Nº de Crédito *</Label>
-          <Input id="s-creditNumber" value={creditNumber} onChange={e => setCreditNumber(e.target.value)} placeholder="Número de operación de crédito" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="s-policyNumber">Nº de Póliza *</Label>
-          <Input id="s-policyNumber" value={policyNumber} onChange={e => setPolicyNumber(e.target.value)} placeholder="Número de póliza" />
-        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -629,8 +677,19 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button onClick={handleGenerate} className="flex-1">Vista Previa</Button>
+        <Button
+          onClick={handleGenerate}
+          className="flex-1"
+          disabled={!creditDataComplete || isSaving}
+        >
+          {isSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : 'Vista Previa'}
+        </Button>
       </div>
+      {!creditDataComplete && (
+        <p className="text-xs text-destructive text-center">
+          Completa el Nº de Crédito y Nº de Póliza para habilitar la vista previa
+        </p>
+      )}
     </div>
   )
 }
