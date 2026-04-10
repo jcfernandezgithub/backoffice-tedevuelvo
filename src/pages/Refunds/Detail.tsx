@@ -266,7 +266,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     },
   })
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     // Validar documentos obligatorios para estados "Ingresado" o "Documentos recibidos"
     // (el backend auto-promueve docs_received → submitted)
     if (updateForm.status === 'submitted' || updateForm.status === 'docs_received') {
