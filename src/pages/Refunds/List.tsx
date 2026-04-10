@@ -1008,6 +1008,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               onChange={setAllianceFilter}
               partners={partnersData?.items || []}
             />
+
+            <Input
+              placeholder="Nº Póliza"
+              value={nroPolizaFilter}
+              onChange={(e) => setNroPolizaFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
+            />
+
+            <Input
+              placeholder="Nº Crédito"
+              value={nroCreditoFilter}
+              onChange={(e) => setNroCreditoFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
+            />
           </div>
 
 
