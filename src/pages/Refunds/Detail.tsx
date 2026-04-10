@@ -298,14 +298,34 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
       return
     }
 
-    // Si es docs_received y hay datos de póliza/crédito, guardarlos en el snapshot
-    if (updateForm.status === 'docs_received' && (snapshotFields.nroPoliza || snapshotFields.nroCredito)) {
-      const snapshotUpdate: Record<string, any> = {}
-      if (snapshotFields.nroPoliza) snapshotUpdate.nroPoliza = snapshotFields.nroPoliza
-      if (snapshotFields.nroCredito) snapshotUpdate.nroCredito = snapshotFields.nroCredito
-      
-      refundAdminApi.updateData(id!, { calculationSnapshot: { ...(refund?.calculationSnapshot || {}), ...snapshotUpdate } })
-        .catch(err => console.error('Error guardando datos de crédito:', err))
+    // Validar datos de crédito obligatorios para docs_received
+    if (updateForm.status === 'docs_received') {
+      if (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) {
+        toast({
+          title: 'Datos de crédito requeridos',
+          description: 'Debes ingresar el Nº de Póliza y el Nº de Crédito antes de continuar',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Guardar datos de crédito en el snapshot antes de cambiar estado
+      try {
+        await refundAdminApi.updateData(id!, {
+          calculationSnapshot: {
+            ...(refund?.calculationSnapshot || {}),
+            nroPoliza: snapshotFields.nroPoliza.trim(),
+            nroCredito: snapshotFields.nroCredito.trim(),
+          }
+        })
+      } catch (err) {
+        toast({
+          title: 'Error al guardar datos de crédito',
+          description: 'No se pudieron guardar los datos. Intenta nuevamente.',
+          variant: 'destructive',
+        })
+        return
+      }
     }
 
     updateMutation.mutate(updateForm)
