@@ -1806,6 +1806,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         value: getInstitutionDisplayName(refund.institutionId)
                       },
                       {
+                        label: 'Nº Póliza',
+                        value: (refund as any).calculationSnapshot?.nroPoliza || '-'
+                      },
+                      {
+                        label: 'Nº Crédito',
+                        value: (refund as any).calculationSnapshot?.nroCredito || '-'
+                      },
+                      {
                         label: 'Origen',
                         value: refund.partnerId ? (
                           <Badge 
