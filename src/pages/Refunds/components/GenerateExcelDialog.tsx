@@ -235,6 +235,18 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           setExpandedRefundId(null)
           return
         }
+        // Pre-fill from calculationSnapshot
+        const initial: Record<string, RefundExcelData> = {}
+        selectedRefunds.forEach(r => {
+          const snap = r.calculationSnapshot || {}
+          initial[r.id] = {
+            ...EMPTY_REFUND_DATA,
+            ...(refundData[r.id] || {}),
+            policyNumber: refundData[r.id]?.policyNumber || snap.nroPoliza || '',
+            creditCode: refundData[r.id]?.creditCode || snap.nroCredito || '',
+          }
+        })
+        setRefundData(initial)
         setDialogPage(1)
         setExpandedRefundId(null)
       }}
