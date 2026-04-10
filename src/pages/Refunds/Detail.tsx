@@ -297,6 +297,17 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
       })
       return
     }
+
+    // Si es docs_received y hay datos de póliza/crédito, guardarlos en el snapshot
+    if (updateForm.status === 'docs_received' && (snapshotFields.nroPoliza || snapshotFields.nroCredito)) {
+      const snapshotUpdate: Record<string, any> = {}
+      if (snapshotFields.nroPoliza) snapshotUpdate.nroPoliza = snapshotFields.nroPoliza
+      if (snapshotFields.nroCredito) snapshotUpdate.nroCredito = snapshotFields.nroCredito
+      
+      refundAdminApi.updateData(id!, { calculationSnapshot: { ...(refund?.calculationSnapshot || {}), ...snapshotUpdate } })
+        .catch(err => console.error('Error guardando datos de crédito:', err))
+    }
+
     updateMutation.mutate(updateForm)
   }
 
