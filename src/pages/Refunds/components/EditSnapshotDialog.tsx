@@ -53,6 +53,8 @@ const snapshotSchema = z.object({
   confirmedAverageInsuredBalance: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
   confirmedOriginalInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
   confirmedRemainingInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
+  nroPoliza: z.string().trim().max(50).optional().or(z.literal('')),
+  nroCredito: z.string().trim().max(50).optional().or(z.literal('')),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
@@ -78,6 +80,8 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   confirmedAverageInsuredBalance: 'Saldo insoluto (confirmado)',
   confirmedOriginalInstallments: 'Cuotas originales (confirmado)',
   confirmedRemainingInstallments: 'Cuotas restantes (confirmado)',
+  nroPoliza: 'Nro. Póliza',
+  nroCredito: 'Nro. Crédito',
   currentMonthlyPremium: 'Prima mensual actual',
   newMonthlyPremium: 'Nueva prima mensual',
   monthlySaving: 'Ahorro mensual',
@@ -224,6 +228,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       confirmedAverageInsuredBalance: currentSnapshot.confirmedAverageInsuredBalance ?? '',
       confirmedOriginalInstallments: currentSnapshot.confirmedOriginalInstallments ?? '',
       confirmedRemainingInstallments: currentSnapshot.confirmedRemainingInstallments ?? '',
+      nroPoliza: currentSnapshot.nroPoliza || '',
+      nroCredito: currentSnapshot.nroCredito || '',
       currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
       newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
       monthlySaving: currentSnapshot.monthlySaving ?? undefined,
@@ -648,6 +654,32 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   <NumberField control={form.control} name="confirmedAverageInsuredBalance" label="Saldo insoluto *" prefix="$" />
                   <NumberField control={form.control} name="confirmedOriginalInstallments" label="Cuotas originales *" />
                   <NumberField control={form.control} name="confirmedRemainingInstallments" label="Cuotas restantes *" />
+                  <FormField
+                    control={form.control}
+                    name="nroPoliza"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Nro. Póliza</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Ej: 12345" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nroCredito"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Nro. Crédito</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Ej: 67890" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </div>
 
