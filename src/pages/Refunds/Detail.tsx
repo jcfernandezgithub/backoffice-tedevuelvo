@@ -163,6 +163,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const backUrl = (location.state as any)?.backUrl || propBackUrl
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
     status: 'simulated',
     note: '',
