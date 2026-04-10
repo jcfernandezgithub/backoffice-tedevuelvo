@@ -21,6 +21,11 @@ const INSTITUTION_MAP: Record<string, string> = {
   forum: 'FORUM',
   tanner: 'TANNER',
   cooperativas: 'COOPERATIVAS',
+  'chevrolet-sf': 'CHEVROLET SF',
+  'chevrolet sf': 'CHEVROLET SF',
+  marubeni: 'MARUBENI',
+  'santander-consumer': 'SANTANDER CONSUMER',
+  'santander consumer': 'SANTANDER CONSUMER',
 }
 
 function getTramo(monto: number): string {

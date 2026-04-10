@@ -38,6 +38,9 @@ const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   Islacoop: "COOPEUCH",
   Forum: "FORUM",
   Tanner: "TANNER",
+  "Chevrolet SF": "CHEVROLET SF",
+  Marubeni: "MARUBENI",
+  "Santander Consumer": "SANTANDER CONSUMER",
 };
 
 export interface CalculationResult {
@@ -433,4 +436,7 @@ export const INSTITUCIONES_DISPONIBLES = [
   "Forum",
   "Tanner",
   "Cooperativas",
+  "Chevrolet SF",
+  "Marubeni",
+  "Santander Consumer",
 ];

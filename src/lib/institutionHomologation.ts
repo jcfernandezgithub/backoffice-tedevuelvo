@@ -14,6 +14,11 @@ const institutionHomologations: Record<string, string> = {
   bice: 'BANCO BICE',
   falabella: 'BANCO FALABELLA',
   ripley: 'BANCO RIPLEY',
+  'chevrolet sf': 'CHEVROLET SF',
+  'chevrolet-sf': 'CHEVROLET SF',
+  marubeni: 'MARUBENI',
+  'santander consumer': 'SANTANDER CONSUMER',
+  'santander-consumer': 'SANTANDER CONSUMER',
 }
 
 /**
