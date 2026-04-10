@@ -751,9 +751,21 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                <Button onClick={handleUpdateStatus} className="w-full" disabled={updateMutation.isPending}>
+                <Button
+                  onClick={handleUpdateStatus}
+                  className="w-full"
+                  disabled={
+                    updateMutation.isPending ||
+                    (updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()))
+                  }
+                >
                   {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
                 </Button>
+                {updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
+                  <p className="text-xs text-destructive text-center">
+                    Completa los datos del crédito para habilitar el cambio de estado
+                  </p>
+                )}
               </div>
             </DialogContent>
           </Dialog>
