@@ -456,6 +456,8 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
           nroCredito: creditNumber.trim(),
         }
       })
+      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
+      queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId || (refund as any)._id || (refund as any).id] })
     } catch (err) {
       toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
       setIsSaving(false)
@@ -583,6 +585,8 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
           nroCredito: creditNumber.trim(),
         }
       })
+      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
+      queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId || (refund as any)._id || (refund as any).id] })
     } catch (err) {
       toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
       setIsSaving(false)
