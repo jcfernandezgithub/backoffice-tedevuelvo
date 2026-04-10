@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.0
+## Versión 3.3.1
 
 ## Changelog
+
+### Versión 3.3.1 - 2026-04-10
+
+#### Campos Nro. Póliza y Nro. Crédito en Snapshot
+- **Nuevos campos en editor de snapshot**: se agregaron `nroPoliza` y `nroCredito` en la sección "Datos confirmados del crédito" del diálogo de edición de snapshot, permitiendo registrar estos datos junto al cálculo de la solicitud.
+- **Persistencia en snapshot**: ambos campos se envían como parte del `calculationSnapshot` al backend.
+
+#### Precarga de Nro. Póliza y Nro. Crédito en Carta de Corte
+- **Formulario genérico y Santander**: al abrir el diálogo de generación de carta de corte, los campos "Nº de Crédito" y "Nº de Póliza" se precargan automáticamente desde `calculationSnapshot.nroCredito` y `calculationSnapshot.nroPoliza` si existen.
+
+#### Precarga de Nro. Póliza y Nro. Crédito en Archivo Altas CIA
+- **Autocompletado al abrir diálogo**: al abrir el modal de generación de Altas CIA, los campos "Número de Póliza" y "Código de Crédito" se precargan desde el snapshot de cada solicitud, reduciendo el ingreso manual.
+
+#### Actualización de Tasas de Desgravamen
+- **Tasas actualizadas**: Banco Ripley, Forum, Scotiabank y Tanner con nuevas tasas vigentes.
+- **Nuevas instituciones**: se agregaron Chevrolet SF, Marubeni y Santander Consumer al mapeo de instituciones de la calculadora, desglose de seguros y homologación de nombres.
+
+#### Botón "Solicitar datos bancarios" (próximamente)
+- **Nuevo botón en detalle de solicitud**: visible solo cuando la solicitud está en estado "Pago programado", permite (en futuro) reenviar un correo al cliente para que ingrese sus datos de transferencia bancaria.
+- **Estado deshabilitado**: el botón se muestra deshabilitado con tooltip informativo indicando que la funcionalidad está en desarrollo.
 
 ### Versión 3.3.0 - 2026-04-05
 
