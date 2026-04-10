@@ -404,6 +404,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       bank: bankFilter,
       insuranceType: insuranceTypeFilter,
       alliance: allianceFilter,
+      nroPoliza: nroPolizaFilter,
+      nroCredito: nroCreditoFilter,
     })
     
     // Actualizar URL params
@@ -467,12 +469,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setBankFilter('all')
     setInsuranceTypeFilter('all')
     setAllianceFilter('all')
+    setNroPolizaFilter('')
+    setNroCreditoFilter('')
     setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
       insuranceType: 'all',
       alliance: 'all',
+      nroPoliza: '',
+      nroCredito: '',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
