@@ -93,6 +93,7 @@ class RefundAdminApiClient {
     // Normalizar estados y adaptar respuesta
     const items = (responseData.items || []).map((item: any) => ({
       ...item,
+      id: item.id || item._id,
       status: normalizeStatus(item.status)
     }))
     
@@ -142,6 +143,7 @@ class RefundAdminApiClient {
     // El nuevo endpoint retorna: { data: [...], meta: { page, limit, total, pages, hasNext, hasPrev } }
     const items = (responseData.data || []).map((item: any) => ({
       ...item,
+      id: item.id || item._id,
       status: normalizeStatus(item.status)
     }))
     
