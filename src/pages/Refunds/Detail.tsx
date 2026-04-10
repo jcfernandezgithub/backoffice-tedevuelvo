@@ -266,7 +266,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     },
   })
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     // Validar documentos obligatorios para estados "Ingresado" o "Documentos recibidos"
     // (el backend auto-promueve docs_received → submitted)
     if (updateForm.status === 'submitted' || updateForm.status === 'docs_received') {
@@ -298,14 +298,34 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
       return
     }
 
-    // Si es docs_received y hay datos de póliza/crédito, guardarlos en el snapshot
-    if (updateForm.status === 'docs_received' && (snapshotFields.nroPoliza || snapshotFields.nroCredito)) {
-      const snapshotUpdate: Record<string, any> = {}
-      if (snapshotFields.nroPoliza) snapshotUpdate.nroPoliza = snapshotFields.nroPoliza
-      if (snapshotFields.nroCredito) snapshotUpdate.nroCredito = snapshotFields.nroCredito
-      
-      refundAdminApi.updateData(id!, { calculationSnapshot: { ...(refund?.calculationSnapshot || {}), ...snapshotUpdate } })
-        .catch(err => console.error('Error guardando datos de crédito:', err))
+    // Validar datos de crédito obligatorios para docs_received
+    if (updateForm.status === 'docs_received') {
+      if (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) {
+        toast({
+          title: 'Datos de crédito requeridos',
+          description: 'Debes ingresar el Nº de Póliza y el Nº de Crédito antes de continuar',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Guardar datos de crédito en el snapshot antes de cambiar estado
+      try {
+        await refundAdminApi.updateData(id!, {
+          calculationSnapshot: {
+            ...(refund?.calculationSnapshot || {}),
+            nroPoliza: snapshotFields.nroPoliza.trim(),
+            nroCredito: snapshotFields.nroCredito.trim(),
+          }
+        })
+      } catch (err) {
+        toast({
+          title: 'Error al guardar datos de crédito',
+          description: 'No se pudieron guardar los datos. Intenta nuevamente.',
+          variant: 'destructive',
+        })
+        return
+      }
     }
 
     updateMutation.mutate(updateForm)
@@ -642,23 +662,37 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       </ul>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-muted/50 border space-y-3">
-                      <p className="text-sm font-medium">Datos del crédito (opcionales)</p>
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-primary shrink-0" />
+                        <p className="text-sm font-semibold text-primary">
+                          Datos del crédito <span className="text-destructive">*</span>
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground ml-6">
+                        Estos datos son obligatorios para generar la carta de corte y continuar el proceso.
+                      </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">Nº de Póliza</Label>
+                          <Label className="text-xs">
+                            Nº de Póliza <span className="text-destructive">*</span>
+                          </Label>
                           <Input
                             value={snapshotFields.nroPoliza}
                             onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroPoliza: e.target.value }))}
                             placeholder="Ej: 123456"
+                            className={!snapshotFields.nroPoliza?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-xs">Nº de Crédito</Label>
+                          <Label className="text-xs">
+                            Nº de Crédito <span className="text-destructive">*</span>
+                          </Label>
                           <Input
                             value={snapshotFields.nroCredito}
                             onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroCredito: e.target.value }))}
                             placeholder="Ej: 789012"
+                            className={!snapshotFields.nroCredito?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
                           />
                         </div>
                       </div>
@@ -717,9 +751,21 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                <Button onClick={handleUpdateStatus} className="w-full" disabled={updateMutation.isPending}>
+                <Button
+                  onClick={handleUpdateStatus}
+                  className="w-full"
+                  disabled={
+                    updateMutation.isPending ||
+                    (updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()))
+                  }
+                >
                   {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
                 </Button>
+                {updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
+                  <p className="text-xs text-destructive text-center">
+                    Completa los datos del crédito para habilitar el cambio de estado
+                  </p>
+                )}
               </div>
             </DialogContent>
           </Dialog>
