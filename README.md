@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.1
+## Versión 3.3.2
 
 ## Changelog
+
+### Versión 3.3.2 - 2026-04-10
+
+#### Validación obligatoria de datos de crédito en Carta de Corte
+- **Campos obligatorios antes de generar**: Los campos "Nº de Crédito" y "Nº de Póliza" son ahora obligatorios antes de poder generar la vista previa de cualquier Carta de Corte (genérica o Santander).
+- **Indicadores visuales de estado**: Se agregaron badges con íconos que muestran el estado de completitud de los datos (ámbar con `AlertCircle` para incompleto, esmeralda con `CheckCircle` para completo).
+- **Botón Vista Previa deshabilitado**: El botón permanece deshabilitado hasta que ambos campos estén correctamente completados.
+
+#### Persistencia automática al generar vista previa
+- **Guardado automático en snapshot**: Al hacer clic en "Vista Previa", los valores de `nroPoliza` y `nroCredito` se guardan automáticamente en el `calculationSnapshot` mediante llamada a `refundAdminApi.updateData`.
+- **Indicador de progreso**: Se muestra un spinner (`Loader2`) durante el proceso de guardado antes de mostrar la vista previa.
+- **Invalidación de caché**: Tras el guardado exitoso, se invalida el caché de la solicitud (`queryClient.invalidateQueries`) para que los datos actualizados se reflejen inmediatamente en todos los componentes.
+
+#### Validación de datos de crédito en cambio de estado "Documentos recibidos"
+- **Campos obligatorios y de solo lectura**: Al cambiar el estado a "Documentos recibidos", los campos "Nº de Póliza" y "Nº de Crédito" son obligatorios pero aparecen como solo lectura (no editables).
+- **Validación de precarga**: El sistema valida que estos datos ya existan en el snapshot. Si faltan, muestra un error instructivo indicando que deben cargarse previamente desde la generación de Carta de Corte.
+- **Indicadores visuales diferenciados**: 
+  - Verde con `CheckCircle` cuando los datos están presentes.
+  - Rojo con `AlertCircle` cuando faltan, con instrucciones claras para el usuario.
+- **Eliminación de guardado redundante**: Se removió la llamada API duplicada durante el cambio de estado, ya que los datos se guardan automáticamente en el paso de Carta de Corte.
 
 ### Versión 3.3.1 - 2026-04-10
 
