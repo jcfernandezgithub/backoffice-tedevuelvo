@@ -175,6 +175,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
   const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
   const [allianceFilter, setAllianceFilter] = useState<string>(searchParams.get('alliance') || 'all')
+  const [nroPolizaFilter, setNroPolizaFilter] = useState<string>(searchParams.get('nroPoliza') || '')
+  const [nroCreditoFilter, setNroCreditoFilter] = useState<string>(searchParams.get('nroCredito') || '')
 
   // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
   const [appliedLocalFilters, setAppliedLocalFilters] = useState({
@@ -182,6 +184,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     bank: searchParams.get('bank') || 'all',
     insuranceType: searchParams.get('insuranceType') || 'all',
     alliance: searchParams.get('alliance') || 'all',
+    nroPoliza: searchParams.get('nroPoliza') || '',
+    nroCredito: searchParams.get('nroCredito') || '',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -400,6 +404,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       bank: bankFilter,
       insuranceType: insuranceTypeFilter,
       alliance: allianceFilter,
+      nroPoliza: nroPolizaFilter,
+      nroCredito: nroCreditoFilter,
     })
     
     // Actualizar URL params
@@ -463,12 +469,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setBankFilter('all')
     setInsuranceTypeFilter('all')
     setAllianceFilter('all')
+    setNroPolizaFilter('')
+    setNroCreditoFilter('')
     setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
       insuranceType: 'all',
       alliance: 'all',
+      nroPoliza: '',
+      nroCredito: '',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
@@ -755,7 +765,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
     
-    // En modo histórico, filtrar por solicitudes que TRANSITARON al estado seleccionado
+    // Filtro por Nº Póliza (busca en calculationSnapshot.nroPoliza)
+    if (appliedLocalFilters.nroPoliza) {
+      const search = appliedLocalFilters.nroPoliza.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroPoliza || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+    
+    // Filtro por Nº Crédito (busca en calculationSnapshot.nroCredito)
+    if (appliedLocalFilters.nroCredito) {
+      const search = appliedLocalFilters.nroCredito.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroCredito || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+
     // durante el rango de fechas [from, to], sin importar su estado actual
     if (historicalStatusMode && localFilters.status) {
       const fromDate = localFilters.from || '2000-01-01'
@@ -997,6 +1024,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               value={allianceFilter}
               onChange={setAllianceFilter}
               partners={partnersData?.items || []}
+            />
+
+            <Input
+              placeholder="Nº Póliza"
+              value={nroPolizaFilter}
+              onChange={(e) => setNroPolizaFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
+            />
+
+            <Input
+              placeholder="Nº Crédito"
+              value={nroCreditoFilter}
+              onChange={(e) => setNroCreditoFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
             />
           </div>
 
@@ -1289,6 +1332,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           <SortIcon field="institutionId" />
                         </div>
                       </TableHead>
+                      <TableHead>Nº Póliza</TableHead>
+                      <TableHead>Nº Crédito</TableHead>
                       <TableHead>Origen</TableHead>
                       <TableHead>Gestor</TableHead>
                       <TableHead 
@@ -1539,6 +1584,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           )}
                         </TableCell>
                         <TableCell className="text-sm">{getInstitutionDisplayName(refund.institutionId)}</TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroPoliza || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroCredito || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
                         <TableCell>
                           {refund.partnerId ? (
                             <Badge 
@@ -1753,6 +1804,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       {
                         label: 'Institución',
                         value: getInstitutionDisplayName(refund.institutionId)
+                      },
+                      {
+                        label: 'Nº Póliza',
+                        value: (refund as any).calculationSnapshot?.nroPoliza || '-'
+                      },
+                      {
+                        label: 'Nº Crédito',
+                        value: (refund as any).calculationSnapshot?.nroCredito || '-'
                       },
                       {
                         label: 'Origen',
