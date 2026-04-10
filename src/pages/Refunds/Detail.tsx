@@ -303,25 +303,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
       if (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) {
         toast({
           title: 'Datos de crédito requeridos',
-          description: 'Debes ingresar el Nº de Póliza y el Nº de Crédito antes de continuar',
-          variant: 'destructive',
-        })
-        return
-      }
-
-      // Guardar datos de crédito en el snapshot antes de cambiar estado
-      try {
-        await refundAdminApi.updateData(id!, {
-          calculationSnapshot: {
-            ...(refund?.calculationSnapshot || {}),
-            nroPoliza: snapshotFields.nroPoliza.trim(),
-            nroCredito: snapshotFields.nroCredito.trim(),
-          }
-        })
-      } catch (err) {
-        toast({
-          title: 'Error al guardar datos de crédito',
-          description: 'No se pudieron guardar los datos. Intenta nuevamente.',
+          description: 'Estos datos deben cargarse previamente desde la generación de la Carta de Corte',
           variant: 'destructive',
         })
         return
@@ -662,41 +644,41 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       </ul>
                     </div>
 
-                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-primary shrink-0" />
-                        <p className="text-sm font-semibold text-primary">
-                          Datos del crédito <span className="text-destructive">*</span>
+                    {snapshotFields.nroPoliza?.trim() && snapshotFields.nroCredito?.trim() ? (
+                      <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                            Datos del crédito verificados
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nº de Póliza</Label>
+                            <p className="text-sm font-medium font-mono bg-background/50 rounded px-2 py-1.5 border">{snapshotFields.nroPoliza}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nº de Crédito</Label>
+                            <p className="text-sm font-medium font-mono bg-background/50 rounded px-2 py-1.5 border">{snapshotFields.nroCredito}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-emerald-700 dark:text-emerald-400 ml-6">
+                          Cargados desde la generación de la Carta de Corte.
                         </p>
                       </div>
-                      <p className="text-xs text-muted-foreground ml-6">
-                        Estos datos son obligatorios para generar la carta de corte y continuar el proceso.
-                      </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            Nº de Póliza <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            value={snapshotFields.nroPoliza}
-                            onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroPoliza: e.target.value }))}
-                            placeholder="Ej: 123456"
-                            className={!snapshotFields.nroPoliza?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
-                          />
+                    ) : (
+                      <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/30 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
+                          <p className="text-sm font-semibold text-destructive">
+                            Datos del crédito pendientes
+                          </p>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs">
-                            Nº de Crédito <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            value={snapshotFields.nroCredito}
-                            onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroCredito: e.target.value }))}
-                            placeholder="Ej: 789012"
-                            className={!snapshotFields.nroCredito?.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-green-500/50'}
-                          />
-                        </div>
+                        <p className="text-xs text-destructive/80 ml-6">
+                          El Nº de Póliza y Nº de Crédito deben ser cargados previamente desde la <strong>generación de la Carta de Corte</strong>. No es posible cambiar al estado "Documentos recibidos" sin estos datos.
+                        </p>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -763,7 +745,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                 </Button>
                 {updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
                   <p className="text-xs text-destructive text-center">
-                    Completa los datos del crédito para habilitar el cambio de estado
+                    Genera la Carta de Corte para cargar los datos del crédito
                   </p>
                 )}
               </div>
