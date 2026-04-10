@@ -163,6 +163,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const backUrl = (location.state as any)?.backUrl || propBackUrl
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
     status: 'simulated',
     note: '',
@@ -296,6 +297,17 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
       })
       return
     }
+
+    // Si es docs_received y hay datos de póliza/crédito, guardarlos en el snapshot
+    if (updateForm.status === 'docs_received' && (snapshotFields.nroPoliza || snapshotFields.nroCredito)) {
+      const snapshotUpdate: Record<string, any> = {}
+      if (snapshotFields.nroPoliza) snapshotUpdate.nroPoliza = snapshotFields.nroPoliza
+      if (snapshotFields.nroCredito) snapshotUpdate.nroCredito = snapshotFields.nroCredito
+      
+      refundAdminApi.updateData(id!, { calculationSnapshot: { ...(refund?.calculationSnapshot || {}), ...snapshotUpdate } })
+        .catch(err => console.error('Error guardando datos de crédito:', err))
+    }
+
     updateMutation.mutate(updateForm)
   }
 
@@ -565,7 +577,16 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
               </TooltipContent>
             </Tooltip>
           )}
-          <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+          <Dialog open={updateDialogOpen} onOpenChange={(open) => {
+              setUpdateDialogOpen(open)
+              if (open && refund) {
+                const snap = refund.calculationSnapshot || {}
+                setSnapshotFields({
+                  nroPoliza: snap.nroPoliza || '',
+                  nroCredito: snap.nroCredito || '',
+                })
+              }
+            }}>
             <DialogTrigger asChild>
               <Button>
                 <Edit className="h-4 w-4 mr-2" />
@@ -604,20 +625,44 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                 </div>
 
                 {updateForm.status === 'docs_received' && (
-                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 dark:bg-amber-950/30 dark:border-amber-700 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                        Antes de continuar, verifica que:
-                      </p>
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-lg bg-amber-50 border border-amber-300 dark:bg-amber-950/30 dark:border-amber-700 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                          Antes de continuar, verifica que:
+                        </p>
+                      </div>
+                      <ul className="ml-6 space-y-1 text-sm text-amber-700 dark:text-amber-400 list-disc">
+                        <li>El <strong>mandato</strong> esté firmado</li>
+                        <li>La imagen de <strong>cédula frontal</strong> esté cargada</li>
+                        <li>La imagen de <strong>cédula trasera</strong> esté cargada</li>
+                        <li>La <strong>carta de rechazo</strong> esté cargada</li>
+                        <li>Todos los documentos tengan su <strong>tipo correspondiente</strong> asignado</li>
+                      </ul>
                     </div>
-                    <ul className="ml-6 space-y-1 text-sm text-amber-700 dark:text-amber-400 list-disc">
-                      <li>El <strong>mandato</strong> esté firmado</li>
-                      <li>La imagen de <strong>cédula frontal</strong> esté cargada</li>
-                      <li>La imagen de <strong>cédula trasera</strong> esté cargada</li>
-                      <li>La <strong>carta de rechazo</strong> esté cargada</li>
-                      <li>Todos los documentos tengan su <strong>tipo correspondiente</strong> asignado</li>
-                    </ul>
+
+                    <div className="p-3 rounded-lg bg-muted/50 border space-y-3">
+                      <p className="text-sm font-medium">Datos del crédito (opcionales)</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Nº de Póliza</Label>
+                          <Input
+                            value={snapshotFields.nroPoliza}
+                            onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroPoliza: e.target.value }))}
+                            placeholder="Ej: 123456"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Nº de Crédito</Label>
+                          <Input
+                            value={snapshotFields.nroCredito}
+                            onChange={(e) => setSnapshotFields(prev => ({ ...prev, nroCredito: e.target.value }))}
+                            placeholder="Ej: 789012"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
