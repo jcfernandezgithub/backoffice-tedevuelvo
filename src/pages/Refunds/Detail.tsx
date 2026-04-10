@@ -577,7 +577,16 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
               </TooltipContent>
             </Tooltip>
           )}
-          <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+          <Dialog open={updateDialogOpen} onOpenChange={(open) => {
+              setUpdateDialogOpen(open)
+              if (open && refund) {
+                const snap = refund.calculationSnapshot || {}
+                setSnapshotFields({
+                  nroPoliza: snap.nroPoliza || '',
+                  nroCredito: snap.nroCredito || '',
+                })
+              }
+            }}>
             <DialogTrigger asChild>
               <Button>
                 <Edit className="h-4 w-4 mr-2" />
