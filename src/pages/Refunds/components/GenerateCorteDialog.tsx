@@ -431,6 +431,7 @@ interface GenericFormProps {
 }
 
 function GenericForm({ refund, onGenerate }: GenericFormProps) {
+  const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
   const [creditNumber, setCreditNumber] = useState(snapshot.nroCredito || '')
   const [policyNumber, setPolicyNumber] = useState(snapshot.nroPoliza || '')
@@ -556,6 +557,7 @@ interface SantanderFormProps {
 }
 
 function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
+  const queryClient = useQueryClient()
   const rawInsuranceType = getInsuranceType(refund.calculationSnapshot)
   const derivedInsuranceName = getInsuranceName(rawInsuranceType)
 
