@@ -342,6 +342,38 @@ class RefundAdminApiClient {
     
     return data
   }
+
+  async resendScheduledPaymentEmail(
+    id: string,
+    payload: {
+      nombre_cliente: string
+      email: string
+      idSolicitud: string
+      monto_aprobado: number
+      estado: string
+      linkAccion: string
+    }
+  ): Promise<{ ok: boolean; data: any }> {
+    const response = await fetch(
+      `${API_BASE_URL}/refund-requests/admin/${id}/resend-scheduled-payment-email`,
+      {
+        method: 'PATCH',
+        headers: await this.getAuthHeaders(),
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al enviar solicitud de datos bancarios' }))
+      throw new Error(error.message || 'Error al enviar solicitud de datos bancarios')
+    }
+
+    return response.json()
+  }
 }
 
 export const refundAdminApi = new RefundAdminApiClient()
