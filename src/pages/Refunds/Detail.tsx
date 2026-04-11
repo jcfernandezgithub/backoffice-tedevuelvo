@@ -591,6 +591,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           )}
           {/* Reenviar email datos bancarios - solo en payment_scheduled */}
           {refund.status === 'payment_scheduled' && (
+            <>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
@@ -598,7 +599,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                     variant="outline"
                     className="gap-1.5"
                     disabled={sendBankEmailMutation.isPending}
-                    onClick={handleSendBankDataEmail}
+                    onClick={() => setBankEmailDialogOpen(true)}
                   >
                     <Mail className="h-4 w-4" />
                     {sendBankEmailMutation.isPending ? 'Enviando...' : 'Solicitar datos bancarios'}
@@ -609,6 +610,23 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                 <p className="text-sm">Envía un correo al cliente para que ingrese sus datos de transferencia</p>
               </TooltipContent>
             </Tooltip>
+            <AlertDialog open={bankEmailDialogOpen} onOpenChange={setBankEmailDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Solicitar datos bancarios</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Se enviará un correo a <strong>{(refund as any)?.email}</strong> solicitando los datos de transferencia bancaria para completar la devolución.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmSendBankEmail}>
+                    Enviar correo
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            </>
           )}
           <Dialog open={updateDialogOpen} onOpenChange={(open) => {
               setUpdateDialogOpen(open)
