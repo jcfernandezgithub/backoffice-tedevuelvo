@@ -289,9 +289,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     },
   })
 
-  const handleSendBankDataEmail = () => {
-    if (!refund || !id) return
-    if (!confirm('¿Estás seguro de enviar el correo de solicitud de datos bancarios al cliente?')) return
+  const [bankEmailDialogOpen, setBankEmailDialogOpen] = useState(false)
+
+  const handleConfirmSendBankEmail = () => {
+    setBankEmailDialogOpen(false)
     sendBankEmailMutation.mutate()
   }
 
