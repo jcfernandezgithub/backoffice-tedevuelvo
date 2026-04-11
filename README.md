@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.3
+## Versión 3.3.4
 
 ## Changelog
+
+### Versión 3.3.4 - 2026-04-11
+
+#### Botón "Solicitar datos bancarios" activo
+- **Endpoint integrado**: Se activó el botón para invocar `PATCH /refund-requests/admin/:id/resend-scheduled-payment-email`, enviando el payload con nombre del cliente, email, ID de solicitud, monto real de devolución (`realAmount`), estado y link de acción (`https://www.tedevuelvo.cl/login`).
+- **Modal de confirmación mejorado**: Se reemplazó el `window.confirm` nativo del navegador por un `AlertDialog` estilizado con el diseño del sistema, mostrando el email del destinatario y botones "Cancelar" / "Enviar correo".
+- **Feedback de estado**: Indicador de carga ("Enviando...") en el botón y notificaciones toast para éxito y error.
 
 ### Versión 3.3.3 - 2026-04-10
 
