@@ -266,6 +266,32 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     },
   })
 
+  const sendBankEmailMutation = useMutation({
+    mutationFn: () => {
+      const payload = {
+        nombre_cliente: (refund as any)?.fullName || '',
+        email: (refund as any)?.email || '',
+        idSolicitud: (refund as any)?.publicId || id || '',
+        monto_aprobado: (refund as any)?.estimatedAmountCLP || 0,
+        estado: (refund as any)?.status || '',
+        linkAccion: `${window.location.origin}/refunds/${id}`,
+      }
+      return refundAdminApi.resendScheduledPaymentEmail(id!, payload)
+    },
+    onSuccess: () => {
+      toast({ title: 'Correo enviado', description: 'Se envió la solicitud de datos bancarios al cliente' })
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' })
+    },
+  })
+
+  const handleSendBankDataEmail = () => {
+    if (!refund || !id) return
+    if (!confirm('¿Estás seguro de enviar el correo de solicitud de datos bancarios al cliente?')) return
+    sendBankEmailMutation.mutate()
+  }
+
   const handleUpdateStatus = async () => {
     // Validar documentos obligatorios para estados "Ingresado" o "Documentos recibidos"
     // (el backend auto-promueve docs_received → submitted)
