@@ -566,16 +566,17 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                 <span>
                   <Button
                     variant="outline"
-                    disabled
                     className="gap-1.5"
+                    disabled={sendBankEmailMutation.isPending}
+                    onClick={handleSendBankDataEmail}
                   >
                     <Mail className="h-4 w-4" />
-                    Solicitar datos bancarios
+                    {sendBankEmailMutation.isPending ? 'Enviando...' : 'Solicitar datos bancarios'}
                   </Button>
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p className="text-sm">Próximamente — Envía un correo al cliente para que ingrese sus datos de transferencia</p>
+                <p className="text-sm">Envía un correo al cliente para que ingrese sus datos de transferencia</p>
               </TooltipContent>
             </Tooltip>
           )}
