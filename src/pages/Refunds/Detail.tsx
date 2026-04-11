@@ -268,13 +268,20 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
   const sendBankEmailMutation = useMutation({
     mutationFn: () => {
+      // Obtener monto real de devolución del statusHistory
+      const statusHistory = (refund as any)?.statusHistory || []
+      const realAmountEntry = statusHistory.find(
+        (entry: any) => entry.to === 'payment_scheduled' || entry.to === 'paid'
+      )
+      const montoReal = realAmountEntry?.realAmount || realAmountEntry?.metadata?.realAmount || 0
+      
       const payload = {
         nombre_cliente: (refund as any)?.fullName || '',
         email: (refund as any)?.email || '',
         idSolicitud: (refund as any)?.publicId || id || '',
-        monto_aprobado: (refund as any)?.estimatedAmountCLP || 0,
+        monto_aprobado: montoReal || (refund as any)?.estimatedAmountCLP || 0,
         estado: (refund as any)?.status || '',
-        linkAccion: `${window.location.origin}/refunds/${id}`,
+        linkAccion: 'https://www.tedevuelvo.cl/login',
       }
       return refundAdminApi.resendScheduledPaymentEmail(id!, payload)
     },
