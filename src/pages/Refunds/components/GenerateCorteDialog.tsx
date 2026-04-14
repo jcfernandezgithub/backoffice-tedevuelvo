@@ -447,128 +447,35 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
       return
     }
 
-    // Guardar nroPoliza y nroCredito en el snapshot
-    setIsSaving(true)
-    try {
-      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
-        calculationSnapshot: {
-          ...(refund.calculationSnapshot || {}),
-          nroPoliza: policyNumber.trim(),
-          nroCredito: creditNumber.trim(),
-        }
-      })
-      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
-      queryClient.invalidateQueries({ queryKey: ['refund'] })
-    } catch (err) {
-      toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
-      setIsSaving(false)
-      return
-    }
-    setIsSaving(false)
+    const nextPolicyNumber = policyNumber.trim()
+    const nextCreditNumber = creditNumber.trim()
+    const currentPolicyNumber = String(snapshot.nroPoliza || '').trim()
+    const currentCreditNumber = String(snapshot.nroCredito || '').trim()
+    const shouldPersistCreditData =
+      nextPolicyNumber !== currentPolicyNumber || nextCreditNumber !== currentCreditNumber
 
-    onGenerate({ creditNumber, policyNumber, bankName, companyName }, true)
-  }
-
-  return (
-    <div className="space-y-4 py-4">
-      {/* Sección obligatoria de datos del crédito */}
-      <div className={`p-3 rounded-lg border space-y-3 ${creditDataComplete ? 'bg-emerald-50 border-emerald-300 dark:bg-emerald-950/20 dark:border-emerald-700' : 'bg-amber-50 border-amber-300 dark:bg-amber-950/30 dark:border-amber-700'}`}>
-        <div className="flex items-center gap-2">
-          {creditDataComplete
-            ? <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            : <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+    if (shouldPersistCreditData) {
+      setIsSaving(true)
+      try {
+        await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
+          calculationSnapshot: {
+            ...(refund.calculationSnapshot || {}),
+            nroPoliza: nextPolicyNumber,
+            nroCredito: nextCreditNumber,
           }
-          <p className={`text-sm font-semibold ${creditDataComplete ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>
-            Datos del crédito <span className="text-destructive">*</span>
-          </p>
-        </div>
-        {!creditDataComplete && (
-          <p className="text-xs text-amber-700 dark:text-amber-400 ml-6">
-            Estos datos son obligatorios para generar la carta de corte. Se guardarán automáticamente en la solicitud.
-          </p>
-        )}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Nº de Crédito <span className="text-destructive">*</span></Label>
-            <Input
-              value={creditNumber}
-              onChange={e => setCreditNumber(e.target.value)}
-              placeholder="Número de operación de crédito"
-              className={!creditNumber.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-emerald-500/50'}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Nº de Póliza <span className="text-destructive">*</span></Label>
-            <Input
-              value={policyNumber}
-              onChange={e => setPolicyNumber(e.target.value)}
-              placeholder="Número de póliza"
-              className={!policyNumber.trim() ? 'border-destructive/50 focus-visible:ring-destructive/30' : 'border-emerald-500/50'}
-            />
-          </div>
-        </div>
-      </div>
+        })
+        queryClient.invalidateQueries({ queryKey: ['refund'] })
+      } catch (err) {
+        toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
+        setIsSaving(false)
+        return
+      }
+      setIsSaving(false)
+    }
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Nombre del cliente</Label>
-          <Input value={refund.fullName} disabled className="bg-muted" />
-        </div>
-        <div className="space-y-2">
-          <Label>RUT del cliente</Label>
-          <Input value={refund.rut} disabled className="bg-muted" />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="companyName">Compañía de Seguros *</Label>
-        <Input id="companyName" value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ej: MAPFRE Seguros Generales de Chile S.A." />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="bankName">Banco (Crédito)</Label>
-        <Input id="bankName" value={bankName} onChange={e => setBankName(e.target.value)} placeholder="Nombre del banco que otorgó el crédito" />
-      </div>
-
-      <div className="flex gap-2 pt-4">
-        <Button
-          onClick={handleGenerate}
-          className="flex-1"
-          disabled={!creditDataComplete || isSaving}
-        >
-          {isSaving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Guardando...</> : 'Vista Previa'}
-        </Button>
-      </div>
-      {!creditDataComplete && (
-        <p className="text-xs text-destructive text-center">
-          Completa el Nº de Crédito y Nº de Póliza para habilitar la vista previa
-        </p>
-      )}
-    </div>
-  )
-}
-
-// ──────────────────────────────────────────
-// Formulario SANTANDER
-// ──────────────────────────────────────────
-interface SantanderFormProps {
-  refund: RefundRequest
-  onGenerate: (data: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string }) => void
-}
-
-function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
-  const queryClient = useQueryClient()
-  const rawInsuranceType = getInsuranceType(refund.calculationSnapshot)
-  const derivedInsuranceName = getInsuranceName(rawInsuranceType)
-
-  const snapshot = refund.calculationSnapshot || {}
-  const [creditNumber, setCreditNumber] = useState(snapshot.nroCredito || '')
-  const [policyNumber, setPolicyNumber] = useState(snapshot.nroPoliza || '')
-  const [bankName, setBankName] = useState(getInstitutionDisplayName(refund.institutionId))
-  const [companyName, setCompanyName] = useState('')
-  const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
-  const [isSaving, setIsSaving] = useState(false)
-
+    onGenerate({ creditNumber: nextCreditNumber, policyNumber: nextPolicyNumber, bankName, companyName }, true)
+  }
+...
   const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim()
 
   const handleGenerate = async () => {
@@ -577,26 +484,33 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
       return
     }
 
-    // Guardar nroPoliza y nroCredito en el snapshot
-    setIsSaving(true)
-    try {
-      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
-        calculationSnapshot: {
-          ...(refund.calculationSnapshot || {}),
-          nroPoliza: policyNumber.trim(),
-          nroCredito: creditNumber.trim(),
-        }
-      })
-      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
-      queryClient.invalidateQueries({ queryKey: ['refund'] })
-    } catch (err) {
-      toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
-      setIsSaving(false)
-      return
-    }
-    setIsSaving(false)
+    const nextPolicyNumber = policyNumber.trim()
+    const nextCreditNumber = creditNumber.trim()
+    const currentPolicyNumber = String(snapshot.nroPoliza || '').trim()
+    const currentCreditNumber = String(snapshot.nroCredito || '').trim()
+    const shouldPersistCreditData =
+      nextPolicyNumber !== currentPolicyNumber || nextCreditNumber !== currentCreditNumber
 
-    onGenerate({ creditNumber, policyNumber, bankName, companyName, insuranceName })
+    if (shouldPersistCreditData) {
+      setIsSaving(true)
+      try {
+        await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
+          calculationSnapshot: {
+            ...(refund.calculationSnapshot || {}),
+            nroPoliza: nextPolicyNumber,
+            nroCredito: nextCreditNumber,
+          }
+        })
+        queryClient.invalidateQueries({ queryKey: ['refund'] })
+      } catch (err) {
+        toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
+        setIsSaving(false)
+        return
+      }
+      setIsSaving(false)
+    }
+
+    onGenerate({ creditNumber: nextCreditNumber, policyNumber: nextPolicyNumber, bankName, companyName, insuranceName })
   }
 
   return (
