@@ -450,7 +450,7 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
     // Guardar nroPoliza y nroCredito en el snapshot
     setIsSaving(true)
     try {
-      await refundAdminApi.updateData((refund as any).id || (refund as any)._id || refund.publicId, {
+      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
         calculationSnapshot: {
           ...(refund.calculationSnapshot || {}),
           nroPoliza: policyNumber.trim(),
@@ -580,7 +580,7 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
     // Guardar nroPoliza y nroCredito en el snapshot
     setIsSaving(true)
     try {
-      await refundAdminApi.updateData((refund as any).id || (refund as any)._id || refund.publicId, {
+      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
         calculationSnapshot: {
           ...(refund.calculationSnapshot || {}),
           nroPoliza: policyNumber.trim(),
