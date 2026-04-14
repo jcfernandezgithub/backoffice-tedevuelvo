@@ -1,8 +1,14 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.4
+## Versión 3.3.5
 
 ## Changelog
+
+### Versión 3.3.5 - 2026-04-14
+
+#### Fix: Carta de Corte — guardado condicional de datos de crédito
+- **Guardado inteligente**: El modal de generación de Carta de Corte (genérico y Santander) ahora solo ejecuta el `PATCH /update` cuando el Nº de Crédito o Nº de Póliza realmente cambiaron respecto al snapshot existente. Si los valores ya están cargados y no fueron modificados, se salta el guardado y pasa directo a la vista previa.
+- **Eliminación de error 404**: Se resolvió el error "Refund request not found" que aparecía al intentar guardar datos de crédito ya existentes, evitando llamadas innecesarias al backend.
 
 ### Versión 3.3.4 - 2026-04-11
 
