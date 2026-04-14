@@ -447,26 +447,33 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
       return
     }
 
-    // Guardar nroPoliza y nroCredito en el snapshot
-    setIsSaving(true)
-    try {
-      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
-        calculationSnapshot: {
-          ...(refund.calculationSnapshot || {}),
-          nroPoliza: policyNumber.trim(),
-          nroCredito: creditNumber.trim(),
-        }
-      })
-      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
-      queryClient.invalidateQueries({ queryKey: ['refund'] })
-    } catch (err) {
-      toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
-      setIsSaving(false)
-      return
-    }
-    setIsSaving(false)
+    const nextPolicyNumber = policyNumber.trim()
+    const nextCreditNumber = creditNumber.trim()
+    const currentPolicyNumber = String(snapshot.nroPoliza || '').trim()
+    const currentCreditNumber = String(snapshot.nroCredito || '').trim()
+    const shouldPersistCreditData =
+      nextPolicyNumber !== currentPolicyNumber || nextCreditNumber !== currentCreditNumber
 
-    onGenerate({ creditNumber, policyNumber, bankName, companyName }, true)
+    if (shouldPersistCreditData) {
+      setIsSaving(true)
+      try {
+        await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
+          calculationSnapshot: {
+            ...(refund.calculationSnapshot || {}),
+            nroPoliza: nextPolicyNumber,
+            nroCredito: nextCreditNumber,
+          }
+        })
+        queryClient.invalidateQueries({ queryKey: ['refund'] })
+      } catch (err) {
+        toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
+        setIsSaving(false)
+        return
+      }
+      setIsSaving(false)
+    }
+
+    onGenerate({ creditNumber: nextCreditNumber, policyNumber: nextPolicyNumber, bankName, companyName }, true)
   }
 
   return (
@@ -577,26 +584,33 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
       return
     }
 
-    // Guardar nroPoliza y nroCredito en el snapshot
-    setIsSaving(true)
-    try {
-      await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
-        calculationSnapshot: {
-          ...(refund.calculationSnapshot || {}),
-          nroPoliza: policyNumber.trim(),
-          nroCredito: creditNumber.trim(),
-        }
-      })
-      // Invalidar cache del detalle para que otros componentes vean los datos actualizados
-      queryClient.invalidateQueries({ queryKey: ['refund'] })
-    } catch (err) {
-      toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
-      setIsSaving(false)
-      return
-    }
-    setIsSaving(false)
+    const nextPolicyNumber = policyNumber.trim()
+    const nextCreditNumber = creditNumber.trim()
+    const currentPolicyNumber = String(snapshot.nroPoliza || '').trim()
+    const currentCreditNumber = String(snapshot.nroCredito || '').trim()
+    const shouldPersistCreditData =
+      nextPolicyNumber !== currentPolicyNumber || nextCreditNumber !== currentCreditNumber
 
-    onGenerate({ creditNumber, policyNumber, bankName, companyName, insuranceName })
+    if (shouldPersistCreditData) {
+      setIsSaving(true)
+      try {
+        await refundAdminApi.updateData(refund.publicId || (refund as any)._id || (refund as any).id, {
+          calculationSnapshot: {
+            ...(refund.calculationSnapshot || {}),
+            nroPoliza: nextPolicyNumber,
+            nroCredito: nextCreditNumber,
+          }
+        })
+        queryClient.invalidateQueries({ queryKey: ['refund'] })
+      } catch (err) {
+        toast({ title: 'Error al guardar datos', description: 'No se pudieron guardar los datos del crédito', variant: 'destructive' })
+        setIsSaving(false)
+        return
+      }
+      setIsSaving(false)
+    }
+
+    onGenerate({ creditNumber: nextCreditNumber, policyNumber: nextPolicyNumber, bankName, companyName, insuranceName })
   }
 
   return (
