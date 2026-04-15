@@ -19,15 +19,21 @@ interface Props {
 }
 
 function getRealAmount(r: RefundRequest): number {
-  if (!r.statusHistory?.length) return r.estimatedAmountCLP || 0
-  // Find the last transition to payment_scheduled with realAmount
-  for (let i = r.statusHistory.length - 1; i >= 0; i--) {
-    const entry = r.statusHistory[i]
-    if (entry.to === 'payment_scheduled' && entry.realAmount && entry.realAmount > 0) {
-      return entry.realAmount
+  // 1. Top-level realAmount (source of truth)
+  const anyR = r as any
+  if (anyR.realAmount && anyR.realAmount > 0) return anyR.realAmount
+
+  // 2. Fallback: statusHistory payment_scheduled entry
+  if (r.statusHistory?.length) {
+    for (let i = r.statusHistory.length - 1; i >= 0; i--) {
+      const entry = r.statusHistory[i]
+      if (entry.to === 'payment_scheduled' && entry.realAmount && entry.realAmount > 0) {
+        return entry.realAmount
+      }
     }
   }
-  return r.estimatedAmountCLP || 0
+
+  return 0
 }
 
 /** Homologa nombres de banco del API al catálogo de la nómina */
