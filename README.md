@@ -1,8 +1,13 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.5
+## Versión 3.3.6
 
 ## Changelog
+
+### Versión 3.3.6 - 2026-04-15
+
+#### Fix: Nómina — monto real de devolución en diálogo de solicitudes
+- **Monto real priorizado**: El diálogo "Agregar desde solicitudes" ahora muestra el monto real de devolución (`realAmount`) en lugar del monto simulado (`estimatedAmountCLP`). Se prioriza el campo de nivel superior y luego el `statusHistory`; si no existe monto real confirmado, se muestra `$0`.
 
 ### Versión 3.3.5 - 2026-04-14
 
