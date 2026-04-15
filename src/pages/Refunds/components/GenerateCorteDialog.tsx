@@ -920,7 +920,8 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
   const [open, setOpen] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
 
-  const isSantander = refund.institutionId?.toLowerCase() === 'santander'
+  const institutionLower = refund.institutionId?.toLowerCase() || ''
+  const isSantander = institutionLower === 'santander' || institutionLower === 'santander-consumer' || institutionLower === 'santander consumer'
 
   const [genericData, setGenericData] = useState<{
     formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
