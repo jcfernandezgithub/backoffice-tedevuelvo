@@ -1,8 +1,13 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.6
+## Versión 3.3.7
 
 ## Changelog
+
+### Versión 3.3.7 - 2026-04-15
+
+#### Carta de Corte especial para Santander Consumer
+- **Formato extendido**: La Carta de Corte especial (4 páginas con documentos notariales) ahora también se genera para solicitudes de **Santander Consumer**, además de Banco Santander.
 
 ### Versión 3.3.6 - 2026-04-15
 
