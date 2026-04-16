@@ -1547,7 +1547,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             const snapshot = (refund as any).calculationSnapshot
                             const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
                             const remainingInstallments = snapshot?.remainingInstallments || 0
-                            const valorNuevaPrima = newMonthlyPremium * remainingInstallments
+                            const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                             return valorNuevaPrima > 0 ? (
                               <span className="font-medium text-primary">
                                 ${formatCLPNumber(valorNuevaPrima)}
@@ -1780,7 +1780,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           const snapshot = (refund as any).calculationSnapshot
                           const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
                           const remainingInstallments = snapshot?.remainingInstallments || 0
-                          const valorNuevaPrima = newMonthlyPremium * remainingInstallments
+                          const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                           return valorNuevaPrima > 0 ? (
                             <span className="font-medium text-primary">
                               ${formatCLPNumber(valorNuevaPrima)}
