@@ -753,7 +753,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Monto estimado: <span className="font-medium">${refund.estimatedAmountCLP?.toLocaleString('es-CL') || 'N/A'}</span> CLP
+                      Monto estimado: <span className="font-medium">${refund.estimatedAmountCLP != null ? formatCLPNumber(refund.estimatedAmountCLP) : 'N/A'}</span> CLP
                     </p>
                   </div>
                 )}
@@ -1386,7 +1386,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         {entry.realAmount && (entry.to === 'payment_scheduled' || entry.to === 'paid') && (
                           <div className="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <span>Monto real:</span>
-                            <span>${entry.realAmount.toLocaleString('es-CL')} CLP</span>
+                            <span>${formatCLPNumber(entry.realAmount)} CLP</span>
                           </div>
                         )}
                       </div>
