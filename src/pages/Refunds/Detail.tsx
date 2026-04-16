@@ -42,6 +42,7 @@ import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
 import { Money } from '@/components/common/Money'
+import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
 
@@ -752,7 +753,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Monto estimado: <span className="font-medium">${refund.estimatedAmountCLP?.toLocaleString('es-CL') || 'N/A'}</span> CLP
+                      Monto estimado: <span className="font-medium">${refund.estimatedAmountCLP != null ? formatCLPNumber(refund.estimatedAmountCLP) : 'N/A'}</span> CLP
                     </p>
                   </div>
                 )}
@@ -994,7 +995,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <p className="text-xs text-muted-foreground">Monto total confirmado</p>
                                   <p className="font-medium">
                                     {snap.confirmedTotalAmount
-                                      ? `$${Number(snap.confirmedTotalAmount).toLocaleString('es-CL')} CLP`
+                                      ? `$${formatCLPNumber(Number(snap.confirmedTotalAmount))} CLP`
                                       : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
                                   </p>
                                 </div>
@@ -1002,7 +1003,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <p className="text-xs text-muted-foreground">Saldo insoluto confirmado</p>
                                   <p className="font-medium">
                                     {snap.confirmedAverageInsuredBalance
-                                      ? `$${Number(snap.confirmedAverageInsuredBalance).toLocaleString('es-CL')} CLP`
+                                      ? `$${formatCLPNumber(Number(snap.confirmedAverageInsuredBalance))} CLP`
                                       : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
                                   </p>
                                 </div>
@@ -1045,13 +1046,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           <div>
                             <p className="text-xs text-muted-foreground">Monto total crédito</p>
                             <p className="font-medium">
-                              ${(refund.calculationSnapshot.totalAmount || 0).toLocaleString('es-CL')} CLP
+                              ${formatCLPNumber(refund.calculationSnapshot.totalAmount || 0)} CLP
                             </p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Saldo insoluto</p>
                             <p className="font-medium">
-                              ${(refund.calculationSnapshot.averageInsuredBalance || 0).toLocaleString('es-CL')} CLP
+                              ${formatCLPNumber(refund.calculationSnapshot.averageInsuredBalance || 0)} CLP
                             </p>
                           </div>
                           <div>
@@ -1118,17 +1119,17 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                         <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima banco</p>
                                         <div className="space-y-0.5 font-mono text-[11px]">
                                           <p><span className="text-muted-foreground">Prima única =</span> Saldo × Tasa banco</p>
-                                          <p className="text-muted-foreground pl-2">${saldo.toLocaleString('es-CL')} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${Math.round(primaUnica).toLocaleString('es-CL')}</p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(saldo)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
                                           <p><span className="text-muted-foreground">Seguro total =</span> (Prima única / Cuotas tabla) × Cuotas orig.</p>
-                                          <p className="text-muted-foreground pl-2">(${Math.round(primaUnica).toLocaleString('es-CL')} / {cuotasUsadas}) × {cuotasOrig} = ${Math.round(seguroTotal).toLocaleString('es-CL')}</p>
+                                          <p className="text-muted-foreground pl-2">(${formatCLPNumber(Math.round(primaUnica))} / {cuotasUsadas}) × {cuotasOrig} = ${formatCLPNumber(Math.round(seguroTotal))}</p>
                                           <p><span className="text-muted-foreground">Prima mensual =</span> Seguro total / Cuotas orig.</p>
-                                          <p className="text-muted-foreground pl-2">${Math.round(seguroTotal).toLocaleString('es-CL')} / {cuotasOrig} = <span className="font-semibold text-foreground">${Math.round(seguroTotal / (cuotasOrig || 1)).toLocaleString('es-CL')}</span></p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(seguroTotal))} / {cuotasOrig} = <span className="font-semibold text-foreground">${formatCLPNumber(Math.round(seguroTotal / (cuotasOrig || 1)))}</span></p>
                                         </div>
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>
                                   <p className="font-medium">
-                                    ${currentPremium.toLocaleString('es-CL')} CLP
+                                    ${formatCLPNumber(currentPremium)} CLP
                                   </p>
                                 </div>
                                 <div>
@@ -1144,8 +1145,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                         <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima TDV</p>
                                         <div className="space-y-0.5 font-mono text-[11px]">
                                           <p><span className="text-muted-foreground">Nueva prima =</span> Saldo × Tasa TDV</p>
-                                          <p className="text-muted-foreground pl-2">${saldo.toLocaleString('es-CL')} × {tasaTDV ? (tasaTDV * 100).toFixed(4) + '%' : 'N/A'}</p>
-                                          <p className="text-muted-foreground pl-2">= <span className="font-semibold text-emerald-600">${Math.round(saldo * (tasaTDV || 0)).toLocaleString('es-CL')}</span></p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(saldo)} × {tasaTDV ? (tasaTDV * 100).toFixed(4) + '%' : 'N/A'}</p>
+                                          <p className="text-muted-foreground pl-2">= <span className="font-semibold text-emerald-600">${formatCLPNumber(Math.round(saldo * (tasaTDV || 0)))}</span></p>
                                         </div>
                                         <div className="border-t border-dashed pt-1 mt-1">
                                           <p className="text-muted-foreground text-[10px]">Tasa {saldo > 20000000 ? '> 20M' : '≤ 20M'}, edad {(snap.age || 0) <= 55 ? '≤ 55' : '> 55'}</p>
@@ -1154,7 +1155,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     </Tooltip>
                                   </div>
                                   <p className="font-medium text-emerald-600 dark:text-emerald-400">
-                                    ${newPremium.toLocaleString('es-CL')} CLP
+                                    ${formatCLPNumber(newPremium)} CLP
                                   </p>
                                 </div>
                               </>
@@ -1172,7 +1173,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <p className="text-xs text-muted-foreground">Ahorro mensual</p>
                                 </div>
                                 <p className="font-semibold text-emerald-600 dark:text-emerald-400 mb-2">
-                                  ${monthlySaving.toLocaleString('es-CL')} CLP
+                                  ${formatCLPNumber(monthlySaving)} CLP
                                 </p>
                                 <div className="p-3 rounded-md bg-muted/40 border border-dashed border-muted-foreground/15 space-y-1.5">
                                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
@@ -1182,16 +1183,16 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <div className="grid grid-cols-3 gap-2 text-xs">
                                     <div className="text-center p-2 rounded bg-background border">
                                       <p className="text-muted-foreground mb-0.5">Prima banco</p>
-                                      <p className="font-mono font-semibold">${currentPremium.toLocaleString('es-CL')}</p>
+                                      <p className="font-mono font-semibold">${formatCLPNumber(currentPremium)}</p>
                                     </div>
                                     <div className="flex items-center justify-center text-muted-foreground font-bold text-base">−</div>
                                     <div className="text-center p-2 rounded bg-background border">
                                       <p className="text-muted-foreground mb-0.5">Prima TDV</p>
-                                      <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${newPremium.toLocaleString('es-CL')}</p>
+                                      <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatCLPNumber(newPremium)}</p>
                                     </div>
                                   </div>
                                   <div className="text-center pt-1 border-t border-dashed border-muted-foreground/15">
-                                    <p className="text-xs text-muted-foreground">= <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${monthlySaving.toLocaleString('es-CL')} CLP</span></p>
+                                    <p className="text-xs text-muted-foreground">= <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">${formatCLPNumber(monthlySaving)} CLP</span></p>
                                   </div>
                                 </div>
                               </div>
@@ -1216,7 +1217,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <p className="text-xs text-muted-foreground">Ahorro total (devolución al cliente)</p>
                                 </div>
                                 <p className="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">
-                                  ${totalSaving.toLocaleString('es-CL')} CLP
+                                  ${formatCLPNumber(totalSaving)} CLP
                                 </p>
                                 <div className="p-3 rounded-md bg-muted/40 border border-dashed border-muted-foreground/15 space-y-2">
                                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
@@ -1229,13 +1230,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                       <div className="p-2 rounded bg-background border">
                                         <p className="text-muted-foreground mb-0.5">Prima banco × Cuotas</p>
-                                        <p className="font-mono text-[11px] text-muted-foreground">${currentPremium.toLocaleString('es-CL')} × {remaining}</p>
-                                        <p className="font-mono font-semibold mt-0.5">= ${primaTotalBanco.toLocaleString('es-CL')}</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(currentPremium)} × {remaining}</p>
+                                        <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(primaTotalBanco)}</p>
                                       </div>
                                       <div className="p-2 rounded bg-background border">
                                         <p className="text-muted-foreground mb-0.5">Prima TDV × Cuotas</p>
-                                        <p className="font-mono text-[11px] text-muted-foreground">${newPremium.toLocaleString('es-CL')} × {remaining}</p>
-                                        <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${primaTotalTDV.toLocaleString('es-CL')}</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(newPremium)} × {remaining}</p>
+                                        <p className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(primaTotalTDV)}</p>
                                       </div>
                                     </div>
                                   </div>
@@ -1243,19 +1244,19 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <div className="space-y-1">
                                     <p className="text-[11px] text-muted-foreground font-medium">Paso 2: Devolución bruta</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                                      <p className="font-mono text-[11px] text-muted-foreground">${primaTotalBanco.toLocaleString('es-CL')} − ${primaTotalTDV.toLocaleString('es-CL')}</p>
-                                      <p className="font-mono font-semibold mt-0.5">= ${devolucionBruta.toLocaleString('es-CL')} CLP</p>
+                                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(primaTotalBanco)} − ${formatCLPNumber(primaTotalTDV)}</p>
+                                      <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(devolucionBruta)} CLP</p>
                                     </div>
                                   </div>
                                   {/* Step 3: Apply margin */}
                                   <div className="space-y-1">
                                     <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({MARGEN_FIJO}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                                      <p className="font-mono text-[11px] text-muted-foreground">${devolucionBruta.toLocaleString('es-CL')} × {((100 - MARGEN_FIJO) / 100).toFixed(2)}</p>
-                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${totalSaving.toLocaleString('es-CL')} CLP</p>
+                                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - MARGEN_FIJO) / 100).toFixed(2)}</p>
+                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalSaving)} CLP</p>
                                       {totalCalculado !== totalSaving && (
                                         <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                          Cálculo teórico: ${totalCalculado.toLocaleString('es-CL')} — diferencia por redondeos en primas intermedias
+                                          Cálculo teórico: ${formatCLPNumber(totalCalculado)} — diferencia por redondeos en primas intermedias
                                         </p>
                                       )}
                                     </div>
@@ -1385,7 +1386,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         {entry.realAmount && (entry.to === 'payment_scheduled' || entry.to === 'paid') && (
                           <div className="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                             <span>Monto real:</span>
-                            <span>${entry.realAmount.toLocaleString('es-CL')} CLP</span>
+                            <span>${formatCLPNumber(entry.realAmount)} CLP</span>
                           </div>
                         )}
                       </div>
