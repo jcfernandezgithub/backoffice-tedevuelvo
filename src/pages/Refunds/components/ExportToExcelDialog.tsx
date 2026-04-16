@@ -138,31 +138,31 @@ function prepareExcelData(
       'Nº Póliza': calculation.nroPoliza || 'N/A',
       'Nº Crédito': calculation.nroCredito || 'N/A',
       'Tipo de Seguro': tipoSeguro,
-      'Monto Total Crédito': calculation.totalAmount || 0,
+      'Monto Total Crédito': formatCLPNumber(calculation.totalAmount || 0),
       'Cuotas Pagadas': calculation.installmentsPaid || 0,
       'Cuotas Restantes': cuotasRestantes,
       
       // === CÁLCULOS DE PRIMAS Y SEGUROS ===
-      'Prima Mensual Actual': primaMensualActual,
+      'Prima Mensual Actual': formatCLPNumber(primaMensualActual),
       'Porcentaje Prima Actual vs Prima TDV': primaMensualActual > 0 
         ? `${Math.round((nuevaPrimaMensual / primaMensualActual) * 100)}%`
         : '0%',
-      'Prima Antigua': calculation.oldMonthlyPremium || 0,
-      'Prima Nueva': primaBruta,
-      'Prima Neta (sin IVA)': primaNeta,
-      'Saldo Insoluto': saldoInsoluto,
-      'Costo Nuevo Seguro TDV': costoNuevoSeguroTDV,
+      'Prima Antigua': formatCLPNumber(calculation.oldMonthlyPremium || 0),
+      'Prima Nueva': formatCLPNumber(primaBruta),
+      'Prima Neta (sin IVA)': formatCLPNumber(primaNeta),
+      'Saldo Insoluto': formatCLPNumber(saldoInsoluto),
+      'Costo Nuevo Seguro TDV': formatCLPNumber(costoNuevoSeguroTDV),
 
       // === DESGLOSE DESGRAVAMEN / CESANTÍA ===
-      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV ?? '',
-      'Devolución Desgravamen': breakdown?.desgravamen.devolucion ?? '',
-      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV ?? '',
-      'Devolución Cesantía': breakdown?.cesantia.devolucion ?? '',
+      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV != null ? formatCLPNumber(breakdown.desgravamen.primaTDV) : '',
+      'Devolución Desgravamen': breakdown?.desgravamen.devolucion != null ? formatCLPNumber(breakdown.desgravamen.devolucion) : '',
+      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV != null ? formatCLPNumber(breakdown.cesantia.primaTDV) : '',
+      'Devolución Cesantía': breakdown?.cesantia.devolucion != null ? formatCLPNumber(breakdown.cesantia.devolucion) : '',
       
       // === AHORROS Y MONTOS ===
-      'Ahorro Mensual': calculation.savingsPerMonth || 0,
-      'Ahorro Total': calculation.totalSavings || 0,
-      'Monto Estimado CLP': refund.estimatedAmountCLP || 0,
+      'Ahorro Mensual': formatCLPNumber(calculation.savingsPerMonth || 0),
+      'Ahorro Total': formatCLPNumber(calculation.totalSavings || 0),
+      'Monto Estimado CLP': formatCLPNumber(refund.estimatedAmountCLP || 0),
       
       // === FECHAS ===
       'Fecha Docs Pendientes': getStatusDate('docs_pending'),
