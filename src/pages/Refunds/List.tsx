@@ -1550,7 +1550,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             const valorNuevaPrima = newMonthlyPremium * remainingInstallments
                             return valorNuevaPrima > 0 ? (
                               <span className="font-medium text-primary">
-                                ${valorNuevaPrima.toLocaleString('es-CL')}
+                                ${formatCLPNumber(valorNuevaPrima)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -1783,7 +1783,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           const valorNuevaPrima = newMonthlyPremium * remainingInstallments
                           return valorNuevaPrima > 0 ? (
                             <span className="font-medium text-primary">
-                              ${valorNuevaPrima.toLocaleString('es-CL')}
+                              ${formatCLPNumber(valorNuevaPrima)}
                             </span>
                           ) : '-'
                         })()
