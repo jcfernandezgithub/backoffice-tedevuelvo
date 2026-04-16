@@ -38,6 +38,7 @@ import { MobileCard } from '@/components/common/MobileCard'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
+import { formatCLPNumber } from '@/lib/formatters'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
