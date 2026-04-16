@@ -1206,11 +1206,15 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const newPremium = snap.newMonthlyPremium || 0
                             const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
                             const totalSaving = snap.totalSaving || 0
-                            const primaTotalBanco = currentPremium * remaining
-                            const primaTotalTDV = newPremium * remaining
+                            // Redondeamos los productos intermedios a 3 decimales para evitar
+                            // ruido de aritmética flotante (ej. 4.416 × 48 = 211.96800000000002)
+                            // sin alterar la precisión real del snapshot.
+                            const round3 = (n: number) => Math.round(n * 1000) / 1000
+                            const primaTotalBanco = round3(currentPremium * remaining)
+                            const primaTotalTDV = round3(newPremium * remaining)
                             const MARGEN_FIJO = 10
-                            const devolucionBruta = primaTotalBanco - primaTotalTDV
-                            const totalCalculado = Math.round(devolucionBruta * (1 - MARGEN_FIJO / 100))
+                            const devolucionBruta = round3(primaTotalBanco - primaTotalTDV)
+                            const totalCalculado = round3(devolucionBruta * (1 - MARGEN_FIJO / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
