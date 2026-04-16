@@ -48,6 +48,16 @@ function prepareExcelData(
   gestorNameMap: Record<string, string>,
   mandateStatuses: Record<string, any>
 ) {
+  const roundExcelNumber = (value: number) => Math.round((value + Number.EPSILON) * 1000) / 1000
+  const formatExcelAmount = (value: number | string) => {
+    if (value === null || value === undefined || value === '') return ''
+
+    const numericValue = typeof value === 'string' ? Number(value.replace(',', '.')) : value
+    if (Number.isNaN(numericValue)) return String(value)
+
+    return formatCLPNumber(roundExcelNumber(numericValue))
+  }
+
   return refunds.map((refund) => {
     const calculation = refund.calculationSnapshot || {}
     const rut = refund.rut || ''
@@ -89,7 +99,6 @@ function prepareExcelData(
 
     // Nuevos campos solicitados
     const primaMensualActual = calculation.currentMonthlyPremium || 0
-    const montoEstimado = refund.estimatedAmountCLP || 0
     const nuevaPrimaMensual = calculation.newMonthlyPremium || 0
     const cuotasRestantes = calculation.remainingInstallments || 0
     const saldoInsoluto = calculation.averageInsuredBalance || 0
@@ -138,31 +147,31 @@ function prepareExcelData(
       'Nº Póliza': calculation.nroPoliza || 'N/A',
       'Nº Crédito': calculation.nroCredito || 'N/A',
       'Tipo de Seguro': tipoSeguro,
-      'Monto Total Crédito': formatCLPNumber(calculation.totalAmount || 0),
+      'Monto Total Crédito': formatExcelAmount(calculation.totalAmount || 0),
       'Cuotas Pagadas': calculation.installmentsPaid || 0,
       'Cuotas Restantes': cuotasRestantes,
       
       // === CÁLCULOS DE PRIMAS Y SEGUROS ===
-      'Prima Mensual Actual': formatCLPNumber(primaMensualActual),
+      'Prima Mensual Actual': formatExcelAmount(primaMensualActual),
       'Porcentaje Prima Actual vs Prima TDV': primaMensualActual > 0 
         ? `${Math.round((nuevaPrimaMensual / primaMensualActual) * 100)}%`
         : '0%',
-      'Prima Antigua': formatCLPNumber(calculation.oldMonthlyPremium || 0),
-      'Prima Nueva': formatCLPNumber(primaBruta),
-      'Prima Neta (sin IVA)': formatCLPNumber(primaNeta),
-      'Saldo Insoluto': formatCLPNumber(saldoInsoluto),
-      'Costo Nuevo Seguro TDV': formatCLPNumber(costoNuevoSeguroTDV),
+      'Prima Antigua': formatExcelAmount(calculation.oldMonthlyPremium || 0),
+      'Prima Nueva': formatExcelAmount(primaBruta),
+      'Prima Neta (sin IVA)': formatExcelAmount(primaNeta),
+      'Saldo Insoluto': formatExcelAmount(saldoInsoluto),
+      'Costo Nuevo Seguro TDV': formatExcelAmount(costoNuevoSeguroTDV),
 
       // === DESGLOSE DESGRAVAMEN / CESANTÍA ===
-      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV != null ? formatCLPNumber(breakdown.desgravamen.primaTDV) : '',
-      'Devolución Desgravamen': breakdown?.desgravamen.devolucion != null ? formatCLPNumber(breakdown.desgravamen.devolucion) : '',
-      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV != null ? formatCLPNumber(breakdown.cesantia.primaTDV) : '',
-      'Devolución Cesantía': breakdown?.cesantia.devolucion != null ? formatCLPNumber(breakdown.cesantia.devolucion) : '',
+      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV != null ? formatExcelAmount(breakdown.desgravamen.primaTDV) : '',
+      'Devolución Desgravamen': breakdown?.desgravamen.devolucion != null ? formatExcelAmount(breakdown.desgravamen.devolucion) : '',
+      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV != null ? formatExcelAmount(breakdown.cesantia.primaTDV) : '',
+      'Devolución Cesantía': breakdown?.cesantia.devolucion != null ? formatExcelAmount(breakdown.cesantia.devolucion) : '',
       
       // === AHORROS Y MONTOS ===
-      'Ahorro Mensual': formatCLPNumber(calculation.savingsPerMonth || 0),
-      'Ahorro Total': formatCLPNumber(calculation.totalSavings || 0),
-      'Monto Estimado CLP': formatCLPNumber(refund.estimatedAmountCLP || 0),
+      'Ahorro Mensual': formatExcelAmount(calculation.savingsPerMonth || 0),
+      'Ahorro Total': formatExcelAmount(calculation.totalSavings || 0),
+      'Monto Estimado CLP': formatExcelAmount(refund.estimatedAmountCLP || 0),
       
       // === FECHAS ===
       'Fecha Docs Pendientes': getStatusDate('docs_pending'),
