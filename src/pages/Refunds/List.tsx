@@ -38,6 +38,7 @@ import { MobileCard } from '@/components/common/MobileCard'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
+import { formatCLPNumber } from '@/lib/formatters'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -1549,7 +1550,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             const valorNuevaPrima = newMonthlyPremium * remainingInstallments
                             return valorNuevaPrima > 0 ? (
                               <span className="font-medium text-primary">
-                                ${valorNuevaPrima.toLocaleString('es-CL')}
+                                ${formatCLPNumber(valorNuevaPrima)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -1782,7 +1783,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           const valorNuevaPrima = newMonthlyPremium * remainingInstallments
                           return valorNuevaPrima > 0 ? (
                             <span className="font-medium text-primary">
-                              ${valorNuevaPrima.toLocaleString('es-CL')}
+                              ${formatCLPNumber(valorNuevaPrima)}
                             </span>
                           ) : '-'
                         })()
