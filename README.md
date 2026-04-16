@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.7
+## Versión 3.3.8
 
 ## Changelog
+
+### Versión 3.3.8 - 2026-04-16
+
+#### Formato consistente de montos con punto como separador de miles
+- **Detalle de solicitud**: El bloque "Resumen del cálculo" ahora usa `formatCLPNumber` para mostrar todos los montos con `.` como separador de miles (ej: `$211.968`), evitando la coma de la configuración regional.
+- **Listado de solicitudes**: La columna "Valor Nueva Prima" (desktop y mobile) reemplaza `toLocaleString('es-CL')` por `formatCLPNumber` y aplica redondeo a 3 decimales para eliminar ruido de punto flotante (ej: `211.96800000000002` → `211.968`).
+- **Exportación a Excel**: Todos los montos numéricos (Monto Total Crédito, Primas, Saldo Insoluto, Costo Nuevo Seguro TDV, desglose Desgravamen/Cesantía, Ahorros, Monto Estimado) se exportan como strings ya formateados con `.` como separador de miles, redondeando internamente a 3 decimales para evitar que Excel reinterprete los valores con la configuración regional del usuario.
 
 ### Versión 3.3.7 - 2026-04-15
 
