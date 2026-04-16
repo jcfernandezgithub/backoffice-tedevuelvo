@@ -39,14 +39,16 @@ export const formatCurrency = (amount: number) => {
 };
 
 // Format a number with Chilean thousands separator (dot), without currency symbol.
-// Forces es-CL grouping explicitly to avoid environments where toLocaleString('es-CL')
-// falls back to en-US (comma separator) due to missing ICU data.
+// Uses manual formatting to guarantee dot-separator regardless of the runtime
+// ICU locale data (some environments don't apply grouping for 'es-CL').
 export const formatCLPNumber = (amount: number): string => {
   const safe = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
-  return new Intl.NumberFormat('es-CL', {
-    useGrouping: true,
-    maximumFractionDigits: 0,
-  }).format(safe);
+  const rounded = Math.round(safe);
+  const sign = rounded < 0 ? '-' : '';
+  const digits = Math.abs(rounded).toString();
+  // Insert a dot every 3 digits from the right
+  const withDots = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${sign}${withDots}`;
 };
 
 // Calculate age from birth date
