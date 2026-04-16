@@ -38,17 +38,24 @@ export const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-// Format a number with Chilean thousands separator (dot), without currency symbol.
-// Uses manual formatting to guarantee dot-separator regardless of the runtime
-// ICU locale data (some environments don't apply grouping for 'es-CL').
-export const formatCLPNumber = (amount: number): string => {
-  const safe = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
-  const rounded = Math.round(safe);
-  const sign = rounded < 0 ? '-' : '';
-  const digits = Math.abs(rounded).toString();
-  // Insert a dot every 3 digits from the right
-  const withDots = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${sign}${withDots}`;
+// Format a number with dot separators, preserving any decimal precision already present.
+// This is used because some snapshot values arrive as decimals like 8.988, 4.416 or 219.456,
+// and we only want to display them with dots instead of commas — never round them.
+export const formatCLPNumber = (amount: number | string): string => {
+  if (amount === null || amount === undefined || amount === '') return '0'
+
+  const raw = String(amount).trim().replace(',', '.')
+  if (raw === '' || Number.isNaN(Number(raw))) return '0'
+
+  const sign = raw.startsWith('-') ? '-' : ''
+  const normalized = sign ? raw.slice(1) : raw
+  const [integerPartRaw, decimalPartRaw] = normalized.split('.')
+
+  const integerDigits = (integerPartRaw || '0').replace(/\D/g, '') || '0'
+  const groupedInteger = integerDigits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  const decimalDigits = decimalPartRaw?.replace(/\D/g, '') ?? ''
+
+  return `${sign}${groupedInteger}${decimalDigits ? `.${decimalDigits}` : ''}`
 };
 
 // Calculate age from birth date
