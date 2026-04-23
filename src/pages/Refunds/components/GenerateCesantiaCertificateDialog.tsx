@@ -78,15 +78,9 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
-// Tasas de cesantía según tramo
-const getTasaCesantia = (montoCredito: number): number => {
-  if (montoCredito >= 500000 && montoCredito <= 1000000) return 0.288
-  if (montoCredito > 1000000 && montoCredito <= 3000000) return 0.177
-  if (montoCredito > 3000000 && montoCredito <= 5000000) return 0.157
-  if (montoCredito > 5000000 && montoCredito <= 7000000) return 0.151
-  if (montoCredito > 7000000) return 0.150
-  return 0.288 // Default
-}
+// Tasa única (0,094% para todos los tramos según nueva póliza 0020123902)
+const TASA_CESANTIA_BRUTA = 0.094
+const getTasaCesantia = (_montoCredito: number): number => TASA_CESANTIA_BRUTA
 
 const getTramoLabel = (montoCredito: number): string => {
   if (montoCredito >= 500000 && montoCredito <= 1000000) return 'Tramo 1 ($500.000 - $1.000.000)'
@@ -94,7 +88,7 @@ const getTramoLabel = (montoCredito: number): string => {
   if (montoCredito > 3000000 && montoCredito <= 5000000) return 'Tramo 3 ($3.000.001 - $5.000.000)'
   if (montoCredito > 5000000 && montoCredito <= 7000000) return 'Tramo 4 ($5.000.001 - $7.000.000)'
   if (montoCredito > 7000000) return 'Tramo 5 ($7.000.001 o más)'
-  return 'Tramo 1'
+  return 'Tramo 1 ($500.000 - $1.000.000)'
 }
 
 export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = false }: GenerateCesantiaCertificateDialogProps) {
