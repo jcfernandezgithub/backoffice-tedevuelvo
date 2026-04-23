@@ -1,8 +1,14 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.8
+## Versión 3.3.9
 
 ## Changelog
+
+### Versión 3.3.9 - 2026-04-23
+
+#### Exportación a Excel: columna "Número del certificado (Folio)"
+- **Nueva columna**: Se agregó la columna **"Número del certificado (Folio)"** en la exportación a Excel del listado de solicitudes (`Exportar a Excel`), ubicada entre **Nº Póliza** y **Nº Crédito**.
+- **Origen del dato**: Se popula con el `nroFolio` asignado a la solicitud (desde `calculation.nroFolio` o el campo de nivel superior). Si la solicitud aún no tiene folio asignado, la celda muestra `N/A`.
 
 ### Versión 3.3.8 - 2026-04-16
 
