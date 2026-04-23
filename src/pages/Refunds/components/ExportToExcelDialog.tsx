@@ -40,6 +40,7 @@ interface ExportToExcelDialogProps {
   listFilters?: AdminQueryParams
   useSearchEndpoint?: boolean
   historicalStatusMode?: boolean
+  allPagesRefunds?: RefundRequest[]
 }
 
 function prepareExcelData(
