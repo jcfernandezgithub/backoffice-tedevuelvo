@@ -952,6 +952,9 @@ export default function CalculadoraPage() {
                             <div className="bg-primary/5 p-3 rounded-lg space-y-2">
                               <p className="text-xs font-medium text-primary">Montos calculados (Banco):</p>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                                <span className="text-muted-foreground">Saldo insoluto:</span>
+                                <span className="font-mono">{formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}</span>
+
                                 <span className="text-muted-foreground">Prima única:</span>
                                 <span className="font-mono">{formatCurrency(resultado.desgravamen.primaUnicaBanco || 0)}</span>
                                 
@@ -969,7 +972,7 @@ export default function CalculadoraPage() {
                             <div className="bg-green-500/5 p-3 rounded-lg space-y-2">
                               <p className="text-xs font-medium text-green-600">Montos calculados (Preferencial):</p>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                <span className="text-muted-foreground">Monto restante crédito:</span>
+                                <span className="text-muted-foreground">Saldo insoluto:</span>
                                 <span className="font-mono">{formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}</span>
                                 
                                 <span className="text-muted-foreground">Seguro total:</span>
@@ -1012,11 +1015,12 @@ export default function CalculadoraPage() {
                             </div>
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
-                              <p className="text-muted-foreground">Prima única = Monto × Tasa</p>
+                              <p className="text-muted-foreground">Prima única = Saldo insoluto × Tasa</p>
                               <p className="text-muted-foreground">Seguro total = (Prima única / Cuotas utilizadas) × Cuotas totales</p>
                               <p className="text-muted-foreground">Prima mensual = Seguro total / Cuotas totales</p>
                               <p className="text-muted-foreground">Seguro restante = Prima mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Seguro restante banco - Seguro restante preferencial</p>
+                              <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>
                           </div>
                         )}
@@ -1053,10 +1057,20 @@ export default function CalculadoraPage() {
                               <span className="text-muted-foreground">Tasa preferencial:</span>
                               <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
                             </div>
+                            <div className="bg-muted/30 p-2 rounded text-xs space-y-1">
+                              <p className="font-medium">Montos utilizados:</p>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                <span className="text-muted-foreground">Saldo insoluto:</span>
+                                <span className="font-mono">{formatCurrency(resultado.cesantia.saldoInsoluto || 0)}</span>
+                                <span className="text-muted-foreground">Cuotas pendientes:</span>
+                                <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
+                              </div>
+                            </div>
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
-                              <p className="text-muted-foreground">Prima restante = Monto × Tasa mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Prima restante = Saldo insoluto × Tasa mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Prima banco - Prima preferencial</p>
+                              <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>
                           </div>
                         )}
