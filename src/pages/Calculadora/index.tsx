@@ -1053,10 +1053,20 @@ export default function CalculadoraPage() {
                               <span className="text-muted-foreground">Tasa preferencial:</span>
                               <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
                             </div>
+                            <div className="bg-muted/30 p-2 rounded text-xs space-y-1">
+                              <p className="font-medium">Montos utilizados:</p>
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                <span className="text-muted-foreground">Saldo insoluto:</span>
+                                <span className="font-mono">{formatCurrency(resultado.cesantia.saldoInsoluto || 0)}</span>
+                                <span className="text-muted-foreground">Cuotas pendientes:</span>
+                                <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
+                              </div>
+                            </div>
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
-                              <p className="text-muted-foreground">Prima restante = Monto × Tasa mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Prima restante = Saldo insoluto × Tasa mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Prima banco - Prima preferencial</p>
+                              <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>
                           </div>
                         )}
