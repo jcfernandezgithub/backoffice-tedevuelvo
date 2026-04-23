@@ -913,6 +913,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 listFilters={!useSearchEndpoint ? filters : undefined}
                 useSearchEndpoint={useSearchEndpoint}
                 historicalStatusMode={historicalStatusMode}
+                allPagesRefunds={allPagesSelected ? allPagesRefunds : undefined}
               />
               <GenerateExcelDialog 
                 selectedRefunds={getSelectedRefundsData()} 
