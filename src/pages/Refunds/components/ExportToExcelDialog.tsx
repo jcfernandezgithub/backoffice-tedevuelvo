@@ -201,6 +201,7 @@ export function ExportToExcelDialog({
   listFilters,
   useSearchEndpoint = false,
   historicalStatusMode = false,
+  allPagesRefunds,
 }: ExportToExcelDialogProps) {
   const [open, setOpen] = useState(false)
   const { fetchAllRefunds, isExporting, progress } = useExportAllRefunds()
