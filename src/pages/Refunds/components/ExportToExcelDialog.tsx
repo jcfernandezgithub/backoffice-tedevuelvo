@@ -217,8 +217,21 @@ export function ExportToExcelDialog({
       let dataToExport: RefundRequest[]
 
       if (hasSelection) {
-        // Exportar solo los seleccionados de la página actual
-        dataToExport = refunds.filter(r => selectedRefunds.has(r.id))
+        // Si tenemos el dataset completo (selección "todas las páginas"), usarlo
+        // De lo contrario, filtrar solo desde la página actual
+        const source = allPagesRefunds && allPagesRefunds.length > 0 ? allPagesRefunds : refunds
+        dataToExport = source.filter(r => selectedRefunds.has(r.id))
+
+        // Fallback: si la selección excede lo cargado localmente, hacer fetch completo
+        // y luego filtrar por IDs seleccionados
+        if (dataToExport.length < selectedRefunds.size) {
+          const all = await fetchAllRefunds({
+            searchFilters,
+            listFilters,
+            useSearchEndpoint,
+          })
+          dataToExport = all.filter(r => selectedRefunds.has(r.id))
+        }
       } else if (historicalStatusMode) {
         // En modo histórico los datos ya están filtrados localmente — usar directamente
         dataToExport = refunds
