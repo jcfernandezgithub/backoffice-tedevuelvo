@@ -82,6 +82,8 @@ export interface CalculationResult {
     // Montos intermedios del cálculo
     primaRestanteBanco?: number;
     primaRestantePreferencial?: number;
+    saldoInsoluto?: number;
+    cuotasPendientes?: number;
   };
   error?: string;
 }
@@ -225,6 +227,8 @@ const calcularCesantia = (banco: string, saldoInsoluto: number, cuotasPendientes
     tasaPreferencial,
     primaRestanteBanco: Math.round(primaRestanteBanco),
     primaRestantePreferencial: Math.round(primaRestantePreferencial),
+    saldoInsoluto: Math.round(saldoInsoluto),
+    cuotasPendientes,
   };
 };
 
