@@ -145,6 +145,7 @@ function prepareExcelData(
       // === DATOS DEL CRÉDITO ===
       'Institución Financiera': institucion,
       'Nº Póliza': calculation.nroPoliza || 'N/A',
+      'Número del certificado (Folio)': (calculation as any).nroFolio || (refund as any).nroFolio || 'N/A',
       'Nº Crédito': calculation.nroCredito || 'N/A',
       'Tipo de Seguro': tipoSeguro,
       'Monto Total Crédito': formatExcelAmount(calculation.totalAmount || 0),
