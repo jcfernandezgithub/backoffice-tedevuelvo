@@ -202,18 +202,18 @@ const aplicarMargenDevolucion = (montoDevolucion: number): number => {
   return Math.round(montoDevolucion * factor);
 };
 
-const calcularCesantia = (banco: string, montoCredito: number, cuotasPendientes: number) => {
+const calcularCesantia = (banco: string, saldoInsoluto: number, cuotasPendientes: number) => {
   const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
-  const tramo = obtenerTramo(montoCredito);
-  const tasaBanco = obtenerTasaCesantiaBanco(bancoMapeado, montoCredito);
-  const tasaPreferencial = obtenerTasaCesantiaPreferencial(montoCredito);
+  const tramo = obtenerTramo(saldoInsoluto);
+  const tasaBanco = obtenerTasaCesantiaBanco(bancoMapeado, saldoInsoluto);
+  const tasaPreferencial = obtenerTasaCesantiaPreferencial(saldoInsoluto);
 
   if (tasaBanco === null) {
     throw new Error(`No hay datos de cesantía para ${banco}`);
   }
 
-  const primaRestanteBanco = montoCredito * tasaBanco * cuotasPendientes;
-  const primaRestantePreferencial = montoCredito * tasaPreferencial * cuotasPendientes;
+  const primaRestanteBanco = saldoInsoluto * tasaBanco * cuotasPendientes;
+  const primaRestantePreferencial = saldoInsoluto * tasaPreferencial * cuotasPendientes;
   const montoDevolucion = primaRestanteBanco - primaRestantePreferencial;
 
   return {
@@ -241,7 +241,7 @@ export const calcularDevolucion = (
   const saldo = saldoInsoluto || Math.round(montoCredito * (cuotasPendientes / cuotasTotales));
   try {
     if (tipoSeguro === "cesantia") {
-      const cesantia = calcularCesantia(banco, montoCredito, cuotasPendientes);
+      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes);
       const montoConMargen = aplicarMargenDevolucion(cesantia.montoDevolucion);
 
       return {
@@ -312,7 +312,7 @@ export const calcularDevolucion = (
         seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
       };
 
-      const cesantia = calcularCesantia(banco, montoCredito, cuotasPendientes);
+      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes);
       const montoDevolucionTotal = desgravamen.montoDevolucion + cesantia.montoDevolucion;
       const montoConMargen = aplicarMargenDevolucion(montoDevolucionTotal);
 
