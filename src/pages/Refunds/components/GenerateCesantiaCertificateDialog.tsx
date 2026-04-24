@@ -220,10 +220,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     return Math.round(montoCredito * (tasa / 100) * plazoMeses)
   }
 
-  const generatePDF = async () => {
-    setIsGenerating(true)
-    
-    try {
+  const buildPDF = async (): Promise<{ blob: Blob; fileName: string }> => {
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
