@@ -111,6 +111,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isGenerating, setIsGenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
+  const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false)
+  const [existingDocsCount, setExistingDocsCount] = useState(0)
   const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
