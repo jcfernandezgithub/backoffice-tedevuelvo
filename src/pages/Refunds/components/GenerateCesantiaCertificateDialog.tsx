@@ -878,6 +878,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <TooltipProvider>
         <Tooltip>
