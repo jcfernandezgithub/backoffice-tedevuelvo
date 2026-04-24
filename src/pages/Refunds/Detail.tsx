@@ -1228,10 +1228,52 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           {/* ── Ahorro total con desglose ── */}
                           {(() => {
                             const snap = refund.calculationSnapshot
+                            const ins = (snap.insuranceToEvaluate || '').toUpperCase()
+                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
                             const currentPremium = snap.currentMonthlyPremium || 0
                             const newPremium = snap.newMonthlyPremium || 0
                             const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
                             const totalSaving = snap.totalSaving || 0
+
+                            if (isCesantia) {
+                              const TASA_CESANTIA = 0.094 // %
+                              const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
+                              const cuotasOrig = snap.originalInstallments || 0
+                              const primaCesantia = Math.round(saldo * (TASA_CESANTIA / 100) * cuotasOrig)
+                              return (
+                                <div className="col-span-2 mt-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-xs text-muted-foreground">Ahorro total (devolución al cliente)</p>
+                                  </div>
+                                  <p className="font-bold text-lg text-emerald-600 dark:text-emerald-400 mb-2">
+                                    ${formatCLPNumber(totalSaving)} CLP
+                                  </p>
+                                  <div className="p-3 rounded-md bg-muted/40 border border-dashed border-muted-foreground/15 space-y-2">
+                                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                      <Calculator className="h-3 w-3" />
+                                      Fórmula cesantía: Saldo insoluto × Tasa × Cuotas restantes − margen
+                                    </p>
+                                    <div className="space-y-1">
+                                      <p className="text-[11px] text-muted-foreground font-medium">Prima total cesantía (referencial)</p>
+                                      <div className="p-2 rounded bg-background border text-xs">
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {TASA_CESANTIA.toFixed(4)}% × {cuotasOrig}</p>
+                                        <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(primaCesantia)}</p>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <p className="text-[11px] text-muted-foreground font-medium">Devolución estimada (snapshot)</p>
+                                      <div className="p-2 rounded bg-background border text-xs">
+                                        <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400">= ${formatCLPNumber(totalSaving)} CLP</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1 italic">
+                                          Cuotas restantes consideradas: {remaining}. Para cesantía no aplica prima mensual: la prima es única y se devuelve la porción no devengada al renegociar.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            }
+
                             // Redondeamos los productos intermedios a 3 decimales para evitar
                             // ruido de aritmética flotante (ej. 4.416 × 48 = 211.96800000000002)
                             // sin alterar la precisión real del snapshot.
