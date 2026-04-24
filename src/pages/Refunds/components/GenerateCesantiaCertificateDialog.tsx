@@ -773,7 +773,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       const token = authService.getAccessToken()
       const uploadFormData = new FormData()
       uploadFormData.append('file', blob, fileName)
-      uploadFormData.append('kind', 'carta-de-corte')
+      uploadFormData.append('kind', 'certificado-de-cobertura')
 
       const targetId = refund.publicId || (refund as any)._id || refund.id
       const response = await fetch(`${API_BASE_URL}/refund-requests/${targetId}/upload-file`, {
@@ -794,7 +794,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
       toast({
         title: 'Certificado subido',
-        description: 'El documento está disponible en la carpeta del cliente como "Carta de corte"',
+        description: 'El documento está disponible en la carpeta del cliente como "Certificado de cobertura"',
       })
       setOpen(false)
     } catch (error) {
