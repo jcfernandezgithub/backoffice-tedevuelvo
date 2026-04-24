@@ -732,15 +732,27 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
       drawFooter(pageNum)
 
-      // Save
       const fileName = `Certificado_Cesantia_${refund.rut?.replace(/[.-]/g, '') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
-      doc.save(fileName)
+      const blob = doc.output('blob') as Blob
+      return { blob, fileName }
+  }
 
+  const generatePDF = async () => {
+    setIsGenerating(true)
+    try {
+      const { blob, fileName } = await buildPDF()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
       toast({
         title: 'Certificado generado',
         description: 'El certificado de cesantía se ha descargado correctamente',
       })
-
       setOpen(false)
     } catch (error) {
       console.error('Error generating PDF:', error)
@@ -751,6 +763,48 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       })
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const uploadToClient = async () => {
+    setIsUploading(true)
+    try {
+      const { blob, fileName } = await buildPDF()
+      const token = authService.getAccessToken()
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', blob, fileName)
+      uploadFormData.append('kind', 'carta-de-corte')
+
+      const response = await fetch(`${API_BASE_URL}/refund-requests/${refund.id}/upload-file`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: uploadFormData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al subir el certificado')
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.id] })
+      queryClient.invalidateQueries({ queryKey: ['refund', refund.id] })
+
+      toast({
+        title: 'Certificado subido',
+        description: 'El documento está disponible en la carpeta del cliente como "Carta de corte"',
+      })
+      setOpen(false)
+    } catch (error) {
+      console.error('Error uploading certificate:', error)
+      toast({
+        title: 'Error al subir',
+        description: error instanceof Error ? error.message : 'No se pudo subir el certificado',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUploading(false)
     }
   }
 
