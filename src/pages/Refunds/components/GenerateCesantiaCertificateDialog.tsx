@@ -78,15 +78,9 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
-// Tasas de cesantía según tramo
-const getTasaCesantia = (montoCredito: number): number => {
-  if (montoCredito >= 500000 && montoCredito <= 1000000) return 0.288
-  if (montoCredito > 1000000 && montoCredito <= 3000000) return 0.177
-  if (montoCredito > 3000000 && montoCredito <= 5000000) return 0.157
-  if (montoCredito > 5000000 && montoCredito <= 7000000) return 0.151
-  if (montoCredito > 7000000) return 0.150
-  return 0.288 // Default
-}
+// Tasa única (0,094% para todos los tramos según nueva póliza 0020123902)
+const TASA_CESANTIA_BRUTA = 0.094
+const getTasaCesantia = (_montoCredito: number): number => TASA_CESANTIA_BRUTA
 
 const getTramoLabel = (montoCredito: number): string => {
   if (montoCredito >= 500000 && montoCredito <= 1000000) return 'Tramo 1 ($500.000 - $1.000.000)'
@@ -94,7 +88,7 @@ const getTramoLabel = (montoCredito: number): string => {
   if (montoCredito > 3000000 && montoCredito <= 5000000) return 'Tramo 3 ($3.000.001 - $5.000.000)'
   if (montoCredito > 5000000 && montoCredito <= 7000000) return 'Tramo 4 ($5.000.001 - $7.000.000)'
   if (montoCredito > 7000000) return 'Tramo 5 ($7.000.001 o más)'
-  return 'Tramo 1'
+  return 'Tramo 1 ($500.000 - $1.000.000)'
 }
 
 export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = false }: GenerateCesantiaCertificateDialogProps) {
@@ -125,12 +119,12 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     estadoCivil: '',
     direccion: '',
     comuna: '',
-    region: 'Metropolitana',
+    region: '',
     telefono: refund.phone || '',
     email: refund.email || '',
     rutEjecutivo: '',
     nombreEjecutivo: '',
-    oficina: 'Santiago',
+    oficina: '',
     fonoEjecutivo: '',
     nroOperacion: '',
     inicioVigencia: getTodayFormatted(),
@@ -227,362 +221,446 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       const margin = 15
       const contentWidth = pageWidth - margin * 2
       let y = 15
+      const FOOTER_RESERVED = 18
 
-      // ===================== PAGE 1 - CARÁTULA =====================
-      
-      // Header - Logo placeholder (Southbridge)
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(0, 100, 150)
-      doc.text('Southbridge', pageWidth - margin - 30, y)
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Insurance Company', pageWidth - margin - 27, y + 4)
-      y += 15
-
-      // Title
-      doc.setTextColor(0, 0, 0)
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.text('PÓLIZA DE SEGURO DE DESEMPLEO INVOLUNTARIO/', pageWidth / 2, y, { align: 'center' })
-      y += 5
-      doc.text('CERTIFICADO DE COBERTURA', pageWidth / 2, y, { align: 'center' })
-      y += 10
-
-      // Nro Póliza
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Nro Póliza:', margin, y)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`0020121737 - ${formData.correlativo || 'correlativo'}`, margin + 22, y)
-      y += 8
-
-      // Section: Antecedentes del Asegurado
-      doc.setFillColor(240, 240, 240)
-      doc.rect(margin, y - 3, contentWidth, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Antecedentes del Asegurado', margin + 2, y + 1)
-      y += 10
-
-      // Table structure for asegurado data
-      const drawRow = (label: string, value: string, x: number, yPos: number, width: number) => {
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(8)
-        doc.text(label, x, yPos)
+      const drawHeader = () => {
         doc.setFont('helvetica', 'bold')
-        doc.text(value, x, yPos + 4)
+        doc.setFontSize(13)
+        doc.setTextColor(0, 70, 130)
+        doc.text('Southbridge', pageWidth - margin, 14, { align: 'right' })
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7)
+        doc.text('Insurance Company', pageWidth - margin, 18, { align: 'right' })
+        doc.setTextColor(0, 0, 0)
       }
 
-      const col1 = margin
-      const col2 = margin + 60
-      const col3 = margin + 120
+      const drawFooter = (pageNum: number) => {
+        doc.setFontSize(6)
+        doc.setTextColor(128, 128, 128)
+        doc.text(`Generado el ${getTodayFormatted()} - TDV Servicios SPA`, margin, pageHeight - 8)
+        doc.text(`Pagina ${pageNum}`, pageWidth - margin, pageHeight - 8, { align: 'right' })
+        doc.setTextColor(0, 0, 0)
+      }
 
-      drawRow('Apellido Paterno:', formData.apellidoPaterno, col1, y, 55)
-      drawRow('Apellido Materno:', formData.apellidoMaterno, col2, y, 55)
-      drawRow('Nombre(s):', formData.nombres, col3, y, 55)
-      y += 12
+      let pageNum = 1
+      const newPage = () => {
+        drawFooter(pageNum)
+        doc.addPage()
+        pageNum += 1
+        drawHeader()
+        y = 24
+      }
 
-      drawRow('RUT:', refund.rut || '', col1, y, 55)
-      drawRow('Fecha de Nacimiento:', formData.fechaNacimiento, col2, y, 55)
-      drawRow('Estado Civil:', formData.estadoCivil, col3, y, 55)
-      y += 12
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageHeight - FOOTER_RESERVED) newPage()
+      }
 
+      const writeParagraph = (
+        text: string,
+        opts: { size?: number; bold?: boolean; lh?: number; indent?: number } = {}
+      ) => {
+        const size = opts.size ?? 8
+        const lh = opts.lh ?? 3.6
+        const indent = opts.indent ?? 0
+        doc.setFont('helvetica', opts.bold ? 'bold' : 'normal')
+        doc.setFontSize(size)
+        const lines = doc.splitTextToSize(text, contentWidth - indent)
+        lines.forEach((line: string) => {
+          ensureSpace(lh)
+          doc.text(line, margin + indent, y)
+          y += lh
+        })
+      }
+
+      const writeHeading = (text: string, size = 10) => {
+        ensureSpace(10)
+        doc.setFillColor(235, 235, 235)
+        doc.rect(margin, y - 4, contentWidth, 6.5, 'F')
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(size)
+        doc.text(text, margin + 2, y)
+        y += 7
+      }
+
+      const writeSubHeading = (text: string, size = 9) => {
+        ensureSpace(7)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(size)
+        doc.text(text, margin, y)
+        y += 5
+      }
+
+      const drawField = (label: string, value: string, x: number, yPos: number, width: number) => {
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(7)
+        doc.setTextColor(90, 90, 90)
+        doc.text(label, x, yPos)
+        doc.setTextColor(0, 0, 0)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(8)
+        const valueLines = doc.splitTextToSize(value || '-', width - 2)
+        doc.text(valueLines[0] || '-', x, yPos + 4)
+        doc.setDrawColor(200, 200, 200)
+        doc.line(x, yPos + 5.5, x + width - 2, yPos + 5.5)
+      }
+
+      // ===================== PAGE 1 =====================
+      drawHeader()
+      y = 24
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text('POLIZA DE SEGURO DE DESEMPLEO INVOLUNTARIO /', pageWidth / 2, y, { align: 'center' })
+      y += 5
+      doc.text('CERTIFICADO DE COBERTURA', pageWidth / 2, y, { align: 'center' })
+      y += 8
+
+      doc.setFontSize(9)
+      doc.text('Nro Poliza: ', margin, y)
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.text('Dirección Particular:', col1, y)
-      doc.setFont('helvetica', 'bold')
-      doc.text(formData.direccion, col1, y + 4)
-      y += 12
+      doc.text(`0020123902 - ${formData.correlativo || '-'} (numero de certificado)`, margin + 22, y)
+      y += 7
 
-      drawRow('Comuna:', formData.comuna, col1, y, 55)
-      drawRow('Región:', formData.region, col2, y, 55)
-      y += 12
+      writeHeading('Antecedentes del Asegurado')
 
-      drawRow('Teléfono Particular:', formData.telefono, col1, y, 55)
-      drawRow('Email:', formData.email, col2, y, 90)
-      y += 15
+      const colW = contentWidth / 3
+      const c1 = margin
+      const c2 = margin + colW
+      const c3 = margin + colW * 2
 
-      // Section: Antecedentes del Ejecutivo
-      doc.setFillColor(240, 240, 240)
-      doc.rect(margin, y - 3, contentWidth, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Antecedentes del Ejecutivo', margin + 2, y + 1)
+      drawField('Apellido Paterno', formData.apellidoPaterno, c1, y, colW)
+      drawField('Apellido Materno', formData.apellidoMaterno, c2, y, colW)
+      drawField('Nombre(s)', formData.nombres, c3, y, colW)
       y += 10
 
-      drawRow('RUT:', formData.rutEjecutivo, col1, y, 55)
-      drawRow('Nombre:', formData.nombreEjecutivo, col2, y, 90)
-      y += 12
-
-      drawRow('Oficina:', formData.oficina, col1, y, 55)
-      drawRow('Fono:', formData.fonoEjecutivo, col2, y, 55)
-      y += 15
-
-      // Section: Antecedentes del Seguro
-      doc.setFillColor(240, 240, 240)
-      doc.rect(margin, y - 3, contentWidth, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Antecedentes del Seguro', margin + 2, y + 1)
+      drawField('RUT', refund.rut || '', c1, y, colW)
+      drawField('Fecha de Nacimiento', formData.fechaNacimiento, c2, y, colW)
+      drawField('Estado Civil', formData.estadoCivil, c3, y, colW)
       y += 10
 
+      drawField('Direccion Particular', formData.direccion, c1, y, contentWidth)
+      y += 10
+
+      drawField('Comuna', formData.comuna, c1, y, colW)
+      drawField('Region', formData.region, c2, y, colW)
+      y += 10
+
+      drawField('Telefono Particular', formData.telefono, c1, y, colW)
+      drawField('Email', formData.email, c2, y, colW * 2)
+      y += 12
+
+      writeHeading('Antecedentes del Ejecutivo')
+      drawField('RUT', formData.rutEjecutivo, c1, y, colW)
+      drawField('Nombre', formData.nombreEjecutivo, c2, y, colW * 2)
+      y += 10
+      drawField('Oficina', formData.oficina, c1, y, colW)
+      drawField('Fono', formData.fonoEjecutivo, c2, y, colW)
+      y += 12
+
+      writeHeading('Antecedentes del Seguro')
       const montoCredito = parseFloat(formData.montoCredito.replace(/\./g, '').replace(',', '.')) || 0
       const primaNeta = calculatePrimaNeta()
 
-      drawRow('Nro Operación:', formData.nroOperacion, col1, y, 55)
-      drawRow('Inicio Vigencia:', formData.inicioVigencia, col2, y, 55)
-      drawRow('Término Vigencia:', formData.terminoVigencia, col3, y, 55)
+      drawField('Nro Operacion', formData.nroOperacion, c1, y, colW)
+      drawField('Inicio Vigencia', formData.inicioVigencia, c2, y, colW)
+      drawField('Termino Vigencia', formData.terminoVigencia, c3, y, colW)
+      y += 10
+
+      const cw4 = contentWidth / 4
+      drawField('Monto del Credito', `$${montoCredito.toLocaleString('es-CL')}`, margin, y, cw4)
+      drawField('Monto Cuota', formData.montoCuota ? `$${formData.montoCuota}` : '-', margin + cw4, y, cw4)
+      drawField('Plazo (meses)', formData.plazoMeses, margin + cw4 * 2, y, cw4)
+      drawField('Prima Neta', `$${primaNeta.toLocaleString('es-CL')}`, margin + cw4 * 3, y, cw4)
       y += 12
 
-      drawRow('Monto del Crédito:', `$${montoCredito.toLocaleString('es-CL')}`, col1, y, 45)
-      drawRow('Monto Cuota:', formData.montoCuota ? `$${formData.montoCuota}` : '-', col1 + 45, y, 40)
-      drawRow('Plazo (meses):', formData.plazoMeses, col2 + 25, y, 30)
-      drawRow('Prima Neta:', `$${primaNeta.toLocaleString('es-CL')}`, col3, y, 55)
-      y += 15
-
-      // Section: Coberturas
-      doc.setFillColor(200, 200, 200)
-      doc.rect(margin, y - 3, contentWidth / 2, 7, 'F')
-      doc.rect(margin + contentWidth / 2, y - 3, contentWidth / 2, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Coberturas', margin + 2, y + 1)
-      doc.text('Capital Asegurado', margin + contentWidth / 2 + 2, y + 1)
-      y += 10
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.text('Desempleo Involuntario', margin + 2, y)
-      doc.text('Este seguro cubre hasta 3 cuotas mensuales con tope', margin + contentWidth / 2 + 2, y)
-      y += 4
-      doc.text('POL 1 2022 0203', margin + 2, y)
-      doc.text('máximo de UF 15 por cuota.', margin + contentWidth / 2 + 2, y)
-      y += 10
-
-      // IMPORTANTE section
-      doc.setFillColor(240, 240, 240)
-      doc.rect(margin, y - 3, contentWidth, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('IMPORTANTE', pageWidth / 2, y + 1, { align: 'center' })
-      y += 10
-
-      // Important notes
-      const importantNotes = [
-        '1. Este seguro es suscrito por Southbridge Compañía de Seguros Generales S.A. Rut: 99.288.000-7',
-        '2. Este documento constituye certificado de cobertura una vez completados todos los datos.',
-        '3. La contratación de este seguro es de carácter voluntario.',
-        '4. Para efectos de este seguro, declaro tener la calidad de trabajador dependiente.',
-        '5. Vigencia de la Póliza Colectiva: 07/11/2025 al 30/11/2030.',
-        '6. La cobertura iniciará el día de la contratación y se mantendrá vigente mientras el crédito esté vigente.',
-        '7. El contratante de este seguro es TDV SERVICIOS SPA, RUT 78.168.126-1',
-        '8. El intermediario es PRIME CORREDORES DE SEGUROS SPA, RUT: 76.196.802-5',
-        '9. Número de Póliza Colectiva: 0020121737'
-      ]
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      importantNotes.forEach(note => {
-        if (y > pageHeight - 30) {
-          doc.addPage()
-          y = 20
-        }
-        const lines = doc.splitTextToSize(note, contentWidth)
-        lines.forEach((line: string) => {
-          doc.text(line, margin, y)
-          y += 4
-        })
-      })
-
-      y += 10
-
-      // Signature section
-      if (y > pageHeight - 50) {
-        doc.addPage()
-        y = 20
-      }
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.line(margin, y + 15, margin + 60, y + 15)
-      doc.line(pageWidth - margin - 70, y + 15, pageWidth - margin, y + 15)
-      doc.text('Firma Asegurado', margin + 15, y + 20)
-      doc.text('Southbridge Compañía de Seguros', pageWidth - margin - 55, y + 20)
-      doc.text('Generales S.A.', pageWidth - margin - 45, y + 24)
-
-      // ===================== PAGE 2 - DESCRIPCIÓN DE COBERTURAS =====================
-      doc.addPage()
-      y = 15
-
-      // Header
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(0, 100, 150)
-      doc.text('Southbridge', pageWidth - margin - 30, y)
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.text('Insurance Company', pageWidth - margin - 27, y + 4)
-      y += 15
-
-      doc.setTextColor(0, 0, 0)
-      doc.setFillColor(240, 240, 240)
-      doc.rect(margin, y - 3, contentWidth, 7, 'F')
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Descripción de Coberturas y Condiciones de Asegurabilidad', margin + 2, y + 1)
-      y += 12
-
-      // Materia Asegurada
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Materia Asegurada', margin, y)
-      y += 6
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      const materiaText = `En virtud de la presente Póliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del crédito individualizado, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnización de hasta tres (3) cuotas restantes). Esta Póliza cubre los casos de Desempleo Involuntario que impliquen la privación total de ingresos por conceptos laborales.`
-      
-      const materiaLines = doc.splitTextToSize(materiaText, contentWidth)
-      materiaLines.forEach((line: string) => {
-        doc.text(line, margin, y)
-        y += 3.5
-      })
-      y += 5
-
-      // Coberturas
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Coberturas', margin, y)
-      y += 6
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.text('Desempleo involuntario del asegurado (POL 1 2022 0203)', margin, y)
-      y += 8
-
-      // Requisitos de Asegurabilidad
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Requisitos de Asegurabilidad', margin, y)
-      y += 6
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      const requisitos = [
-        '• Edad mínima de ingreso: 18 años',
-        '• Edad máxima de ingreso: 65 años y 364 días',
-        '• Edad máxima de permanencia: 69 años y 364 días',
-        '• Trabajadores Dependientes con contrato indefinido'
-      ]
-      requisitos.forEach(req => {
-        doc.text(req, margin, y)
-        y += 4
-      })
-      y += 5
-
-      // Prima por Asegurado
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Prima por Asegurado', margin, y)
-      y += 6
-
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.text('La prima es única y resulta de multiplicar monto crédito en pesos por la tasa del tramo por el número de cuotas.', margin, y)
-      y += 8
-
-      // Table of rates
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'bold')
-      const tableHeaders = ['Tramo', 'Desde', 'Hasta', 'Tasa Bruta']
-      const colWidths = [25, 35, 35, 30]
-      let xPos = margin
-
+      ensureSpace(20)
       doc.setFillColor(220, 220, 220)
-      doc.rect(margin, y - 3, colWidths.reduce((a, b) => a + b, 0), 6, 'F')
-      
-      tableHeaders.forEach((header, i) => {
-        doc.text(header, xPos + 2, y)
-        xPos += colWidths[i]
-      })
-      y += 6
-
-      const tableData = [
-        ['Tramo 1', '$500.000', '$1.000.000', '0,288%'],
-        ['Tramo 2', '$1.000.001', '$3.000.000', '0,177%'],
-        ['Tramo 3', '$3.000.001', '$5.000.000', '0,157%'],
-        ['Tramo 4', '$5.000.001', '$7.000.000', '0,151%'],
-        ['Tramo 5', '$7.000.001', 'o más', '0,150%'],
-      ]
-
+      doc.rect(margin, y - 4, contentWidth / 2, 6, 'F')
+      doc.rect(margin + contentWidth / 2, y - 4, contentWidth / 2, 6, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      doc.text('Coberturas', margin + 2, y)
+      doc.text('Capital Asegurado', margin + contentWidth / 2 + 2, y)
+      y += 4
+      doc.setDrawColor(180, 180, 180)
+      doc.rect(margin, y - 2, contentWidth / 2, 10)
+      doc.rect(margin + contentWidth / 2, y - 2, contentWidth / 2, 10)
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      tableData.forEach((row, rowIndex) => {
-        xPos = margin
-        if (rowIndex % 2 === 0) {
-          doc.setFillColor(250, 250, 250)
-          doc.rect(margin, y - 3, colWidths.reduce((a, b) => a + b, 0), 5, 'F')
+      doc.setFontSize(7.5)
+      doc.text('Desempleo Involuntario', margin + 2, y + 2)
+      doc.text('POL 1 2022 0203', margin + 2, y + 6)
+      doc.text('Este seguro cubre hasta 3 cuotas mensuales', margin + contentWidth / 2 + 2, y + 2)
+      doc.text('con tope maximo de UF 15 por cuota.', margin + contentWidth / 2 + 2, y + 6)
+      y += 14
+
+      writeHeading('IMPORTANTE')
+      const importantNotes = [
+        '1. Este seguro es suscrito por Southbridge Compania de Seguros Generales S.A. Rut: 99.288.000-7, con domicilio en Avenida Presidente Riesco 5335, piso 15, Las Condes.',
+        '2. Este documento constituye certificado de cobertura una vez que se completen todos los datos solicitados, se encuentre debidamente firmada por el proponente, se otorgue el credito y se pague la prima pactada.',
+        '3. La contratacion de este seguro es de caracter voluntario.',
+        '4. Para efectos de este seguro, declaro tener la calidad de trabajador o empleado dependiente. Mediante la siguiente firma, acepto la contratacion de este seguro y que soy trabajador dependiente.',
+        '5. Vigencia de la Poliza Colectiva: La poliza tendra vigencia desde el 07 de noviembre de 2025 al 30 de noviembre de 2030.',
+        '6. Vigencia de la Poliza Individual: La cobertura de esta poliza iniciara el dia de la contratacion o firma de la solicitud de incorporacion por parte del asegurado individual y se mantendra vigente mientras se encuentre vigente el credito.',
+        '7. En este caso la presente solicitud hara las veces de certificado de cobertura conforme a la circular N 2123 de la Comision para el Mercado Financiero.',
+        '8. El contratante de este seguro es TDV SERVICIOS SPA, RUT 78.168.126-1.',
+        '9. El intermediario de este seguro es PRIME CORREDORES DE SEGUROS SPA, RUT: 76.196.802-5.',
+        '10. La compania que cubre el riesgo es Southbridge Compania de Seguros Generales S.A., RUT 99.288.000-7.',
+        '11. Numero de Poliza Colectiva: 0020121737.',
+        '12. Southbridge se encuentra adherida al Codigo de Autorregulacion de las Companias de Seguros y esta sujeta al Compendio de Buenas Practicas Corporativas. Copia disponible en www.aach.cl. Asimismo, ha aceptado la intervencion del Defensor del Asegurado: www.southbridgeseguros.cl o www.ddachile.cl.',
+      ]
+      importantNotes.forEach(note => writeParagraph(note, { size: 7, lh: 3.2 }))
+      y += 4
+
+      ensureSpace(28)
+      doc.setDrawColor(0, 0, 0)
+      doc.line(margin + 5, y + 12, margin + 75, y + 12)
+      doc.line(pageWidth - margin - 75, y + 12, pageWidth - margin - 5, y + 12)
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.text('Firma Asegurado', margin + 22, y + 16)
+      doc.text('Southbridge Compania de Seguros Generales S.A.', pageWidth - margin - 73, y + 16)
+      y += 22
+
+      writeParagraph(
+        'DECLARO QUE AL ESTAMPAR MI HUELLA, EN SENAL DE FIRMA ELECTRONICA, ESTOY EXPRESAMENTE CONSINTIENDO EN LO QUE HE DECLARADO EN LA DECLARACION PERSONAL DE SALUD Y EN LA DECLARACION PERSONAL DE ACTIVIDADES Y DEPORTES RIESGOSOS ANTERIORES, ASI COMO EN EL RESTO DEL CONTENIDO DE LA PROPUESTA.',
+        { size: 7, bold: true, lh: 3.2 }
+      )
+
+      // ===================== PAGE 2+ =====================
+      newPage()
+      writeHeading('Descripcion de Coberturas y Condiciones de Asegurabilidad')
+      writeSubHeading('Materia Asegurada')
+      writeParagraph('En virtud de la presente Poliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del credito individualizado en el condicionado particular, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnizacion de hasta tres (3) cuotas restantes). Esta Poliza cubre los casos de Desempleo Involuntario que impliquen la privacion total de ingresos por conceptos laborales.')
+      writeParagraph('El pago se realizara mes a mes, por lo que el asegurado debe proveer los antecedentes solicitados por la compania para acreditar la continuidad en calidad de desempleado para asi cobrar la cuota siguiente. Reintegrandose el asegurado al servicio laboral, con contrato de trabajo, cesara inmediatamente el pago de indemnizacion con cargo a este seguro.')
+      writeParagraph('A su vez, cada asegurado podra tener solamente contratada una poliza relacionada al presente producto. A mayor abundamiento, en caso de tener mas de una poliza contratada, solamente se realizara el pago de una de ellas al momento de un siniestro.')
+      y += 2
+      writeSubHeading('Coberturas')
+      writeParagraph('Desempleo involuntario del asegurado (POL 1 2022 0203)', { bold: true })
+      writeParagraph('a) El pago de cuotas mensuales que correspondan a una deuda del asegurado singularizada en las condiciones particulares de la Poliza o un porcentaje de la misma, cuyo monto y forma de pago se determinara en las condiciones particulares de la Poliza. En estos casos solo habra lugar a la cobertura en la medida existan cuotas devengadas en los meses de cobertura establecidos en las condiciones particulares de la Poliza.')
+      writeParagraph('Asimismo, se podra establecer en las condiciones particulares de la Poliza, un Periodo de Carencia, una Antiguedad Laboral Minima, un deducible, un periodo minimo de permanencia en estado de cesantia, un numero maximo de Eventos, una edad maxima de permanencia, sublimites de indemnizacion, y/o una franquicia.')
+      writeParagraph('Se considerara como un solo Evento la ocurrencia de cualquiera de las causales de Desempleo Involuntario.')
+
+      writeSubHeading('Procedencia de la indemnizacion')
+      writeParagraph('A.1. La presente cobertura se extendera a uno o mas de los siguientes tipos de trabajadores, segun se indique en las condiciones particulares de la Poliza:', { bold: true })
+      ;[
+        '1) Trabajadores Dependientes.',
+        '2) Funcionarios vinculados laboralmente y bajo regimen de subordinacion y dependencia a la administracion publica centralizada o descentralizada, sometidos al Estatuto Administrativo.',
+        '3) Profesionales de la educacion vinculados laboralmente y bajo regimen de subordinacion y dependencia a la educacion municipalizada, sometidos al Estatuto Docente.',
+        '4) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+
+      writeParagraph('A.2. Solo se consideraran como causales de Desempleo Involuntario las siguientes:', { bold: true })
+      writeParagraph('I) Trabajadores Dependientes:', { bold: true })
+      ;[
+        'I.1) Articulo 159 N1 del Codigo del Trabajo: Mutuo acuerdo de las partes, en la medida que en el finiquito se hubiere pactado a favor del asegurado una indemnizacion equivalente o asimilable a anos de servicio.',
+        'I.2) Articulo 159 N6 del Codigo del Trabajo: caso fortuito o fuerza mayor.',
+        'I.3) Articulo 161 del Codigo del Trabajo: necesidades de la empresa y desahucio del empleador.',
+        'I.4) Articulo 163 bis del Codigo del Trabajo: procedimiento concursal de liquidacion que afecte al empleador.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('II) Empleados de la administracion publica (Estatuto Administrativo):', { bold: true })
+      ;[
+        'II.1) Funcionarios de Planta: Supresion del empleo / Termino del periodo legal.',
+        'II.2) Personal a contrata: No renovacion del contrato una vez finalizado el plazo.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('III) Profesionales de la educacion municipalizada (Estatuto Docente): solo sera cubierto el Desempleo Involuntario derivado del cese de funciones por causas no imputables a su actuar o voluntad y que impliquen privacion total de ingresos por conceptos laborales.', { bold: true })
+      writeParagraph('IV) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica: solo sera cubierto si se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Organicas, Estatutos y Reglamentos de Personal, en la medida que el retiro o baja se deba a causa no imputable a la voluntad o conducta del miembro.', { bold: true })
+
+      writeHeading('Requisitos de Asegurabilidad')
+      writeParagraph('La cobertura se extendera a Trabajadores Dependientes, funcionarios de la administracion publica (Estatuto Administrativo), profesionales de la educacion municipalizada (Estatuto Docente) y miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.')
+      writeParagraph('Edades de ingreso y permanencia:', { bold: true })
+      ;[
+        '- Edad minima de ingreso: 18 anos.',
+        '- Edad maxima de ingreso: 65 anos y 364 dias.',
+        '- Edad maxima de permanencia: 69 anos y 364 dias.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+
+      writeHeading('Beneficiario')
+      writeParagraph('Para la cobertura de desempleo se tendra como beneficiario en calidad de irrevocable a [ENTIDAD FINANCIERA] y sus cesionarios a cualquier titulo.')
+
+      writeHeading('Definiciones Seguro Desempleo')
+      writeParagraph('DESEMPLEO INVOLUNTARIO: estado o condicion de aquella persona que ha perdido su trabajo, producido por circunstancias no imputables a su actuar (segun las causales senaladas en el Articulo 3 de las condiciones generales), y que implica la privacion total de remuneraciones o ingresos por conceptos laborales como consecuencia directa del termino de la relacion laboral.')
+      writeParagraph('EVENTO: la situacion de desempleo involuntario que puede afectar al asegurado, no interrumpida por un periodo de activo minimo.')
+      writeParagraph('ANTIGUEDAD MINIMA LABORAL O COMERCIAL: se exige un periodo de 180 dias consecutivos en que el asegurado debe mantenerse en su empleo (si es trabajador dependiente) para reclamar, por primera vez, una indemnizacion bajo esta poliza.')
+      writeParagraph('PERIODO DE ACTIVO MINIMO: lapso durante el cual el asegurado que ya haya sido indemnizado y haya obtenido nuevamente empleo debe mantenerse en dicho empleo si incurre nuevamente en cesantia involuntaria. Se establece un periodo de 180 dias a partir de la fecha de inicio del nuevo empleo.')
+      writeParagraph('TRABAJADOR DEPENDIENTE: persona que, segun la legislacion laboral chilena, presta servicios o desempena funciones para un empleador, bajo vinculo de subordinacion y dependencia, en virtud de un contrato de trabajo indefinido sujeto al Codigo del Trabajo.')
+      writeParagraph('DEDUCIBLE: corresponde al numero de cuotas que debe asumir el asegurado posterior a la ocurrencia del evento de desempleo. Se establece el deducible en una cuota correspondiente a los 30 dias siguientes a la fecha del finiquito.')
+
+      writeHeading('Prima por Asegurado')
+      writeParagraph('La prima es unica y resulta de multiplicar el monto del credito en pesos por la tasa del tramo por el numero de cuotas.')
+
+      ensureSpace(40)
+      const tramos: Array<[string, string, string, string]> = [
+        ['Tramo 1', '$500.000', '$1.000.000', '0,094%'],
+        ['Tramo 2', '$1.000.001', '$3.000.000', '0,094%'],
+        ['Tramo 3', '$3.000.001', '$5.000.000', '0,094%'],
+        ['Tramo 4', '$5.000.001', '$7.000.000', '0,094%'],
+        ['Tramo 5', '$7.000.001', 'o mas', '0,094%'],
+      ]
+      const cw = [30, 45, 45, 35]
+      const tableWidth = cw.reduce((a, b) => a + b, 0)
+      doc.setFillColor(220, 220, 220)
+      doc.rect(margin, y - 4, tableWidth, 6, 'F')
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8)
+      ;['', 'Desde', 'Hasta', 'Tasa Bruta'].forEach((h, i) => {
+        const xp = margin + cw.slice(0, i).reduce((a, b) => a + b, 0)
+        doc.text(h, xp + 2, y)
+      })
+      y += 4
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(7.5)
+      const tableStartY = y
+      tramos.forEach((row, idx) => {
+        if (idx % 2 === 0) {
+          doc.setFillColor(248, 248, 248)
+          doc.rect(margin, y - 2, tableWidth, 5, 'F')
         }
         row.forEach((cell, i) => {
-          doc.text(cell, xPos + 2, y)
-          xPos += colWidths[i]
+          const xp = margin + cw.slice(0, i).reduce((a, b) => a + b, 0)
+          doc.setFont('helvetica', i === 0 ? 'bold' : 'normal')
+          doc.text(cell, xp + 2, y + 1.5)
         })
         y += 5
       })
-      y += 5
+      doc.setDrawColor(180, 180, 180)
+      doc.rect(margin, tableStartY - 2, tableWidth, 5 * tramos.length)
+      y += 4
 
-      // Highlight applied rate
-      const tasa = getTasaCesantia(montoCredito)
-      const tramo = getTramoLabel(montoCredito)
-      doc.setFillColor(230, 245, 230)
-      doc.rect(margin, y - 3, contentWidth, 8, 'F')
+      ensureSpace(14)
+      doc.setFillColor(220, 220, 220)
+      doc.rect(margin, y - 4, contentWidth, 6, 'F')
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(8)
-      doc.text(`Tasa aplicada: ${tasa}% (${tramo})`, margin + 2, y + 1)
-      y += 12
-
-      // Deducible
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Deducible', margin, y)
-      y += 5
+      doc.text('Cobertura', margin + 2, y)
+      doc.text('Monto Asegurado', margin + contentWidth / 2 + 2, y)
+      y += 4
       doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.text('Primera cuota del crédito a pagar luego de la desvinculación laboral.', margin, y)
+      doc.setFontSize(7.5)
+      doc.text('Desempleo Involuntario', margin + 2, y + 2)
+      doc.text('Hasta 3 Cuotas* (*Tope por cuota de UF 15)', margin + contentWidth / 2 + 2, y + 2)
+      doc.rect(margin, y - 2, contentWidth, 6)
       y += 8
 
-      // Antigüedad Laboral mínima
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Antigüedad Laboral mínima', margin, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.text('Se establece una antigüedad mínima de 6 meses, con el mismo empleador, para tener derecho a indemnización.', margin, y)
-      y += 8
+      writeParagraph('La compania aseguradora indemnizara los montos antes indicados de acuerdo con lo siguiente:', { bold: true })
+      ;[
+        '- De 31 a 60 dias: primera cuota.',
+        '- De 61 a 90 dias: segunda cuota.',
+        '- De 91 a 120 dias: tercera cuota.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
 
-      // Cobertura
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.text('Cobertura', margin, y)
-      y += 5
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(7)
-      doc.text('Desempleo Involuntario: Hasta 3 Cuotas* (*Tope por cuota de UF 15)', margin, y)
-      y += 4
-      doc.text('La compañía aseguradora indemnizará los montos de acuerdo con lo siguiente:', margin, y)
-      y += 4
-      doc.text('• de 31 a 60 días: primera cuota', margin + 5, y)
-      y += 4
-      doc.text('• de 61 a 90 días: segunda cuota', margin + 5, y)
-      y += 4
-      doc.text('• de 91 a 120 días: tercera cuota', margin + 5, y)
+      writeSubHeading('Deducible')
+      writeParagraph('Primera cuota del credito a pagar luego de la desvinculacion laboral.')
+      writeSubHeading('Antiguedad Laboral minima')
+      writeParagraph('Se establece una antiguedad minima de 6 meses, con el mismo empleador, para tener derecho a indemnizacion.')
+      writeSubHeading('Pago de Prima')
+      writeParagraph('El importe de las primas sera cargado automaticamente en el medio de pago del asegurado, segun este lo haya estipulado en la propuesta o solicitud de incorporacion. La periodicidad del pago sera unica.')
+      writeSubHeading('Derecho de Retracto')
+      writeParagraph('El asegurado podra, sin expresion de causa ni penalizacion alguna, retractarse del seguro contratado dentro del plazo de 30 dias, contado desde que tomo conocimiento de la poliza. Dicha retractacion debera comunicarse a la compania por cualquier medio que permita la expresion fehaciente de dicha voluntad. El ejercicio del derecho de retracto implicara para el asegurado el derecho a la devolucion del segundo cobro mensual de las primas, reteniendo el asegurador las primas correspondientes al riesgo transcurrido y cubierto.')
+      writeSubHeading('Vigencia de la poliza colectiva')
+      writeParagraph('El presente contrato regira desde el 07 de noviembre de 2025 al 30 de noviembre de 2030. Sera renovado en forma automatica por periodos iguales y sucesivos de un ano cada uno, si ninguna de las partes notifica por escrito a la otra su decision contraria, en un plazo minimo de 15 dias.')
+      writeSubHeading('Vigencia individual')
+      writeParagraph('La cobertura de desempleo entrara en vigencia para cada asegurado individual desde la fecha senalada en la propuesta o solicitud de incorporacion; la poliza se mantendra vigente hasta la total extincion del credito.')
+      writeSubHeading('Termino anticipado de la cobertura individual')
+      ;[
+        '- Solicitud por escrito del asegurado, con al menos diez (10) dias de anticipacion.',
+        '- Cumplimiento de la edad maxima de permanencia indicada en esta poliza.',
+        '- Fallecimiento del asegurado.',
+        '- Perdida de la calidad de asegurado segun las condiciones particulares.',
+        '- Perdida de la calidad de trabajador dependiente del asegurado.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
 
-      // Footer
-      doc.setFontSize(6)
-      doc.setTextColor(128, 128, 128)
-      doc.text(`Generado el ${getTodayFormatted()} - TDV Servicios SPA`, pageWidth / 2, pageHeight - 10, { align: 'center' })
+      writeParagraph('A partir de la fecha del cambio de calidad del asegurado de trabajador dependiente a trabajador independiente, cesara de pleno derecho cualquier responsabilidad de la compania. Es responsabilidad del asegurado notificar lo mas pronto posible al asegurador el cambio de su situacion laboral. Una vez que la compania tome conocimiento, el asegurado tendra derecho a la restitucion de la parte de la prima pagada no ganada por la compania correspondiente al tiempo no cubierto.')
+
+      writeSubHeading('Causales de termino anticipado por la Compania')
+      ;[
+        '1. Si el interes asegurable no llegare a existir o cesare durante la vigencia del seguro.',
+        '2. Por falta de pago de la prima en los terminos del condicionado general.',
+        '3. Infraccion a cualquiera de las obligaciones del condicionado general.',
+        '4. Inexistencia o inhabilitacion del medio de pago acordado.',
+        '5. Cambio en la politica de suscripcion de la compania (cancelando o revisando todas las polizas individuales del programa).',
+        '6. Cumplimiento del maximo de eventos a asegurar por el periodo de vigencia.',
+        '7. Renovacion de la poliza individual o colectiva, en la fecha establecida en las condiciones particulares.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('La terminacion se producira a la expiracion del plazo de 30 dias contados desde la fecha de envio de la respectiva comunicacion.')
+
+      writeSubHeading('Clausula de devolucion de primas no devengadas')
+      writeParagraph('Cuando por termino anticipado o extincion del contrato proceda la devolucion de la prima pagada no devengada, la aseguradora debera poner la suma a disposicion de quien corresponda dentro del plazo de 10 dias habiles de haber tomado conocimiento del termino del seguro, conforme a la Circular N 2114 del 26 de julio de 2013 de la CMF.')
+
+      writeSubHeading('Pago de la indemnizacion')
+      writeParagraph('El pago de indemnizaciones sera efectuado por la compania al asegurado o beneficiario, contando con un plazo maximo de 10 dias habiles desde la recepcion del informe de liquidacion correspondiente que senale la procedencia del pago.')
+
+      writeHeading('Comunicaciones')
+      writeParagraph('Cualquier comunicacion, declaracion o notificacion del asegurador al contratante o asegurado debera efectuarse al correo electronico indicado por el asegurado en la propuesta o solicitud de incorporacion. En caso de desconocerse el correo o de constancia de no envio/recepcion, las comunicaciones se efectuaran mediante carta certificada dirigida al domicilio.')
+
+      writeHeading('Servicio de atencion al cliente')
+      writeParagraph('Para cualquier consulta y/o reclamo, el asegurado puede llamar al centro de atencion al cliente al fono 800 200 802 de Southbridge Compania de Seguros Generales S.A. Horario: lunes a jueves de 9:00 a 17:45 hrs, viernes de 9:00 a 13:30 hrs. No hay atencion los fines de semana ni dias feriados.')
+
+      writeHeading('Exclusiones')
+      writeParagraph('1. El asegurado no podra hacer uso de la cobertura de Desempleo Involuntario si:', { bold: true })
+      writeParagraph('i. Es desvinculado de una sociedad o E.I.R.L. de la cual es socio, accionista o titular.', { indent: 4 })
+      writeParagraph('ii. Si su conyuge, conviviente civil, padre, madre, hijo(a), hermano(a), nieto(a), tio(a), abuelo(a), cunado(a), suegro(a) o padre/madre de su conviviente civil es socio, accionista, titular, director o ejecutivo principal de la sociedad o E.I.R.L. de la que fue desvinculado.', { indent: 4 })
+      writeParagraph('Dentro del concepto de sociedad se comprenden todos los tipos de sociedades civiles y comerciales (colectivas, en comanditas, de responsabilidad limitada, sociedades anonimas, sociedades por acciones).')
+      writeParagraph('No se otorgara la cobertura cuando el Desempleo Involuntario se produzca por una causa distinta de las senaladas en el numeral 2, letra A.2, del Articulo 3 del condicionado general POL 1 2022 0203.')
+
+      writeHeading('Procedimiento de Denuncia de Siniestro')
+      writeParagraph('Producido un siniestro, debera comunicarlo por escrito a siniestros@sbins.cl o al 800 200 802, dentro del menor plazo posible una vez tomado conocimiento, no pudiendo superar los 10 dias de ocurrido el siniestro, empleando el formulario de presentacion de siniestros que proporcionara su corredor de seguros.')
+      writeParagraph('Para tener derecho a la indemnizacion el interesado debera acreditar la situacion invocada con los antecedentes justificativos. Se entendera como fecha de ocurrencia del siniestro la fecha de termino de la relacion laboral indicada en el finiquito; en el caso de empleados publicos, sera la fecha del decreto o resolucion de retiro o baja.')
+      writeParagraph('Antecedentes necesarios para el pago de siniestros (primer mes asegurado de desempleo):', { bold: true })
+      ;[
+        '- Formulario de denuncia de siniestros firmado por el asegurado.',
+        '- Copia del finiquito legalizado donde conste la causal de termino (Codigo del Trabajo).',
+        '- Copia legalizada del decreto o resolucion del organismo (empleados publicos, docentes, FFAA y de Orden).',
+        '- Certificado de ultimas cotizaciones de A.F.P., con fecha posterior al vencimiento del dividendo reclamado.',
+        '- Fotocopia de cedula de identidad del asegurado, por ambas caras.',
+        '- Tabla de desarrollo de la deuda.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('Nota: La compania se reserva el derecho de solicitar cualquier otro antecedente que estime necesario. En caso de existir primas impagas al momento del siniestro, estas seran descontadas del monto a indemnizar.')
+
+      writeHeading('Disposiciones Finales')
+      writeSubHeading('Informacion sobre atencion de clientes y reclamos')
+      writeParagraph('En virtud de la circular N 2.131 del 28 de noviembre de 2013, las companias de seguros, corredores y liquidadores deberan recibir, registrar y responder todas las presentaciones, consultas o reclamos. Las presentaciones podran efectuarse en oficinas, presencialmente, por correo postal, medios electronicos o telefonicamente, sin formalidades, en horario normal de atencion. Recibida una presentacion, debera ser respondida en un plazo no superior a 20 dias habiles. En caso de disconformidad, el interesado podra recurrir a la Comision para el Mercado Financiero, Av. Libertador Bernardo O Higgins 1449, piso 1, Santiago, o al sitio web www.cmfchile.cl.')
+      writeSubHeading('Codigo de Autorregulacion')
+      writeParagraph('Southbridge Seguros se encuentra adherida al Codigo de Autorregulacion de las Companias de Seguros y al Compendio de Buenas Practicas Corporativas. Copia disponible en www.aach.cl. Asimismo, ha aceptado la intervencion del Defensor del Asegurado: www.southbridgeseguros.cl o www.ddachile.cl.')
+
+      writeHeading('Informacion de las Comisiones - Circular N 2123 (CMF)')
+      writeParagraph('De acuerdo a lo instruido en la Circular N 2123 del 22 de octubre de 2013 de la Comision para el Mercado Financiero, le informamos que las comisiones pagadas por Southbridge Compania de Seguros Generales S.A., respecto de la prima pagada por usted, son las siguientes:')
+      writeSubHeading('Comision de Intermediacion')
+      writeParagraph('PRIME CORREDORES DE SEGUROS SPA - RUT: 76.196.802-5')
+      writeParagraph('10% mas IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
+      writeSubHeading('Comision de Recaudacion')
+      writeParagraph('TDV SERVICIOS SPA - RUT: 78.168.126-1')
+      writeParagraph('20% mas IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
+
+      writeHeading('Anexo N 1 - Atencion de Clientes y Reclamos')
+      writeParagraph('En virtud de la Circular N 2131 de la CMF del 28 de noviembre de 2013, las companias de seguros, corredores y liquidadores deberan recibir, registrar y responder todas las presentaciones, consultas o reclamos. TDV disponibilizara el siguiente numero: +56229943004 en horarios de lunes a jueves de 9:00 a 14:00 y de 15:00 a 18:00, y viernes de 9:00 a 14:00 y 15:00 a 17:30; correo: contacto@tedevuelvo.cl. Las presentaciones seran respondidas en un plazo no superior a 20 dias habiles.')
+
+      writeHeading('Anexo N 2 - Procedimiento de Liquidacion de Siniestros (Circular N 2106 CMF)')
+      writeSubHeading('1) Objeto de la Liquidacion')
+      writeParagraph('Establecer la ocurrencia del siniestro, determinar si esta cubierto en la poliza contratada y cuantificar el monto de la perdida y la indemnizacion a pagar. Sometido a los principios de celeridad, economia procedimental, objetividad, caracter tecnico, transparencia y acceso.')
+      writeSubHeading('2) Forma de efectuar la Liquidacion')
+      writeParagraph('La liquidacion puede efectuarla directamente la Compania o encomendarla a un Liquidador de Seguros. La decision debe comunicarse al Asegurado dentro del plazo de tres dias habiles desde la fecha de denuncia del siniestro.')
+      writeSubHeading('3) Derecho de Oposicion a la Liquidacion Directa')
+      writeParagraph('En caso de liquidacion directa por la compania, el Asegurado o beneficiario puede oponerse solicitando por escrito que designe un Liquidador de Seguros, dentro del plazo de cinco dias habiles desde la notificacion.')
+      writeSubHeading('4) Informacion al Asegurado y Peticion de Antecedentes')
+      writeParagraph('El Liquidador o la Compania debera informar al Asegurado por escrito, en forma suficiente y oportuna, las gestiones que le corresponde realizar, solicitando todos los antecedentes que requiere para liquidar el siniestro.')
+      writeSubHeading('5) Pre-informe de Liquidacion')
+      writeParagraph('En siniestros con problemas o diferencias de criterios, podra el Liquidador emitir un pre-informe sobre cobertura y monto de danos. El asegurado o la compania podran hacer observaciones por escrito dentro de cinco dias habiles desde su conocimiento.')
+      writeSubHeading('6) Plazo de Liquidacion')
+      writeParagraph('Dentro del mas breve plazo, no pudiendo exceder de 45 dias corridos desde la fecha de denuncia. Excepciones: (a) seguros individuales del Primer Grupo con prima anual superior a 100 UF: 90 dias; (b) siniestros maritimos o averia gruesa: 180 dias.')
+      writeSubHeading('7) Prorroga del Plazo de Liquidacion')
+      writeParagraph('Los plazos podran prorrogarse excepcionalmente por iguales periodos, informando los motivos y gestiones a realizar, comunicandolo al Asegurado y a la Superintendencia.')
+      writeSubHeading('8) Informe Final de Liquidacion')
+      writeParagraph('El informe final debera remitirse al Asegurado y simultaneamente al Asegurador, conteniendo la transcripcion integra de los articulos 26 y 27 del Reglamento de Auxiliares del Comercio de Seguros (D.S. de Hacienda N 1.055 de 2012).')
+      writeSubHeading('9) Impugnacion del Informe de Liquidacion')
+      writeParagraph('Recibido el informe, la Compania y el Asegurado dispondran de un plazo de diez dias habiles para impugnarlo. En caso de liquidacion directa por la Compania, este derecho solo lo tendra el Asegurado. Impugnado el informe, el Liquidador o la compania dispondra de un plazo de 6 dias habiles para responder.')
+
+      writeHeading('Clausula Sanciones Economicas')
+      writeSubHeading('A. Exclusion Territorial')
+      writeParagraph('La presente poliza no cubre ninguna perdida, lesion, dano o responsabilidad legal derivada directa o indirectamente de bienes, transacciones, comercio u otra actividad relacionada con Cuba, Iran, Sudan, Siria o la region de Crimea (Ucrania).')
+      writeSubHeading('B. Exclusion SDN')
+      writeParagraph('No se considerara que este Asegurador proporciona cobertura a, o es responsable de pagar algun reclamo o proveer algun beneficio por alguna perdida, lesion, dano o responsabilidad legal experimentado directa o indirectamente por: (i) residentes de paises distintos a los cubiertos; (ii) personas empleadas en Iran o por el gobierno irani; (iii) personas mencionadas en listados de sanciones publicadas por las Naciones Unidas (resoluciones N 1.988 y 1.989 del Consejo de Seguridad), en cumplimiento del Oficio Circular N 700 de la CMF; (iv) personas identificadas por autoridades gubernamentales como sostenedores de terrorismo, narcotrafico, trafico de personas, pirateria, proliferacion de armas de destruccion masiva, crimen organizado, violaciones a los derechos humanos o interrupcion de procesos democraticos.')
+
+      drawFooter(pageNum)
 
       // Save
       const fileName = `Certificado_Cesantia_${refund.rut?.replace(/[.-]/g, '') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
