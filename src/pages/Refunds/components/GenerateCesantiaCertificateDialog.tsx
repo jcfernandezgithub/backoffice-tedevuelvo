@@ -1217,5 +1217,31 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmReplaceOpen} onOpenChange={setConfirmReplaceOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Ya existe un certificado de cobertura</AlertDialogTitle>
+          <AlertDialogDescription>
+            En la carpeta del cliente {existingDocsCount > 1 ? `existen ${existingDocsCount} certificados de cobertura previos` : 'existe un certificado de cobertura previo'}.
+            Si continúas, se eliminarán y se reemplazarán por el nuevo certificado generado.
+            ¿Deseas continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isUploading}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isUploading}
+            onClick={(e) => {
+              e.preventDefault()
+              performUpload(existingDocsCount)
+            }}
+          >
+            {isUploading ? 'Reemplazando...' : 'Sí, reemplazar'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
