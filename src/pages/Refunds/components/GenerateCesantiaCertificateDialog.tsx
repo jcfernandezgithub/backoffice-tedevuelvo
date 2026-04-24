@@ -11,13 +11,16 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Briefcase, Download, Search, ArrowLeft, Eye } from 'lucide-react'
+import { Briefcase, Download, Search, ArrowLeft, Eye, Upload } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
+import { useQueryClient } from '@tanstack/react-query'
+
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
 interface GenerateCesantiaCertificateDialogProps {
   refund: RefundRequest
