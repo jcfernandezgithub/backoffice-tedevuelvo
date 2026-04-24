@@ -129,7 +129,11 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     nroOperacion: '',
     inicioVigencia: getTodayFormatted(),
     terminoVigencia: '',
-    montoCredito: (refund.calculationSnapshot?.totalAmount || 0).toString(),
+    montoCredito: (
+      refund.calculationSnapshot?.confirmedAverageInsuredBalance ||
+      refund.calculationSnapshot?.averageInsuredBalance ||
+      0
+    ).toString(),
     montoCuota: '',
     plazoMeses: (refund.calculationSnapshot?.remainingInstallments || 0).toString(),
     primaNeta: '',
