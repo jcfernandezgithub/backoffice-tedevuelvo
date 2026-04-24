@@ -19,6 +19,17 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
 import { useQueryClient } from '@tanstack/react-query'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { refundAdminApi } from '@/services/refundAdminApi'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
@@ -100,6 +111,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isGenerating, setIsGenerating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
+  const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false)
+  const [existingDocsCount, setExistingDocsCount] = useState(0)
   const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
@@ -769,13 +782,63 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const uploadToClient = async () => {
     setIsUploading(true)
     try {
+      const publicId = refund.publicId
+      const existing = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
+      const previousCertificates = (existing || []).filter(
+        (d) => d.kind === 'certificado-de-cobertura'
+      )
+
+      if (previousCertificates.length > 0) {
+        setExistingDocsCount(previousCertificates.length)
+        setConfirmReplaceOpen(true)
+        setIsUploading(false)
+        return
+      }
+
+      await performUpload(0)
+    } catch (error) {
+      console.error('Error preparing upload:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo preparar la subida',
+        variant: 'destructive',
+      })
+      setIsUploading(false)
+    }
+  }
+
+  const performUpload = async (replacedCount: number) => {
+    setIsUploading(true)
+    try {
+      const publicId = refund.publicId
+      const targetId = publicId || (refund as any)._id || refund.id
+
+      // Si hay que reemplazar, eliminar previos en paralelo
+      if (replacedCount > 0) {
+        const token = authService.getAccessToken()
+        const previous = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
+        const toDelete = (previous || []).filter((d) => d.kind === 'certificado-de-cobertura')
+        await Promise.all(
+          toDelete.map((doc) =>
+            fetch(`${API_BASE_URL}/refund-requests/admin/${doc.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            }).catch((err) => {
+              console.warn('No se pudo eliminar documento previo:', doc.id, err)
+            })
+          )
+        )
+      }
+
       const { blob, fileName } = await buildPDF()
       const token = authService.getAccessToken()
       const uploadFormData = new FormData()
       uploadFormData.append('file', blob, fileName)
       uploadFormData.append('kind', 'certificado-de-cobertura')
 
-      const targetId = refund.publicId || (refund as any)._id || refund.id
       const response = await fetch(`${API_BASE_URL}/refund-requests/${targetId}/upload-file`, {
         method: 'POST',
         headers: {
@@ -790,11 +853,15 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       }
 
       queryClient.invalidateQueries({ queryKey: ['refund-documents', targetId] })
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
       queryClient.invalidateQueries({ queryKey: ['refund', targetId] })
 
       toast({
-        title: 'Certificado subido',
-        description: 'El documento está disponible en la carpeta del cliente como "Certificado de cobertura"',
+        title: replacedCount > 0 ? 'Certificado reemplazado' : 'Certificado subido',
+        description:
+          replacedCount > 0
+            ? `Se eliminó ${replacedCount} certificado(s) previo(s) y se subió el nuevo a la carpeta del cliente.`
+            : 'El documento está disponible en la carpeta del cliente como "Certificado de cobertura"',
       })
       setOpen(false)
     } catch (error) {
@@ -806,10 +873,12 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       })
     } finally {
       setIsUploading(false)
+      setConfirmReplaceOpen(false)
     }
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <TooltipProvider>
         <Tooltip>
@@ -1149,5 +1218,31 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={confirmReplaceOpen} onOpenChange={setConfirmReplaceOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Ya existe un certificado de cobertura</AlertDialogTitle>
+          <AlertDialogDescription>
+            En la carpeta del cliente {existingDocsCount > 1 ? `existen ${existingDocsCount} certificados de cobertura previos` : 'existe un certificado de cobertura previo'}.
+            Si continúas, se eliminarán y se reemplazarán por el nuevo certificado generado.
+            ¿Deseas continuar?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isUploading}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isUploading}
+            onClick={(e) => {
+              e.preventDefault()
+              performUpload(existingDocsCount)
+            }}
+          >
+            {isUploading ? 'Reemplazando...' : 'Sí, reemplazar'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   )
 }
