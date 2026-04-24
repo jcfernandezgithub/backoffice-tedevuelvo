@@ -843,6 +843,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                 )}
 
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                  {(() => {
+                    const ins = (watchedInsuranceType || '').toLowerCase()
+                    const isCesantia = ins === 'cesantia' || ins.includes('cesant')
+                    if (isCesantia) return null
+                    return (
                   <FormField
                     control={form.control}
                     name="monthlySaving"
@@ -871,6 +876,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       </FormItem>
                     )}
                   />
+                    )
+                  })()}
                   <FormField
                     control={form.control}
                     name="totalSaving"
