@@ -428,65 +428,76 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
       // ===================== PAGE 2+ =====================
       newPage()
-      writeHeading('Descripcion de Coberturas y Condiciones de Asegurabilidad')
+      writeHeading('Descripción de Coberturas y Condiciones de Asegurabilidad')
       writeSubHeading('Materia Asegurada')
-      writeParagraph('En virtud de la presente Poliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del credito individualizado en el condicionado particular, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnizacion de hasta tres (3) cuotas restantes). Esta Poliza cubre los casos de Desempleo Involuntario que impliquen la privacion total de ingresos por conceptos laborales.')
-      writeParagraph('El pago se realizara mes a mes, por lo que el asegurado debe proveer los antecedentes solicitados por la compania para acreditar la continuidad en calidad de desempleado para asi cobrar la cuota siguiente. Reintegrandose el asegurado al servicio laboral, con contrato de trabajo, cesara inmediatamente el pago de indemnizacion con cargo a este seguro.')
-      writeParagraph('A su vez, cada asegurado podra tener solamente contratada una poliza relacionada al presente producto. A mayor abundamiento, en caso de tener mas de una poliza contratada, solamente se realizara el pago de una de ellas al momento de un siniestro.')
+      writeParagraph('En virtud de la presente Póliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del crédito individualizado en el condicionado particular, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnización de hasta tres (3) cuotas restantes). Esta Póliza cubre los casos de Desempleo Involuntario que impliquen la privación total de ingresos por conceptos laborales.')
+      writeParagraph('El pago se realizará mes a mes, por lo que el asegurado debe proveer los antecedentes solicitados por la compañía para acreditar la continuidad en calidad de desempleado para así cobrar la cuota siguiente. Reintegrándose el asegurado al servicio laboral, con contrato de trabajo, cesará inmediatamente el pago de indemnización con cargo a este seguro.')
+      writeParagraph('A su vez, cada asegurado podrá tener solamente contratada una póliza relacionada al presente producto. A mayor abundamiento, en caso de tener más de una póliza contratada, solamente se realizará el pago de una de ellas al momento de un siniestro.')
       y += 2
       writeSubHeading('Coberturas')
       writeParagraph('Desempleo involuntario del asegurado (POL 1 2022 0203)', { bold: true })
-      writeParagraph('a) El pago de cuotas mensuales que correspondan a una deuda del asegurado singularizada en las condiciones particulares de la Poliza o un porcentaje de la misma, cuyo monto y forma de pago se determinara en las condiciones particulares de la Poliza. En estos casos solo habra lugar a la cobertura en la medida existan cuotas devengadas en los meses de cobertura establecidos en las condiciones particulares de la Poliza.')
-      writeParagraph('Asimismo, se podra establecer en las condiciones particulares de la Poliza, un Periodo de Carencia, una Antiguedad Laboral Minima, un deducible, un periodo minimo de permanencia en estado de cesantia, un numero maximo de Eventos, una edad maxima de permanencia, sublimites de indemnizacion, y/o una franquicia.')
-      writeParagraph('Se considerara como un solo Evento la ocurrencia de cualquiera de las causales de Desempleo Involuntario.')
+      writeParagraph('En virtud de la presente Póliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado o beneficiario (en caso de que sea una persona distinta al asegurado) en alguna de las formas que se señalan a continuación, según se indique en las condiciones particulares de la Póliza:')
+      writeParagraph('a) El pago de cuotas mensuales que correspondan a una deuda del asegurado singularizada en las condiciones particulares de la Póliza o un porcentaje de la misma, cuyo monto y forma de pago se determinará en las condiciones particulares de la Póliza. En estos casos sólo habrá lugar a la cobertura en la medida existan cuotas devengadas en los meses de cobertura establecidos en las condiciones particulares de la Póliza; o')
+      writeParagraph('Asimismo, se podrá establecer en las condiciones particulares de la Póliza, un Periodo de Carencia, una Antigüedad Laboral Mínima, un deducible, un periodo mínimo de permanencia en estado de cesantía, un número máximo de Eventos, una edad máxima de permanencia, sublímites de indemnización, y/o una franquicia.')
+      writeParagraph('Se considerará como un solo Evento la ocurrencia de cualquiera de las causales de Desempleo Involuntario.')
 
-      writeSubHeading('Procedencia de la indemnizacion')
-      writeParagraph('A.1. La presente cobertura se extendera a uno o mas de los siguientes tipos de trabajadores, segun se indique en las condiciones particulares de la Poliza:', { bold: true })
+      writeParagraph('2.- Procedencia de la indemnización:', { bold: true })
+      writeParagraph('Esta Póliza cubre los casos de Desempleo Involuntario que impliquen la privación total de ingresos por conceptos laborales. Lo anterior resultará aplicable a menos que en las condiciones particulares de la Póliza se establezca un porcentaje o una condición que represente una privación parcial de ingresos para todos o algunos de los tipos de trabajadores contemplados en los numerales 1) a 4) de la sección A.1. siguiente:')
+      writeParagraph('A.1. La presente cobertura se extenderá a uno o más de los siguientes tipos de trabajadores, según se indique en las condiciones particulares de la Póliza:', { bold: true })
       ;[
         '1) Trabajadores Dependientes.',
-        '2) Funcionarios vinculados laboralmente y bajo regimen de subordinacion y dependencia a la administracion publica centralizada o descentralizada, sometidos al Estatuto Administrativo.',
-        '3) Profesionales de la educacion vinculados laboralmente y bajo regimen de subordinacion y dependencia a la educacion municipalizada, sometidos al Estatuto Docente.',
-        '4) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.',
+        '2) Funcionarios vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo de acuerdo a la legislación administrativa chilena, que, en virtud de una designación de autoridad, prestan servicios o desempeñan funciones para la administración pública, y percibiendo por tales servicios una remuneración.',
+        '3) Los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente.',
+        '4) Los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
-      writeParagraph('A.2. Solo se consideraran como causales de Desempleo Involuntario las siguientes:', { bold: true })
-      writeParagraph('I) Trabajadores Dependientes:', { bold: true })
+      writeParagraph('A.2. Para efectos del pago de la indemnización correspondiente, sólo se considerarán como causales de Desempleo Involuntario las siguientes:', { bold: true })
+      writeParagraph('I) Para el caso de los Trabajadores Dependientes, sólo se considerarán causales de Desempleo Involuntario las siguientes:', { bold: true })
       ;[
-        'I.1) Articulo 159 N1 del Codigo del Trabajo: Mutuo acuerdo de las partes, en la medida que en el finiquito se hubiere pactado a favor del asegurado una indemnizacion equivalente o asimilable a anos de servicio.',
-        'I.2) Articulo 159 N6 del Codigo del Trabajo: caso fortuito o fuerza mayor.',
-        'I.3) Articulo 161 del Codigo del Trabajo: necesidades de la empresa y desahucio del empleador.',
-        'I.4) Articulo 163 bis del Codigo del Trabajo: procedimiento concursal de liquidacion que afecte al empleador.',
+        'I.1) Artículo 159 Nº1 del Código del Trabajo: Mutuo acuerdo de las partes, pero sólo en la medida que, en el finiquito respectivo, se hubiere pactado a favor del asegurado una indemnización equivalente o asimilable a años de servicio.',
+        'I.2) Artículo 159 N° 6 del Código del Trabajo: caso fortuito o fuerza mayor.',
+        'I.3) Artículo 161 del Código del Trabajo: necesidades de la empresa y desahucio del empleador.',
+        'I.4) Artículo 163 bis del Código del Trabajo: procedimiento concursal de liquidación que afecte al empleador.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('II) Empleados de la administracion publica (Estatuto Administrativo):', { bold: true })
+      writeParagraph('II) Para el caso de los empleados vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo, el Desempleo Involuntario solo será cubierto por la presente Póliza si se produce por alguna de las siguientes causales:', { bold: true })
       ;[
-        'II.1) Funcionarios de Planta: Supresion del empleo / Termino del periodo legal.',
-        'II.2) Personal a contrata: No renovacion del contrato una vez finalizado el plazo.',
+        'II.1) Funcionarios de Planta:',
+        '   II.1.1.) Supresión del empleo.',
+        '   II.1.2.) Término del período legal.',
+        'II.2.) Personal a contrata:',
+        '   II.2.1) No renovación del contrato una vez finalizado el plazo.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('III) Profesionales de la educacion municipalizada (Estatuto Docente): solo sera cubierto el Desempleo Involuntario derivado del cese de funciones por causas no imputables a su actuar o voluntad y que impliquen privacion total de ingresos por conceptos laborales.', { bold: true })
-      writeParagraph('IV) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica: solo sera cubierto si se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Organicas, Estatutos y Reglamentos de Personal, en la medida que el retiro o baja se deba a causa no imputable a la voluntad o conducta del miembro.', { bold: true })
+      writeParagraph('III) Para el caso de los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente, sólo será cubierto el Desempleo Involuntario derivado del cese de sus funciones debido a causas que no sean imputables a su actuar o a su voluntad y que impliquen la privación total de ingresos por conceptos laborales.', { bold: true })
+      writeParagraph('IV) Para el caso de los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública, el Desempleo Involuntario sólo será cubierto por la presente Póliza sí se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Orgánicas, Estatutos y Reglamentos de Personal, pero única y exclusivamente en la medida que el retiro o baja se deba a causa no imputable a la voluntad o a la conducta del miembro de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública; y Reintegrado el Asegurado al servicio laboral bajo alguna de las formas de empleo cubiertas en la presente Póliza, cesará inmediatamente el pago de las indemnizaciones con cargo a esta Póliza.', { bold: true })
 
       writeHeading('Requisitos de Asegurabilidad')
-      writeParagraph('La cobertura se extendera a Trabajadores Dependientes, funcionarios de la administracion publica (Estatuto Administrativo), profesionales de la educacion municipalizada (Estatuto Docente) y miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.')
-      writeParagraph('Edades de ingreso y permanencia:', { bold: true })
+      writeParagraph('La presente cobertura se extenderá a uno o más de los siguientes tipos de trabajadores:')
       ;[
-        '- Edad minima de ingreso: 18 anos.',
-        '- Edad maxima de ingreso: 65 anos y 364 dias.',
-        '- Edad maxima de permanencia: 69 anos y 364 dias.',
+        '1. Trabajadores Dependientes.',
+        '2. Funcionarios vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo de acuerdo a la legislación administrativa chilena, que, en virtud de una designación de autoridad, prestan servicios o desempeñan funciones para la administración pública, y percibiendo por tales servicios una remuneración.',
+        '3. Los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente.',
+        '4. Los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('Por otra parte, las edades de ingreso y permanencia serán:', { bold: true })
+      ;[
+        'Edad mínima de ingreso: 18 años',
+        'Edad máxima de ingreso: 65 años y 364 días',
+        'Edad máxima de permanencia: 69 años y 364 días.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
       writeHeading('Beneficiario')
-      writeParagraph('Para la cobertura de desempleo se tendra como beneficiario en calidad de irrevocable a [ENTIDAD FINANCIERA] y sus cesionarios a cualquier titulo.')
+      writeParagraph('Para la cobertura de desempleo se tendrá como beneficiario en calidad de irrevocables a [ENTIDAD FINANCIERA]. Y sus cesionarios a cualquier título.')
 
       writeHeading('Definiciones Seguro Desempleo')
-      writeParagraph('DESEMPLEO INVOLUNTARIO: estado o condicion de aquella persona que ha perdido su trabajo, producido por circunstancias no imputables a su actuar (segun las causales senaladas en el Articulo 3 de las condiciones generales), y que implica la privacion total de remuneraciones o ingresos por conceptos laborales como consecuencia directa del termino de la relacion laboral.')
-      writeParagraph('EVENTO: la situacion de desempleo involuntario que puede afectar al asegurado, no interrumpida por un periodo de activo minimo.')
-      writeParagraph('ANTIGUEDAD MINIMA LABORAL O COMERCIAL: se exige un periodo de 180 dias consecutivos en que el asegurado debe mantenerse en su empleo (si es trabajador dependiente) para reclamar, por primera vez, una indemnizacion bajo esta poliza.')
-      writeParagraph('PERIODO DE ACTIVO MINIMO: lapso durante el cual el asegurado que ya haya sido indemnizado y haya obtenido nuevamente empleo debe mantenerse en dicho empleo si incurre nuevamente en cesantia involuntaria. Se establece un periodo de 180 dias a partir de la fecha de inicio del nuevo empleo.')
-      writeParagraph('TRABAJADOR DEPENDIENTE: persona que, segun la legislacion laboral chilena, presta servicios o desempena funciones para un empleador, bajo vinculo de subordinacion y dependencia, en virtud de un contrato de trabajo indefinido sujeto al Codigo del Trabajo.')
-      writeParagraph('DEDUCIBLE: corresponde al numero de cuotas que debe asumir el asegurado posterior a la ocurrencia del evento de desempleo. Se establece el deducible en una cuota correspondiente a los 30 dias siguientes a la fecha del finiquito.')
+      writeParagraph('DESEMPLEO INVOLUNTARIO: Es el estado o condición de aquella persona que ha perdido su trabajo, producido por circunstancias no imputables a su actuar (en conformidad a las causales señaladas en Artículo 3 de estas condiciones generales), y que implica la privación total de remuneraciones o ingresos por conceptos laborales como consecuencia directa del término de la relación laboral.')
+      writeParagraph('EVENTO: la situación de desempleo involuntario que puede afectar al asegurado no interrumpida por un periodo de activo mínimo.')
+      writeParagraph('ANTIGÜEDAD MÍNIMA LABORAL O COMERCIAL: se exige un periodo de 180 días consecutivos en que el asegurado debe mantenerse en su empleo (si es trabajador dependiente) para reclamar, por primera vez una indemnización bajo esta póliza.')
+      writeParagraph('PERIODO DE ACTIVO MÍNIMO: lapso de tiempo durante el cual el asegurado que ya haya sido indemnizado en razón del seguro, y ha obtenido nuevamente empleo, debe mantenerse en dicho empleo si incurre nuevamente en cesantía involuntaria. Se establece un periodo de activo mínimo de 180 días a partir de la fecha de inicio del nuevo empleo.')
+      writeParagraph('TRABAJADOR DEPENDIENTE: toda persona que, de acuerdo a la legislación laboral chilena, presta servicios o desempeña funciones para un empleador, bajo vínculo de subordinación y dependencia, en virtud de un contrato de trabajo indefinido sujeto al Código del Trabajo.')
+      writeParagraph('DEDUCIBLE: corresponde al número de cuotas, que debe asumir el asegurado, posterior a la ocurrencia del evento de desempleo. Se establece el deducible en una cuota correspondiente a los 30 días siguientes a la fecha del finiquito para la cobertura de desempleo.')
 
       writeHeading('Prima por Asegurado')
-      writeParagraph('La prima es unica y resulta de multiplicar el monto del credito en pesos por la tasa del tramo por el numero de cuotas.')
+      writeParagraph('La prima es única y resulta de multiplicar monto crédito en pesos por la tasa del tramo por el número de cuotas.')
 
       ensureSpace(40)
       const tramos: Array<[string, string, string, string]> = [
@@ -541,124 +552,171 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       doc.rect(margin, y - 2, contentWidth, 6)
       y += 8
 
-      writeParagraph('La compania aseguradora indemnizara los montos antes indicados de acuerdo con lo siguiente:', { bold: true })
+      writeParagraph('La compañía aseguradora indemnizará los montos antes indicados de acuerdo con lo siguiente:', { bold: true })
       ;[
-        '- De 31 a 60 dias: primera cuota.',
-        '- De 61 a 90 dias: segunda cuota.',
-        '- De 91 a 120 dias: tercera cuota.',
+        '• de 31 a 60 días: primera cuota.',
+        '• de 61 a 90 días: segunda cuota.',
+        '• de 91 a 120 días: tercera cuota.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
       writeSubHeading('Deducible')
-      writeParagraph('Primera cuota del credito a pagar luego de la desvinculacion laboral.')
-      writeSubHeading('Antiguedad Laboral minima')
-      writeParagraph('Se establece una antiguedad minima de 6 meses, con el mismo empleador, para tener derecho a indemnizacion.')
+      writeParagraph('Primera cuota del crédito a pagar luego de la desvinculación laboral.')
+      writeSubHeading('Antigüedad Laboral mínima')
+      writeParagraph('Se establece una antigüedad mínima de 6 meses, con el mismo empleador, para tener derecho a indemnización.')
       writeSubHeading('Pago de Prima')
-      writeParagraph('El importe de las primas sera cargado automaticamente en el medio de pago del asegurado, segun este lo haya estipulado en la propuesta o solicitud de incorporacion. La periodicidad del pago sera unica.')
+      writeParagraph('El importe de las primas será cargado automáticamente en el medio de pago del asegurado, según este lo haya estipulado en la propuesta o solicitud de incorporación. La periodicidad del pago será única.')
       writeSubHeading('Derecho de Retracto')
-      writeParagraph('El asegurado podra, sin expresion de causa ni penalizacion alguna, retractarse del seguro contratado dentro del plazo de 30 dias, contado desde que tomo conocimiento de la poliza. Dicha retractacion debera comunicarse a la compania por cualquier medio que permita la expresion fehaciente de dicha voluntad. El ejercicio del derecho de retracto implicara para el asegurado el derecho a la devolucion del segundo cobro mensual de las primas, reteniendo el asegurador las primas correspondientes al riesgo transcurrido y cubierto.')
-      writeSubHeading('Vigencia de la poliza colectiva')
-      writeParagraph('El presente contrato regira desde el 07 de noviembre de 2025 al 30 de noviembre de 2030. Sera renovado en forma automatica por periodos iguales y sucesivos de un ano cada uno, si ninguna de las partes notifica por escrito a la otra su decision contraria, en un plazo minimo de 15 dias.')
+      writeParagraph('El asegurado podrá, sin expresión de causa ni penalización alguna, retractarse del seguro contratado dentro del plazo de 30 días, contado desde que tomó conocimiento de la póliza. Dicha retractación deberá comunicarse, a la compañía por cualquier medio que permita la expresión fehaciente de dicha voluntad. El ejercicio del derecho de retracto implicará para el asegurado el derecho a la devolución del segundo cobro mensual de las primas, reteniendo el asegurador las primas correspondientes al riesgo transcurrido y cubierto.')
+      writeSubHeading('Vigencia de la póliza colectiva')
+      writeParagraph('El presente contrato regirá desde el 07 de noviembre de 2025 al 30 de noviembre de 2030.')
+      writeParagraph('Será renovado en forma automática por períodos iguales y sucesivos de un año cada uno, si ninguna de las partes notifica por escrito a la otra, su decisión contraria, la cual deberá hacerlo en un plazo mínimo de 15 días.')
+      writeParagraph('En caso de un término anticipado del contrato, la compañía deberá informar por escrito al contratante con 30 días antes de hacer efectivo su término.')
+      writeParagraph('Por otra parte, el contratante, sin expresión de causa podrá poner término al contrato, decisión que deberá informar a la compañía con 30 días de anticipación, cobrando las primas proporcionales al tiempo de cobertura transcurrido.')
       writeSubHeading('Vigencia individual')
-      writeParagraph('La cobertura de desempleo entrara en vigencia para cada asegurado individual desde la fecha senalada en la propuesta o solicitud de incorporacion; la poliza se mantendra vigente hasta la total extincion del credito.')
-      writeSubHeading('Termino anticipado de la cobertura individual')
+      writeParagraph('La cobertura de desempleo de esta póliza entrará en vigencia para cada asegurado individual desde la fecha señalada en la propuesta o solicitud de incorporación, la póliza se mantendrá vigente hasta la total extinción del crédito.')
+      writeSubHeading('Término anticipado de la cobertura individual')
       ;[
-        '- Solicitud por escrito del asegurado, con al menos diez (10) dias de anticipacion.',
-        '- Cumplimiento de la edad maxima de permanencia indicada en esta poliza.',
-        '- Fallecimiento del asegurado.',
-        '- Perdida de la calidad de asegurado segun las condiciones particulares.',
-        '- Perdida de la calidad de trabajador dependiente del asegurado.',
+        '• solicitud por escrito de parte del asegurado para poner término a la cobertura individual, mediante aviso por escrito a la compañía con al menos diez (10) días de anticipación.',
+        '• por el cumplimiento de la edad máxima de permanencia indicada en esta póliza.',
+        '• por fallecimiento del asegurado.',
+        '• por la pérdida de la calidad de asegurado de conformidad a lo establecido en las condiciones particulares o propuesta de seguro.',
+        '• pérdida del asegurado de su calidad de trabajador dependiente, conforme las calidades o tipos de trabajadores dependientes definidos en la sección ii, número 1, literales i), ii) y iii), del condicionado general, bien por causa de una cesantía voluntaria o involuntaria. Por lo anterior, para efectos de esta póliza el trabajador que, durante la vigencia de la póliza, cambie su calidad o situación de trabajador dependiente a trabajador independiente, vendedor, comisionista, pensionado y/o jubilado, perderá, de pleno derecho, la calidad de asegurado.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
-      writeParagraph('A partir de la fecha del cambio de calidad del asegurado de trabajador dependiente a trabajador independiente, cesara de pleno derecho cualquier responsabilidad de la compania. Es responsabilidad del asegurado notificar lo mas pronto posible al asegurador el cambio de su situacion laboral. Una vez que la compania tome conocimiento, el asegurado tendra derecho a la restitucion de la parte de la prima pagada no ganada por la compania correspondiente al tiempo no cubierto.')
-
-      writeSubHeading('Causales de termino anticipado por la Compania')
+      writeParagraph('A partir de la fecha del cambio de calidad del asegurado de trabajador dependiente a trabajador independiente, cesará de pleno derecho cualquier responsabilidad de la compañía ante cualquier evento que pudiera afectar la materia asegurada indicada en la sección i y detallada en las condiciones particulares.')
+      writeParagraph('Es responsabilidad del asegurado notificar (de acuerdo con las condiciones fijadas en la cláusula "comunicaciones" de esta póliza) lo más pronto posible al asegurador o compañía de seguros, el cambio de su situación laboral que produzca la pérdida de calidad de trabajador dependiente, como, por ejemplo, si deja de ser trabajador empleado mediante un contrato de trabajo y comienza a ejercer alguna actividad económica o emprendimiento de forma independiente.')
+      writeParagraph('Una vez que la compañía de seguros tome conocimiento del cambio de calidad de la situación laboral del asegurado mencionado en el párrafo anterior, el asegurado tendrá derecho a la restitución de la parte de la prima pagada no ganada por la compañía correspondiente al tiempo no cubierto.')
+      writeParagraph('El contrato de seguro podrá ser terminado anticipadamente y de forma unilateral por la compañía o el asegurado, en virtud de las siguientes circunstancias:')
+      writeParagraph('A. la compañía podrá poner término anticipadamente al contrato de seguro en caso de concurrir cualquiera de las siguientes causales:', { bold: true })
       ;[
-        '1. Si el interes asegurable no llegare a existir o cesare durante la vigencia del seguro.',
-        '2. Por falta de pago de la prima en los terminos del condicionado general.',
-        '3. Infraccion a cualquiera de las obligaciones del condicionado general.',
-        '4. Inexistencia o inhabilitacion del medio de pago acordado.',
-        '5. Cambio en la politica de suscripcion de la compania (cancelando o revisando todas las polizas individuales del programa).',
-        '6. Cumplimiento del maximo de eventos a asegurar por el periodo de vigencia.',
-        '7. Renovacion de la poliza individual o colectiva, en la fecha establecida en las condiciones particulares.',
+        '1. Si el interés asegurable no llegare a existir o cesare durante la vigencia del seguro. En este caso el asegurado tendrá derecho a restitución de la parte de la prima pagada no ganada por la compañía correspondiente al tiempo no corrido.',
+        '2. Por falta del pago de la prima en los términos indicados en el artículo séptimo del condicionado general.',
+        '3. En caso de verificarse una infracción a cualquiera de las obligaciones descritas en el artículo cuarto del condicionado general.',
+        '4. Inexistencia o inhabilitación del medio de pago acordado para el pago de la prima.',
+        '5. Cuando la compañía haya efectuado un cambio en su política de suscripción. Sin embargo, esta terminación será posible únicamente cuando se cancele o se revisen todas las pólizas o coberturas individuales que han sido emitidas bajo dicha política de suscripción respecto al programa de seguros acordado con el contratante de la póliza.',
+        '6. Cuando se haya cumplido el máximo de eventos a asegurar por el periodo de vigencia.',
+        '7. Al momento de la renovación de la póliza (ya sea individual o de la póliza colectiva/maestra), fecha que deberá estar establecida claramente en las condiciones particulares.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('La terminacion se producira a la expiracion del plazo de 30 dias contados desde la fecha de envio de la respectiva comunicacion.')
+      writeParagraph('En cualquiera de estos casos, la terminación se producirá a la expiración del plazo de 30 días contados desde la fecha de envío de la respectiva comunicación de acuerdo con lo establecido en el artículo décimo del condicionado general.')
+      writeParagraph('B. a su turno, el asegurado podrá poner término anticipado al contrato, salvo las excepciones legales, comunicándolo al asegurador en la forma establecida en el artículo décimo del condicionado general.', { bold: true })
+      writeParagraph('En caso de término anticipado, la prima se reducirá en forma proporcional al plazo corrido, pero en caso de haber ocurrido un siniestro, se entenderá devengada totalmente.')
 
-      writeSubHeading('Clausula de devolucion de primas no devengadas')
-      writeParagraph('Cuando por termino anticipado o extincion del contrato proceda la devolucion de la prima pagada no devengada, la aseguradora debera poner la suma a disposicion de quien corresponda dentro del plazo de 10 dias habiles de haber tomado conocimiento del termino del seguro, conforme a la Circular N 2114 del 26 de julio de 2013 de la CMF.')
+      writeSubHeading('Cláusula de devolución de primas no devengadas')
+      writeParagraph('Cuando por término anticipado o extinción del contrato de seguro proceda la devolución de la prima pagada no devengada, la aseguradora deberá poner la suma a devolver a disposición de quien corresponda, dentro del plazo de 10 días hábiles de haber tomado conocimiento del término del seguro. La compañía deberá informar a quien corresponda acerca de la existencia de la suma a su disposición, dentro del plazo indicado. La prima pagada no devengada será devuelta al asegurado o contratante, según quién hubiera soportado en su patrimonio, si todo o parte de la prima hubiera sido financiada por un beneficio del estado, se devolverá a la entidad que corresponda la parte de la prima pagada no devengada que financió. Asimismo, estas devoluciones, en su caso, se harán efectivas mientras se encuentren vigentes créditos asegurados con la compañía y cuya devolución corresponda de acuerdo con la circular n°2114, del 26 de julio del 2013 de la comisión para el mercado financiero (CMF), siempre y cuando el contratante informe de los hechos correspondientes a extinción o disminución de deuda por prepago o renegociación de crédito a los cuales se haya asociado seguros de prima única de la compañía.')
 
-      writeSubHeading('Pago de la indemnizacion')
-      writeParagraph('El pago de indemnizaciones sera efectuado por la compania al asegurado o beneficiario, contando con un plazo maximo de 10 dias habiles desde la recepcion del informe de liquidacion correspondiente que senale la procedencia del pago.')
+      writeSubHeading('Pago de la indemnización')
+      writeParagraph('El pago de indemnizaciones será efectuado por la compañía aseguradora al asegurado o beneficiario, según sea el caso, contando para ello con un plazo máximo de 10 días hábiles contados desde la fecha de recepción del informe de liquidación correspondiente que señale la procedencia del pago de la indemnización.')
 
       writeHeading('Comunicaciones')
-      writeParagraph('Cualquier comunicacion, declaracion o notificacion del asegurador al contratante o asegurado debera efectuarse al correo electronico indicado por el asegurado en la propuesta o solicitud de incorporacion. En caso de desconocerse el correo o de constancia de no envio/recepcion, las comunicaciones se efectuaran mediante carta certificada dirigida al domicilio.')
+      writeParagraph('Cualquier comunicación, declaración o notificación que deba efectuar el asegurador al contratante o el asegurado con motivo de esta póliza, deberá efectuarse enviando la comunicación a la dirección de correo electrónico que haya indicado el asegurado en la propuesta o solicitud de incorporación.')
+      writeParagraph('En caso de desconocerse su correo electrónico o de recibir una constancia de que dicho correo no fue enviado o recibido exitosamente, las comunicaciones deberán efectuarse mediante el envío de carta certificada dirigida al domicilio del contratante o el asegurado.')
 
-      writeHeading('Servicio de atencion al cliente')
-      writeParagraph('Para cualquier consulta y/o reclamo, el asegurado puede llamar al centro de atencion al cliente al fono 800 200 802 de Southbridge Compania de Seguros Generales S.A. Horario: lunes a jueves de 9:00 a 17:45 hrs, viernes de 9:00 a 13:30 hrs. No hay atencion los fines de semana ni dias feriados.')
+      writeHeading('Servicio de atención al cliente')
+      writeParagraph('Para cualquier consulta y/o reclamo, el asegurado puede llamar al centro de atención al cliente al fono 800 200 802 de Southbridge Compañía de Seguros Generales S.A. el horario de atención es de lunes a jueves de 9:00 a 17:45 horas, viernes de 9:00 a 13:30 horas. No hay atención los fines de semana ni días feriados.')
 
       writeHeading('Exclusiones')
-      writeParagraph('1. El asegurado no podra hacer uso de la cobertura de Desempleo Involuntario si:', { bold: true })
-      writeParagraph('i. Es desvinculado de una sociedad o E.I.R.L. de la cual es socio, accionista o titular.', { indent: 4 })
-      writeParagraph('ii. Si su conyuge, conviviente civil, padre, madre, hijo(a), hermano(a), nieto(a), tio(a), abuelo(a), cunado(a), suegro(a) o padre/madre de su conviviente civil es socio, accionista, titular, director o ejecutivo principal de la sociedad o E.I.R.L. de la que fue desvinculado.', { indent: 4 })
-      writeParagraph('Dentro del concepto de sociedad se comprenden todos los tipos de sociedades civiles y comerciales (colectivas, en comanditas, de responsabilidad limitada, sociedades anonimas, sociedades por acciones).')
-      writeParagraph('No se otorgara la cobertura cuando el Desempleo Involuntario se produzca por una causa distinta de las senaladas en el numeral 2, letra A.2, del Articulo 3 del condicionado general POL 1 2022 0203.')
+      writeParagraph('1. El asegurado no podrá hacer uso de la cobertura de Desempleo Involuntario si:', { bold: true })
+      writeParagraph('i. Es desvinculado de una sociedad o de una empresa de responsabilidad limitada (E.I.R.L) de la cual es socio, accionista o titular, según corresponda.', { indent: 4 })
+      writeParagraph('ii. Si su cónyuge, conviviente civil, padre, madre, hijo(a), hermano(a), nieto(a), tío(a), abuelo(a), cuñado(a), suegro(a) o padre o madre de su conviviente civil es socio, accionista, titular, director, ejecutivo principal o titular de la sociedad o de la E.I.R.L. de la que fue desvinculado.', { indent: 4 })
+      writeParagraph('Dentro del concepto de sociedad se comprenden todos los tipos de sociedades civiles y comerciales, como las colectivas, en comanditas, de responsabilidad limitada, sociedades anónimas, sociedades por acciones.')
+      writeParagraph('No se otorgará la cobertura cuando el Desempleo Involuntario se produzca por una causa distinta de las señaladas en el numeral 2, letra A.2, del Artículo 3 del condicionado general POL 1 2022 0203.')
 
       writeHeading('Procedimiento de Denuncia de Siniestro')
-      writeParagraph('Producido un siniestro, debera comunicarlo por escrito a siniestros@sbins.cl o al 800 200 802, dentro del menor plazo posible una vez tomado conocimiento, no pudiendo superar los 10 dias de ocurrido el siniestro, empleando el formulario de presentacion de siniestros que proporcionara su corredor de seguros.')
-      writeParagraph('Para tener derecho a la indemnizacion el interesado debera acreditar la situacion invocada con los antecedentes justificativos. Se entendera como fecha de ocurrencia del siniestro la fecha de termino de la relacion laboral indicada en el finiquito; en el caso de empleados publicos, sera la fecha del decreto o resolucion de retiro o baja.')
-      writeParagraph('Antecedentes necesarios para el pago de siniestros (primer mes asegurado de desempleo):', { bold: true })
+      writeParagraph('Producido un siniestro del asegurado según corresponda, deberá comunicarlo por escrito a siniestros@sbins.cl o contactándose al 800 200 802, dentro del menor plazo posible, una vez tomado conocimiento de la ocurrencia de cualquier hecho que pueda constituir o constituya siniestro, el cual no podrá superar los 10 días de ocurrido el siniestro, empleando para tal efecto un formulario de presentación de siniestros que proporcionará su corredor de seguros.')
+      writeParagraph('Para tener derecho a la indemnización el interesado deberá acreditar la situación invocada, con los Antecedentes justificativos de la misma. Se entenderá como fecha de ocurrencia del siniestro para cada una de las coberturas la siguiente:')
+      writeParagraph('A) desempleo involuntario: se entenderá como fecha de ocurrencia del siniestro la fecha de término de la relación laboral indicada en el finiquito del contrato de trabajo, y en el caso de los empleados públicos regidos por sus respectivos estatutos, será la fecha que establezca el decreto o resolución en que consta su retiro o baja de la respectiva institución.')
+      writeParagraph('Antecedentes necesarios para el pago de siniestros:', { bold: true })
+      writeParagraph('Cobertura por desempleo involuntario:', { bold: true })
+      writeParagraph('Primer mes asegurado de desempleo:', { bold: true })
       ;[
-        '- Formulario de denuncia de siniestros firmado por el asegurado.',
-        '- Copia del finiquito legalizado donde conste la causal de termino (Codigo del Trabajo).',
-        '- Copia legalizada del decreto o resolucion del organismo (empleados publicos, docentes, FFAA y de Orden).',
-        '- Certificado de ultimas cotizaciones de A.F.P., con fecha posterior al vencimiento del dividendo reclamado.',
-        '- Fotocopia de cedula de identidad del asegurado, por ambas caras.',
+        '- formulario de denuncia de siniestros firmados por el asegurado.',
+        '- En el caso de los trabajadores regidos por el código del trabajo, copia del finiquito legalizado donde conste la causal de término de la relación laboral.',
+        '- En el caso de los empleados públicos, docentes y miembros de las fuerzas armadas y de orden, copia legalizada del decreto o resolución del organismo que corresponda en el que se pone término a la relación laboral.',
+        '- Certificado de últimas cotizaciones de a.f.p. con fecha posterior a la fecha de vencimiento del dividendo reclamado',
+        '- Fotocopia de cédula de identidad del asegurado, por ambas caras.',
         '- Tabla de desarrollo de la deuda.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('Nota: La compania se reserva el derecho de solicitar cualquier otro antecedente que estime necesario. En caso de existir primas impagas al momento del siniestro, estas seran descontadas del monto a indemnizar.')
+      writeParagraph('Para efectos del pago de la indemnización correspondiente, sólo se considerarán como causales de Desempleo Involuntario las siguientes:')
+      writeParagraph('I. Para el caso de los Trabajadores Dependientes, sólo se considerarán causales de Desempleo Involuntario las siguientes:', { bold: true })
+      ;[
+        'i. Artículo 159 Nº1 del Código del Trabajo: Mutuo acuerdo de las partes, pero sólo en la medida que, en el finiquito respectivo, se hubiere pactado a favor del asegurado una indemnización equivalente o asimilable a años de servicio.',
+        'ii. Artículo 159 N° 6 del Código del Trabajo: caso fortuito o fuerza mayor.',
+        'iii. Artículo 161 del Código del Trabajo: necesidades de la empresa y desahucio del empleador.',
+        'iv. Artículo 163 bis del Código del Trabajo: procedimiento concursal de liquidación que afecte al empleador.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('II. Para el caso de los empleados vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo, el Desempleo Involuntario solo será cubierto por la presente Póliza si se produce por alguna de las siguientes causales:', { bold: true })
+      ;[
+        'i. funcionarios de Planta:',
+        'ii. Supresión del empleo.',
+        'iii. Término del período legal.',
+        'iv. Personal a contrata:',
+        'v. No renovación del contrato una vez finalizado el plazo.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('III. Para el caso de los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente, sólo será cubierto el Desempleo Involuntario derivado del cese de sus funciones debido a causas que no sean imputables a su actuar o a su voluntad y que impliquen la privación total de ingresos por conceptos laborales.', { bold: true })
+      writeParagraph('IV. Para el caso de los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública, el Desempleo Involuntario sólo será cubierto por la presente Póliza sí se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Orgánicas, Estatutos y Reglamentos de Personal, pero única y exclusivamente en la medida que el retiro o baja se deba a causa no imputable a la voluntad o a la conducta del miembro de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública; y Reintegrado el Asegurado al servicio laboral bajo alguna de las formas de empleo cubiertas en la presente Póliza, cesará inmediatamente el pago de las indemnizaciones con cargo a esta Póliza.', { bold: true })
+      writeParagraph('Nota: La compañía se reserva el derecho de solicitar cualquier otro antecedente que estime necesario, para poder realizar la respectiva liquidación de siniestro. Asimismo, y en el caso de existir primas impagas al momento del siniestro, estás serán descontadas del monto a indemnizar.')
 
       writeHeading('Disposiciones Finales')
-      writeSubHeading('Informacion sobre atencion de clientes y reclamos')
-      writeParagraph('En virtud de la circular N 2.131 del 28 de noviembre de 2013, las companias de seguros, corredores y liquidadores deberan recibir, registrar y responder todas las presentaciones, consultas o reclamos. Las presentaciones podran efectuarse en oficinas, presencialmente, por correo postal, medios electronicos o telefonicamente, sin formalidades, en horario normal de atencion. Recibida una presentacion, debera ser respondida en un plazo no superior a 20 dias habiles. En caso de disconformidad, el interesado podra recurrir a la Comision para el Mercado Financiero, Av. Libertador Bernardo O Higgins 1449, piso 1, Santiago, o al sitio web www.cmfchile.cl.')
-      writeSubHeading('Codigo de Autorregulacion')
-      writeParagraph('Southbridge Seguros se encuentra adherida al Codigo de Autorregulacion de las Companias de Seguros y al Compendio de Buenas Practicas Corporativas. Copia disponible en www.aach.cl. Asimismo, ha aceptado la intervencion del Defensor del Asegurado: www.southbridgeseguros.cl o www.ddachile.cl.')
+      writeSubHeading('Información sobre atención de clientes y presentación de consultas y reclamos')
+      writeParagraph('En virtud de la circular nro. 2.131 de 28 de noviembre de 2013, las compañías de seguros, corredores de seguros y liquidadores de siniestros, deberán recibir, registrar y responder todas las presentaciones, consultas o reclamos que se les presenten directamente por el contratante, asegurado, beneficiarios o legítimos interesados o sus mandatarios.')
+      writeParagraph('Las presentaciones pueden ser efectuadas en todas las oficinas de las entidades que se atienda público, presencialmente, por correo postal, medios electrónicos, o telefónicamente, sin formalidades, en el horario normal de atención.')
+      writeParagraph('Recibida una presentación, consulta o reclamo, ésa deberá ser respondida en el plazo más breve posible, el que no podrá exceder de 20 días hábiles contados desde su recepción.')
+      writeParagraph('Interesado, en caso de disconformidad respecto de lo informado, o bien cuando exista demora injustificada de la respuesta, podrá recurrir a la Comisión para el Mercado Financiero, área de protección al inversionista y asegurado, cuyas oficinas se encuentran ubicadas en avda. Libertador Bernardo O\u2019Higgins 1449 piso 1, Santiago, o a través del sitio web www.cmfchile.cl.')
+      writeSubHeading('Código De Autorregulación')
+      writeParagraph('Southbridge Seguros se encuentra adherida al Código de Autorregulación de las Compañías de Seguros y está sujeta al Compendio de Buenas Prácticas Corporativas, que contiene un conjunto de normas destinadas a promover una adecuada relación de las compañías de seguros con sus clientes. Copia de este Compendio se encuentra en la página Web www.aach.cl. Asimismo, ha aceptado la intervención del Defensor del Asegurado cuando los clientes le presenten reclamos en relación a los contratos celebrados con ella. Los clientes pueden presentar sus reclamos ante el Defensor del Asegurado utilizando los formularios disponibles en el sitio web de Southbridge (www.southbridgeseguros.cl) o a través de la página Web www.ddachile.cl.')
 
-      writeHeading('Informacion de las Comisiones - Circular N 2123 (CMF)')
-      writeParagraph('De acuerdo a lo instruido en la Circular N 2123 del 22 de octubre de 2013 de la Comision para el Mercado Financiero, le informamos que las comisiones pagadas por Southbridge Compania de Seguros Generales S.A., respecto de la prima pagada por usted, son las siguientes:')
-      writeSubHeading('Comision de Intermediacion')
-      writeParagraph('PRIME CORREDORES DE SEGUROS SPA - RUT: 76.196.802-5')
-      writeParagraph('10% mas IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
-      writeSubHeading('Comision de Recaudacion')
-      writeParagraph('TDV SERVICIOS SPA - RUT: 78.168.126-1')
-      writeParagraph('20% mas IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
+      writeHeading('INFORMACIÓN DE LAS COMISIONES CIRCULAR Nº 2123 (COMISIÓN PARA EL MERCADO FINANCIERO)')
+      writeParagraph('De acuerdo a lo instruido en la circular N° 2123 e fecha de 22 de Octubre de 2013 de la Comisión para el Mercado Financiero, le informamos que las comisiones pagadas por Southbridge Compañía de Seguros Generales S.A, respecto de la prima pagada por usted son las siguientes:')
+      writeSubHeading('Comisión de Intermediación')
+      writeParagraph('PRIME CORREDORES DE SEGUROS SPA')
+      writeParagraph('RUT: 76.196.802 -5')
+      writeParagraph('10% más IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
+      writeSubHeading('Comisión de recaudación')
+      writeParagraph('TDV SERVICIOS SPA')
+      writeParagraph('RUT 78.168.126-1')
+      writeParagraph('20% más IVA sobre Prima Neta recaudada, neta de anulaciones y devoluciones.')
 
-      writeHeading('Anexo N 1 - Atencion de Clientes y Reclamos')
-      writeParagraph('En virtud de la Circular N 2131 de la CMF del 28 de noviembre de 2013, las companias de seguros, corredores y liquidadores deberan recibir, registrar y responder todas las presentaciones, consultas o reclamos. TDV disponibilizara el siguiente numero: +56229943004 en horarios de lunes a jueves de 9:00 a 14:00 y de 15:00 a 18:00, y viernes de 9:00 a 14:00 y 15:00 a 17:30; correo: contacto@tedevuelvo.cl. Las presentaciones seran respondidas en un plazo no superior a 20 dias habiles.')
+      writeHeading('Anexo N°1 - INFORMACION SOBRE ATENCION DE CLIENTES Y PRESENTACIÓN DE CONSULTAS Y RECLAMOS')
+      writeParagraph('En virtud de la Circular N° 2131 de la CMF del 28 de noviembre de 2013, las compañías de seguros, corredores de seguros y liquidadores de siniestros, deberán recibir, registrar y responder todas las presentaciones, consultas o reclamos que se les presenten directamente por el contratante, asegurado, beneficiarios o legítimos interesados o sus mandatarios.')
+      writeParagraph('Las presentaciones pueden ser efectuadas en todas las oficinas de las entidades en que se atienda público, presencialmente, por correo postal, medios electrónicos, o telefónicamente, sin formalidades, en el horario normal de atención. TDV disponibilizará el siguiente número: +56229943004 en los siguientes horarios: De lunes a jueves de 9:00 a 14:00 y de 15:00 a 18:00 y viernes de 9:00 a 14:00 y 15:00 a 17:30 y el siguiente correo: contacto@tedevuelvo.cl.')
+      writeParagraph('Recibida una presentación, consulta o reclamo, ésta deberá ser respondida en el plazo más breve posible, el que no podrá exceder de 20 días hábiles contados desde su recepción.')
+      writeParagraph('El interesado, en caso de disconformidad respecto de lo informado, o bien cuando exista demora injustificada de la respuesta, podrá recurrir a la Comisión para el Mercado Financiero, Área de Protección al Inversionista y Asegurado, cuyas oficinas se encuentran ubicadas en Av. Libertador Bernardo O\u2019Higgins 1449, piso 1°, Santiago, o a través del sitio web www.cmfchile.cl.')
 
-      writeHeading('Anexo N 2 - Procedimiento de Liquidacion de Siniestros (Circular N 2106 CMF)')
-      writeSubHeading('1) Objeto de la Liquidacion')
-      writeParagraph('Establecer la ocurrencia del siniestro, determinar si esta cubierto en la poliza contratada y cuantificar el monto de la perdida y la indemnizacion a pagar. Sometido a los principios de celeridad, economia procedimental, objetividad, caracter tecnico, transparencia y acceso.')
-      writeSubHeading('2) Forma de efectuar la Liquidacion')
-      writeParagraph('La liquidacion puede efectuarla directamente la Compania o encomendarla a un Liquidador de Seguros. La decision debe comunicarse al Asegurado dentro del plazo de tres dias habiles desde la fecha de denuncia del siniestro.')
-      writeSubHeading('3) Derecho de Oposicion a la Liquidacion Directa')
-      writeParagraph('En caso de liquidacion directa por la compania, el Asegurado o beneficiario puede oponerse solicitando por escrito que designe un Liquidador de Seguros, dentro del plazo de cinco dias habiles desde la notificacion.')
-      writeSubHeading('4) Informacion al Asegurado y Peticion de Antecedentes')
-      writeParagraph('El Liquidador o la Compania debera informar al Asegurado por escrito, en forma suficiente y oportuna, las gestiones que le corresponde realizar, solicitando todos los antecedentes que requiere para liquidar el siniestro.')
-      writeSubHeading('5) Pre-informe de Liquidacion')
-      writeParagraph('En siniestros con problemas o diferencias de criterios, podra el Liquidador emitir un pre-informe sobre cobertura y monto de danos. El asegurado o la compania podran hacer observaciones por escrito dentro de cinco dias habiles desde su conocimiento.')
-      writeSubHeading('6) Plazo de Liquidacion')
-      writeParagraph('Dentro del mas breve plazo, no pudiendo exceder de 45 dias corridos desde la fecha de denuncia. Excepciones: (a) seguros individuales del Primer Grupo con prima anual superior a 100 UF: 90 dias; (b) siniestros maritimos o averia gruesa: 180 dias.')
-      writeSubHeading('7) Prorroga del Plazo de Liquidacion')
-      writeParagraph('Los plazos podran prorrogarse excepcionalmente por iguales periodos, informando los motivos y gestiones a realizar, comunicandolo al Asegurado y a la Superintendencia.')
-      writeSubHeading('8) Informe Final de Liquidacion')
-      writeParagraph('El informe final debera remitirse al Asegurado y simultaneamente al Asegurador, conteniendo la transcripcion integra de los articulos 26 y 27 del Reglamento de Auxiliares del Comercio de Seguros (D.S. de Hacienda N 1.055 de 2012).')
-      writeSubHeading('9) Impugnacion del Informe de Liquidacion')
-      writeParagraph('Recibido el informe, la Compania y el Asegurado dispondran de un plazo de diez dias habiles para impugnarlo. En caso de liquidacion directa por la Compania, este derecho solo lo tendra el Asegurado. Impugnado el informe, el Liquidador o la compania dispondra de un plazo de 6 dias habiles para responder.')
+      writeHeading('Anexo N°2 (Circular N° 2106 Comisión para el Mercado Financiero) - PROCEDIMIENTO DE LIQUIDACION DE SINIESTROS')
+      writeSubHeading('1) OBJETO DE LA LIQUIDACION')
+      writeParagraph('La liquidación tiene por fin establecer la ocurrencia de un siniestro, determinar si el siniestro está cubierto en la póliza contratada en una compañía de seguros determinada, y cuantificar el monto de la pérdida y de la indemnización a pagar.')
+      writeParagraph('El procedimiento de liquidación está sometido a los principios de celeridad y economía procedimental, de objetividad y carácter técnico y de transparencia y acceso.')
+      writeSubHeading('2) FORMA DE EFECTUAR LA LIQUIDACION')
+      writeParagraph('La liquidación puede efectuarla directamente la Compañía o encomendarla a un Liquidador de Seguros. La decisión debe comunicarse al Asegurado dentro del plazo de tres días hábiles contados desde la fecha de la denuncia del siniestro.')
+      writeSubHeading('3) DERECHO DE OPOSICION A LA LIQUIDACION DIRECTA')
+      writeParagraph('En caso de liquidación directa por la compañía, el Asegurado o beneficiario puede oponerse a ella, solicitándole por escrito que designe un Liquidador de Seguros, dentro del plazo de cinco días hábiles contados desde la notificación de la comunicación de la Compañía. La Compañía deberá designar al Liquidador en el plazo de dos días hábiles contados desde dicha oposición.')
+      writeSubHeading('4) INFORMACION AL ASEGURADO DE GESTIONES A REALIZAR Y PETICION DE ANTECEDENTES')
+      writeParagraph('El Liquidador o la Compañía deberá informar al Asegurado, por escrito, en forma suficiente y oportuna, al correo electrónico (informado en la denuncia del siniestro) o por carta certificada (al domicilio señalado en la denuncia de siniestro), de las gestiones que le corresponde realizar, solicitando de una sola vez, cuando las circunstancias lo permitan, todos los antecedentes que requiere para liquidar el siniestro.')
+      writeSubHeading('5) PRE-INFORME DE LIQUIDACION')
+      writeParagraph('En aquellos siniestros en que surgieren problemas y diferencias de criterios sobre sus causas, evaluación del riesgo o extensión de la cobertura, podrá el Liquidador, actuando de oficio o a petición del Asegurado, emitir un pre-informe de liquidación sobre la cobertura del siniestro y el monto de los daños producidos, el que deberá ponerse en conocimiento de los interesados. El asegurado o la Compañía podrán hacer observaciones por escrito al pre-informe dentro del plazo de cinco días hábiles desde su conocimiento.')
+      writeSubHeading('6) PLAZO DE LIQUIDACION')
+      writeParagraph('Dentro del más breve plazo, no pudiendo exceder de 45 días corridos desde fecha denuncio, a excepción de;')
+      writeParagraph('a) Siniestros que correspondan a seguros individuales sobre riesgos del Primer Grupo cuya prima anual sea superior a 100 UF: 90 días corridos desde fecha denuncio;', { indent: 4 })
+      writeParagraph('b) Siniestros marítimos que afecten a los cascos o en caso de Avería Gruesa: 180 días corridos desde fecha denuncio.', { indent: 4 })
+      writeSubHeading('7) PRORROGA DEL PLAZO DE LIQUIDACION')
+      writeParagraph('Los plazos antes señalados podrán, excepcionalmente siempre que las circunstancias lo ameriten, prorrogarse, sucesivamente por iguales períodos, informando los motivos que la fundamenten e indicando las gestiones concretas y específicas que se realizarán, lo que deberá comunicarse al Asegurado y a la Superintendencia, pudiendo esta última dejar sin efecto la ampliación, en casos calificados, y fijar un plazo para entrega del Informe de Liquidación. No podrá ser motivo de prórroga la solicitud de nuevos antecedentes cuyo requerimiento pudo preverse con anterioridad, salvo que se indiquen las razones que justifiquen la falta de requerimiento, ni podrán prorrogarse los siniestros en que no haya existido gestión alguna del liquidador, registrado o directo.')
+      writeSubHeading('8) INFORME FINAL DE LIQUIDACION')
+      writeParagraph('El informe final de liquidación deberá remitirse al Asegurado y simultáneamente al Asegurador, cuando corresponda, y deberá contener necesariamente la transcripción íntegra de los artículos 26 y 27 del Reglamento de Auxiliares del Comercio de Seguros (D.S. de Hacienda Nº 1.055, de 2012, Diario Oficial de 29 de diciembre de 2012).')
+      writeSubHeading('9) IMPUGNACION INFORME DE LIQUIDACION')
+      writeParagraph('Recibido el informe de Liquidación, la Compañía y el Asegurado dispondrán de un plazo de diez días hábiles para impugnarla. En caso de liquidación directa por la Compañía, este derecho sólo lo tendrá el Asegurado.')
+      writeParagraph('Impugnado el informe, el Liquidador o la compañía dispondrá de un plazo de 6 días hábiles para responder la impugnación.')
 
-      writeHeading('Clausula Sanciones Economicas')
-      writeSubHeading('A. Exclusion Territorial')
-      writeParagraph('La presente poliza no cubre ninguna perdida, lesion, dano o responsabilidad legal derivada directa o indirectamente de bienes, transacciones, comercio u otra actividad relacionada con Cuba, Iran, Sudan, Siria o la region de Crimea (Ucrania).')
-      writeSubHeading('B. Exclusion SDN')
-      writeParagraph('No se considerara que este Asegurador proporciona cobertura a, o es responsable de pagar algun reclamo o proveer algun beneficio por alguna perdida, lesion, dano o responsabilidad legal experimentado directa o indirectamente por: (i) residentes de paises distintos a los cubiertos; (ii) personas empleadas en Iran o por el gobierno irani; (iii) personas mencionadas en listados de sanciones publicadas por las Naciones Unidas (resoluciones N 1.988 y 1.989 del Consejo de Seguridad), en cumplimiento del Oficio Circular N 700 de la CMF; (iv) personas identificadas por autoridades gubernamentales como sostenedores de terrorismo, narcotrafico, trafico de personas, pirateria, proliferacion de armas de destruccion masiva, crimen organizado, violaciones a los derechos humanos o interrupcion de procesos democraticos.')
+      writeHeading('CLAUSULA SANCIONES ECONÓMICAS')
+      writeSubHeading('A. Exclusión Territorial')
+      writeParagraph('La presente póliza no cubre ninguna pérdida, lesión, daño o responsabilidad legal derivada ya sea directa o indirectamente de bienes, transacciones, comercio u otra actividad relacionada con Cuba, Irán, Sudán, Siria o Crimea región de Ucrania.')
+      writeSubHeading('B. Exclusión SDN')
+      writeParagraph('No se considerará que este Asegurador proporciona cobertura a, o es responsable de pagar algún reclamo o proveer algún beneficio por alguna pérdida, lesión, daño o responsabilidad legal experimentado directa o indirectamente por alguno de los siguientes:')
+      ;[
+        '- residentes de cualquier país distinto de aquellos países no incluidos en la cobertura bajo esta póliza y/o aquellos países donde una exclusión territorial ha sido agregada en la póliza.',
+        '- personas empleadas en Irán o por el gobierno iraní,',
+        '- Personas mencionadas en los listados de sanciones publicadas por las Naciones Unidas, resoluciones N° 1.988 y 1.989, del Consejo de Seguridad de la Organización de las Naciones Unidas y demás que resulten aplicables, todo en cumplimiento de lo dispuesto en el Oficio Circular N° 700, de 18 de octubre de 2011, de la Comisión para el Mercado Financiero y de las que se dicten en el futuro sobre esta materia.',
+        '- personas identificadas por autoridades gubernamentales como sostenedores de terrorismo, drogas o tráfico de personas, piratería, proliferación de armas de destrucción masiva, crimen organizado, violaciones a los derechos humanos o interrupción de procesos democráticos"',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
 
       drawFooter(pageNum)
 
