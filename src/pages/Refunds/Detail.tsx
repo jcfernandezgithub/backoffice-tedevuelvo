@@ -1238,8 +1238,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             if (isCesantia) {
                               const TASA_CESANTIA = 0.094 // %
                               const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
-                              const cuotasOrig = snap.originalInstallments || 0
-                              const primaCesantia = Math.round(saldo * (TASA_CESANTIA / 100) * cuotasOrig)
+                              const primaCesantia = Math.round(saldo * (TASA_CESANTIA / 100) * remaining)
                               return (
                                 <div className="col-span-2 mt-1">
                                   <div className="flex items-center gap-2 mb-1">
@@ -1256,7 +1255,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     <div className="space-y-1">
                                       <p className="text-[11px] text-muted-foreground font-medium">Prima total cesantía (referencial)</p>
                                       <div className="p-2 rounded bg-background border text-xs">
-                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {TASA_CESANTIA.toFixed(4)}% × {cuotasOrig}</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {TASA_CESANTIA.toFixed(4)}% × {remaining}</p>
                                         <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(primaCesantia)}</p>
                                       </div>
                                     </div>
