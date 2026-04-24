@@ -98,7 +98,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
+  const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
   const nameParts = refund.fullName?.split(' ').filter(p => p.trim()) || []
