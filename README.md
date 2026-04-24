@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 3.3.9
+## Versión 3.4.0
 
 ## Changelog
+
+### Versión 3.4.0 - 2026-04-24
+
+#### Reemplazo de Certificado de Cobertura de Cesantía en carpeta del cliente
+- **Detección de duplicados**: al subir el Certificado de Cobertura de Cesantía (`kind: certificado-de-cobertura`) a la carpeta del cliente, el sistema ahora verifica si ya existen documentos del mismo `kind` mediante `refundAdminApi.listDocs`.
+- **Confirmación al usuario**: si se detectan certificados previos, se abre un `AlertDialog` informando al usuario cuántos archivos serán reemplazados y solicitando su confirmación explícita antes de continuar.
+- **Reemplazo seguro**: tras confirmar, los certificados existentes se eliminan en paralelo (`DELETE /refund-requests/admin/:docId`) y luego se sube el nuevo PDF, evitando archivos huérfanos o duplicados.
+- **Feedback diferenciado**: el toast de éxito indica explícitamente cuántos certificados previos fueron reemplazados.
+- **Alcance acotado**: el cambio aplica únicamente al flujo de **Cesantía** (`GenerateCesantiaCertificateDialog`). El flujo de **Desgravamen** (`GenerateCertificateDialog`) y el resto de generadores no fueron modificados.
 
 ### Versión 3.3.9 - 2026-04-23
 
