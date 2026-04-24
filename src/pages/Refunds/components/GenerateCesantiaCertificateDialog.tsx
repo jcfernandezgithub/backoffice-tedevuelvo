@@ -11,13 +11,16 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Briefcase, Download, Search, ArrowLeft, Eye } from 'lucide-react'
+import { Briefcase, Download, Search, ArrowLeft, Eye, Upload } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
+import { useQueryClient } from '@tanstack/react-query'
+
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
 interface GenerateCesantiaCertificateDialogProps {
   refund: RefundRequest
@@ -95,7 +98,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'form' | 'preview'>('form')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [isLoadingRut, setIsLoadingRut] = useState(false)
+  const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
   const nameParts = refund.fullName?.split(' ').filter(p => p.trim()) || []
@@ -215,10 +220,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     return Math.round(montoCredito * (tasa / 100) * plazoMeses)
   }
 
-  const generatePDF = async () => {
-    setIsGenerating(true)
-    
-    try {
+  const buildPDF = async (): Promise<{ blob: Blob; fileName: string }> => {
       const doc = new jsPDF()
       const pageWidth = doc.internal.pageSize.getWidth()
       const pageHeight = doc.internal.pageSize.getHeight()
@@ -730,15 +732,27 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
       drawFooter(pageNum)
 
-      // Save
       const fileName = `Certificado_Cesantia_${refund.rut?.replace(/[.-]/g, '') || 'cliente'}_${new Date().toISOString().split('T')[0]}.pdf`
-      doc.save(fileName)
+      const blob = doc.output('blob') as Blob
+      return { blob, fileName }
+  }
 
+  const generatePDF = async () => {
+    setIsGenerating(true)
+    try {
+      const { blob, fileName } = await buildPDF()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
       toast({
         title: 'Certificado generado',
         description: 'El certificado de cesantía se ha descargado correctamente',
       })
-
       setOpen(false)
     } catch (error) {
       console.error('Error generating PDF:', error)
@@ -749,6 +763,48 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       })
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const uploadToClient = async () => {
+    setIsUploading(true)
+    try {
+      const { blob, fileName } = await buildPDF()
+      const token = authService.getAccessToken()
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', blob, fileName)
+      uploadFormData.append('kind', 'carta-de-corte')
+
+      const response = await fetch(`${API_BASE_URL}/refund-requests/${refund.id}/upload-file`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: uploadFormData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al subir el certificado')
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.id] })
+      queryClient.invalidateQueries({ queryKey: ['refund', refund.id] })
+
+      toast({
+        title: 'Certificado subido',
+        description: 'El documento está disponible en la carpeta del cliente como "Carta de corte"',
+      })
+      setOpen(false)
+    } catch (error) {
+      console.error('Error uploading certificate:', error)
+      toast({
+        title: 'Error al subir',
+        description: error instanceof Error ? error.message : 'No se pudo subir el certificado',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -1058,11 +1114,26 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleBackToEdit} className="gap-2">
+              <Button variant="outline" onClick={handleBackToEdit} className="gap-2" disabled={isGenerating || isUploading}>
                 <ArrowLeft className="h-4 w-4" />
                 Volver a Editar
               </Button>
-              <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={uploadToClient}
+                disabled={isGenerating || isUploading}
+                className="gap-2"
+              >
+                {isUploading ? (
+                  'Subiendo...'
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Subir a carpeta del cliente
+                  </>
+                )}
+              </Button>
+              <Button onClick={generatePDF} disabled={isGenerating || isUploading} className="gap-2">
                 {isGenerating ? (
                   'Generando...'
                 ) : (
