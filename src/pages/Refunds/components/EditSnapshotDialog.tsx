@@ -694,6 +694,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       Primas y seguros
                     </h4>
                   </div>
+                  {(() => {
+                    const ins = (watchedInsuranceType || '').toLowerCase()
+                    const isCesantia = ins === 'cesantia' || ins.includes('cesant')
+                    if (isCesantia) return null
+                    return (
                   <Button
                     type="button"
                     variant={overridePrimas ? 'destructive' : 'ghost'}
@@ -704,17 +709,45 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     {overridePrimas ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                     {overridePrimas ? 'Modo manual' : 'Desbloquear'}
                   </Button>
+                    )
+                  })()}
                 </div>
 
-                {overridePrimas && (
+                {(() => {
+                  const ins = (watchedInsuranceType || '').toLowerCase()
+                  const isCesantia = ins === 'cesantia' || ins.includes('cesant')
+                  if (isCesantia) {
+                    return (
+                      <Alert className="py-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Para seguros de <strong>Cesantía</strong> no aplica prima mensual: la prima es única y se devuelve la porción no devengada al renegociar. Revisa el "Ahorro total" para ver la devolución estimada.
+                        </AlertDescription>
+                      </Alert>
+                    )
+                  }
+                  return null
+                })()}
+
+                {overridePrimas && (() => {
+                  const ins = (watchedInsuranceType || '').toLowerCase()
+                  const isCesantia = ins === 'cesantia' || ins.includes('cesant')
+                  if (isCesantia) return null
+                  return (
                   <Alert variant="destructive" className="py-2">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
                       Estás sobrescribiendo valores auto-calculados. Los cambios en datos del crédito no actualizarán estos campos.
                     </AlertDescription>
                   </Alert>
-                )}
+                  )
+                })()}
 
+                {(() => {
+                  const ins = (watchedInsuranceType || '').toLowerCase()
+                  const isCesantia = ins === 'cesantia' || ins.includes('cesant')
+                  if (isCesantia) return null
+                  return (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                   <FormField
                     control={form.control}
@@ -773,6 +806,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     )}
                   />
                 </div>
+                  )
+                })()}
               </div>
 
               <Separator />
