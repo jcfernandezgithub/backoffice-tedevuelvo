@@ -775,7 +775,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       uploadFormData.append('file', blob, fileName)
       uploadFormData.append('kind', 'carta-de-corte')
 
-      const response = await fetch(`${API_BASE_URL}/refund-requests/${refund.id}/upload-file`, {
+      const targetId = refund.publicId || (refund as any)._id || refund.id
+      const response = await fetch(`${API_BASE_URL}/refund-requests/${targetId}/upload-file`, {
         method: 'POST',
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -788,8 +789,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
         throw new Error(errorData.message || 'Error al subir el certificado')
       }
 
-      queryClient.invalidateQueries({ queryKey: ['refund-documents', refund.id] })
-      queryClient.invalidateQueries({ queryKey: ['refund', refund.id] })
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', targetId] })
+      queryClient.invalidateQueries({ queryKey: ['refund', targetId] })
 
       toast({
         title: 'Certificado subido',
