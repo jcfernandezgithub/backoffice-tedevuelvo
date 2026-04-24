@@ -782,13 +782,63 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const uploadToClient = async () => {
     setIsUploading(true)
     try {
+      const publicId = refund.publicId
+      const existing = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
+      const previousCertificates = (existing || []).filter(
+        (d) => d.kind === 'certificado-de-cobertura'
+      )
+
+      if (previousCertificates.length > 0) {
+        setExistingDocsCount(previousCertificates.length)
+        setConfirmReplaceOpen(true)
+        setIsUploading(false)
+        return
+      }
+
+      await performUpload(0)
+    } catch (error) {
+      console.error('Error preparing upload:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo preparar la subida',
+        variant: 'destructive',
+      })
+      setIsUploading(false)
+    }
+  }
+
+  const performUpload = async (replacedCount: number) => {
+    setIsUploading(true)
+    try {
+      const publicId = refund.publicId
+      const targetId = publicId || (refund as any)._id || refund.id
+
+      // Si hay que reemplazar, eliminar previos en paralelo
+      if (replacedCount > 0) {
+        const token = authService.getAccessToken()
+        const previous = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
+        const toDelete = (previous || []).filter((d) => d.kind === 'certificado-de-cobertura')
+        await Promise.all(
+          toDelete.map((doc) =>
+            fetch(`${API_BASE_URL}/refund-requests/admin/${doc.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            }).catch((err) => {
+              console.warn('No se pudo eliminar documento previo:', doc.id, err)
+            })
+          )
+        )
+      }
+
       const { blob, fileName } = await buildPDF()
       const token = authService.getAccessToken()
       const uploadFormData = new FormData()
       uploadFormData.append('file', blob, fileName)
       uploadFormData.append('kind', 'certificado-de-cobertura')
 
-      const targetId = refund.publicId || (refund as any)._id || refund.id
       const response = await fetch(`${API_BASE_URL}/refund-requests/${targetId}/upload-file`, {
         method: 'POST',
         headers: {
@@ -803,11 +853,15 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       }
 
       queryClient.invalidateQueries({ queryKey: ['refund-documents', targetId] })
+      queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
       queryClient.invalidateQueries({ queryKey: ['refund', targetId] })
 
       toast({
-        title: 'Certificado subido',
-        description: 'El documento está disponible en la carpeta del cliente como "Certificado de cobertura"',
+        title: replacedCount > 0 ? 'Certificado reemplazado' : 'Certificado subido',
+        description:
+          replacedCount > 0
+            ? `Se eliminó ${replacedCount} certificado(s) previo(s) y se subió el nuevo a la carpeta del cliente.`
+            : 'El documento está disponible en la carpeta del cliente como "Certificado de cobertura"',
       })
       setOpen(false)
     } catch (error) {
@@ -819,6 +873,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       })
     } finally {
       setIsUploading(false)
+      setConfirmReplaceOpen(false)
     }
   }
 
