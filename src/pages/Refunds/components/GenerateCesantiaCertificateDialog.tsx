@@ -260,7 +260,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
         opts: { size?: number; bold?: boolean; lh?: number; indent?: number } = {}
       ) => {
         const size = opts.size ?? 8
-        const lh = opts.lh ?? 3.6
+        const lh = opts.lh ?? 4.2
         const indent = opts.indent ?? 0
         doc.setFont('helvetica', opts.bold ? 'bold' : 'normal')
         doc.setFontSize(size)
@@ -270,24 +270,30 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
           doc.text(line, margin + indent, y)
           y += lh
         })
+        // pequeño espacio entre párrafos
+        y += 1.8
       }
 
       const writeHeading = (text: string, size = 10) => {
-        ensureSpace(10)
+        // espacio antes del título de sección
+        y += 4
+        ensureSpace(12)
         doc.setFillColor(235, 235, 235)
-        doc.rect(margin, y - 4, contentWidth, 6.5, 'F')
+        doc.rect(margin, y - 4, contentWidth, 7, 'F')
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(size)
         doc.text(text, margin + 2, y)
-        y += 7
+        y += 9
       }
 
       const writeSubHeading = (text: string, size = 9) => {
-        ensureSpace(7)
+        // espacio antes del subtítulo
+        y += 2.5
+        ensureSpace(8)
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(size)
         doc.text(text, margin, y)
-        y += 5
+        y += 6
       }
 
       const drawField = (label: string, value: string, x: number, yPos: number, width: number) => {
