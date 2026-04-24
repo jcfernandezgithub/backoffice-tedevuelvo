@@ -1114,11 +1114,26 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleBackToEdit} className="gap-2">
+              <Button variant="outline" onClick={handleBackToEdit} className="gap-2" disabled={isGenerating || isUploading}>
                 <ArrowLeft className="h-4 w-4" />
                 Volver a Editar
               </Button>
-              <Button onClick={generatePDF} disabled={isGenerating} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={uploadToClient}
+                disabled={isGenerating || isUploading}
+                className="gap-2"
+              >
+                {isUploading ? (
+                  'Subiendo...'
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Subir a carpeta del cliente
+                  </>
+                )}
+              </Button>
+              <Button onClick={generatePDF} disabled={isGenerating || isUploading} className="gap-2">
                 {isGenerating ? (
                   'Generando...'
                 ) : (
