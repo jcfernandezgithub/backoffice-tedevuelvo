@@ -428,65 +428,76 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
       // ===================== PAGE 2+ =====================
       newPage()
-      writeHeading('Descripcion de Coberturas y Condiciones de Asegurabilidad')
+      writeHeading('Descripción de Coberturas y Condiciones de Asegurabilidad')
       writeSubHeading('Materia Asegurada')
-      writeParagraph('En virtud de la presente Poliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del credito individualizado en el condicionado particular, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnizacion de hasta tres (3) cuotas restantes). Esta Poliza cubre los casos de Desempleo Involuntario que impliquen la privacion total de ingresos por conceptos laborales.')
-      writeParagraph('El pago se realizara mes a mes, por lo que el asegurado debe proveer los antecedentes solicitados por la compania para acreditar la continuidad en calidad de desempleado para asi cobrar la cuota siguiente. Reintegrandose el asegurado al servicio laboral, con contrato de trabajo, cesara inmediatamente el pago de indemnizacion con cargo a este seguro.')
-      writeParagraph('A su vez, cada asegurado podra tener solamente contratada una poliza relacionada al presente producto. A mayor abundamiento, en caso de tener mas de una poliza contratada, solamente se realizara el pago de una de ellas al momento de un siniestro.')
+      writeParagraph('En virtud de la presente Póliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado hasta con tres (3) cuotas del crédito individualizado en el condicionado particular, en donde la primera cuota a pagar luego de ocurrido el evento de desempleo involuntario es de deducible (primera cuota deducible + indemnización de hasta tres (3) cuotas restantes). Esta Póliza cubre los casos de Desempleo Involuntario que impliquen la privación total de ingresos por conceptos laborales.')
+      writeParagraph('El pago se realizará mes a mes, por lo que el asegurado debe proveer los antecedentes solicitados por la compañía para acreditar la continuidad en calidad de desempleado para así cobrar la cuota siguiente. Reintegrándose el asegurado al servicio laboral, con contrato de trabajo, cesará inmediatamente el pago de indemnización con cargo a este seguro.')
+      writeParagraph('A su vez, cada asegurado podrá tener solamente contratada una póliza relacionada al presente producto. A mayor abundamiento, en caso de tener más de una póliza contratada, solamente se realizará el pago de una de ellas al momento de un siniestro.')
       y += 2
       writeSubHeading('Coberturas')
       writeParagraph('Desempleo involuntario del asegurado (POL 1 2022 0203)', { bold: true })
-      writeParagraph('a) El pago de cuotas mensuales que correspondan a una deuda del asegurado singularizada en las condiciones particulares de la Poliza o un porcentaje de la misma, cuyo monto y forma de pago se determinara en las condiciones particulares de la Poliza. En estos casos solo habra lugar a la cobertura en la medida existan cuotas devengadas en los meses de cobertura establecidos en las condiciones particulares de la Poliza.')
-      writeParagraph('Asimismo, se podra establecer en las condiciones particulares de la Poliza, un Periodo de Carencia, una Antiguedad Laboral Minima, un deducible, un periodo minimo de permanencia en estado de cesantia, un numero maximo de Eventos, una edad maxima de permanencia, sublimites de indemnizacion, y/o una franquicia.')
-      writeParagraph('Se considerara como un solo Evento la ocurrencia de cualquiera de las causales de Desempleo Involuntario.')
+      writeParagraph('En virtud de la presente Póliza, el asegurador cubre el riesgo de Desempleo Involuntario, indemnizando al asegurado o beneficiario (en caso de que sea una persona distinta al asegurado) en alguna de las formas que se señalan a continuación, según se indique en las condiciones particulares de la Póliza:')
+      writeParagraph('a) El pago de cuotas mensuales que correspondan a una deuda del asegurado singularizada en las condiciones particulares de la Póliza o un porcentaje de la misma, cuyo monto y forma de pago se determinará en las condiciones particulares de la Póliza. En estos casos sólo habrá lugar a la cobertura en la medida existan cuotas devengadas en los meses de cobertura establecidos en las condiciones particulares de la Póliza; o')
+      writeParagraph('Asimismo, se podrá establecer en las condiciones particulares de la Póliza, un Periodo de Carencia, una Antigüedad Laboral Mínima, un deducible, un periodo mínimo de permanencia en estado de cesantía, un número máximo de Eventos, una edad máxima de permanencia, sublímites de indemnización, y/o una franquicia.')
+      writeParagraph('Se considerará como un solo Evento la ocurrencia de cualquiera de las causales de Desempleo Involuntario.')
 
-      writeSubHeading('Procedencia de la indemnizacion')
-      writeParagraph('A.1. La presente cobertura se extendera a uno o mas de los siguientes tipos de trabajadores, segun se indique en las condiciones particulares de la Poliza:', { bold: true })
+      writeParagraph('2.- Procedencia de la indemnización:', { bold: true })
+      writeParagraph('Esta Póliza cubre los casos de Desempleo Involuntario que impliquen la privación total de ingresos por conceptos laborales. Lo anterior resultará aplicable a menos que en las condiciones particulares de la Póliza se establezca un porcentaje o una condición que represente una privación parcial de ingresos para todos o algunos de los tipos de trabajadores contemplados en los numerales 1) a 4) de la sección A.1. siguiente:')
+      writeParagraph('A.1. La presente cobertura se extenderá a uno o más de los siguientes tipos de trabajadores, según se indique en las condiciones particulares de la Póliza:', { bold: true })
       ;[
         '1) Trabajadores Dependientes.',
-        '2) Funcionarios vinculados laboralmente y bajo regimen de subordinacion y dependencia a la administracion publica centralizada o descentralizada, sometidos al Estatuto Administrativo.',
-        '3) Profesionales de la educacion vinculados laboralmente y bajo regimen de subordinacion y dependencia a la educacion municipalizada, sometidos al Estatuto Docente.',
-        '4) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.',
+        '2) Funcionarios vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo de acuerdo a la legislación administrativa chilena, que, en virtud de una designación de autoridad, prestan servicios o desempeñan funciones para la administración pública, y percibiendo por tales servicios una remuneración.',
+        '3) Los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente.',
+        '4) Los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
-      writeParagraph('A.2. Solo se consideraran como causales de Desempleo Involuntario las siguientes:', { bold: true })
-      writeParagraph('I) Trabajadores Dependientes:', { bold: true })
+      writeParagraph('A.2. Para efectos del pago de la indemnización correspondiente, sólo se considerarán como causales de Desempleo Involuntario las siguientes:', { bold: true })
+      writeParagraph('I) Para el caso de los Trabajadores Dependientes, sólo se considerarán causales de Desempleo Involuntario las siguientes:', { bold: true })
       ;[
-        'I.1) Articulo 159 N1 del Codigo del Trabajo: Mutuo acuerdo de las partes, en la medida que en el finiquito se hubiere pactado a favor del asegurado una indemnizacion equivalente o asimilable a anos de servicio.',
-        'I.2) Articulo 159 N6 del Codigo del Trabajo: caso fortuito o fuerza mayor.',
-        'I.3) Articulo 161 del Codigo del Trabajo: necesidades de la empresa y desahucio del empleador.',
-        'I.4) Articulo 163 bis del Codigo del Trabajo: procedimiento concursal de liquidacion que afecte al empleador.',
+        'I.1) Artículo 159 Nº1 del Código del Trabajo: Mutuo acuerdo de las partes, pero sólo en la medida que, en el finiquito respectivo, se hubiere pactado a favor del asegurado una indemnización equivalente o asimilable a años de servicio.',
+        'I.2) Artículo 159 N° 6 del Código del Trabajo: caso fortuito o fuerza mayor.',
+        'I.3) Artículo 161 del Código del Trabajo: necesidades de la empresa y desahucio del empleador.',
+        'I.4) Artículo 163 bis del Código del Trabajo: procedimiento concursal de liquidación que afecte al empleador.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('II) Empleados de la administracion publica (Estatuto Administrativo):', { bold: true })
+      writeParagraph('II) Para el caso de los empleados vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo, el Desempleo Involuntario solo será cubierto por la presente Póliza si se produce por alguna de las siguientes causales:', { bold: true })
       ;[
-        'II.1) Funcionarios de Planta: Supresion del empleo / Termino del periodo legal.',
-        'II.2) Personal a contrata: No renovacion del contrato una vez finalizado el plazo.',
+        'II.1) Funcionarios de Planta:',
+        '   II.1.1.) Supresión del empleo.',
+        '   II.1.2.) Término del período legal.',
+        'II.2.) Personal a contrata:',
+        '   II.2.1) No renovación del contrato una vez finalizado el plazo.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
-      writeParagraph('III) Profesionales de la educacion municipalizada (Estatuto Docente): solo sera cubierto el Desempleo Involuntario derivado del cese de funciones por causas no imputables a su actuar o voluntad y que impliquen privacion total de ingresos por conceptos laborales.', { bold: true })
-      writeParagraph('IV) Miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica: solo sera cubierto si se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Organicas, Estatutos y Reglamentos de Personal, en la medida que el retiro o baja se deba a causa no imputable a la voluntad o conducta del miembro.', { bold: true })
+      writeParagraph('III) Para el caso de los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente, sólo será cubierto el Desempleo Involuntario derivado del cese de sus funciones debido a causas que no sean imputables a su actuar o a su voluntad y que impliquen la privación total de ingresos por conceptos laborales.', { bold: true })
+      writeParagraph('IV) Para el caso de los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública, el Desempleo Involuntario sólo será cubierto por la presente Póliza sí se produce por alguna causal de retiro temporal o absoluto contemplada en sus respectivas Leyes Orgánicas, Estatutos y Reglamentos de Personal, pero única y exclusivamente en la medida que el retiro o baja se deba a causa no imputable a la voluntad o a la conducta del miembro de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública; y Reintegrado el Asegurado al servicio laboral bajo alguna de las formas de empleo cubiertas en la presente Póliza, cesará inmediatamente el pago de las indemnizaciones con cargo a esta Póliza.', { bold: true })
 
       writeHeading('Requisitos de Asegurabilidad')
-      writeParagraph('La cobertura se extendera a Trabajadores Dependientes, funcionarios de la administracion publica (Estatuto Administrativo), profesionales de la educacion municipalizada (Estatuto Docente) y miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Publica.')
-      writeParagraph('Edades de ingreso y permanencia:', { bold: true })
+      writeParagraph('La presente cobertura se extenderá a uno o más de los siguientes tipos de trabajadores:')
       ;[
-        '- Edad minima de ingreso: 18 anos.',
-        '- Edad maxima de ingreso: 65 anos y 364 dias.',
-        '- Edad maxima de permanencia: 69 anos y 364 dias.',
+        '1. Trabajadores Dependientes.',
+        '2. Funcionarios vinculados laboralmente y bajo régimen de subordinación y dependencia a la administración pública centralizada o descentralizada, sometidos al Estatuto Administrativo de acuerdo a la legislación administrativa chilena, que, en virtud de una designación de autoridad, prestan servicios o desempeñan funciones para la administración pública, y percibiendo por tales servicios una remuneración.',
+        '3. Los profesionales de la educación vinculados laboralmente y bajo régimen de subordinación y dependencia a la educación municipalizada, sometidos al Estatuto Docente.',
+        '4. Los miembros de las Fuerzas Armadas y Fuerzas de Orden y Seguridad Pública.',
+      ].forEach(t => writeParagraph(t, { indent: 4 }))
+      writeParagraph('Por otra parte, las edades de ingreso y permanencia serán:', { bold: true })
+      ;[
+        'Edad mínima de ingreso: 18 años',
+        'Edad máxima de ingreso: 65 años y 364 días',
+        'Edad máxima de permanencia: 69 años y 364 días.',
       ].forEach(t => writeParagraph(t, { indent: 4 }))
 
       writeHeading('Beneficiario')
-      writeParagraph('Para la cobertura de desempleo se tendra como beneficiario en calidad de irrevocable a [ENTIDAD FINANCIERA] y sus cesionarios a cualquier titulo.')
+      writeParagraph('Para la cobertura de desempleo se tendrá como beneficiario en calidad de irrevocables a [ENTIDAD FINANCIERA]. Y sus cesionarios a cualquier título.')
 
       writeHeading('Definiciones Seguro Desempleo')
-      writeParagraph('DESEMPLEO INVOLUNTARIO: estado o condicion de aquella persona que ha perdido su trabajo, producido por circunstancias no imputables a su actuar (segun las causales senaladas en el Articulo 3 de las condiciones generales), y que implica la privacion total de remuneraciones o ingresos por conceptos laborales como consecuencia directa del termino de la relacion laboral.')
-      writeParagraph('EVENTO: la situacion de desempleo involuntario que puede afectar al asegurado, no interrumpida por un periodo de activo minimo.')
-      writeParagraph('ANTIGUEDAD MINIMA LABORAL O COMERCIAL: se exige un periodo de 180 dias consecutivos en que el asegurado debe mantenerse en su empleo (si es trabajador dependiente) para reclamar, por primera vez, una indemnizacion bajo esta poliza.')
-      writeParagraph('PERIODO DE ACTIVO MINIMO: lapso durante el cual el asegurado que ya haya sido indemnizado y haya obtenido nuevamente empleo debe mantenerse en dicho empleo si incurre nuevamente en cesantia involuntaria. Se establece un periodo de 180 dias a partir de la fecha de inicio del nuevo empleo.')
-      writeParagraph('TRABAJADOR DEPENDIENTE: persona que, segun la legislacion laboral chilena, presta servicios o desempena funciones para un empleador, bajo vinculo de subordinacion y dependencia, en virtud de un contrato de trabajo indefinido sujeto al Codigo del Trabajo.')
-      writeParagraph('DEDUCIBLE: corresponde al numero de cuotas que debe asumir el asegurado posterior a la ocurrencia del evento de desempleo. Se establece el deducible en una cuota correspondiente a los 30 dias siguientes a la fecha del finiquito.')
+      writeParagraph('DESEMPLEO INVOLUNTARIO: Es el estado o condición de aquella persona que ha perdido su trabajo, producido por circunstancias no imputables a su actuar (en conformidad a las causales señaladas en Artículo 3 de estas condiciones generales), y que implica la privación total de remuneraciones o ingresos por conceptos laborales como consecuencia directa del término de la relación laboral.')
+      writeParagraph('EVENTO: la situación de desempleo involuntario que puede afectar al asegurado no interrumpida por un periodo de activo mínimo.')
+      writeParagraph('ANTIGÜEDAD MÍNIMA LABORAL O COMERCIAL: se exige un periodo de 180 días consecutivos en que el asegurado debe mantenerse en su empleo (si es trabajador dependiente) para reclamar, por primera vez una indemnización bajo esta póliza.')
+      writeParagraph('PERIODO DE ACTIVO MÍNIMO: lapso de tiempo durante el cual el asegurado que ya haya sido indemnizado en razón del seguro, y ha obtenido nuevamente empleo, debe mantenerse en dicho empleo si incurre nuevamente en cesantía involuntaria. Se establece un periodo de activo mínimo de 180 días a partir de la fecha de inicio del nuevo empleo.')
+      writeParagraph('TRABAJADOR DEPENDIENTE: toda persona que, de acuerdo a la legislación laboral chilena, presta servicios o desempeña funciones para un empleador, bajo vínculo de subordinación y dependencia, en virtud de un contrato de trabajo indefinido sujeto al Código del Trabajo.')
+      writeParagraph('DEDUCIBLE: corresponde al número de cuotas, que debe asumir el asegurado, posterior a la ocurrencia del evento de desempleo. Se establece el deducible en una cuota correspondiente a los 30 días siguientes a la fecha del finiquito para la cobertura de desempleo.')
 
       writeHeading('Prima por Asegurado')
-      writeParagraph('La prima es unica y resulta de multiplicar el monto del credito en pesos por la tasa del tramo por el numero de cuotas.')
+      writeParagraph('La prima es única y resulta de multiplicar monto crédito en pesos por la tasa del tramo por el número de cuotas.')
 
       ensureSpace(40)
       const tramos: Array<[string, string, string, string]> = [
