@@ -1144,10 +1144,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                         <div className="space-y-0.5 font-mono text-[11px]">
                                           <p><span className="text-muted-foreground">Prima única =</span> Saldo × Tasa banco</p>
                                           <p className="text-muted-foreground pl-2">${formatCLPNumber(saldo)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
-                                          <p><span className="text-muted-foreground">Seguro total =</span> (Prima única / Cuotas tabla) × Cuotas orig.</p>
-                                          <p className="text-muted-foreground pl-2">(${formatCLPNumber(Math.round(primaUnica))} / {cuotasUsadas}) × {cuotasOrig} = ${formatCLPNumber(Math.round(seguroTotal))}</p>
-                                          <p><span className="text-muted-foreground">Prima mensual =</span> Seguro total / Cuotas orig.</p>
-                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(seguroTotal))} / {cuotasOrig} = <span className="font-semibold text-foreground">${formatCLPNumber(Math.round(seguroTotal / (cuotasOrig || 1)))}</span></p>
+                                          <p><span className="text-muted-foreground">Seguro total =</span> Prima única</p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(primaUnica))}</p>
+                                          <p><span className="text-muted-foreground">Prima mensual =</span> Prima única / Cuotas originales</p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(primaUnica))} / {cuotasOrig} = <span className="font-semibold text-foreground">${formatCLPNumber(Math.round(primaUnica / (cuotasOrig || 1)))}</span></p>
+                                          <p className="text-[10px] text-muted-foreground pt-1 italic">Cuotas usadas para tasa: {cuotasUsadas} (solo índice de tabla)</p>
                                         </div>
                                       </TooltipContent>
                                     </Tooltip>
