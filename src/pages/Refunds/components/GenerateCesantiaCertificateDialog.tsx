@@ -782,7 +782,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const uploadToClient = async () => {
     setIsUploading(true)
     try {
-      const publicId = refund.publicId
+      const publicId = (refund as any).cloned && (refund as any).siblingId
+        ? (refund as any).siblingId
+        : refund.publicId
       const existing = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
       const previousCertificates = (existing || []).filter(
         (d) => d.kind === 'certificado-de-cobertura'
@@ -810,7 +812,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const performUpload = async (replacedCount: number) => {
     setIsUploading(true)
     try {
-      const publicId = refund.publicId
+      const publicId = (refund as any).cloned && (refund as any).siblingId
+        ? (refund as any).siblingId
+        : refund.publicId
       const targetId = publicId || (refund as any)._id || refund.id
 
       // Si hay que reemplazar, eliminar previos en paralelo
