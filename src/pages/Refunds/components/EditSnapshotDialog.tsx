@@ -642,22 +642,41 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       Datos confirmados del crédito
                     </h4>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs"
-                    onClick={() => {
-                      const simValues = form.getValues()
-                      form.setValue('confirmedTotalAmount', simValues.totalAmount, { shouldDirty: true })
-                      form.setValue('confirmedAverageInsuredBalance', simValues.averageInsuredBalance, { shouldDirty: true })
-                      form.setValue('confirmedOriginalInstallments', simValues.originalInstallments, { shouldDirty: true })
-                      form.setValue('confirmedRemainingInstallments', simValues.remainingInstallments, { shouldDirty: true })
-                    }}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Confirmar datos de simulación
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      onClick={() => {
+                        const res = runRecalculation({ force: true })
+                        if (res.ok) {
+                          toast({ title: 'Cálculo actualizado', description: 'Primas y ahorros recalculados con los datos actuales.' })
+                        } else {
+                          toast({ title: 'No se pudo recalcular', description: res.reason, variant: 'destructive' })
+                        }
+                      }}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Recalcular ahora
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      onClick={() => {
+                        const simValues = form.getValues()
+                        form.setValue('confirmedTotalAmount', simValues.totalAmount, { shouldDirty: true })
+                        form.setValue('confirmedAverageInsuredBalance', simValues.averageInsuredBalance, { shouldDirty: true })
+                        form.setValue('confirmedOriginalInstallments', simValues.originalInstallments, { shouldDirty: true })
+                        form.setValue('confirmedRemainingInstallments', simValues.remainingInstallments, { shouldDirty: true })
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Confirmar datos de simulación
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Confirma los valores definitivos del crédito. Estos campos son <span className="font-semibold text-foreground">obligatorios</span> para guardar cambios.
