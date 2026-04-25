@@ -739,7 +739,7 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
     setIsUploading(true)
     try {
       const pdfBlob = generateCortePdfBlob(refund, formData, hasPolicyNumber)
-      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient)
+      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
@@ -822,7 +822,7 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
     setIsUploading(true)
     try {
       const pdfBlob = await generateSantanderCortePdfBlob(refund, formData)
-      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient)
+      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
