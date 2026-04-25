@@ -278,7 +278,8 @@ export default function CalculadoraPage() {
       doc.setFontSize(8);
       doc.setTextColor(100);
       doc.text("Formula: Prima unica = Monto x Tasa", 25, y); y += 4;
-      doc.text("Seguro total = (Prima unica / Cuotas utilizadas) x Cuotas totales", 25, y); y += 4;
+      doc.text("Seguro total = Prima unica", 25, y); y += 4;
+      doc.text("Prima mensual = Prima unica / Cuotas originales", 25, y); y += 4;
       doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
       doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
       y += 10;
@@ -1001,7 +1002,7 @@ export default function CalculadoraPage() {
                               
                               {resultado.desgravamen.cuotasUtilizadas && (
                                 <>
-                                  <span className="text-muted-foreground">Cuotas utilizadas:</span>
+                                  <span className="text-muted-foreground">Cuotas usadas para tasa:</span>
                                   <span className="font-mono">{resultado.desgravamen.cuotasUtilizadas}</span>
                                 </>
                               )}
@@ -1016,8 +1017,8 @@ export default function CalculadoraPage() {
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
                               <p className="text-muted-foreground">Prima única = Saldo insoluto × Tasa</p>
-                              <p className="text-muted-foreground">Seguro total = (Prima única / Cuotas utilizadas) × Cuotas totales</p>
-                              <p className="text-muted-foreground">Prima mensual = Seguro total / Cuotas totales</p>
+                              <p className="text-muted-foreground">Seguro total = Prima única</p>
+                              <p className="text-muted-foreground">Prima mensual = Prima única / Cuotas originales</p>
                               <p className="text-muted-foreground">Seguro restante = Prima mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Seguro restante banco - Seguro restante preferencial</p>
                               <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
