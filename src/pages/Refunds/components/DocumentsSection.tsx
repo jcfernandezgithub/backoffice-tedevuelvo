@@ -42,6 +42,8 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'cedula-trasera', label: 'Cédula trasera' },
     { value: 'signed-mandate', label: 'Mandato' },
     { value: 'carta-de-corte', label: 'Carta de corte' },
+    { value: 'carta-de-corte-cesantia', label: 'Carta de corte (Cesantía)' },
+    { value: 'carta-de-corte-desgravamen', label: 'Carta de corte (Desgravamen)' },
     { value: 'certificado-de-cobertura', label: 'Certificado de cobertura' },
     { value: 'otros', label: 'Otros' },
   ]
