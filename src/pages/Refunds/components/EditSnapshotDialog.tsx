@@ -316,11 +316,19 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       if (result.error) return
 
       if (!overridePrimas) {
-        form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false })
-        form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false })
+        // Para cesantía la prima es única (no mensual): el cálculo retorna 0.
+        // Evitamos pisar los valores históricos con 0.
+        if (result.primaBanco !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false })
+        }
+        if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false })
+        }
       }
       if (!overrideAhorros) {
-        form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false })
+        if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false })
+        }
         form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false })
       }
     } catch {
