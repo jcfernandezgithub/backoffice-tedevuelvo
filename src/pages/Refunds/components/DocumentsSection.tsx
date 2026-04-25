@@ -46,6 +46,8 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'carta-de-corte-cesantia', label: 'Carta de corte (Cesantía)' },
     { value: 'carta-de-corte-desgravamen', label: 'Carta de corte (Desgravamen)' },
     { value: 'certificado-de-cobertura', label: 'Certificado de cobertura' },
+    { value: 'certificado-de-cobertura-cesantia', label: 'Certificado de cobertura (Cesantía)' },
+    { value: 'certificado-de-cobertura-desgravamen', label: 'Certificado de cobertura (Desgravamen)' },
     { value: 'otros', label: 'Otros' },
   ]
 
@@ -61,6 +63,8 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
   const attachments = rawAttachments.filter((doc) => {
     if (insuranceType === 'cesantia' && doc.kind === 'carta-de-corte-desgravamen') return false
     if (insuranceType === 'desgravamen' && doc.kind === 'carta-de-corte-cesantia') return false
+    if (insuranceType === 'cesantia' && doc.kind === 'certificado-de-cobertura-desgravamen') return false
+    if (insuranceType === 'desgravamen' && doc.kind === 'certificado-de-cobertura-cesantia') return false
     return true
   })
 

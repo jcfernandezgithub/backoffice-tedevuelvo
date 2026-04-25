@@ -1664,7 +1664,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     const folioSuffix = formData.folio ? `-folio-${formData.folio}` : ''
     const timestamp = Date.now()
     uploadFormData.append('file', pdfBlob, `certificado-cobertura-${refund.publicId}${folioSuffix}-${timestamp}.pdf`)
-    uploadFormData.append('kind', 'certificado-cobertura')
+    uploadFormData.append('kind', 'certificado-de-cobertura-desgravamen')
 
     const response = await fetch(`${CERT_API_BASE_URL}/refund-requests/${docsPublicId}/upload-file`, {
       method: 'POST',

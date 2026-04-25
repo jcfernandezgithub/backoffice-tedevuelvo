@@ -785,9 +785,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       const publicId = (refund as any).cloned && (refund as any).siblingId
         ? (refund as any).siblingId
         : refund.publicId
-      const existing = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
+      const existing = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura-cesantia'])
       const previousCertificates = (existing || []).filter(
-        (d) => d.kind === 'certificado-de-cobertura'
+        (d) => d.kind === 'certificado-de-cobertura-cesantia'
       )
 
       if (previousCertificates.length > 0) {
@@ -820,8 +820,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       // Si hay que reemplazar, eliminar previos en paralelo
       if (replacedCount > 0) {
         const token = authService.getAccessToken()
-        const previous = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura'])
-        const toDelete = (previous || []).filter((d) => d.kind === 'certificado-de-cobertura')
+        const previous = await refundAdminApi.listDocs(publicId, ['certificado-de-cobertura-cesantia'])
+        const toDelete = (previous || []).filter((d) => d.kind === 'certificado-de-cobertura-cesantia')
         await Promise.all(
           toDelete.map((doc) =>
             fetch(`${API_BASE_URL}/refund-requests/admin/${doc.id}`, {
@@ -841,7 +841,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       const token = authService.getAccessToken()
       const uploadFormData = new FormData()
       uploadFormData.append('file', blob, fileName)
-      uploadFormData.append('kind', 'certificado-de-cobertura')
+      uploadFormData.append('kind', 'certificado-de-cobertura-cesantia')
 
       const response = await fetch(`${API_BASE_URL}/refund-requests/${targetId}/upload-file`, {
         method: 'POST',
