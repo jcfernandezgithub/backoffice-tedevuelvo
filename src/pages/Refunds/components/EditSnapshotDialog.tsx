@@ -295,47 +295,6 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     dirtyFields.insuranceToEvaluate
   )
 
-  useEffect(() => {
-    // Evita sobreescribir valores guardados al abrir el modal;
-    // recalcula solo cuando el usuario cambia campos confirmados del crédito.
-    if (!hasCreditFieldEdits) return
-
-    const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
-    const age = Number(watchedAge)
-    // Use confirmed values if available, fallback to simulation
-    const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
-    const saldoInsoluto = Number(watchedConfirmedAverageInsuredBalance || form.watch('averageInsuredBalance'))
-    const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
-    const cuotasPendientes = Number(watchedConfirmedRemainingInstallments || watchedRemainingInstallments)
-    const tipoSeguro = (watchedInsuranceType || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
-
-    if (!banco || !age || !monto || !cuotasTotales || !cuotasPendientes) return
-
-    try {
-      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined)
-      if (result.error) return
-
-      if (!overridePrimas) {
-        // Para cesantía la prima es única (no mensual): el cálculo retorna 0.
-        // Evitamos pisar los valores históricos con 0.
-        if (result.primaBanco !== 0 || tipoSeguro !== 'cesantia') {
-          form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false })
-        }
-        if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
-          form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false })
-        }
-      }
-      if (!overrideAhorros) {
-        if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
-          form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false })
-        }
-        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false })
-      }
-    } catch {
-      // Silently ignore calculation errors
-    }
-  }, [
-
   const runRecalculation = useCallback((opts?: { force?: boolean }): { ok: boolean; reason?: string } => {
     const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
     const age = Number(form.watch('age'))
