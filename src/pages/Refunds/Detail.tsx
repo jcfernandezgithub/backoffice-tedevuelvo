@@ -45,6 +45,7 @@ import { Money } from '@/components/common/Money'
 import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 
 const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
   santander: 'BANCO SANTANDER', bci: 'BANCO BCI', 'lider-bci': 'LIDER-BCI',
@@ -197,9 +198,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
   const { data: documents } = useQuery({
     // Misma query key que DocumentsSection para mantener la validación sincronizada tras uploads/deletes
-    queryKey: ['refund-documents', refund?.publicId],
-    queryFn: () => refundAdminApi.listDocs(refund!.publicId),
-    enabled: !!refund?.publicId,
+    queryKey: ['refund-documents', getRefundDocumentsPublicId(refund)],
+    queryFn: () => refundAdminApi.listDocs(getRefundDocumentsPublicId(refund)),
+    enabled: !!getRefundDocumentsPublicId(refund),
   })
 
   const fetchExperianStatus = async (publicId: string) => {
@@ -1471,7 +1472,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
         <TabsContent value="documents">
           <DocumentsSection 
-            publicId={refund.publicId} 
+            publicId={getRefundDocumentsPublicId(refund)} 
             clientToken={refund.clientTokenHash}
             documents={documents}
           />
