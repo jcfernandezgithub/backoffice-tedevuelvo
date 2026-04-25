@@ -17,6 +17,7 @@ import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
@@ -739,7 +740,7 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
     setIsUploading(true)
     try {
       const pdfBlob = generateCortePdfBlob(refund, formData, hasPolicyNumber)
-      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
+      await uploadCorteToClient(getRefundDocumentsPublicId(refund), pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
@@ -822,7 +823,7 @@ function SantanderPreview({ refund, formData, onEdit, onDownload }: SantanderPre
     setIsUploading(true)
     try {
       const pdfBlob = await generateSantanderCortePdfBlob(refund, formData)
-      await uploadCorteToClient(refund.publicId, pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
+      await uploadCorteToClient(getRefundDocumentsPublicId(refund), pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
     } finally {
