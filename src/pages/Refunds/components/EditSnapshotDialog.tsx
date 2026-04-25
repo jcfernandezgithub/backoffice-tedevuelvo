@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy } from 'lucide-react'
+import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
@@ -334,6 +334,52 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch {
       // Silently ignore calculation errors
     }
+  }, [
+
+  const runRecalculation = useCallback((opts?: { force?: boolean }): { ok: boolean; reason?: string } => {
+    const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
+    const age = Number(form.watch('age'))
+    const monto = Number(form.watch('confirmedTotalAmount') || form.watch('totalAmount'))
+    const saldoInsoluto = Number(form.watch('confirmedAverageInsuredBalance') || form.watch('averageInsuredBalance'))
+    const cuotasTotales = Number(form.watch('confirmedOriginalInstallments') || form.watch('originalInstallments'))
+    const cuotasPendientes = Number(form.watch('confirmedRemainingInstallments') || form.watch('remainingInstallments'))
+    const tipoSeguro = (form.watch('insuranceToEvaluate') || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+
+    if (!banco) return { ok: false, reason: 'Institución no soportada por la calculadora.' }
+    if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
+      return { ok: false, reason: 'Faltan datos del crédito (edad, monto o cuotas).' }
+    }
+
+    try {
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined)
+      if (result.error) return { ok: false, reason: result.error }
+
+      const force = opts?.force === true
+      if (force || !overridePrimas) {
+        if (result.primaBanco !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('currentMonthlyPremium', result.primaBanco, { shouldValidate: false, shouldDirty: true })
+        }
+        if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false, shouldDirty: true })
+        }
+      }
+      if (force || !overrideAhorros) {
+        if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
+          form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false, shouldDirty: true })
+        }
+        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false, shouldDirty: true })
+      }
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, reason: e instanceof Error ? e.message : 'Error en el cálculo.' }
+    }
+  }, [form, refund.institutionId, overridePrimas, overrideAhorros])
+
+  useEffect(() => {
+    // Evita sobreescribir valores guardados al abrir el modal;
+    // recalcula solo cuando el usuario cambia campos confirmados del crédito.
+    if (!hasCreditFieldEdits) return
+    runRecalculation()
   }, [
     watchedAge,
     watchedConfirmedTotalAmount,
