@@ -20,6 +20,21 @@
 - **Acciones por movimiento**: ignorar/reactivar y eliminar asociaciones individuales (libera saldo).
 - **Persistencia local** (localStorage) para movimientos y enlaces mientras se construye el backend.
 
+#### Fix crítico: cálculo de prima del banco (Desgravamen)
+- **Base correcta**: La prima única y la prima mensual del banco ahora se calculan sobre el **monto total del crédito original** (`montoCredito × tasa`), no sobre el saldo insoluto. El saldo insoluto se sigue usando únicamente para la tasa preferencial y el cálculo del seguro restante / devolución.
+- **División por cuotas originales**: La prima mensual se divide por las **cuotas totales del crédito**, no por `cuotasUtilizadas` (que es solo el índice usado para buscar la tasa más cercana en la tabla del banco). Esto corrige el caso donde modificar las cuotas pendientes alteraba erróneamente la prima mensual mostrada.
+- **Aplicado en**: `src/lib/calculadoraUtils.ts` (bloques `desgravamen` y `ambos`), propagado tanto a la calculadora pública como al editor de snapshot de solicitudes.
+
+#### UI: claridad en el detalle del cálculo
+- **Calculadora pública (`/calculadora`)**:
+  - Renombrada la etiqueta **"Cuotas utilizadas"** a **"Cuotas usadas para tasa"** para dejar claro que es solo el índice de la tabla del banco.
+  - Bloque **"Montos calculados (Banco)"** ahora muestra primero **"Monto total crédito"** (la base real del cálculo) y debajo, en formato pequeño/itálico, el "Saldo insoluto (referencia)".
+  - Bloque **"Fórmula"** y exportación a PDF actualizados: `Prima única = Monto total crédito × Tasa`, `Prima mensual = Prima única / Cuotas originales`, `Seguro restante = Prima mensual × Cuotas pendientes`.
+- **Detalle de solicitud (`Refunds/Detail.tsx`)**: Tooltip "Fórmula prima banco" actualizado con la base correcta y nota italizada aclarando el rol de "Cuotas usadas para tasa".
+
+#### Editor de snapshot: botón "Recalcular ahora"
+- **Forzar auto-recálculo**: Se agregó el botón **"Recalcular ahora"** en `EditSnapshotDialog` para gatillar manualmente el recálculo de primas y ahorros con la lógica vigente, sin necesidad de modificar campos del formulario. Útil para revalidar solicitudes existentes tras un fix en la fórmula.
+
 ### Versión 3.4.0 - 2026-04-24
 
 #### Reemplazo de Certificado de Cobertura de Cesantía en carpeta del cliente
