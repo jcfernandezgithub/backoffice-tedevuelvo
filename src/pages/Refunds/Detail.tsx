@@ -1475,6 +1475,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             publicId={getRefundDocumentsPublicId(refund)} 
             clientToken={refund.clientTokenHash}
             documents={documents}
+            insuranceType={getInsuranceType(refund.calculationSnapshot)}
           />
         </TabsContent>
       </Tabs>
