@@ -306,14 +306,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     // Validar documentos obligatorios para estados "Ingresado" o "Documentos recibidos"
     // (el backend auto-promueve docs_received → submitted)
     if (updateForm.status === 'submitted' || updateForm.status === 'docs_received') {
-      const requiredKinds = [
-        { kind: 'cedula-frente', label: 'Cédula frontal' },
-        { kind: 'cedula-trasera', label: 'Cédula trasera' },
-        { kind: 'signed-mandate', label: 'Mandato firmado' },
-        { kind: 'carta-de-corte', label: 'Carta de corte' },
-      ]
       const uploadedKinds = (documents || []).map((d: any) => d.kind)
-      const missing = requiredKinds.filter(r => !uploadedKinds.includes(r.kind))
+      const requiredKinds: { kinds: string[]; label: string }[] = [
+        { kinds: ['cedula-frente'], label: 'Cédula frontal' },
+        { kinds: ['cedula-trasera'], label: 'Cédula trasera' },
+        { kinds: ['signed-mandate'], label: 'Mandato firmado' },
+        { kinds: ['carta-de-corte', 'carta-de-corte-cesantia', 'carta-de-corte-desgravamen'], label: 'Carta de corte' },
+      ]
+      const missing = requiredKinds.filter(r => !r.kinds.some(k => uploadedKinds.includes(k)))
       if (missing.length > 0) {
         toast({
           title: 'Documentos faltantes',
