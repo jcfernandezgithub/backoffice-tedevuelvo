@@ -21,9 +21,10 @@ interface DocumentsSectionProps {
   publicId: string
   clientToken?: string
   documents?: DocumentMeta[]
+  insuranceType?: 'desgravamen' | 'cesantia' | 'ambos' | null
 }
 
-export function DocumentsSection({ publicId, clientToken, documents: propDocuments }: DocumentsSectionProps) {
+export function DocumentsSection({ publicId, clientToken, documents: propDocuments, insuranceType }: DocumentsSectionProps) {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -48,9 +49,19 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'otros', label: 'Otros' },
   ]
 
-  const { data: attachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
+  const { data: rawAttachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
     queryKey: ['refund-documents', publicId],
     queryFn: () => refundAdminApi.listDocs(publicId),
+  })
+
+  // Filtrar kinds de carta de corte según el tipo de seguro de la solicitud.
+  // - cesantia: solo se muestra "carta-de-corte-cesantia"
+  // - desgravamen: solo se muestra "carta-de-corte-desgravamen"
+  // - otros tipos (ambos / null): se muestran todos los kinds normalmente
+  const attachments = rawAttachments.filter((doc) => {
+    if (insuranceType === 'cesantia' && doc.kind === 'carta-de-corte-desgravamen') return false
+    if (insuranceType === 'desgravamen' && doc.kind === 'carta-de-corte-cesantia') return false
+    return true
   })
 
   const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
