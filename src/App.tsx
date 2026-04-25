@@ -25,6 +25,7 @@ import RefundDetail from "@/pages/Refunds/Detail";
 import CalculadoraPage from "@/pages/Calculadora";
 import AjustesPage from "@/pages/Ajustes";
 import NominaDevoluciones from "@/pages/NominaDevoluciones";
+import ConciliacionPage from "@/pages/Conciliacion";
 const queryClient = new QueryClient();
 
 const Shell = () => (
@@ -72,6 +73,7 @@ const App = () => (
               <Route element={<Shell />}>
                 <Route path="/refunds" element={<RefundsList />} />
                 <Route path="/refunds/:id" element={<RefundDetail />} />
+                <Route path="/conciliacion" element={<ConciliacionPage />} />
               </Route>
             </Route>
             <Route path="*" element={<NotFound />} />

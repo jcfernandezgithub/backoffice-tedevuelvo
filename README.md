@@ -1,8 +1,24 @@
 # Welcome to your Lovable project
 
-## Versión 3.4.0
+## Versión 3.5.0
 
 ## Changelog
+
+### Versión 3.5.0 - 2026-04-25
+
+#### Nuevo módulo: Conciliación bancaria
+- **Nueva ruta `/conciliacion`** (acceso ADMIN) con entrada en el sidebar.
+- **Listado de movimientos bancarios** de la cuenta corriente (mock con seed inicial + botón "Sincronizar banco" para simular nuevos depósitos). Pendiente de conectar al servicio real de scraping.
+- **KPIs**: total depósitos, monto conciliado, monto por conciliar y solicitudes pendientes de pago.
+- **Filtros por estado** del movimiento: pendiente, parcial, conciliado, ignorado y todos. Búsqueda por descripción / referencia / contraparte.
+- **Matching 100% manual** mediante diálogo dedicado:
+  - Lista solo solicitudes en estado **`payment_scheduled`** obtenidas vía `refundAdminApi.search`.
+  - Permite **dividir un depósito entre N solicitudes** (split) hasta llegar a saldo cero.
+  - Auto-sugerencia del monto a aplicar en función del `realAmount` registrado en `statusHistory`.
+  - Validación de saldo (no permite exceder el monto remanente del movimiento).
+- **Estado de la solicitud intacto**: la conciliación solo registra la asociación; no transiciona la solicitud a `paid`.
+- **Acciones por movimiento**: ignorar/reactivar y eliminar asociaciones individuales (libera saldo).
+- **Persistencia local** (localStorage) para movimientos y enlaces mientras se construye el backend.
 
 ### Versión 3.4.0 - 2026-04-24
 
