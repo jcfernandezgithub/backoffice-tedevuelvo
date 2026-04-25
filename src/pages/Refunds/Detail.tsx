@@ -1145,8 +1145,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                       <TooltipContent side="top" className="max-w-xs p-3 space-y-1.5 text-xs">
                                         <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima banco</p>
                                         <div className="space-y-0.5 font-mono text-[11px]">
-                                          <p><span className="text-muted-foreground">Prima única =</span> Saldo × Tasa banco</p>
-                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(saldo)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
+                                          <p><span className="text-muted-foreground">Prima única =</span> Monto total crédito × Tasa banco</p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(montoTotal)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
                                           <p><span className="text-muted-foreground">Seguro total =</span> Prima única</p>
                                           <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(primaUnica))}</p>
                                           <p><span className="text-muted-foreground">Prima mensual =</span> Prima única / Cuotas originales</p>
