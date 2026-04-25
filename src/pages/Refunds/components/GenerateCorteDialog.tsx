@@ -398,6 +398,21 @@ async function generateSantanderCortePdfBlob(
   return doc.output('blob')
 }
 
+async function deleteExistingDoc(docId: string) {
+  const token = authService.getAccessToken()
+  const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${docId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.message || 'Error al eliminar documento existente')
+  }
+}
+
 async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient: any, insuranceType?: string | null) {
   const token = authService.getAccessToken()
   const t = (insuranceType || '').toLowerCase()
@@ -405,6 +420,28 @@ async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient:
     t === 'cesantia' ? 'carta-de-corte-cesantia' :
     t === 'desgravamen' ? 'carta-de-corte-desgravamen' :
     'carta-de-corte'
+
+  // 1. Detectar si ya existe un documento de este kind para la solicitud
+  const existingDocs = await refundAdminApi.listDocs(publicId).catch(() => [] as any[])
+  const existing = existingDocs.find((d: any) => d.kind === kind)
+
+  if (existing) {
+    const confirmed = window.confirm(
+      `Ya existe una "${kind}" cargada para esta solicitud.\n\n` +
+      `¿Deseas eliminar la versión existente y reemplazarla por la nueva?`
+    )
+    if (!confirmed) {
+      toast({ title: 'Subida cancelada', description: 'Se mantuvo la carta de corte existente.' })
+      return
+    }
+    try {
+      await deleteExistingDoc(existing.id)
+    } catch (err: any) {
+      throw new Error(`No se pudo eliminar el documento existente: ${err.message}`)
+    }
+  }
+
+  // 2. Subir el nuevo archivo
   const formData = new FormData()
   formData.append('file', pdfBlob, `${kind}-${publicId}.pdf`)
   formData.append('kind', kind)
@@ -422,10 +459,13 @@ async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient:
     throw new Error(errorData.message || 'Error al subir carta de corte')
   }
 
-  // Invalidar cache de documentos
+  // 3. Invalidar cache de documentos
   queryClient.invalidateQueries({ queryKey: ['refund-documents', publicId] })
 
-  toast({ title: 'Carta de corte subida', description: 'El documento está disponible en la carpeta del cliente' })
+  toast({
+    title: existing ? 'Carta de corte reemplazada' : 'Carta de corte subida',
+    description: 'El documento está disponible en la carpeta del cliente',
+  })
 }
 
 // ──────────────────────────────────────────
