@@ -291,7 +291,10 @@ export const calcularDevolucion = (
 
       const primaUnicaActual = saldo * tasaActual;
       const seguroTotalActual = primaUnicaActual;
-      const primaMensualActual = primaUnicaActual / cuotasUtilizadas;
+      // La prima mensual SIEMPRE se divide por las cuotas originales del crédito.
+      // `cuotasUtilizadas` se usa únicamente como índice para encontrar la tasa
+      // más cercana en la tabla del banco, no para el cálculo de la prima.
+      const primaMensualActual = primaUnicaActual / cuotasTotales;
       const seguroRestanteActual = primaMensualActual * cuotasPendientes;
       const seguroTotalPreferencial = saldo * tasaPreferencial * cuotasPendientes;
       const primaMensualPreferencial = seguroTotalPreferencial / cuotasPendientes;
@@ -364,7 +367,10 @@ export const calcularDevolucion = (
 
     const primaUnicaActual = saldo * tasaActual;
     const seguroTotalActual = primaUnicaActual;
-    const primaMensualActual = primaUnicaActual / cuotasUtilizadas;
+    // La prima mensual SIEMPRE se divide por las cuotas originales del crédito.
+    // `cuotasUtilizadas` se usa únicamente como índice para encontrar la tasa
+    // más cercana en la tabla del banco, no para el cálculo de la prima.
+    const primaMensualActual = primaUnicaActual / cuotasTotales;
     const seguroRestanteActual = primaMensualActual * cuotasPendientes;
     const seguroTotalPreferencial = saldo * tasaPreferencial * cuotasPendientes;
     const primaMensualPreferencial = seguroTotalPreferencial / cuotasPendientes;
