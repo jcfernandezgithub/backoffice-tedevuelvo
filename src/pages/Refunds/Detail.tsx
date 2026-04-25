@@ -1118,6 +1118,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
+                            const montoTotal = snap.totalAmount || saldo
                             const cuotasOrig = snap.originalInstallments || 0
                             const cuotasUsadas = snap.originalInstallments || 0 // closest match
                             const currentPremium = snap.currentMonthlyPremium || 0
@@ -1125,7 +1126,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const remaining = snap.remainingInstallments || 0
 
                             // Intermediate values for bank premium
-                            const primaUnica = tasaBanco ? saldo * tasaBanco : 0
+                            // La prima única se calcula sobre el monto TOTAL del crédito,
+                            // no sobre el saldo insoluto.
+                            const primaUnica = tasaBanco ? montoTotal * tasaBanco : 0
                             const seguroTotal = cuotasUsadas ? (primaUnica / cuotasUsadas) * cuotasOrig : 0
 
                             return (
