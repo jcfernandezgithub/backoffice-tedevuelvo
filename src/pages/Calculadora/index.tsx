@@ -1016,7 +1016,7 @@ export default function CalculadoraPage() {
                             </div>
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
-                              <p className="text-muted-foreground">Prima única = Saldo insoluto × Tasa</p>
+                              <p className="text-muted-foreground">Prima única = Monto total crédito × Tasa</p>
                               <p className="text-muted-foreground">Seguro total = Prima única</p>
                               <p className="text-muted-foreground">Prima mensual = Prima única / Cuotas originales</p>
                               <p className="text-muted-foreground">Seguro restante = Prima mensual × Cuotas pendientes</p>

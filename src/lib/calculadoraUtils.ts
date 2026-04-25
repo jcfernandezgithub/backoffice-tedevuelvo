@@ -289,7 +289,10 @@ export const calcularDevolucion = (
         ? (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55_ALTO : TASA_PREFERENCIAL_DESDE_56_ALTO)
         : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
 
-      const primaUnicaActual = saldo * tasaActual;
+      // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
+      // del crédito original, no sobre el saldo insoluto. El saldo insoluto
+      // solo se usa para calcular el seguro RESTANTE y la devolución.
+      const primaUnicaActual = montoCredito * tasaActual;
       const seguroTotalActual = primaUnicaActual;
       // La prima mensual SIEMPRE se divide por las cuotas originales del crédito.
       // `cuotasUtilizadas` se usa únicamente como índice para encontrar la tasa
@@ -365,7 +368,10 @@ export const calcularDevolucion = (
       ? (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55_ALTO : TASA_PREFERENCIAL_DESDE_56_ALTO)
       : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
 
-    const primaUnicaActual = saldo * tasaActual;
+    // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
+    // del crédito original, no sobre el saldo insoluto. El saldo insoluto
+    // solo se usa para calcular el seguro RESTANTE y la devolución.
+    const primaUnicaActual = montoCredito * tasaActual;
     const seguroTotalActual = primaUnicaActual;
     // La prima mensual SIEMPRE se divide por las cuotas originales del crédito.
     // `cuotasUtilizadas` se usa únicamente como índice para encontrar la tasa

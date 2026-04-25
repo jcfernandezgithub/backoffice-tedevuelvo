@@ -1118,6 +1118,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
+                            const montoTotal = snap.totalAmount || saldo
                             const cuotasOrig = snap.originalInstallments || 0
                             const cuotasUsadas = snap.originalInstallments || 0 // closest match
                             const currentPremium = snap.currentMonthlyPremium || 0
@@ -1125,7 +1126,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const remaining = snap.remainingInstallments || 0
 
                             // Intermediate values for bank premium
-                            const primaUnica = tasaBanco ? saldo * tasaBanco : 0
+                            // La prima única se calcula sobre el monto TOTAL del crédito,
+                            // no sobre el saldo insoluto.
+                            const primaUnica = tasaBanco ? montoTotal * tasaBanco : 0
                             const seguroTotal = cuotasUsadas ? (primaUnica / cuotasUsadas) * cuotasOrig : 0
 
                             return (
@@ -1142,8 +1145,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                       <TooltipContent side="top" className="max-w-xs p-3 space-y-1.5 text-xs">
                                         <p className="font-semibold text-[11px] uppercase tracking-wide">Fórmula prima banco</p>
                                         <div className="space-y-0.5 font-mono text-[11px]">
-                                          <p><span className="text-muted-foreground">Prima única =</span> Saldo × Tasa banco</p>
-                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(saldo)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
+                                          <p><span className="text-muted-foreground">Prima única =</span> Monto total crédito × Tasa banco</p>
+                                          <p className="text-muted-foreground pl-2">${formatCLPNumber(montoTotal)} × {tasaBanco ? (tasaBanco * 100).toFixed(4) + '%' : 'N/A'} = ${formatCLPNumber(Math.round(primaUnica))}</p>
                                           <p><span className="text-muted-foreground">Seguro total =</span> Prima única</p>
                                           <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(primaUnica))}</p>
                                           <p><span className="text-muted-foreground">Prima mensual =</span> Prima única / Cuotas originales</p>
