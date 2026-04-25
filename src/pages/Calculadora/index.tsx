@@ -953,8 +953,11 @@ export default function CalculadoraPage() {
                             <div className="bg-primary/5 p-3 rounded-lg space-y-2">
                               <p className="text-xs font-medium text-primary">Montos calculados (Banco):</p>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                                <span className="text-muted-foreground">Saldo insoluto:</span>
-                                <span className="font-mono">{formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}</span>
+                                <span className="text-muted-foreground">Monto total crédito:</span>
+                                <span className="font-mono">{formatCurrency(formDataSnapshot?.montoCredito || 0)}</span>
+
+                                <span className="text-muted-foreground text-[10px] italic">Saldo insoluto (referencia):</span>
+                                <span className="font-mono text-[10px] italic text-muted-foreground">{formatCurrency(resultado.desgravamen.montoRestanteCredito || 0)}</span>
 
                                 <span className="text-muted-foreground">Prima única:</span>
                                 <span className="font-mono">{formatCurrency(resultado.desgravamen.primaUnicaBanco || 0)}</span>
