@@ -397,11 +397,16 @@ async function generateSantanderCortePdfBlob(
   return doc.output('blob')
 }
 
-async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient: any) {
+async function uploadCorteToClient(publicId: string, pdfBlob: Blob, queryClient: any, insuranceType?: string | null) {
   const token = authService.getAccessToken()
+  const t = (insuranceType || '').toLowerCase()
+  const kind =
+    t === 'cesantia' ? 'carta-de-corte-cesantia' :
+    t === 'desgravamen' ? 'carta-de-corte-desgravamen' :
+    'carta-de-corte'
   const formData = new FormData()
-  formData.append('file', pdfBlob, `carta-de-corte-${publicId}.pdf`)
-  formData.append('kind', 'carta-de-corte')
+  formData.append('file', pdfBlob, `${kind}-${publicId}.pdf`)
+  formData.append('kind', kind)
 
   const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
     method: 'POST',
