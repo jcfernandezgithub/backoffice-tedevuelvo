@@ -51,6 +51,8 @@ export interface RefundRequest {
   partnerUserId?: string | null
   source?: string | null
   bankInfo?: BankInfo
+  cloned?: boolean
+  siblingId?: string
 }
 
 export interface RefundDocument {
