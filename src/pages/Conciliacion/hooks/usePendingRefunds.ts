@@ -19,14 +19,31 @@ export function usePendingRefunds() {
   return useQuery<PendingRefund[]>({
     queryKey: ['conciliacion', 'pending-refunds'],
     queryFn: async () => {
-      const res = await refundAdminApi.search({
+      // El endpoint /admin/search limita a 100 por página: paginamos en paralelo.
+      const PAGE_SIZE = 100
+      const first = await refundAdminApi.search({
         status: 'payment_scheduled',
-        limit: 200,
+        limit: PAGE_SIZE,
         page: 1,
         sort: 'recent',
       })
+      const totalPages = first.totalPages ?? 1
+      let allItems = first.items ?? []
+      if (totalPages > 1) {
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            refundAdminApi.search({
+              status: 'payment_scheduled',
+              limit: PAGE_SIZE,
+              page: i + 2,
+              sort: 'recent',
+            }),
+          ),
+        )
+        allItems = allItems.concat(...rest.map((r) => r.items ?? []))
+      }
       const links = conciliacionService.listLinks()
-      return (res.items ?? []).map((r) => {
+      return allItems.map((r) => {
         const realAmount = getRealAmount(r)
         const reconciledAmount = links
           .filter((l) => l.refundId === r.id)
