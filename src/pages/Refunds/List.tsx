@@ -771,6 +771,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (appliedLocalFilters.alliance !== 'all') {
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
     }
+
+    // Filtro por institución financiera (institutionId) — viene desde Operación
+    if (appliedLocalFilters.institution !== 'all') {
+      const target = String(appliedLocalFilters.institution).toLowerCase().trim()
+      result = result.filter((r: any) => String(r.institutionId || '').toLowerCase().trim() === target)
+    }
     
     // Filtro por Nº Póliza (busca en calculationSnapshot.nroPoliza)
     if (appliedLocalFilters.nroPoliza) {
