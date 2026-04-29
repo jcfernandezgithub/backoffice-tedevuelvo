@@ -1745,10 +1745,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
       const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
-      const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
-      
-      // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
-      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
+
+      // Prima Única desde snapshot (newMonthlyPremium × cuotasPendientes); fallback legal.
+      const primaFromSnap = getPrimaUnicaFromSnapshot(refund)
+      const primaUnica = primaFromSnap && primaFromSnap > 0
+        ? Math.round(primaFromSnap)
+        : Math.round(saldoInsoluto * (getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000) * nperValue)
+      // TBM derivada inversa para coincidir con la Prima Única mostrada.
+      const tbmValue = saldoInsoluto > 0 && nperValue > 0
+        ? (primaUnica / (saldoInsoluto * nperValue)) * 1000
+        : getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
       // ===================== CARÁTULA - PAGE 1 =====================
