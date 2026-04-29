@@ -246,13 +246,13 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
                   No hay solicitudes pendientes que coincidan.
                 </div>
               ) : (
-                <div className="divide-y">
+                <div className="divide-y pr-3">
                   {filtered.map((r) => (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => addRefund(r)}
-                      className="w-full text-left p-3 pr-2 hover:bg-muted/50 transition-colors flex items-center gap-2"
+                      className="w-full text-left py-2.5 pl-3 pr-2 hover:bg-muted/50 transition-colors flex items-center gap-2"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate text-sm">{r.fullName}</div>
@@ -261,16 +261,16 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-xs font-medium tabular-nums">{formatCurrency(r.remainingAmount)}</div>
+                        <div className="text-xs font-medium tabular-nums whitespace-nowrap">{formatCurrency(r.remainingAmount)}</div>
                         {r.reconciledAmount > 0 && (
                           <Badge variant="outline" className="text-[10px] mt-1">Parcial</Badge>
                         )}
                       </div>
                       <span
                         aria-hidden
-                        className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground"
+                        className="shrink-0 inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3.5 w-3.5" />
                       </span>
                     </button>
                   ))}
