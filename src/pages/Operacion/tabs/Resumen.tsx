@@ -78,6 +78,9 @@ export function TabResumen() {
     if (filtros.fechaDesde) searchParams.set('from', filtros.fechaDesde);
     if (filtros.fechaHasta) searchParams.set('to', filtros.fechaHasta);
     searchParams.set('autoSearch', 'true');
+    // Alinear el conteo del listado con la caluga: solo solicitudes que ACTUALMENTE
+    // están en el estado seleccionado Y transicionaron a él dentro del rango.
+    searchParams.set('currentStatusOnly', 'true');
     return `/refunds?${searchParams.toString()}`;
   };
 
