@@ -178,6 +178,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [allianceFilter, setAllianceFilter] = useState<string>(searchParams.get('alliance') || 'all')
   const [nroPolizaFilter, setNroPolizaFilter] = useState<string>(searchParams.get('nroPoliza') || '')
   const [nroCreditoFilter, setNroCreditoFilter] = useState<string>(searchParams.get('nroCredito') || '')
+  const [institutionFilter, setInstitutionFilter] = useState<string>(searchParams.get('institution') || 'all')
 
   // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
   const [appliedLocalFilters, setAppliedLocalFilters] = useState({
@@ -187,6 +188,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     alliance: searchParams.get('alliance') || 'all',
     nroPoliza: searchParams.get('nroPoliza') || '',
     nroCredito: searchParams.get('nroCredito') || '',
+    institution: searchParams.get('institution') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
