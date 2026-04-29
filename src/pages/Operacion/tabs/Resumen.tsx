@@ -846,6 +846,24 @@ export function TabResumen() {
         </Card>
       </div>
 
+      {/* Sheet: desglose por institución de Solicitudes Ingresadas */}
+      <InstitutionBreakdownSheet
+        open={submittedBreakdownOpen}
+        onOpenChange={setSubmittedBreakdownOpen}
+        title="Solicitudes Ingresadas — Desglose por Institución"
+        description="Identifica qué institución no ha hecho la gestión"
+        items={buildInstitutionBreakdown(
+          submittedRefunds,
+          'submitted',
+          overdueByStage.submitted?.objetivo,
+        )}
+        baseUrlParams={{
+          status: 'submitted',
+          ...(filtros.fechaDesde ? { from: filtros.fechaDesde } : {}),
+          ...(filtros.fechaHasta ? { to: filtros.fechaHasta } : {}),
+        }}
+        stageObjectiveDays={overdueByStage.submitted?.objetivo}
+      />
     </div>
   );
 }
