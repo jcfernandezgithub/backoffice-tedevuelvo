@@ -518,19 +518,26 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   }
 
   const calculatePrimaUnica = () => {
-    // Saldo Insoluto = Valor ingresado en el formulario o el valor por defecto
+    // Prima Única = Nueva Prima Mensual TDV × Cuotas Pendientes (desde snapshot)
+    // Esto refleja la prima realmente cobrada por TDV según el snapshot editado.
+    const primaFromSnapshot = getPrimaUnicaFromSnapshot(refund)
+    if (primaFromSnapshot && primaFromSnapshot > 0) {
+      return Math.round(primaFromSnapshot)
+    }
+    // Fallback: fórmula legal Saldo × TBM × Nper si no hay datos en snapshot
     const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
-    // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
-    
-    // Siempre calcular usando la fórmula legal: Saldo × TBM/1000 × Nper
     const tbm = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
   
-  // Get the TBM value for display - always from snapshot
+  // Get the TBM value for display - derived from Prima Única of snapshot to keep coherence
   const getTbmForDisplay = (): number => {
     const saldoInsoluto = getSaldoInsolutoValue()
+    // Si hay datos en snapshot, derivar TBM inversa para que coincida con la Prima Única mostrada
+    const tbmDerivada = getTasaFromPrimaUnica(refund, saldoInsoluto)
+    if (tbmDerivada && tbmDerivada > 0) return tbmDerivada
+    // Fallback a TBM legal
     return getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
   }
 
@@ -581,10 +588,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     const saldoInsoluto = getSaldoInsolutoValue()
     const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
     const ageValue = refund.calculationSnapshot?.age
-    const tcValue = getTasaBrutaMensualPrime(ageValue)
-    
-    // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
-    const primaUnica = Math.round(saldoInsoluto * (tcValue / 1000) * nperValue)
+
+    // Prima Única desde snapshot (newMonthlyPremium × cuotasPendientes); fallback legal si no hay datos.
+    const primaFromSnap = getPrimaUnicaFromSnapshot(refund)
+    const primaUnica = primaFromSnap && primaFromSnap > 0
+      ? Math.round(primaFromSnap)
+      : Math.round(saldoInsoluto * (getTasaBrutaMensualPrime(ageValue) / 1000) * nperValue)
+    // TBM derivada inversa para que coincida con la Prima Única mostrada.
+    const tcValue = saldoInsoluto > 0 && nperValue > 0
+      ? (primaUnica / (saldoInsoluto * nperValue)) * 1000
+      : getTasaBrutaMensualPrime(ageValue)
     const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
     // ===================== CARÁTULA - PAGE 1 =====================
@@ -1732,10 +1745,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       // Valores calculados - usando tasas del calculationSnapshot
       const saldoInsoluto = getSaldoInsolutoValue()
       const nperValue = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
-      const tbmValue = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
-      
-      // Prima Única: siempre usar la fórmula legal Saldo × TBM/1000 × Nper
-      const primaUnica = Math.round(saldoInsoluto * (tbmValue / 1000) * nperValue)
+
+      // Prima Única desde snapshot (newMonthlyPremium × cuotasPendientes); fallback legal.
+      const primaFromSnap = getPrimaUnicaFromSnapshot(refund)
+      const primaUnica = primaFromSnap && primaFromSnap > 0
+        ? Math.round(primaFromSnap)
+        : Math.round(saldoInsoluto * (getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000) * nperValue)
+      // TBM derivada inversa para coincidir con la Prima Única mostrada.
+      const tbmValue = saldoInsoluto > 0 && nperValue > 0
+        ? (primaUnica / (saldoInsoluto * nperValue)) * 1000
+        : getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
       const saldoInsolutoFormatted = `$${saldoInsoluto.toLocaleString('es-CL')}`
 
       // ===================== CARÁTULA - PAGE 1 =====================
