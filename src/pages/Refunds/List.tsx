@@ -178,6 +178,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [allianceFilter, setAllianceFilter] = useState<string>(searchParams.get('alliance') || 'all')
   const [nroPolizaFilter, setNroPolizaFilter] = useState<string>(searchParams.get('nroPoliza') || '')
   const [nroCreditoFilter, setNroCreditoFilter] = useState<string>(searchParams.get('nroCredito') || '')
+  const [institutionFilter, setInstitutionFilter] = useState<string>(searchParams.get('institution') || 'all')
 
   // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
   const [appliedLocalFilters, setAppliedLocalFilters] = useState({
@@ -187,6 +188,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     alliance: searchParams.get('alliance') || 'all',
     nroPoliza: searchParams.get('nroPoliza') || '',
     nroCredito: searchParams.get('nroCredito') || '',
+    institution: searchParams.get('institution') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -407,6 +409,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       alliance: allianceFilter,
       nroPoliza: nroPolizaFilter,
       nroCredito: nroCreditoFilter,
+      institution: institutionFilter,
     })
     
     // Actualizar URL params
@@ -420,6 +423,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (bankFilter !== 'all') params.set('bank', bankFilter)
     if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
     if (allianceFilter !== 'all') params.set('alliance', allianceFilter)
+    if (institutionFilter !== 'all') params.set('institution', institutionFilter)
     params.set('page', '1')
     setSearchParams(params)
   }
@@ -472,6 +476,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setAllianceFilter('all')
     setNroPolizaFilter('')
     setNroCreditoFilter('')
+    setInstitutionFilter('all')
     setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
@@ -480,6 +485,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       alliance: 'all',
       nroPoliza: '',
       nroCredito: '',
+      institution: 'all',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
@@ -764,6 +770,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     // Filtro de alianza específica (backend no soporta partnerId, solo isPartner)
     if (appliedLocalFilters.alliance !== 'all') {
       result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
+    }
+
+    // Filtro por institución financiera (institutionId) — viene desde Operación
+    if (appliedLocalFilters.institution !== 'all') {
+      const target = String(appliedLocalFilters.institution).toLowerCase().trim()
+      result = result.filter((r: any) => String(r.institutionId || '').toLowerCase().trim() === target)
     }
     
     // Filtro por Nº Póliza (busca en calculationSnapshot.nroPoliza)
