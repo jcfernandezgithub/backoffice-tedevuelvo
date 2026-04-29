@@ -458,25 +458,107 @@ export function TabResumen() {
             </Card>
 
             {/* Card: Solicitudes Ingresadas */}
-            <Card 
-              className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Solicitudes Ingresadas
-                  </CardTitle>
-                  <FileInput className="h-5 w-5 text-indigo-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">{submittedRefunds.length}</span>
-                  <OverdueBadge count={overdueByStage.submitted?.count || 0} stageLabel="Ingresadas" objetivo={overdueByStage.submitted?.objetivo} />
-                </div>
-              </CardContent>
-            </Card>
+            {(() => {
+              const submittedObjetivo = overdueByStage.submitted?.objetivo;
+              const breakdown = buildInstitutionBreakdown(submittedRefunds, 'submitted', submittedObjetivo);
+              const topInstitutions = [...breakdown].sort((a, b) => b.count - a.count).slice(0, 3);
+              const restCount = breakdown.length - topInstitutions.length;
+              const maxCount = topInstitutions[0]?.count || 1;
+              return (
+                <Card className="border-l-4 border-l-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/10 hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+                    >
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        Solicitudes Ingresadas
+                      </CardTitle>
+                      <FileInput className="h-5 w-5 text-indigo-500" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div
+                      className="flex items-center gap-2 cursor-pointer"
+                      onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+                    >
+                      <span className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">
+                        {submittedRefunds.length}
+                      </span>
+                      <OverdueBadge
+                        count={overdueByStage.submitted?.count || 0}
+                        stageLabel="Ingresadas"
+                        objetivo={submittedObjetivo}
+                      />
+                    </div>
+
+                    {topInstitutions.length > 0 && (
+                      <>
+                        <div className="mt-3 pt-3 border-t border-indigo-200/50 dark:border-indigo-800/30 space-y-1.5">
+                          {topInstitutions.map((inst) => {
+                            const widthPct = Math.max(8, (inst.count / maxCount) * 100);
+                            return (
+                              <button
+                                key={inst.institutionId}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(
+                                    buildRefundsUrl({
+                                      status: 'submitted',
+                                      institution: inst.institutionId,
+                                    }),
+                                  );
+                                }}
+                                className="w-full group"
+                                title={`${inst.displayName} — ${inst.count} solicitudes${
+                                  inst.overdueCount ? ` · ${inst.overdueCount} excedidas` : ''
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-2 text-xs mb-0.5">
+                                  <span className="truncate text-foreground/80 group-hover:text-foreground font-medium max-w-[60%]">
+                                    {inst.displayName}
+                                  </span>
+                                  <span className="flex items-center gap-1.5 tabular-nums">
+                                    {inst.overdueCount > 0 && (
+                                      <span className="inline-flex items-center gap-0.5 text-destructive">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        {inst.overdueCount}
+                                      </span>
+                                    )}
+                                    <span className="font-bold text-indigo-700 dark:text-indigo-400">
+                                      {inst.count}
+                                    </span>
+                                  </span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-indigo-100 dark:bg-indigo-950/40 overflow-hidden">
+                                  <div
+                                    className="h-full bg-indigo-500 rounded-full transition-all group-hover:bg-indigo-600"
+                                    style={{ width: `${widthPct}%` }}
+                                  />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSubmittedBreakdownOpen(true);
+                          }}
+                          className="mt-2 w-full text-xs text-indigo-600 dark:text-indigo-400 hover:underline text-left"
+                        >
+                          {restCount > 0
+                            ? `+ ${restCount} institución${restCount === 1 ? '' : 'es'} más · Ver desglose →`
+                            : 'Ver desglose completo →'}
+                        </button>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Card: Solicitudes Aprobadas */}
             <Card 
