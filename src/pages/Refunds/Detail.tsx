@@ -1153,6 +1153,22 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                           <p className="text-muted-foreground pl-2">${formatCLPNumber(Math.round(primaUnica))} / {cuotasOrig} = <span className="font-semibold text-foreground">${formatCLPNumber(Math.round(primaUnica / (cuotasOrig || 1)))}</span></p>
                                           <p className="text-[10px] text-muted-foreground pt-1 italic">Cuotas usadas para tasa: {cuotasUsadas} (solo índice de tabla)</p>
                                         </div>
+                                        {(() => {
+                                          const recalc = Math.round(primaUnica / (cuotasOrig || 1))
+                                          const desync = currentPremium > 0 && Math.abs(recalc - currentPremium) > 1
+                                          if (!desync) return null
+                                          return (
+                                            <div className="border-t border-dashed pt-1.5 mt-1 space-y-0.5">
+                                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⚠ Valor guardado distinto a la fórmula</p>
+                                              <p className="text-[10px] text-muted-foreground">
+                                                Valor mostrado: <span className="font-semibold text-foreground">${formatCLPNumber(currentPremium)}</span>
+                                              </p>
+                                              <p className="text-[10px] text-muted-foreground italic">
+                                                Snapshot calculado con datos previos. Usa "Recalcular ahora" para sincronizar.
+                                              </p>
+                                            </div>
+                                          )
+                                        })()}
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>
