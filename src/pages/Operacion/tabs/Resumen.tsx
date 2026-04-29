@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InstitutionBreakdownSheet, buildInstitutionBreakdown } from '../components/InstitutionBreakdownSheet';
-import { getInstitutionDisplayName } from '@/lib/institutionHomologation';
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
