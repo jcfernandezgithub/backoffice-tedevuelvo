@@ -70,6 +70,7 @@ export function TabResumen() {
   const navigate = useNavigate();
   const [granularidad, setGranularidad] = useState<Granularidad>('week');
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+  const [submittedBreakdownOpen, setSubmittedBreakdownOpen] = useState(false);
 
   // Helper para construir URL con filtros de fecha incluidos
   const buildRefundsUrl = (params: Record<string, string>) => {
