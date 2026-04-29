@@ -194,6 +194,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const initialAutoSearch = searchParams.get('autoSearch') === 'true'
   const [historicalStatusMode, setHistoricalStatusMode] = useState(initialAutoSearch)
+  // Cuando viene desde una caluga de Operación, restringir el resultado a las
+  // solicitudes que ACTUALMENTE están en ese estado Y entraron a él dentro del rango.
+  // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
+  // de solicitudes que ya avanzaron a otro estado).
+  const currentStatusOnly = searchParams.get('currentStatusOnly') === 'true'
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
