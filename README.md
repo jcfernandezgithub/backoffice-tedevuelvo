@@ -1,8 +1,25 @@
 # Welcome to your Lovable project
 
-## Versión 3.5.0
+## Versión 3.6.0
 
 ## Changelog
+
+### Versión 3.6.0 - 2026-04-29
+
+#### Operación: Desglose por institución en "Solicitudes ingresadas"
+- **Nuevo Sheet de desglose** (`InstitutionBreakdownSheet`): al hacer clic en la caluga "Solicitudes ingresadas" del Resumen de Operación, se abre un panel lateral que agrupa las solicitudes por institución financiera, mostrando cantidad, días promedio en la etapa y solicitudes con tiempo excedido respecto al objetivo de la etapa.
+- **Ordenamiento configurable**: el usuario puede ordenar el desglose por "Más excedidas" (default), "Cantidad" o "Días promedio" mediante un `ToggleGroup`.
+- **Resaltado de SLA**: los promedios que superan el `stageObjectiveDays` se resaltan en rojo y se muestra un badge con la cantidad de solicitudes excedidas por institución.
+- **Navegación contextual**: al seleccionar una fila, se navega a `/refunds` con `status`, `from`, `to`, `institution` y `autoSearch=true` precargados, manteniendo coherencia con el resto del flujo.
+
+#### Resumen Financiero: nueva caluga "Monto total a pagar a clientes"
+- **Nuevo KPI**: en el Resumen de Operación se agregó la caluga **"Monto total a pagar a clientes"**, que suma el `realAmount` de todas las solicitudes en estado **"Pago Programado"** dentro del rango de fechas seleccionado.
+- **Click-through al listado**: al hacer clic se navega al listado de solicitudes filtrado por `status=payment_scheduled`, con el rango de fechas y `autoSearch=true`.
+
+#### Fix: alineación de conteos entre caluga y listado (currentStatusOnly)
+- **Discrepancia resuelta**: la caluga mostraba 41 solicitudes y el detalle abría 264 porque el listado usaba modo histórico amplio (`wasInStatusDuringRange`), incluyendo solicitudes que ya habían transicionado a otros estados.
+- **Nuevo parámetro `currentStatusOnly`**: cuando se navega desde una caluga del Resumen, la URL incluye `currentStatusOnly=true`. El listado restringe los resultados a solicitudes cuyo **estado actual** coincide con el filtro y que transicionaron a ese estado dentro del rango, dejando ambas vistas con el mismo número.
+- **Archivos**: `src/pages/Refunds/List.tsx` y `src/pages/Operacion/tabs/Resumen.tsx` (helper `buildRefundsUrl`).
 
 ### Versión 3.5.0 - 2026-04-25
 
