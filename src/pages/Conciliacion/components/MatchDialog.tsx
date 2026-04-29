@@ -36,6 +36,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
   const movementRemaining = movement?.remaining ?? 0
   const newRemaining = Math.max(0, movementRemaining - totalApplied)
   const overApplied = totalApplied > movementRemaining + 0.5
+  const isFullyAllocated = movementRemaining > 0 && newRemaining <= 0.5 && !overApplied
 
   const draftIds = new Set(drafts.map((d) => d.refund.id))
   const filtered = useMemo(() => {
@@ -66,6 +67,14 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
 
   const addRefund = (r: PendingRefund) => {
     const remaining = movementRemaining - totalApplied
+    if (remaining <= 0.5) {
+      toast({
+        title: 'Saldo del movimiento completado',
+        description: 'Ya asignaste el monto total. Quita o reduce alguna solicitud para agregar otra.',
+        variant: 'destructive',
+      })
+      return
+    }
     const suggest = Math.min(r.remainingAmount, Math.max(0, remaining))
     setDrafts((prev) => [...prev, { refund: r, amount: Math.round(suggest) }])
   }
