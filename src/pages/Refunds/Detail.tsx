@@ -1179,6 +1179,26 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                         <div className="border-t border-dashed pt-1 mt-1">
                                           <p className="text-muted-foreground text-[10px]">Tasa {saldo > 20000000 ? '> 20M' : '≤ 20M'}, edad {(snap.age || 0) <= 55 ? '≤ 55' : '> 55'}</p>
                                         </div>
+                                        {(() => {
+                                          const recalc = Math.round(saldo * (tasaTDV || 0))
+                                          const desync = newPremium > 0 && Math.abs(recalc - newPremium) > 1
+                                          if (!desync) return null
+                                          const tasaEfectiva = saldo > 0 ? newPremium / saldo : 0
+                                          return (
+                                            <div className="border-t border-dashed pt-1.5 mt-1 space-y-0.5">
+                                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⚠ Valor guardado distinto a la fórmula</p>
+                                              <p className="text-[10px] text-muted-foreground">
+                                                Valor mostrado: <span className="font-semibold text-foreground">${formatCLPNumber(newPremium)}</span>
+                                              </p>
+                                              <p className="text-[10px] text-muted-foreground">
+                                                Tasa efectiva usada: <span className="font-mono">{(tasaEfectiva * 100).toFixed(4)}%</span>
+                                              </p>
+                                              <p className="text-[10px] text-muted-foreground italic">
+                                                El snapshot fue calculado con datos previos. Usa "Recalcular ahora" en editar para sincronizar.
+                                              </p>
+                                            </div>
+                                          )
+                                        })()}
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>
