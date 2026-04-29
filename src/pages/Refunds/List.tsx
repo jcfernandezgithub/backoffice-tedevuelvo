@@ -812,10 +812,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       result = result.filter((r: any) => 
         statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
       )
+
+      // Restricción adicional: si viene desde una caluga de Operación,
+      // el estado ACTUAL debe ser uno de los seleccionados.
+      if (currentStatusOnly) {
+        const lcStatusList = statusList.map(s => s.toLowerCase())
+        result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
+      }
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, localFilters.from, localFilters.to, localFilters.status])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
