@@ -125,7 +125,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Conciliar movimiento</DialogTitle>
           <DialogDescription>
@@ -134,7 +134,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border bg-muted/40 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="shrink-0 rounded-lg border bg-muted/40 p-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-muted-foreground text-xs">Movimiento</div>
             <div className="font-medium truncate">{movement.description}</div>
@@ -155,45 +155,47 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
           </div>
         </div>
 
-        {/* Drafts */}
-        <div className="space-y-2">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+        {/* Drafts (scrollable) */}
+        <div className="flex-1 min-h-0 flex flex-col space-y-2">
+          <Label className="shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
             Solicitudes seleccionadas ({drafts.length})
           </Label>
           {drafts.length === 0 ? (
-            <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground text-center">
+            <div className="shrink-0 rounded-md border border-dashed p-4 text-sm text-muted-foreground text-center">
               Aún no has agregado solicitudes.
             </div>
           ) : (
-            <div className="space-y-2">
-              {drafts.map((d) => (
-                <div key={d.refund.id} className="flex items-center gap-2 rounded-md border p-3 bg-card">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{d.refund.fullName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {d.refund.rut} • {d.refund.publicId} • Saldo a pagar {formatCurrency(d.refund.remainingAmount)}
+            <ScrollArea className="flex-1 min-h-0 rounded-md border">
+              <div className="space-y-2 p-2">
+                {drafts.map((d) => (
+                  <div key={d.refund.id} className="flex items-center gap-2 rounded-md border p-3 bg-card">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{d.refund.fullName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.refund.rut} • {d.refund.publicId} • Saldo a pagar {formatCurrency(d.refund.remainingAmount)}
+                      </div>
                     </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={d.amount}
+                      onChange={(e) => updateAmount(d.refund.id, e.target.value)}
+                      className="w-36"
+                    />
+                    <Button variant="ghost" size="icon" onClick={() => removeDraft(d.refund.id)}>
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={d.amount}
-                    onChange={(e) => updateAmount(d.refund.id, e.target.value)}
-                    className="w-36"
-                  />
-                  <Button variant="ghost" size="icon" onClick={() => removeDraft(d.refund.id)}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </ScrollArea>
           )}
         </div>
 
-        <Separator />
+        <Separator className="shrink-0" />
 
-        {/* Search + list */}
-        <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+        {/* Search + list (fixed height, always visible) */}
+        <div className="shrink-0 space-y-2 flex flex-col">
           <Label className="text-xs uppercase tracking-wide text-muted-foreground">
             Agregar solicitud
           </Label>
@@ -206,7 +208,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
               className="pl-9"
             />
           </div>
-          <ScrollArea className="h-56 rounded-md border">
+          <ScrollArea className="h-48 rounded-md border">
             {filtered.length === 0 ? (
               <div className="p-4 text-sm text-muted-foreground text-center">
                 No hay solicitudes pendientes que coincidan.
