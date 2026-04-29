@@ -177,11 +177,21 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4">
           {/* Buscar y agregar — toma más espacio */}
           <div className="md:col-span-7 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
-            <div className="shrink-0 px-3 py-2 border-b bg-muted/30">
+            <div className="shrink-0 px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                 Agregar solicitud
               </Label>
+              {isFullyAllocated && (
+                <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700 text-[10px]">
+                  Saldo completo
+                </Badge>
+              )}
             </div>
+            {isFullyAllocated && (
+              <div className="shrink-0 px-3 py-2 text-xs text-emerald-700 bg-emerald-50 border-b border-emerald-100">
+                Ya cubriste el saldo del movimiento. Quita o reduce alguna solicitud para agregar otra.
+              </div>
+            )}
             <div className="shrink-0 p-3 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -205,7 +215,8 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
                       key={r.id}
                       type="button"
                       onClick={() => addRefund(r)}
-                      className="w-full text-left py-2.5 pl-3 pr-2 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                      disabled={isFullyAllocated}
+                      className="w-full text-left py-2.5 pl-3 pr-2 hover:bg-muted/50 transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate text-sm">{r.fullName}</div>
