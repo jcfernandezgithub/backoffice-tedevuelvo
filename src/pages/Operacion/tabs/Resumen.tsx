@@ -224,6 +224,16 @@ export function TabResumen() {
     );
     return sum + (realAmountEntry?.realAmount || 0);
   }, 0);
+  // Monto total a pagar a clientes: solicitudes en "Pago Programado"
+  // Usa realAmount del último cambio a payment_scheduled si existe, sino estimatedAmountCLP
+  const totalToPayAmount = paymentScheduledRefunds.reduce((sum: number, r: any) => {
+    const realAmountEntry = r.statusHistory?.slice().reverse().find(
+      (entry: any) => entry.to?.toLowerCase() === 'payment_scheduled' && entry.realAmount
+    );
+    const amount = realAmountEntry?.realAmount || r.estimatedAmountCLP || 0;
+    return sum + amount;
+  }, 0);
+
   const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => {
     const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
     const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
