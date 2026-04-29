@@ -409,6 +409,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       alliance: allianceFilter,
       nroPoliza: nroPolizaFilter,
       nroCredito: nroCreditoFilter,
+      institution: institutionFilter,
     })
     
     // Actualizar URL params
@@ -422,6 +423,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (bankFilter !== 'all') params.set('bank', bankFilter)
     if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
     if (allianceFilter !== 'all') params.set('alliance', allianceFilter)
+    if (institutionFilter !== 'all') params.set('institution', institutionFilter)
     params.set('page', '1')
     setSearchParams(params)
   }
@@ -474,6 +476,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setAllianceFilter('all')
     setNroPolizaFilter('')
     setNroCreditoFilter('')
+    setInstitutionFilter('all')
     setHistoricalStatusMode(false)
     setAppliedLocalFilters({
       origin: 'all',
@@ -482,6 +485,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       alliance: 'all',
       nroPoliza: '',
       nroCredito: '',
+      institution: 'all',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
