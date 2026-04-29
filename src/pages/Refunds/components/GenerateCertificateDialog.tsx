@@ -518,19 +518,26 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   }
 
   const calculatePrimaUnica = () => {
-    // Saldo Insoluto = Valor ingresado en el formulario o el valor por defecto
+    // Prima Única = Nueva Prima Mensual TDV × Cuotas Pendientes (desde snapshot)
+    // Esto refleja la prima realmente cobrada por TDV según el snapshot editado.
+    const primaFromSnapshot = getPrimaUnicaFromSnapshot(refund)
+    if (primaFromSnapshot && primaFromSnapshot > 0) {
+      return Math.round(primaFromSnapshot)
+    }
+    // Fallback: fórmula legal Saldo × TBM × Nper si no hay datos en snapshot
     const saldoInsoluto = parseFloat(formData.saldoInsoluto.replace(/\./g, '').replace(',', '.')) || 0
-    // Nper = Cuotas restantes por pagar
     const nper = refund.calculationSnapshot?.confirmedRemainingInstallments || refund.calculationSnapshot?.remainingInstallments || 0
-    
-    // Siempre calcular usando la fórmula legal: Saldo × TBM/1000 × Nper
     const tbm = getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto) / 1000
     return Math.round(saldoInsoluto * tbm * nper)
   }
   
-  // Get the TBM value for display - always from snapshot
+  // Get the TBM value for display - derived from Prima Única of snapshot to keep coherence
   const getTbmForDisplay = (): number => {
     const saldoInsoluto = getSaldoInsolutoValue()
+    // Si hay datos en snapshot, derivar TBM inversa para que coincida con la Prima Única mostrada
+    const tbmDerivada = getTasaFromPrimaUnica(refund, saldoInsoluto)
+    if (tbmDerivada && tbmDerivada > 0) return tbmDerivada
+    // Fallback a TBM legal
     return getTasaFromSnapshot(refund, isPrimeFormat, saldoInsoluto)
   }
 
