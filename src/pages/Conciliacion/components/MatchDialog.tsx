@@ -167,7 +167,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
         {/* Two-column body: seleccionadas (izq) + buscar (der) */}
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-5 gap-4">
           {/* Seleccionadas */}
-          <div className="md:col-span-3 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
+          <div className="md:col-span-2 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
             <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                 Seleccionadas ({drafts.length})
@@ -223,7 +223,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
           </div>
 
           {/* Buscar y agregar */}
-          <div className="md:col-span-2 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
+          <div className="md:col-span-3 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
             <div className="shrink-0 px-3 py-2 border-b bg-muted/30">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                 Agregar solicitud
