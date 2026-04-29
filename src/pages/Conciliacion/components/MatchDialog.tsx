@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Search, X, Plus, Loader2 } from 'lucide-react'
+import { Search, X, Plus, Loader2, Wand2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { conciliacionService } from '../services/conciliacionService'
 import type { BankMovement, PendingRefund } from '../types'
@@ -82,6 +81,16 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
     setDrafts((prev) => prev.filter((d) => d.refund.id !== refundId))
   }
 
+  const fillRemainingForLast = () => {
+    if (drafts.length === 0 || !movement) return
+    const others = drafts.slice(0, -1).reduce((s, d) => s + (d.amount || 0), 0)
+    const last = drafts[drafts.length - 1]
+    const target = Math.max(0, Math.round(movement.remaining - others))
+    setDrafts((prev) =>
+      prev.map((d, i) => (i === prev.length - 1 ? { ...d, amount: Math.min(target, last.refund.remainingAmount) } : d)),
+    )
+  }
+
   const handleApply = async () => {
     if (!movement) return
     if (drafts.length === 0) {
@@ -125,7 +134,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Conciliar movimiento</DialogTitle>
           <DialogDescription>
@@ -155,91 +164,115 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
           </div>
         </div>
 
-        {/* Drafts (scrollable) */}
-        <div className="flex-1 min-h-0 flex flex-col space-y-2">
-          <Label className="shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
-            Solicitudes seleccionadas ({drafts.length})
-          </Label>
-          {drafts.length === 0 ? (
-            <div className="shrink-0 rounded-md border border-dashed p-4 text-sm text-muted-foreground text-center">
-              Aún no has agregado solicitudes.
+        {/* Two-column body: seleccionadas (izq) + buscar (der) */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Seleccionadas */}
+          <div className="md:col-span-3 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
+            <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b bg-muted/30">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Seleccionadas ({drafts.length})
+              </Label>
+              {drafts.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={fillRemainingForLast}
+                  title="Asignar el saldo restante a la última solicitud"
+                >
+                  <Wand2 className="h-3.5 w-3.5 mr-1" />
+                  Ajustar saldo
+                </Button>
+              )}
             </div>
-          ) : (
-            <ScrollArea className="flex-1 min-h-0 rounded-md border">
-              <div className="space-y-2 p-2">
-                {drafts.map((d) => (
-                  <div key={d.refund.id} className="flex items-center gap-2 rounded-md border p-3 bg-card">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{d.refund.fullName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {d.refund.rut} • {d.refund.publicId} • Saldo a pagar {formatCurrency(d.refund.remainingAmount)}
-                      </div>
-                    </div>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={d.amount}
-                      onChange={(e) => updateAmount(d.refund.id, e.target.value)}
-                      className="w-36"
-                    />
-                    <Button variant="ghost" size="icon" onClick={() => removeDraft(d.refund.id)}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
-        </div>
-
-        <Separator className="shrink-0" />
-
-        {/* Search + list (fixed height, always visible) */}
-        <div className="shrink-0 space-y-2 flex flex-col">
-          <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-            Agregar solicitud
-          </Label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nombre, RUT o ID público..."
-              className="pl-9"
-            />
-          </div>
-          <ScrollArea className="h-48 rounded-md border">
-            {filtered.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground text-center">
-                No hay solicitudes pendientes que coincidan.
+            {drafts.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center p-6 text-sm text-muted-foreground text-center">
+                Aún no has agregado solicitudes.<br />
+                Búscalas en el panel de la derecha.
               </div>
             ) : (
-              <div className="divide-y">
-                {filtered.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => addRefund(r)}
-                    className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{r.fullName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.rut} • {r.publicId}
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="space-y-2 p-3">
+                  {drafts.map((d) => {
+                    const over = d.amount > d.refund.remainingAmount + 0.5
+                    return (
+                      <div key={d.refund.id} className="flex items-center gap-2 rounded-md border p-3 bg-background">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate text-sm">{d.refund.fullName}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {d.refund.rut} • Saldo {formatCurrency(d.refund.remainingAmount)}
+                          </div>
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={d.amount}
+                          onChange={(e) => updateAmount(d.refund.id, e.target.value)}
+                          className={`w-32 ${over ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                        />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeDraft(d.refund.id)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium">{formatCurrency(r.remainingAmount)}</div>
-                      {r.reconciledAmount > 0 && (
-                        <Badge variant="outline" className="text-[10px] mt-1">Parcial</Badge>
-                      )}
-                    </div>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
             )}
-          </ScrollArea>
+          </div>
+
+          {/* Buscar y agregar */}
+          <div className="md:col-span-2 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
+            <div className="shrink-0 px-3 py-2 border-b bg-muted/30">
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                Agregar solicitud
+              </Label>
+            </div>
+            <div className="shrink-0 p-3 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Nombre, RUT o ID público..."
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <ScrollArea className="flex-1 min-h-0">
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground text-center">
+                  No hay solicitudes pendientes que coincidan.
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {filtered.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => addRefund(r)}
+                      className="w-full text-left p-3 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate text-sm">{r.fullName}</div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {r.rut}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-sm font-medium">{formatCurrency(r.remainingAmount)}</div>
+                        {r.reconciledAmount > 0 && (
+                          <Badge variant="outline" className="text-[10px] mt-1">Parcial</Badge>
+                        )}
+                      </div>
+                      <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </div>
 
         <DialogFooter>
