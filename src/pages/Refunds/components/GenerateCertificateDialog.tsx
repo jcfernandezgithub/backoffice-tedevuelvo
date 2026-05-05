@@ -31,6 +31,7 @@ import {
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
+import { getPlanByAmount, POL347_CONFIG } from './pdfGenerators/pol347Config'
 import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
 
 // Mapeo de instituciones (igual que en calculadoraUtils)
