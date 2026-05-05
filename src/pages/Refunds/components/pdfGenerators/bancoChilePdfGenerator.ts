@@ -179,12 +179,10 @@ const generatePol347PDF = async (
   const saldoFmt = formatCLP(saldoInsoluto)
   const primaFmt = formatCLP(primaUnica)
 
-  const beneficiario = options.isBancoChile
-    ? BENEFICIARIO_BANCO_CHILE
-    : {
-        nombre: formData.beneficiarioNombre || '',
-        rut: formData.beneficiarioRut || '',
-      }
+  const beneficiario = {
+    nombre: formData.beneficiarioNombre || (options.isBancoChile ? BENEFICIARIO_BANCO_CHILE.nombre : ''),
+    rut: formData.beneficiarioRut || (options.isBancoChile ? BENEFICIARIO_BANCO_CHILE.rut : ''),
+  }
 
   // ════════════════════════════════════════════════════════════════════════
   // PÁGINA 1 — Carátula (códigos, contratante, asegurado, tipo, vigencia, plan)
