@@ -162,7 +162,7 @@ const obtenerTasaBanco = (
   try {
     const tramo = edad <= 55 ? "hasta_55" : "desde_56";
     const montoRedondeado = Math.round(monto / 1000000) * 1000000;
-    const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 60000000);
+    const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 100000000);
 
     if (!tasasSeguro[banco as keyof typeof tasasSeguro]) {
       console.warn(`Banco no encontrado: ${banco}`);
