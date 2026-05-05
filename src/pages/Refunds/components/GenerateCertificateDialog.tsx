@@ -26,8 +26,8 @@ import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
 import { 
   isBancoChile, 
-  generateBancoChilePrimePDF, 
-  generateBancoChileStandardPDF,
+  generateBancoChilePol347PDF,
+  generateGenericPol347PDF,
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
