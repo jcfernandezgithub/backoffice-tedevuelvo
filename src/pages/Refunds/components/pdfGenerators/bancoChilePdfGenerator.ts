@@ -753,7 +753,7 @@ const generatePol347PDF = async (
   y += 3
   doc.text(`• SI: Saldo Insoluto Inicial = ${saldoFmt}`, margin + 5, y)
   y += 3
-  const tbmLabel = options.isBancoChile ? 'Tasa Bruta Mensual' : 'Tasa Comercial Bruta Mensual'
+  const tbmLabel = options.useBancoChileTemplate ? 'Tasa Bruta Mensual' : 'Tasa Comercial Bruta Mensual'
   doc.text(`• TBM: ${tbmLabel} (Plan ${plan}) = ${formatTasa(tbm)} por mil`, margin + 5, y)
   y += 3
   doc.text(`• Nper: plazo del crédito en meses = ${nper}`, margin + 5, y)
@@ -914,7 +914,7 @@ const generatePol347PDF = async (
 
   sectionHeader('Beneficiarios')
   doc.setFont('helvetica', 'normal')
-  if (options.isBancoChile) {
+  if (options.useBancoChileTemplate) {
     writeWrapped(
       'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.',
     )
@@ -1276,7 +1276,8 @@ export const generateBancoChilePol347PDF = (
   firmaCngBase64: string,
 ): Promise<Blob> =>
   generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
-    isBancoChile: true,
+    useBancoChileTemplate: true,
+    useBancoChileBeneficiaryFallback: true,
   })
 
 /**
@@ -1291,7 +1292,24 @@ export const generateGenericPol347PDF = (
   firmaCngBase64: string,
 ): Promise<Blob> =>
   generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
-    isBancoChile: false,
+    useBancoChileTemplate: false,
+    useBancoChileBeneficiaryFallback: false,
+  })
+
+/**
+ * Genera el certificado Pol347 para Chevrolet SF (mismo layout que Banco de Chile,
+ * pero el beneficiario irrevocable es el ingresado en el formulario, sin fallback fijo).
+ */
+export const generateChevroletSfPol347PDF = (
+  refund: RefundRequest,
+  formData: BancoChileCertificateData,
+  firmaAugustarBase64: string,
+  firmaTdvBase64: string,
+  firmaCngBase64: string,
+): Promise<Blob> =>
+  generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
+    useBancoChileTemplate: true,
+    useBancoChileBeneficiaryFallback: false,
   })
 
 // ─── Aliases legacy ───────────────────────────────────────────────────────
