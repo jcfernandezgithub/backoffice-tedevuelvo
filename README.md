@@ -1,8 +1,23 @@
 # Welcome to your Lovable project
 
-## Versión 3.6.0
+## Versión 3.7.0
 
 ## Changelog
+
+### Versión 3.7.0 - 2026-05-05
+
+#### Certificados Póliza 347 (Desgravamen)
+- **Reemplazo de Pólizas 342/344**: se sustituyó la generación de certificados antiguos por la nueva **Póliza 347**, en sus dos variantes: genérica (`Pol347_GENERICO`) y Banco de Chile (`Pol347_BCO_CHILE`).
+- **Copia literal de los PDFs de referencia**: 10 páginas redibujadas con jsPDF, respetando textos legales, tablas de Plan 1/2/3, casillas, márgenes y bloques de firmas.
+- **Nueva matriz de Planes**:
+  - Plan 1 → ≤ $20.000.000
+  - Plan 2 → $20.000.001 – $60.000.000
+  - Plan 3 → $60.000.001 – $100.000.000
+- **Tasas TBM** por plan y tramo de edad aplicadas al cálculo de Prima Única.
+- **Diferenciación literal**: ajustes de etiquetas (`Tasa Bruta Mensual` vs `Tasa Comercial Bruta Mensual`) y bloque de beneficiario (Banco de Chile como beneficiario irrevocable vs texto genérico del acreedor).
+- **Layout de firmas corregido**: las firmas TDV / AuguStar van inline (dos columnas) tras la "Autorización para el Tratamiento de Datos Personales", sin página adicional, replicando el documento original.
+- **Nombre de archivo**: `Cert_Cobertura_Desgravamen_Pol347_<RUT>_<Folio>.pdf`.
+- **Backups**: se mantienen `bancoChilePdfGenerator.backup.ts` y `GenerateCertificateDialog.backup.tsx` para rollback rápido.
 
 ### Versión 3.6.0 - 2026-04-29
 
