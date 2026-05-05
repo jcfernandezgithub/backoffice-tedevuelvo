@@ -2944,16 +2944,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 Banco de Chile
               </Badge>
             )}
-            {isPrimeFormat && (
-              <Badge variant="secondary" className="bg-amber-500/20 text-amber-600 border-amber-500/30">
-                Póliza 344 (Prime)
-              </Badge>
-            )}
-            {!isPrimeFormat && (
-              <Badge variant="outline" className="text-muted-foreground">
-                Póliza 342
-              </Badge>
-            )}
+            <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
+              Póliza 347
+            </Badge>
           </DialogTitle>
         </DialogHeader>
         
