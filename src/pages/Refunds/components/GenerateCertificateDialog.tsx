@@ -26,8 +26,10 @@ import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
 import { 
   isBancoChile, 
+  usesBancoChileTemplate,
   generateBancoChilePol347PDF,
   generateGenericPol347PDF,
+  generateChevroletSfPol347PDF,
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
@@ -357,6 +359,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
   // Check if this refund is for Banco de Chile
   const isBancoChileRefund = isBancoChile(refund.institutionId)
+  const usesChileTemplate = usesBancoChileTemplate(refund.institutionId)
+  const isChevroletSf = usesChileTemplate && !isBancoChileRefund
 
   // State for RUT validation error
   const [rutError, setRutError] = useState<string | undefined>(undefined)
@@ -430,8 +434,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       return
     }
     
-    // Validate RUT if provided (for Banco de Chile)
-    if (isBancoChileRefund && formData.beneficiarioRut) {
+    // Validate beneficiary (Banco de Chile y Chevrolet SF lo requieren obligatoriamente)
+    if (usesChileTemplate) {
+      if (!formData.beneficiarioNombre.trim() || !formData.beneficiarioRut.trim()) {
+        toast({
+          title: 'Error de validación',
+          description: 'Debe ingresar el nombre y RUT del beneficiario irrevocable.',
+          variant: 'destructive',
+        })
+        return
+      }
       const rutValidation = validateRut(formData.beneficiarioRut)
       if (!rutValidation.isValid) {
         setRutError(rutValidation.error)
