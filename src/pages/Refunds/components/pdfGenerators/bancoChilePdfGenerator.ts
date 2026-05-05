@@ -1149,35 +1149,38 @@ const generatePol347PDF = async (
   )
 
   // ════════════════════════════════════════════════════════════════════════
-  // PÁGINA 9 — Firmas
+  // Autorización Datos Personales + Firmas (inline, sin página separada)
   // ════════════════════════════════════════════════════════════════════════
-  doc.addPage()
-  y = 15
-
+  newPageIfNeeded(60)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.text('Firmas', pageWidth / 2, y, { align: 'center' })
-  y += 10
-
-  doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text(`Lugar y Fecha: __________________, ${todayFormatted()}`, margin, y); y += 10
-  doc.text(`Folio: ${formData.folio || ''}`, margin, y); y += 20
+  doc.text('Autorización para el Tratamiento de Datos Personales', margin, y); y += 4
+  doc.setFont('helvetica', 'normal')
+  writeWrapped(
+    'Por este acto, y según lo dispuesto en la Ley N°19.628 sobre protección de la vida privada y sus modificaciones, doy mi consentimiento y autorización expresa a Augustar Seguros de Vida S.A. y sus representantes, sucesores y cesionarios puedan proceder a la transmisión o transferencia de todos o parte de los datos personales e información que declaro haber entregado voluntariamente a esta y/o puesto voluntariamente a su disposición, a cualesquiera terceros prestadores de servicios que estuvieren ubicados dentro o fuera de chile, para efectos del presente contrato de seguro y, en particular, para poder hacer efectivo el (los) beneficio (s) que pudieren estar asociados al seguro contratado.',
+  )
 
-  // Tres firmas en línea
+  // Dos firmas en línea (TDV SERVICIOS SPA y AuguStar Seguros de Vida S.A.)
+  newPageIfNeeded(35)
+  y += 8
+  const sigW = 40
+  const sigH = 15
+  const col1X = margin + 20
+  const col2X = pageWidth - margin - 20 - sigW
   if (firmaTdvBase64) {
-    try { doc.addImage(firmaTdvBase64, 'PNG', margin + 8, y - 12, 30, 15) } catch { /* noop */ }
+    try { doc.addImage(firmaTdvBase64, 'PNG', col1X, y, sigW, sigH) } catch { /* noop */ }
   }
   if (firmaAugustarBase64) {
-    try { doc.addImage(firmaAugustarBase64, 'JPEG', 78, y - 12, 30, 15) } catch { /* noop */ }
+    try { doc.addImage(firmaAugustarBase64, 'JPEG', col2X, y, sigW, sigH) } catch { /* noop */ }
   }
-  doc.text('________________________', margin, y)
-  doc.text('________________________', 70, y)
-  doc.text('________________________', 140, y)
+  y += sigH + 2
+  doc.setLineWidth(0.3)
+  doc.line(col1X - 5, y, col1X + sigW + 5, y)
+  doc.line(col2X - 5, y, col2X + sigW + 5, y)
   y += 4
-  doc.text(POL347_CONFIG.contratante.nombre, margin, y)
-  doc.text(POL347_CONFIG.aseguradora.nombre, 70, y)
-  doc.text('Asegurado', 140, y)
+  doc.setFontSize(8)
+  doc.text('TDV SERVICIOS SPA', col1X + sigW / 2, y, { align: 'center' })
+  doc.text('AuguStar Seguros de Vida S.A.', col2X + sigW / 2, y, { align: 'center' })
 
   // ════════════════════════════════════════════════════════════════════════
   // PÁGINA 10 — Procedimiento de Liquidación de Siniestros (Circular 2106)
