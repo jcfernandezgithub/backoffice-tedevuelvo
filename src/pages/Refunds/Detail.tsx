@@ -45,6 +45,7 @@ import { Money } from '@/components/common/Money'
 import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+import { obtenerTasaPreferencialTDV } from '@/lib/calculadoraUtils'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 
 const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
@@ -55,12 +56,6 @@ const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
   coopeuch: 'COOPEUCH', cencosud: 'BANCO CENCOSUD', forum: 'FORUM', tanner: 'TANNER',
   cooperativas: 'COOPERATIVAS',
 }
-
-const UMBRAL_MONTO_ALTO_DETAIL = 20000000
-const TASA_PREF_HASTA_55 = 0.0003
-const TASA_PREF_DESDE_56 = 0.00039
-const TASA_PREF_HASTA_55_ALTO = 0.000344
-const TASA_PREF_DESDE_56_ALTO = 0.000343
 
 function getRatesForSnapshot(snapshot: any): { tasaBanco: number | null; tasaTDV: number | null } {
   if (!snapshot) return { tasaBanco: null, tasaTDV: null }
@@ -90,9 +85,7 @@ function getRatesForSnapshot(snapshot: any): { tasaBanco: number | null; tasaTDV
     }
   } catch { /* ignore */ }
 
-  const tasaTDV = saldo > UMBRAL_MONTO_ALTO_DETAIL
-    ? (edad <= 55 ? TASA_PREF_HASTA_55_ALTO : TASA_PREF_DESDE_56_ALTO)
-    : (edad <= 55 ? TASA_PREF_HASTA_55 : TASA_PREF_DESDE_56)
+  const tasaTDV = obtenerTasaPreferencialTDV(saldo, edad)
 
   return { tasaBanco, tasaTDV }
 }
