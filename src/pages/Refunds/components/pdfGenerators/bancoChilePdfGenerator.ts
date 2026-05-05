@@ -96,7 +96,7 @@ const todayFormatted = (): string => {
 const parseSaldo = (s: string): number =>
   parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0
 
-/** Determina si una entidad es Banco de Chile */
+/** Determina si una entidad es estrictamente Banco de Chile (para fallback de beneficiario fijo). */
 export const isBancoChile = (institution: string | undefined | null): boolean => {
   if (!institution) return false
   const n = institution.toLowerCase().trim()
@@ -107,6 +107,16 @@ export const isBancoChile = (institution: string | undefined | null): boolean =>
     n.includes('banco de chile') ||
     n.includes('banco chile')
   )
+}
+
+/** Determina si una entidad utiliza la plantilla Pol347 de Banco de Chile
+ *  (mismo layout: bloque "Beneficiario Irrevocable Designado" y label "Tasa Bruta Mensual").
+ *  Aplica a Banco de Chile y a Chevrolet SF. */
+export const usesBancoChileTemplate = (institution: string | undefined | null): boolean => {
+  if (!institution) return false
+  const n = institution.toLowerCase().trim()
+  if (isBancoChile(n)) return true
+  return n === 'chevrolet sf' || n === 'chevrolet-sf' || n.includes('chevrolet')
 }
 
 /**
@@ -132,7 +142,7 @@ const generatePol347PDF = async (
   firmaAugustarBase64: string,
   firmaTdvBase64: string,
   _firmaCngBase64: string,
-  options: { isBancoChile: boolean },
+  options: { useBancoChileTemplate: boolean; useBancoChileBeneficiaryFallback: boolean },
 ): Promise<Blob> => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -180,8 +190,8 @@ const generatePol347PDF = async (
   const primaFmt = formatCLP(primaUnica)
 
   const beneficiario = {
-    nombre: formData.beneficiarioNombre || (options.isBancoChile ? BENEFICIARIO_BANCO_CHILE.nombre : ''),
-    rut: formData.beneficiarioRut || (options.isBancoChile ? BENEFICIARIO_BANCO_CHILE.rut : ''),
+    nombre: formData.beneficiarioNombre || (options.useBancoChileBeneficiaryFallback ? BENEFICIARIO_BANCO_CHILE.nombre : ''),
+    rut: formData.beneficiarioRut || (options.useBancoChileBeneficiaryFallback ? BENEFICIARIO_BANCO_CHILE.rut : ''),
   }
 
   // ════════════════════════════════════════════════════════════════════════
