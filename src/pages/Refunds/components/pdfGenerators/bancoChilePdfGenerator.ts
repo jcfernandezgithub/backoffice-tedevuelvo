@@ -1,16 +1,21 @@
 /**
- * Generadores de PDF para Certificados de Cobertura - BANCO DE CHILE
- * 
- * Póliza 342: Créditos ≤ 20.000.000 CLP
- * Póliza 344: Créditos > 20.000.000 CLP
- * 
- * Tasas de visualización en PDF (estéticas):
- * - Póliza 342: 0.30 (18-55 años), 0.39 (56-65 años)
- * - Póliza 344: 0.34 (ambos rangos)
+ * Generador de PDF para Certificado de Cobertura - BANCO DE CHILE
+ *
+ * Póliza N° 347 (vigente desde mayo 2026). Reemplaza las pólizas anteriores
+ * 342 y 344. Aplica los 3 Planes según monto del crédito y la matriz de
+ * Tasas Comerciales Brutas Mensuales por edad. Beneficiario irrevocable
+ * fijo: Banco de Chile (RUT 97.004.000-5).
  */
 
 import jsPDF from 'jspdf'
 import { RefundRequest } from '@/types/refund'
+import {
+  POL347_CONFIG,
+  calcPrimaUnicaPol347,
+  formatCLP,
+  formatTasa,
+  type Pol347Plan,
+} from './pol347Config'
 
 export interface BancoChileCertificateData {
   folio: string
@@ -31,44 +36,16 @@ export interface BancoChileCertificateData {
   beneficiarioRut: string
 }
 
-// Configuración específica para Banco de Chile
-const BANCO_CHILE_CONFIG = {
-  poliza342: {
-    numero: '342',
-    codigoCMF: 'POL 220150573',
-    codigoCMFDisplay: 'POL 2 2015 0573',
-    vigenciaInicio: '13/10/2025',
-    vigenciaFin: '12/09/2028',
-    capitalMaximo: 20000000,
-    tasas: {
-      '18-55': 0.3000,
-      '56-65': 0.3900,
-    },
-    corredor: {
-      nombre: 'Prime Corredores de Seguros SPA.',
-      rut: '76.196.802-5',
-    },
-    comisiones: {
-      recaudador: 'TDV SERVICIOS SPA, Rut: 78.168.126-1',
-      comisionCobranza: '35% + IVA sobre la prima recaudada',
-      corredorComision: 'PRIME CORREDORES DE SEGUROS SPA, Rut: 76.196.802-5',
-      comisionIntermediacion: '15% + IVA sobre la prima recaudada',
-    },
-  },
-  poliza344: {
-    numero: '344',
-    codigoCMF: 'POL 2 2015 0573',
-    vigenciaInicio: '01/12/2025',
-    vigenciaFin: '30/11/2028',
-    capitalMaximo: 60000000,
-    tasas: {
-      '18-55': 0.3440,
-      '56-65': 0.3430,
-    },
-    corredor: {
-      nombre: 'Prime Corredores de Seguros SPA',
-      rut: '76.196.802-5',
-    },
+// Re-exportado para compatibilidad con consumidores que importan BANCO_CHILE_CONFIG.
+// Se mantiene una forma compatible mínima para no romper los imports actuales.
+export const BANCO_CHILE_CONFIG = {
+  pol347: {
+    numero: POL347_CONFIG.numero,
+    codigoCMF: POL347_CONFIG.codigoCMF,
+    vigenciaInicio: POL347_CONFIG.vigenciaInicio,
+    vigenciaFin: POL347_CONFIG.vigenciaFin,
+    capitalMaximo: POL347_CONFIG.capitalMaximo,
+    corredor: POL347_CONFIG.corredor,
   },
 }
 
@@ -98,20 +75,6 @@ const getTodayFormatted = (): string => {
   const month = String(today.getMonth() + 1).padStart(2, '0')
   const year = today.getFullYear()
   return `${day}/${month}/${year}`
-}
-
-const getTasaBrutaMensual342 = (age?: number): number => {
-  if (!age) return BANCO_CHILE_CONFIG.poliza342.tasas['18-55']
-  if (age >= 18 && age <= 55) return BANCO_CHILE_CONFIG.poliza342.tasas['18-55']
-  if (age >= 56 && age <= 65) return BANCO_CHILE_CONFIG.poliza342.tasas['56-65']
-  return BANCO_CHILE_CONFIG.poliza342.tasas['18-55']
-}
-
-const getTasaBrutaMensual344 = (age?: number): number => {
-  if (!age) return BANCO_CHILE_CONFIG.poliza344.tasas['18-55']
-  if (age >= 18 && age <= 55) return BANCO_CHILE_CONFIG.poliza344.tasas['18-55']
-  if (age >= 56 && age <= 65) return BANCO_CHILE_CONFIG.poliza344.tasas['56-65']
-  return BANCO_CHILE_CONFIG.poliza344.tasas['18-55']
 }
 
 const parseSaldoInsoluto = (saldoStr: string): number => {
