@@ -1770,9 +1770,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
       doc.rect(margin, y - 3, 60, 6, 'S')
-      doc.text('POL 220150573', margin + 2, y + 1)
+      doc.text(POL347_CONFIG.codigoCMF, margin + 2, y + 1)
       doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
-      doc.text('342', pageWidth - margin - 38, y + 1)
+      doc.text(POL347_CONFIG.numero, pageWidth - margin - 38, y + 1)
       y += 12
 
       // CONTRATANTE
@@ -1830,7 +1830,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       drawCheckbox(margin, y, false)
       doc.text('Individual', margin + 7, y)
       doc.rect(margin + 35, y - 3, 30, 5, 'S')
-      doc.text('13/10/2025', margin + 37, y)
+      doc.text(POL347_CONFIG.vigenciaInicio, margin + 37, y)
       doc.text('Inicio', margin + 70, y)
       drawCheckbox(margin + 100, y, true)
       doc.text('SI', margin + 107, y)
@@ -1839,13 +1839,14 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       drawCheckbox(margin, y, true)
       doc.text('Colectiva', margin + 7, y)
       doc.rect(margin + 35, y - 3, 30, 5, 'S')
-      doc.text('12/09/2028', margin + 37, y)
+      doc.text(POL347_CONFIG.vigenciaFin, margin + 37, y)
       doc.text('Termino', margin + 70, y)
       drawCheckbox(margin + 100, y, false)
       doc.text('NO', margin + 107, y)
       y += 12
 
-      // PLAN and PRIMA - Póliza 342 = Plan 1
+      // PLAN and PRIMA - Póliza 347 (Plan dinámico según monto del crédito)
+      const planActual = getPlanByAmount(saldoInsoluto)
       const primaUnicaFormatted = `$${primaUnica.toLocaleString('es-CL')}`
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(9)
@@ -1854,14 +1855,20 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       y += 5
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
-      drawCheckbox(margin, y, true) // Plan 1 checked for Póliza 342
+      drawCheckbox(margin, y, planActual === 1)
       doc.text('Plan 1', margin + 7, y)
       doc.rect(margin + 50, y - 3, 40, 5, 'S')
-      doc.text(primaUnicaFormatted, margin + 52, y) // Prima Única in first row
+      if (planActual === 1) doc.text(primaUnicaFormatted, margin + 52, y)
       y += 6
-      drawCheckbox(margin, y, false)
+      drawCheckbox(margin, y, planActual === 2)
       doc.text('Plan 2', margin + 7, y)
       doc.rect(margin + 50, y - 3, 40, 5, 'S')
+      if (planActual === 2) doc.text(primaUnicaFormatted, margin + 52, y)
+      y += 6
+      drawCheckbox(margin, y, planActual === 3)
+      doc.text('Plan 3', margin + 7, y)
+      doc.rect(margin + 50, y - 3, 40, 5, 'S')
+      if (planActual === 3) doc.text(primaUnicaFormatted, margin + 52, y)
       y += 12
 
       // MONEDA, PERIODO DE PAGO, CONDICIONES, COMISIÓN
