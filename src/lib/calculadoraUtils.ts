@@ -3,13 +3,33 @@ import tasasCesantiaBanco from "../data/tasas_cesantia_banco.json";
 import tasasCesantiaTeDevuelvo from "../data/tasas_cesantia_te_devuelvo.json";
 import { formatCurrency } from "./formatters";
 
-// Constantes de tasas preferenciales por tramo de edad
-const TASA_PREFERENCIAL_HASTA_55 = 0.0003; // 0.03% mensual
-const TASA_PREFERENCIAL_DESDE_56 = 0.00039; // 0.039% mensual
-const TASA_PREFERENCIAL_HASTA_55_ALTO = 0.000344; // 0.0344% mensual
-const TASA_PREFERENCIAL_DESDE_56_ALTO = 0.000343; // 0.0343% mensual
-const UMBRAL_MONTO_ALTO = 20000000; // 20 millones
+// ============================================================================
+// Tasas preferenciales TDV - Plan 3 (mensual ‰ sobre saldo insoluto)
+// ----------------------------------------------------------------------------
+// Tramo 1: saldo ≤ $20M       → 0.34‰ (18-55) | 0.44‰ (56-64)
+// Tramo 2: $20M < saldo ≤ $60M → 0.44‰ (todas las edades)
+// Tramo 3: $60M < saldo ≤ $100M → 0.44‰ (18-55) | 0.50‰ (56-64)
+// ============================================================================
+const TASA_TDV_TRAMO_1_JOVEN = 0.00034; // ≤ $20M, 18-55
+const TASA_TDV_TRAMO_1_MAYOR = 0.00044; // ≤ $20M, 56-64
+const TASA_TDV_TRAMO_2 = 0.00044;       // $20M - $60M (cualquier edad)
+const TASA_TDV_TRAMO_3_JOVEN = 0.00044; // $60M - $100M, 18-55
+const TASA_TDV_TRAMO_3_MAYOR = 0.00050; // $60M - $100M, 56-64
+const UMBRAL_TRAMO_1 = 20_000_000;
+const UMBRAL_TRAMO_2 = 60_000_000;
 const REFUND_MARGIN_PERCENTAGE = 10; // 10% margen
+
+/**
+ * Selección de tasa preferencial TDV (Plan 3) para desgravamen.
+ * @param saldoInsoluto Saldo insoluto del crédito en CLP
+ * @param edad Edad del asegurado en años
+ */
+export const obtenerTasaPreferencialTDV = (saldoInsoluto: number, edad: number): number => {
+  const esMayor = edad >= 56;
+  if (saldoInsoluto <= UMBRAL_TRAMO_1) return esMayor ? TASA_TDV_TRAMO_1_MAYOR : TASA_TDV_TRAMO_1_JOVEN;
+  if (saldoInsoluto <= UMBRAL_TRAMO_2) return TASA_TDV_TRAMO_2;
+  return esMayor ? TASA_TDV_TRAMO_3_MAYOR : TASA_TDV_TRAMO_3_JOVEN;
+};
 
 // Mapeo de instituciones
 const MAPEO_INSTITUCIONES: { [key: string]: string } = {
@@ -285,9 +305,7 @@ export const calcularDevolucion = (
       }
 
       const { tasa: tasaActual, cuotasUtilizadas, montoRedondeado } = resultadoTasa;
-      const tasaPreferencial = saldo > UMBRAL_MONTO_ALTO
-        ? (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55_ALTO : TASA_PREFERENCIAL_DESDE_56_ALTO)
-        : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
+      const tasaPreferencial = obtenerTasaPreferencialTDV(saldo, edad);
 
       // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
       // del crédito original, no sobre el saldo insoluto. El saldo insoluto
@@ -364,9 +382,7 @@ export const calcularDevolucion = (
     }
 
     const { tasa: tasaActual, cuotasUtilizadas, montoRedondeado } = resultadoTasa;
-    const tasaPreferencial = saldo > UMBRAL_MONTO_ALTO
-      ? (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55_ALTO : TASA_PREFERENCIAL_DESDE_56_ALTO)
-      : (edad <= 55 ? TASA_PREFERENCIAL_HASTA_55 : TASA_PREFERENCIAL_DESDE_56);
+    const tasaPreferencial = obtenerTasaPreferencialTDV(saldo, edad);
 
     // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
     // del crédito original, no sobre el saldo insoluto. El saldo insoluto

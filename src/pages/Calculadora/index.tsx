@@ -32,13 +32,13 @@ const formSchema = z.object({
   }, "La edad debe estar entre 18 y 65 años"),
   montoCredito: z.number({
     required_error: "Ingresa el monto del crédito",
-  }).min(500000, "El monto mínimo es $500.000").max(60000000, "El monto máximo es $60.000.000"),
+  }).min(500000, "El monto mínimo es $500.000").max(100000000, "El monto máximo es $100.000.000"),
   cuotasTotales: z.number({
     required_error: "Ingresa las cuotas totales",
-  }).min(6, "Mínimo 6 cuotas").max(72, "Máximo 72 cuotas"),
+  }).min(3, "Mínimo 3 cuotas").max(80, "Máximo 80 cuotas"),
   cuotasPendientes: z.number({
     required_error: "Ingresa las cuotas pendientes",
-  }).min(1, "Mínimo 1 cuota pendiente"),
+  }).min(1, "Mínimo 1 cuota pendiente").max(80, "Máximo 80 cuotas pendientes"),
   tipoSeguro: z.enum(["desgravamen", "cesantia", "ambos"], {
     required_error: "Selecciona el tipo de seguro",
   }),
@@ -627,7 +627,7 @@ export default function CalculadoraPage() {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Entre $500.000 y $60.000.000
+                        Entre $500.000 y $100.000.000
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -646,8 +646,8 @@ export default function CalculadoraPage() {
                           <Input
                             type="number"
                             placeholder="36"
-                            min={6}
-                            max={72}
+                            min={3}
+                            max={80}
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
                           />
@@ -668,7 +668,7 @@ export default function CalculadoraPage() {
                             type="number"
                             placeholder="24"
                             min={1}
-                            max={cuotasTotales || 72}
+                            max={cuotasTotales || 80}
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
                           />
