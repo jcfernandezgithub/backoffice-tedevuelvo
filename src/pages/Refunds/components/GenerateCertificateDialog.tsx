@@ -26,8 +26,10 @@ import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
 import { 
   isBancoChile, 
+  usesBancoChileTemplate,
   generateBancoChilePol347PDF,
   generateGenericPol347PDF,
+  generateChevroletSfPol347PDF,
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
@@ -357,6 +359,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
   // Check if this refund is for Banco de Chile
   const isBancoChileRefund = isBancoChile(refund.institutionId)
+  const usesChileTemplate = usesBancoChileTemplate(refund.institutionId)
+  const isChevroletSf = usesChileTemplate && !isBancoChileRefund
 
   // State for RUT validation error
   const [rutError, setRutError] = useState<string | undefined>(undefined)
@@ -430,8 +434,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       return
     }
     
-    // Validate RUT if provided (for Banco de Chile)
-    if (isBancoChileRefund && formData.beneficiarioRut) {
+    // Validate beneficiary (Banco de Chile y Chevrolet SF lo requieren obligatoriamente)
+    if (usesChileTemplate) {
+      if (!formData.beneficiarioNombre.trim() || !formData.beneficiarioRut.trim()) {
+        toast({
+          title: 'Error de validación',
+          description: 'Debe ingresar el nombre y RUT del beneficiario irrevocable.',
+          variant: 'destructive',
+        })
+        return
+      }
       const rutValidation = validateRut(formData.beneficiarioRut)
       if (!rutValidation.isValid) {
         setRutError(rutValidation.error)
@@ -1711,10 +1723,14 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       let pdfBlob: Blob | undefined
 
 
-      // Generador unificado Pol347 (genérico vs Banco de Chile)
-      pdfBlob = isBancoChileRefund
-        ? await generateBancoChilePol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
-        : await generateGenericPol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+      // Generador unificado Pol347 (Banco de Chile / Chevrolet SF / genérico)
+      if (isBancoChileRefund) {
+        pdfBlob = await generateBancoChilePol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+      } else if (isChevroletSf) {
+        pdfBlob = await generateChevroletSfPol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+      } else {
+        pdfBlob = await generateGenericPol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+      }
 
       // Descarga local
       if (pdfBlob) {
@@ -1791,6 +1807,11 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
             {isBancoChileRefund && (
               <Badge variant="secondary" className="bg-blue-500/20 text-blue-600 border-blue-500/30">
                 Banco de Chile
+              </Badge>
+            )}
+            {isChevroletSf && (
+              <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
+                Chevrolet SF
               </Badge>
             )}
             <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
@@ -1949,12 +1970,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 </div>
               </div>
 
-              {/* Sección: Beneficiario Irrevocable (solo Banco de Chile) */}
-              {isBancoChileRefund && (
+              {/* Sección: Beneficiario Irrevocable (Banco de Chile / Chevrolet SF) */}
+              {usesChileTemplate && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <User className="h-4 w-4 text-primary" />
-                    Beneficiario Irrevocable (Banco de Chile)
+                    Beneficiario Irrevocable ({isBancoChileRefund ? 'Banco de Chile' : 'Chevrolet SF'})
                   </div>
                   <div className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/30 space-y-2">
                     <div className="grid grid-cols-2 gap-2">
@@ -2226,8 +2247,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
                 </div>
               </div>
 
-              {/* Resumen del Beneficiario Irrevocable (solo Banco de Chile) */}
-              {isBancoChileRefund && (formData.beneficiarioNombre || formData.beneficiarioRut) && (
+              {/* Resumen del Beneficiario Irrevocable (Banco de Chile / Chevrolet SF) */}
+              {usesChileTemplate && (formData.beneficiarioNombre || formData.beneficiarioRut) && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm font-medium text-blue-600">
                     <User className="h-4 w-4" />
