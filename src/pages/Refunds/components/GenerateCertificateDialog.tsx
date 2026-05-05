@@ -1710,8 +1710,12 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
           pdfBlob = await generateBancoChileStandardPDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
         }
       } else if (isPrimeFormat) {
-        // Use Prime format for credits > 20 million (non-Banco de Chile)
-        pdfBlob = await generatePrimePDF()
+        // Legacy Prime path deprecated for Pol 347. Fall through to the standard
+        // generator (the plan now comes from getPlanByAmount, not from a 20M threshold).
+        pdfBlob = undefined
+      }
+      if (!pdfBlob && !isBancoChileRefund) {
+        // build with the unified Pol 347 generic generator below
       } else {
 
       const doc = new jsPDF()
