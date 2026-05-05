@@ -745,7 +745,8 @@ const generatePol347PDF = async (
   y += 3
   doc.text(`• SI: Saldo Insoluto Inicial = ${saldoFmt}`, margin + 5, y)
   y += 3
-  doc.text(`• TBM: Tasa Comercial Bruta Mensual (Plan ${plan}) = ${formatTasa(tbm)} por mil`, margin + 5, y)
+  const tbmLabel = options.isBancoChile ? 'Tasa Bruta Mensual' : 'Tasa Comercial Bruta Mensual'
+  doc.text(`• TBM: ${tbmLabel} (Plan ${plan}) = ${formatTasa(tbm)} por mil`, margin + 5, y)
   y += 3
   doc.text(`• Nper: plazo del crédito en meses = ${nper}`, margin + 5, y)
   y += 5
@@ -905,18 +906,23 @@ const generatePol347PDF = async (
 
   sectionHeader('Beneficiarios')
   doc.setFont('helvetica', 'normal')
-  writeWrapped(
-    'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.',
-  )
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.text('Beneficiario Irrevocable Designado:', margin, y)
-  y += 4
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  doc.text(`Nombre: ${beneficiario.nombre}`, margin + 3, y); y += 3
-  doc.text(`RUT: ${beneficiario.rut}`, margin + 3, y); y += 6
+  if (options.isBancoChile) {
+    writeWrapped(
+      'Será beneficiario, en carácter irrevocable, el acreedor, entidad bancaria o financiera del crédito de consumo o automotriz otorgado al asegurado siempre que dicho crédito se encuentre vigente al momento del siniestro, es decir, que no se haya extinguido por pago u otra causa.',
+    )
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.text('Beneficiario Irrevocable Designado:', margin, y)
+    y += 4
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.text(`Nombre: ${beneficiario.nombre}`, margin + 3, y); y += 3
+    doc.text(`RUT: ${beneficiario.rut}`, margin + 3, y); y += 6
+  } else {
+    writeWrapped(
+      'El beneficiario para la cobertura de Desgravamen es el acreedor del crédito de consumo o automotriz.',
+    )
+  }
 
   // ════════════════════════════════════════════════════════════════════════
   // PÁGINA 6 — Inalterabilidad, Cobertura, Exclusiones, Comisiones
