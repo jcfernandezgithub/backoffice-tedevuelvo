@@ -1,8 +1,14 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.0
+## Versión 3.7.1
 
 ## Changelog
+
+### Versión 3.7.1 - 2026-05-06
+
+#### Fix: Moneda en Certificado Póliza 347
+- **Corrección visual**: en la primera página del certificado de cobertura de desgravamen (variantes Genérico y Banco de Chile), la sección **MONEDA** marcaba por defecto **UF**. Ahora marca correctamente **Peso**, alineado con la operación real de los créditos.
+- **Archivo**: `src/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator.ts`.
 
 ### Versión 3.7.0 - 2026-05-05
 
