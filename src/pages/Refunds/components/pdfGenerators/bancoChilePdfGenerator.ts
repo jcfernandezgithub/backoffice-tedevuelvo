@@ -311,7 +311,7 @@ const generatePol347PDF = async (
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  drawCheckbox(margin, y, true)
+  drawCheckbox(margin, y, false)
   doc.text('UF', margin + 7, y)
   drawCheckbox(margin + 30, y, false)
   doc.text('Anual', margin + 37, y)
@@ -319,7 +319,7 @@ const generatePol347PDF = async (
   doc.text('Fija', margin + 82, y)
   doc.text('15% + IVA por prima', margin + 122, y)
   y += 5
-  drawCheckbox(margin, y, false)
+  drawCheckbox(margin, y, true)
   doc.text('Peso', margin + 7, y)
   drawCheckbox(margin + 30, y, false)
   doc.text('Mensual', margin + 37, y)
