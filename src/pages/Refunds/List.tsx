@@ -854,6 +854,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return overdueFilteredItems
   }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
 
+  // TEMPORAL: detectar pares Desgravamen+Cesantía dentro de la página visible
+  // para mostrar ambos valores en una misma celda (Monto estimado y Nueva prima).
+  const siblingsMap = useSiblingsMap(paginatedItems as any[])
+
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
   // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
   const idsToFetch = useMemo(() => {
