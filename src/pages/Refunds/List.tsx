@@ -39,6 +39,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
+import { useSiblingsMap, PairedAmountCell } from './components/SiblingPairCell'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -853,6 +854,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return overdueFilteredItems
   }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
 
+  // TEMPORAL: detectar pares Desgravamen+Cesantía dentro de la página visible
+  // para mostrar ambos valores en una misma celda (Monto estimado y Nueva prima).
+  const siblingsMap = useSiblingsMap(paginatedItems as any[])
+
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
   // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
   const idsToFetch = useMemo(() => {
@@ -1544,7 +1549,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}
+                          {(() => {
+                            const sib = siblingsMap.get(refund.publicId || refund.id)
+                            if (sib) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={refund.estimatedAmountCLP || 0}
+                                  siblingValue={sib.sibling.estimatedAmountCLP || 0}
+                                  selfTipo={sib.selfTipo}
+                                  siblingTipo={sib.siblingTipo}
+                                />
+                              )
+                            }
+                            return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
+                          })()}
                         </TableCell>
                         <TableCell className="text-right">
                           {(refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
@@ -1573,6 +1591,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
                             const remainingInstallments = snapshot?.remainingInstallments || 0
                             const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
+                            const sib = siblingsMap.get(refund.publicId || refund.id)
+                            if (sib) {
+                              const sSnap = sib.sibling.calculationSnapshot
+                              const sNew = sSnap?.newMonthlyPremium || 0
+                              const sCuotas = sSnap?.remainingInstallments || 0
+                              const siblingValor = Math.round(sNew * sCuotas * 1000) / 1000
+                              return (
+                                <PairedAmountCell
+                                  selfValue={valorNuevaPrima}
+                                  siblingValue={siblingValor}
+                                  selfTipo={sib.selfTipo}
+                                  siblingTipo={sib.siblingTipo}
+                                  totalClassName="font-semibold text-primary"
+                                />
+                              )
+                            }
                             return valorNuevaPrima > 0 ? (
                               <span className="font-medium text-primary">
                                 ${formatCLPNumber(valorNuevaPrima)}
@@ -1779,7 +1813,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       },
                       {
                         label: 'Monto estimado',
-                        value: `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                        value: (() => {
+                          const sib = siblingsMap.get(refund.publicId || refund.id)
+                          if (sib) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={refund.estimatedAmountCLP || 0}
+                                siblingValue={sib.sibling.estimatedAmountCLP || 0}
+                                selfTipo={sib.selfTipo}
+                                siblingTipo={sib.siblingTipo}
+                              />
+                            )
+                          }
+                          return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                        })()
                       },
                       {
                         label: 'Monto Real',
@@ -1806,6 +1853,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
                           const remainingInstallments = snapshot?.remainingInstallments || 0
                           const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
+                          const sib = siblingsMap.get(refund.publicId || refund.id)
+                          if (sib) {
+                            const sSnap = sib.sibling.calculationSnapshot
+                            const sNew = sSnap?.newMonthlyPremium || 0
+                            const sCuotas = sSnap?.remainingInstallments || 0
+                            const siblingValor = Math.round(sNew * sCuotas * 1000) / 1000
+                            return (
+                              <PairedAmountCell
+                                selfValue={valorNuevaPrima}
+                                siblingValue={siblingValor}
+                                selfTipo={sib.selfTipo}
+                                siblingTipo={sib.siblingTipo}
+                                totalClassName="font-semibold text-primary"
+                              />
+                            )
+                          }
                           return valorNuevaPrima > 0 ? (
                             <span className="font-medium text-primary">
                               ${formatCLPNumber(valorNuevaPrima)}
