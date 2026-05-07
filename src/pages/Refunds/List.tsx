@@ -1813,7 +1813,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       },
                       {
                         label: 'Monto estimado',
-                        value: `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                        value: (() => {
+                          const sib = siblingsMap.get(refund.publicId || refund.id)
+                          if (sib) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={refund.estimatedAmountCLP || 0}
+                                siblingValue={sib.sibling.estimatedAmountCLP || 0}
+                                selfTipo={sib.selfTipo}
+                                siblingTipo={sib.siblingTipo}
+                              />
+                            )
+                          }
+                          return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                        })()
                       },
                       {
                         label: 'Monto Real',
