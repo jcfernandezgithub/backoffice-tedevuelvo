@@ -1562,6 +1562,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 />
                               )
                             }
+                            // Caso AMBOS (flujo viejo): 1 sola solicitud con desglose interno
+                            const bd = computeBreakdown((refund as any).calculationSnapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.devolucion}
+                                  siblingValue={bd.cesantia.devolucion}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
+                                />
+                              )
+                            }
                             return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
                           })()}
                         </TableCell>
