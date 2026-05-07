@@ -70,7 +70,7 @@ class RefundAdminApiClient {
     if (params.limit) query.append('limit', String(params.limit))
     if (params.signatureStatus === 'signed') query.append('signatureStatus', 'signed')
     else if (params.signatureStatus === null) query.append('signatureStatus', 'null')
-    if (params.insuranceToEvaluate) query.append('insuranceToEvaluate', params.insuranceToEvaluate.toLowerCase())
+    if (params.insuranceToEvaluate) query.append('insuranceToEvaluate', params.insuranceToEvaluate.toUpperCase())
     if (params.isPartner !== undefined) query.append('isPartner', String(params.isPartner))
     if (params.hasBankInfo !== undefined) query.append('hasBankInfo', String(params.hasBankInfo))
     if (params.partnerId) query.append('partnerId', params.partnerId)
