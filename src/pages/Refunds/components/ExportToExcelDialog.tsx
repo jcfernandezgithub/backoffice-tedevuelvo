@@ -184,9 +184,9 @@ function prepareExcelData(
       'Costo Nuevo Seguro TDV': formatExcelAmount(costoNuevoSeguroTDV),
 
       // === DESGLOSE DESGRAVAMEN / CESANTÍA ===
-      'Prima Mensual Desgravamen TDV': breakdown?.desgravamen.primaTDV != null ? formatExcelAmount(breakdown.desgravamen.primaTDV) : '',
+      'Prima Total Desgravamen TDV': breakdown?.desgravamen.primaTotalTDV != null ? formatExcelAmount(breakdown.desgravamen.primaTotalTDV) : '',
       'Devolución Desgravamen': breakdown?.desgravamen.devolucion != null ? formatExcelAmount(breakdown.desgravamen.devolucion) : '',
-      'Prima Mensual Cesantía TDV': breakdown?.cesantia.primaTDV != null ? formatExcelAmount(breakdown.cesantia.primaTDV) : '',
+      'Prima Total Cesantía TDV': breakdown?.cesantia.primaTotalTDV != null ? formatExcelAmount(breakdown.cesantia.primaTotalTDV) : '',
       'Devolución Cesantía': breakdown?.cesantia.devolucion != null ? formatExcelAmount(breakdown.cesantia.devolucion) : '',
       
       // === AHORROS Y MONTOS ===
