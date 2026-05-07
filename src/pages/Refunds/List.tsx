@@ -1549,7 +1549,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}
+                          {(() => {
+                            const sib = siblingsMap.get(refund.publicId || refund.id)
+                            if (sib) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={refund.estimatedAmountCLP || 0}
+                                  siblingValue={sib.sibling.estimatedAmountCLP || 0}
+                                  selfTipo={sib.selfTipo}
+                                  siblingTipo={sib.siblingTipo}
+                                />
+                              )
+                            }
+                            return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
+                          })()}
                         </TableCell>
                         <TableCell className="text-right">
                           {(refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
