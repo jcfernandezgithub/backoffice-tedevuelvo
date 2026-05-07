@@ -1851,6 +1851,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               />
                             )
                           }
+                          const bd = computeBreakdown((refund as any).calculationSnapshot)
+                          if (bd) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={bd.desgravamen.devolucion}
+                                siblingValue={bd.cesantia.devolucion}
+                                selfTipo="desgravamen"
+                                siblingTipo="cesantia"
+                              />
+                            )
+                          }
                           return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
                         })()
                       },
