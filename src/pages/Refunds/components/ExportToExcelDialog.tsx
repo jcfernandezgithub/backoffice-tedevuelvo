@@ -99,11 +99,11 @@ function prepareExcelData(
     const gestor = refund.partnerUserId ? (gestorNameMap[refund.partnerUserId] || 'N/A') : 'N/A'
 
     // Nuevos campos solicitados
-    const primaMensualActual = calculation.currentMonthlyPremium || 0
-    const nuevaPrimaMensual = calculation.newMonthlyPremium || 0
+    const primaMensualActualBase = calculation.currentMonthlyPremium || 0
+    const nuevaPrimaMensualBase = calculation.newMonthlyPremium || 0
     const cuotasRestantes = calculation.remainingInstallments || 0
     const saldoInsoluto = calculation.averageInsuredBalance || 0
-    const costoNuevoSeguroTDV = nuevaPrimaMensual * cuotasRestantes
+    const costoNuevoSeguroTDVBase = nuevaPrimaMensualBase * cuotasRestantes
     
     // Fecha de nacimiento - buscar en refund o en calculationSnapshot
     const birthDateValue = refund.birthdate || calculation.birthDate || calculation.birthdate || null
@@ -127,6 +127,24 @@ function prepareExcelData(
     // Desglose por tipo de seguro (para caso "ambos")
     const breakdown = computeBreakdown(calculation)
 
+    // Para tipo AMBOS, sumar Desgravamen + Cesantía en columnas principales
+    const isAmbos = tipoSeguro === 'Ambos' && breakdown != null
+    const primaMensualActual = isAmbos
+      ? (breakdown!.desgravamen.primaBanco + breakdown!.cesantia.primaBanco)
+      : primaMensualActualBase
+    const nuevaPrimaMensual = isAmbos
+      ? (breakdown!.desgravamen.primaTDV + breakdown!.cesantia.primaTDV)
+      : nuevaPrimaMensualBase
+    const primaBrutaTotal = isAmbos ? nuevaPrimaMensual : primaBruta
+    const primaNetaTotal = Math.round(primaBrutaTotal / 1.19)
+    const costoNuevoSeguroTDV = isAmbos
+      ? (breakdown!.desgravamen.primaTotalTDV + breakdown!.cesantia.primaTotalTDV)
+      : costoNuevoSeguroTDVBase
+    const montoEstimadoCLP = isAmbos
+      ? (breakdown!.desgravamen.devolucion + breakdown!.cesantia.devolucion)
+      : (refund.estimatedAmountCLP || 0)
+    const tipoDetalle = isAmbos ? 'Desgravamen + Cesantía' : tipoSeguro
+
     return {
       // === DATOS DEL CLIENTE ===
       'ID Público': refund.publicId,
@@ -149,6 +167,7 @@ function prepareExcelData(
       'Número del certificado (Folio)': (calculation as any).nroFolio || (refund as any).nroFolio || 'N/A',
       'Nº Crédito': calculation.nroCredito || 'N/A',
       'Tipo de Seguro': tipoSeguro,
+      'Tipo (Detalle)': tipoDetalle,
       'Monto Total Crédito': formatExcelAmount(calculation.totalAmount || 0),
       'Cuotas Pagadas': calculation.installmentsPaid || 0,
       'Cuotas Restantes': cuotasRestantes,
@@ -159,8 +178,8 @@ function prepareExcelData(
         ? `${Math.round((nuevaPrimaMensual / primaMensualActual) * 100)}%`
         : '0%',
       'Prima Antigua': formatExcelAmount(calculation.oldMonthlyPremium || 0),
-      'Prima Nueva': formatExcelAmount(primaBruta),
-      'Prima Neta (sin IVA)': formatExcelAmount(primaNeta),
+      'Prima Nueva': formatExcelAmount(primaBrutaTotal),
+      'Prima Neta (sin IVA)': formatExcelAmount(primaNetaTotal),
       'Saldo Insoluto': formatExcelAmount(saldoInsoluto),
       'Costo Nuevo Seguro TDV': formatExcelAmount(costoNuevoSeguroTDV),
 
@@ -173,7 +192,7 @@ function prepareExcelData(
       // === AHORROS Y MONTOS ===
       'Ahorro Mensual': formatExcelAmount(calculation.savingsPerMonth || 0),
       'Ahorro Total': formatExcelAmount(calculation.totalSavings || 0),
-      'Monto Estimado CLP': formatExcelAmount(refund.estimatedAmountCLP || 0),
+      'Monto Estimado CLP': formatExcelAmount(montoEstimadoCLP),
       
       // === FECHAS ===
       'Fecha Docs Pendientes': getStatusDate('docs_pending'),
