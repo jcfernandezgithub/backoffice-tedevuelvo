@@ -40,6 +40,7 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
 import { useSiblingsMap, PairedAmountCell } from './components/SiblingPairCell'
+import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -1561,6 +1562,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 />
                               )
                             }
+                            // Caso AMBOS (flujo viejo): 1 sola solicitud con desglose interno
+                            const bd = computeBreakdown((refund as any).calculationSnapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.devolucion}
+                                  siblingValue={bd.cesantia.devolucion}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
+                                />
+                              )
+                            }
                             return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
                           })()}
                         </TableCell>
@@ -1603,6 +1616,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                   siblingValue={siblingValor}
                                   selfTipo={sib.selfTipo}
                                   siblingTipo={sib.siblingTipo}
+                                  totalClassName="font-semibold text-primary"
+                                />
+                              )
+                            }
+                            // Caso AMBOS (flujo viejo)
+                            const bd = computeBreakdown(snapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.primaTotalTDV}
+                                  siblingValue={bd.cesantia.primaTotalTDV}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
                                   totalClassName="font-semibold text-primary"
                                 />
                               )
@@ -1825,6 +1851,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               />
                             )
                           }
+                          const bd = computeBreakdown((refund as any).calculationSnapshot)
+                          if (bd) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={bd.desgravamen.devolucion}
+                                siblingValue={bd.cesantia.devolucion}
+                                selfTipo="desgravamen"
+                                siblingTipo="cesantia"
+                              />
+                            )
+                          }
                           return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
                         })()
                       },
@@ -1865,6 +1902,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 siblingValue={siblingValor}
                                 selfTipo={sib.selfTipo}
                                 siblingTipo={sib.siblingTipo}
+                                totalClassName="font-semibold text-primary"
+                              />
+                            )
+                          }
+                          const bd = computeBreakdown(snapshot)
+                          if (bd) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={bd.desgravamen.primaTotalTDV}
+                                siblingValue={bd.cesantia.primaTotalTDV}
+                                selfTipo="desgravamen"
+                                siblingTipo="cesantia"
                                 totalClassName="font-semibold text-primary"
                               />
                             )
