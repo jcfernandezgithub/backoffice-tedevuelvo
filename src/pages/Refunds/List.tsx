@@ -39,6 +39,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
+import { useSiblingsMap, PairedAmountCell } from './components/SiblingPairCell'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
