@@ -1620,6 +1620,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 />
                               )
                             }
+                            // Caso AMBOS (flujo viejo)
+                            const bd = computeBreakdown(snapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.primaTotalTDV}
+                                  siblingValue={bd.cesantia.primaTotalTDV}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
+                                  totalClassName="font-semibold text-primary"
+                                />
+                              )
+                            }
                             return valorNuevaPrima > 0 ? (
                               <span className="font-medium text-primary">
                                 ${formatCLPNumber(valorNuevaPrima)}
