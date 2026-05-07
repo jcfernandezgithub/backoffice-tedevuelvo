@@ -1853,6 +1853,22 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
                           const remainingInstallments = snapshot?.remainingInstallments || 0
                           const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
+                          const sib = siblingsMap.get(refund.publicId || refund.id)
+                          if (sib) {
+                            const sSnap = sib.sibling.calculationSnapshot
+                            const sNew = sSnap?.newMonthlyPremium || 0
+                            const sCuotas = sSnap?.remainingInstallments || 0
+                            const siblingValor = Math.round(sNew * sCuotas * 1000) / 1000
+                            return (
+                              <PairedAmountCell
+                                selfValue={valorNuevaPrima}
+                                siblingValue={siblingValor}
+                                selfTipo={sib.selfTipo}
+                                siblingTipo={sib.siblingTipo}
+                                totalClassName="font-semibold text-primary"
+                              />
+                            )
+                          }
                           return valorNuevaPrima > 0 ? (
                             <span className="font-medium text-primary">
                               ${formatCLPNumber(valorNuevaPrima)}
