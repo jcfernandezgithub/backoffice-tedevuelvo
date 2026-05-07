@@ -40,6 +40,7 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
 import { useSiblingsMap, PairedAmountCell } from './components/SiblingPairCell'
+import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
