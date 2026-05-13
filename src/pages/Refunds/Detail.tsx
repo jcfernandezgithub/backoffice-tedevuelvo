@@ -46,6 +46,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
 import { obtenerTasaPreferencialTDV } from '@/lib/calculadoraUtils'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 
 const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
@@ -1114,8 +1115,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const montoTotal = snap.totalAmount || saldo
                             const cuotasOrig = snap.originalInstallments || 0
                             const cuotasUsadas = snap.originalInstallments || 0 // closest match
-                            const currentPremium = snap.currentMonthlyPremium || 0
-                            const newPremium = snap.newMonthlyPremium || 0
+                            // Derivar primas en runtime con datos confirmados actuales para
+                            // evitar valores stale del snapshot (fix desincronización).
+                            const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
+                            const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
+                            const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
                             const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
 
                             // Intermediate values for bank premium
@@ -1224,9 +1228,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
                             if (isCesantia) return null
                             const snap = refund.calculationSnapshot
-                            const currentPremium = snap.currentMonthlyPremium || 0
-                            const newPremium = snap.newMonthlyPremium || 0
-                            const monthlySaving = snap.monthlySaving || 0
+                            const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
+                            const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
+                            const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
+                            const monthlySaving = derived.source === 'derived'
+                              ? derived.monthlySaving
+                              : (snap.monthlySaving || 0)
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1264,10 +1271,18 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = refund.calculationSnapshot
                             const ins = (snap.insuranceToEvaluate || '').toUpperCase()
                             const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            const currentPremium = snap.currentMonthlyPremium || 0
-                            const newPremium = snap.newMonthlyPremium || 0
+                            const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
+                            const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
+                            const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
                             const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
-                            const totalSaving = snap.totalSaving || 0
+                            // Recalcular ahorro total cuando las primas se derivaron en vivo
+                            // para mantener coherencia visual con los nuevos valores.
+                            const monthlySavingForTotal = derived.source === 'derived'
+                              ? derived.monthlySaving
+                              : (snap.monthlySaving || 0)
+                            const totalSaving = derived.source === 'derived'
+                              ? Math.round(monthlySavingForTotal * remaining * 0.9)
+                              : (snap.totalSaving || 0)
 
                             if (isCesantia) {
                               const TASA_CESANTIA = 0.094 // %

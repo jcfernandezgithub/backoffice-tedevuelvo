@@ -41,6 +41,7 @@ import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
 import { PairedAmountCell } from './components/SiblingPairCell'
 import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -1608,7 +1609,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell className="text-right">
                           {(() => {
                             const snapshot = (refund as any).calculationSnapshot
-                            const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
+                            const derived = derivePremiumsFromSnapshot(snapshot, (refund as any).institutionId)
+                            const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium || 0
                             const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
                             const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                             // Caso AMBOS
@@ -1867,7 +1869,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         label: 'Valor Nueva Prima',
                         value: (() => {
                           const snapshot = (refund as any).calculationSnapshot
-                          const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
+                          const derived = derivePremiumsFromSnapshot(snapshot, (refund as any).institutionId)
+                          const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium || 0
                           const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
                           const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                           const bd = computeBreakdown(snapshot)

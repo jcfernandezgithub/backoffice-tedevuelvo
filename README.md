@@ -1,8 +1,26 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.4
+## Versión 3.7.5
 
 ## Changelog
+
+### Versión 3.7.5 - 2026-05-13
+
+#### Fix: Desincronización entre snapshot guardado y datos confirmados (primas mensuales)
+- **Problema**: en `/refunds/:id` (y en exports/certificados) la "Prima mensual actual" y la "Nueva prima mensual" podían mostrar valores antiguos (ej. $3.198 cuando lo correcto era $4.531) cuando el snapshot fue calculado antes de confirmarse el saldo insoluto, monto total o cuotas del crédito. El bloque "Montos calculados (Preferencial)" se recalculaba en vivo, pero los campos del snapshot mostraban el valor stale, generando inconsistencia visible para el usuario.
+- **Causa**: la UI leía directamente `calculationSnapshot.currentMonthlyPremium` y `calculationSnapshot.newMonthlyPremium`, valores persistidos en una simulación anterior con datos previos a la confirmación.
+- **Fix (defensa en dos capas)**:
+  - **Capa 1 — UI defensiva**: nuevo helper `derivePremiumsFromSnapshot()` en `src/lib/snapshotPremiums.ts` que recalcula en runtime las primas mensuales usando los **datos confirmados actuales** (`saldoConfirmado × tasaTDV` para preferencial y `montoConfirmado × tasaBanco / cuotasConfirmadas` para banco). Si faltan datos para derivar (sin tasa, edad o saldo), hace fallback al valor del snapshot.
+  - **Capa 2 — Auto-recálculo al guardar (ya existente)**: `EditSnapshotDialog` ya dispara recálculo automático cuando se editan campos confirmados; sigue vigente.
+- **Lugares actualizados**:
+  - `src/pages/Refunds/Detail.tsx` — bloques "Prima mensual actual", "Nueva prima mensual", "Ahorro mensual" y "Ahorro total".
+  - `src/pages/Refunds/List.tsx` — columna y card "Valor Nueva Prima".
+  - `src/pages/Refunds/components/ExportToExcelDialog.tsx` — campos exportados.
+  - `src/pages/Refunds/components/GenerateExcelDialog.tsx` — `primaSeguro`.
+  - `src/pages/Refunds/components/GenerateCertificateDialog.tsx` — `getPrimaUnicaFromSnapshot`.
+  - `src/pages/Solicitudes/List.tsx` — exportación CSV.
+- **Resultado**: el usuario ve siempre los valores correctos sin necesidad de pulsar "Recalcular ahora" en el editor de snapshot.
+- **Archivos**: `src/lib/snapshotPremiums.ts` (nuevo), `Detail.tsx`, `List.tsx` (Refunds y Solicitudes), `ExportToExcelDialog.tsx`, `GenerateExcelDialog.tsx`, `GenerateCertificateDialog.tsx`.
 
 ### Versión 3.7.4 - 2026-05-13
 

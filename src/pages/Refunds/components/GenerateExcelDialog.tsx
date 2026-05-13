@@ -16,6 +16,7 @@ import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 
 interface RefundExcelData {
   policyNumber: string
@@ -141,7 +142,11 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const rutNumber = rutParts[0].replace(/\./g, '')
       const rutDV = rutParts[1] || ''
 
-      const primaBruta = calculation.newMonthlyPremium || 0
+      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
+        calculation,
+        refund.institutionId,
+      )
+      const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
       const cuotaRestantes = calculation.remainingInstallments || 0
       const primaSeguro = primaBruta * cuotaRestantes
 
