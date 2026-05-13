@@ -1271,10 +1271,18 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = refund.calculationSnapshot
                             const ins = (snap.insuranceToEvaluate || '').toUpperCase()
                             const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            const currentPremium = snap.currentMonthlyPremium || 0
-                            const newPremium = snap.newMonthlyPremium || 0
+                            const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
+                            const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
+                            const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
                             const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
-                            const totalSaving = snap.totalSaving || 0
+                            // Recalcular ahorro total cuando las primas se derivaron en vivo
+                            // para mantener coherencia visual con los nuevos valores.
+                            const monthlySavingForTotal = derived.source === 'derived'
+                              ? derived.monthlySaving
+                              : (snap.monthlySaving || 0)
+                            const totalSaving = derived.source === 'derived'
+                              ? Math.round(monthlySavingForTotal * remaining * 0.9)
+                              : (snap.totalSaving || 0)
 
                             if (isCesantia) {
                               const TASA_CESANTIA = 0.094 // %
