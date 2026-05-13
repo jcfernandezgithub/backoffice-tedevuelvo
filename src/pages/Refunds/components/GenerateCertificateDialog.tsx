@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -272,8 +273,6 @@ const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
 
   // Capa defensiva: derivar la nueva prima en runtime con datos confirmados
   // actuales en lugar de confiar en el valor persistido (que puede estar stale).
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { derivePremiumsFromSnapshot } = require('@/lib/snapshotPremiums') as typeof import('@/lib/snapshotPremiums')
   const derived = derivePremiumsFromSnapshot(snapshot, refund.institutionId)
   const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium
   const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
