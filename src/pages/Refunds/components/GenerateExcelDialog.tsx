@@ -141,7 +141,13 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const rutNumber = rutParts[0].replace(/\./g, '')
       const rutDV = rutParts[1] || ''
 
-      const primaBruta = calculation.newMonthlyPremium || 0
+      const { newMonthlyPremium: derivedNew } = (function () {
+        // Importación dinámica evita ciclo y mantiene el cambio aislado.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { derivePremiumsFromSnapshot } = require('@/lib/snapshotPremiums')
+        return derivePremiumsFromSnapshot(calculation, refund.institutionId)
+      })()
+      const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
       const cuotaRestantes = calculation.remainingInstallments || 0
       const primaSeguro = primaBruta * cuotaRestantes
 
