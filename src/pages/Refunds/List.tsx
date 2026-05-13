@@ -850,6 +850,32 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return overdueFilteredItems
   }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
 
+  // Ordenamiento client-side aplicado sobre la página/lista visible
+  const sortedPaginatedItems = useMemo(() => {
+    if (!sortField) return paginatedItems
+    const getValue = (r: any): any => {
+      switch (sortField) {
+        case 'publicId': return r.publicId || ''
+        case 'fullName': return (r.fullName || `${r.firstName || ''} ${r.lastName || ''}`).trim().toLowerCase()
+        case 'rut': return (r.rut || '').toLowerCase()
+        case 'email': return (r.email || '').toLowerCase()
+        case 'status': return (r.status || '').toLowerCase()
+        case 'estimatedAmountCLP': return Number(r.estimatedAmountCLP || r.calculationSnapshot?.estimatedAmountCLP || 0)
+        case 'institutionId': return (r.institutionId || '').toLowerCase()
+        case 'createdAt': return new Date(r.createdAt || 0).getTime()
+        default: return r[sortField] ?? ''
+      }
+    }
+    const dir = sortDirection === 'asc' ? 1 : -1
+    return [...paginatedItems].sort((a: any, b: any) => {
+      const av = getValue(a)
+      const bv = getValue(b)
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  }, [paginatedItems, sortField, sortDirection])
+
 
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
   // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
