@@ -649,24 +649,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handleSort = (field: string) => {
-    // Con paginación server-side, enviamos el ordenamiento al servidor
     const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
     setSortField(field)
     setSortDirection(newDirection)
-    
-    // Solo enviamos ordenamiento de campos soportados por el backend
-    const supportedSortFields = ['createdAt', 'status']
-    if (supportedSortFields.includes(field)) {
-      const sortValue = `${field}:${newDirection}` as any
-      setLocalFilters(prev => ({ ...prev, sort: sortValue }))
-      // Aplicar ordenamiento inmediatamente
-      const newFilters = { ...filters, sort: sortValue }
-      setFilters(newFilters)
-      const params = new URLSearchParams()
-      Object.entries(newFilters).forEach(([k, v]) => {
-        if (v) params.set(k, String(v))
-      })
-      setSearchParams(params)
+
+    // Para createdAt, además enviamos al backend (recent/old) para ordenar todo el dataset
+    if (field === 'createdAt') {
+      const apiSort: 'recent' | 'old' = newDirection === 'desc' ? 'recent' : 'old'
+      if (useSearchEndpoint) {
+        setSearchFilters(prev => ({ ...prev, sort: apiSort, page: 1 }))
+      } else {
+        const newFilters = { ...filters, sort: apiSort as any, page: 1 }
+        setFilters(newFilters)
+      }
     }
   }
 
