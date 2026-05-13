@@ -101,6 +101,9 @@ const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' |
     if (tipo === 'desgravamen') return 'desgravamen'
     if (tipo === 'cesantia') return 'cesantia'
     if (tipo === 'ambos') return 'ambos'
+    if (tipo.includes('ambos') || tipo.includes('both') || (tipo.includes('desgrav') && tipo.includes('cesant'))) return 'ambos'
+    if (tipo.includes('desgrav')) return 'desgravamen'
+    if (tipo.includes('cesant')) return 'cesantia'
   }
   
   return null
