@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.1
+## Versión 3.7.4
 
 ## Changelog
+
+### Versión 3.7.4 - 2026-05-13
+
+#### Fix: Ordenamiento de columnas en listado de Solicitudes
+- **Problema**: los botones de ordenamiento (asc/desc) en las columnas del listado de Solicitudes (`/refunds`) no respondían al hacer clic.
+- **Causa**: `handleSort` enviaba al backend un valor de `sort` con formato `campo:direccion` (ej. `createdAt:desc`) que el endpoint no reconoce (espera `recent`/`old`), y además no aplicaba ningún ordenamiento client-side, por lo que el clic no producía cambios visibles.
+- **Fix**:
+  - Ordenamiento client-side aplicado sobre los items visibles para todas las columnas: ID, Nombre, RUT, Email, Estado, Monto estimado, Institución y Creación.
+  - Para la columna **Creación** se envía además `sort=recent|old` al backend (`listV2` y `search`) para reordenar el dataset completo, no solo la página actual.
+- **Archivo**: `src/pages/Refunds/List.tsx`.
 
 ### Versión 3.7.1 - 2026-05-06
 
