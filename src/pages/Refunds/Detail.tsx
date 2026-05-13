@@ -1069,9 +1069,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
-                            const montoTotal = snap.totalAmount || saldo
-                            const cuotasOrig = snap.originalInstallments || 0
-                            const cuotasUsadas = snap.originalInstallments || 0 // closest match
+                            const montoTotal = snap.confirmedTotalAmount || snap.totalAmount || saldo
+                            const cuotasOrig = snap.confirmedOriginalInstallments || snap.originalInstallments || 0
+                            const cuotasUsadas = cuotasOrig // closest match
                             // Derivar primas en runtime con datos confirmados actuales para
                             // evitar valores stale del snapshot (fix desincronización).
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
