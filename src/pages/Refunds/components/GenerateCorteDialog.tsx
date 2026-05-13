@@ -609,7 +609,7 @@ interface SantanderFormProps {
   onGenerate: (data: { creditNumber: string; policyNumber: string; bankName: string; companyName: string; insuranceName: string }) => void
 }
 
-function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
+function SantanderForm({ refund, onGenerate, formatLabel = 'Banco Santander' }: SantanderFormProps & { formatLabel?: string }) {
   const queryClient = useQueryClient()
   const rawInsuranceType = getInsuranceType(refund.calculationSnapshot)
   const derivedInsuranceName = getInsuranceName(rawInsuranceType)
@@ -661,10 +661,9 @@ function SantanderForm({ refund, onGenerate }: SantanderFormProps) {
 
   return (
     <div className="space-y-4 py-4">
-      {/* Badge indicador formato Santander */}
       <div className="flex items-center gap-2 p-3 border rounded-lg bg-primary/10 border-primary/30">
         <FileText className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm text-primary font-medium">Formato especial Banco Santander</span>
+        <span className="text-sm text-primary font-medium">Formato especial {formatLabel}</span>
       </div>
 
       {/* Sección obligatoria de datos del crédito */}
