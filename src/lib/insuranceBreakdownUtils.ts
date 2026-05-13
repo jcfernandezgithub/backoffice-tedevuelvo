@@ -63,13 +63,16 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   if (tipo !== 'ambos') return null
 
   const {
-    totalAmount,
-    remainingInstallments,
     currentMonthlyPremium,
     newMonthlyPremium,
     totalSaving,
     institutionId,
   } = snapshot
+
+  // Prefer confirmed values when present, fallback to simulated.
+  const totalAmount = snapshot.confirmedTotalAmount || snapshot.totalAmount
+  const remainingInstallments =
+    snapshot.confirmedRemainingInstallments || snapshot.remainingInstallments
 
   if (!totalAmount || !remainingInstallments) return null
 
