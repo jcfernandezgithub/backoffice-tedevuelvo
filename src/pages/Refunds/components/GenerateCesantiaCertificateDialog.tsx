@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Briefcase, Download, Search, ArrowLeft, Eye, Upload } from 'lucide-react'
+import { Briefcase, Download, Search, ArrowLeft, Eye, Upload, Loader2, Hash, RefreshCw, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -113,6 +113,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false)
   const [existingDocsCount, setExistingDocsCount] = useState(0)
+  const [isAssigningFolio, setIsAssigningFolio] = useState(false)
+  const [folioError, setFolioError] = useState<string | undefined>(undefined)
   const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
