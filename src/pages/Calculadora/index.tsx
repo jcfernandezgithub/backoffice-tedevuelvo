@@ -681,6 +681,35 @@ export default function CalculadoraPage() {
                   />
                 </div>
 
+                {/* Saldo insoluto */}
+                <FormField
+                  control={form.control}
+                  name="saldoInsoluto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Saldo insoluto</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                          <Input
+                            placeholder="13.326.226"
+                            className="pl-7"
+                            value={field.value ? formatInputCurrency(field.value.toString()) : ""}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                              field.onChange(isNaN(value) ? undefined : value);
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Usa el saldo real confirmado; si lo dejas vacío se estima por cuotas
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Tipo de seguro */}
                 <FormField
                   control={form.control}
