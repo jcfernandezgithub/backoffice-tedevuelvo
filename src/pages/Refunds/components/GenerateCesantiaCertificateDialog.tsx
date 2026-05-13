@@ -1042,7 +1042,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="correlativo">Correlativo</Label>
+                    <Label htmlFor="correlativo">Folio</Label>
                     <Input
                       id="correlativo"
                       value={formData.correlativo}
