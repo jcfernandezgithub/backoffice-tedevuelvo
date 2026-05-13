@@ -1082,13 +1082,57 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="correlativo">Folio</Label>
-                    <Input
-                      id="correlativo"
-                      value={formData.correlativo}
-                      onChange={(e) => handleChange('correlativo', e.target.value)}
-                      placeholder="Ej: 001"
-                    />
+                    <Label>Folio <span className="text-destructive">*</span></Label>
+                    {isAssigningFolio ? (
+                      <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Asignando...</span>
+                      </div>
+                    ) : formData.correlativo ? (
+                      <div className="flex items-center gap-1.5 h-10 px-3 border rounded-md bg-muted">
+                        <Hash className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-sm font-medium flex-1">{formData.correlativo}</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={() => {
+                                  if (window.confirm(`¿Reasignar un nuevo folio?\n\nEl folio actual (${formData.correlativo}) será reemplazado por uno nuevo. Esta acción no se puede deshacer.`)) {
+                                    setFormData(prev => ({ ...prev, correlativo: '' }))
+                                    assignFolio(true)
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-xs">Reasignar nuevo folio</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10 gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={() => assignFolio()}
+                        >
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Reintentar asignar folio
+                        </Button>
+                        {folioError && (
+                          <p className="text-[10px] text-destructive">{folioError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nroOperacion">Nro Operación</Label>
