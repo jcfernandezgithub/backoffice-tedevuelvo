@@ -39,6 +39,7 @@ const formSchema = z.object({
   cuotasPendientes: z.number({
     required_error: "Ingresa las cuotas pendientes",
   }).min(1, "Mínimo 1 cuota pendiente").max(80, "Máximo 80 cuotas pendientes"),
+  saldoInsoluto: z.number().min(1, "Debe ser mayor a $0").max(100000000, "El saldo máximo es $100.000.000").optional(),
   tipoSeguro: z.enum(["desgravamen", "cesantia", "ambos"], {
     required_error: "Selecciona el tipo de seguro",
   }),
@@ -126,7 +127,8 @@ export default function CalculadoraPage() {
       data.montoCredito,
       data.cuotasTotales,
       data.cuotasPendientes,
-      data.tipoSeguro
+      data.tipoSeguro,
+      data.saldoInsoluto
     );
 
     setTimeout(() => {
