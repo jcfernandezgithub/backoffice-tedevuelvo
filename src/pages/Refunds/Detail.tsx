@@ -1062,9 +1062,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
                           {/* ── Primas mensuales con fórmula (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) {
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') {
                               // Para cesantía no aplica prima mensual: la prima es única (monto × tasa × cuotas)
                               return null
                             }
@@ -1183,9 +1182,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           })()}
                           {/* ── Ahorro mensual con desglose (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) return null
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') return null
                             const snap = refund.calculationSnapshot
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
                             const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
