@@ -1020,9 +1020,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
                           {/* ── Tasas utilizadas (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) {
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') {
                               const TASA_CESANTIA = 0.094
                               return (
                                 <div className="col-span-2 mt-1 p-3 rounded-md bg-muted/60 border border-dashed border-muted-foreground/20">
@@ -1226,8 +1225,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           {/* ── Ahorro total con desglose ── */}
                           {(() => {
                             const snap = refund.calculationSnapshot
-                            const ins = (snap.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
+                            const isCesantia = getInsuranceType(snap) === 'cesantia'
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
                             const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
                             const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
