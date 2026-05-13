@@ -99,9 +99,16 @@ export function derivePremiumsFromSnapshot(
   }
   if (!snapshot) return fallback
 
-  // Cesantía: la prima es única, no aplica recálculo mensual aquí.
+  // Cesantía pura: la prima es única, no aplica recálculo mensual aquí.
+  // Si viene mixto (AMBOS / DESGRAVAMEN + CESANTÍA), sí debemos recalcular
+  // la parte mensual de desgravamen para no caer al snapshot stale.
   const ins = (snapshot.insuranceToEvaluate || '').toUpperCase()
-  if (ins === 'CESANTIA' || ins.includes('CESANT')) return fallback
+  const isMixedInsurance =
+    ins.includes('AMBOS') ||
+    ins.includes('BOTH') ||
+    (ins.includes('DESGRAV') && ins.includes('CESANT'))
+  const isPureCesantia = (ins === 'CESANTIA' || ins === 'CESANTÍA' || ins.includes('CESANT')) && !isMixedInsurance
+  if (isPureCesantia) return fallback
 
   const { tasaBanco, tasaTDV } = getRatesForSnapshot(snapshot, institutionId)
   const saldo =
