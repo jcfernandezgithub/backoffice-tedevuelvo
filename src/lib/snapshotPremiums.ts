@@ -132,11 +132,20 @@ export function derivePremiumsFromSnapshot(
   const cuotasOrig =
     snapshot.confirmedOriginalInstallments || snapshot.originalInstallments || 0
 
-  if (!tasaBanco || !tasaTDV || !cuotasOrig || !saldo || !monto) return fallback
+  const canDeriveCurrent = Boolean(tasaBanco && cuotasOrig && monto)
+  const canDeriveNew = Boolean(tasaTDV && saldo)
 
-  const currentMonthlyPremium = Math.round((monto * tasaBanco) / cuotasOrig)
-  const newMonthlyPremium = Math.round(saldo * tasaTDV)
-  const monthlySaving = Math.max(0, currentMonthlyPremium - newMonthlyPremium)
+  if (!canDeriveCurrent && !canDeriveNew) return fallback
+
+  const currentMonthlyPremium = canDeriveCurrent
+    ? Math.round((monto * tasaBanco!) / cuotasOrig)
+    : fallback.currentMonthlyPremium
+  const newMonthlyPremium = canDeriveNew
+    ? Math.round(saldo * tasaTDV!)
+    : fallback.newMonthlyPremium
+  const monthlySaving = currentMonthlyPremium > 0 && newMonthlyPremium > 0
+    ? Math.max(0, currentMonthlyPremium - newMonthlyPremium)
+    : fallback.monthlySaving
 
   return {
     currentMonthlyPremium,
