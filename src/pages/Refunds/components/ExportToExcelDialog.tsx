@@ -9,6 +9,7 @@ import { RefundStatus } from '@/types/refund'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
 import { formatCLPNumber } from '@/lib/formatters'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { useExportAllRefunds } from '../hooks/useExportAllRefunds'
 import { SearchParams } from '@/services/refundAdminApi'
 import { AdminQueryParams } from '@/types/refund'
@@ -62,9 +63,13 @@ function prepareExcelData(
   return refunds.map((refund) => {
     const calculation = refund.calculationSnapshot || {}
     const rut = refund.rut || ''
-    
+
+    // Derivar primas en vivo (capa defensiva: si el snapshot está stale,
+    // recalcula usando saldo confirmado actual × tasa).
+    const derived = derivePremiumsFromSnapshot(calculation, refund.institutionId)
+
     // Calcular prima neta (sin IVA 19%)
-    const primaBruta = calculation.newMonthlyPremium || 0
+    const primaBruta = derived.newMonthlyPremium || calculation.newMonthlyPremium || 0
     const primaNeta = Math.round(primaBruta / 1.19)
     
     // Fechas
@@ -98,9 +103,9 @@ function prepareExcelData(
     const origen = refund.partnerId ? (partnerNameMap[refund.partnerId] || 'Alianza') : 'Directo'
     const gestor = refund.partnerUserId ? (gestorNameMap[refund.partnerUserId] || 'N/A') : 'N/A'
 
-    // Nuevos campos solicitados
-    const primaMensualActualBase = calculation.currentMonthlyPremium || 0
-    const nuevaPrimaMensualBase = calculation.newMonthlyPremium || 0
+    // Nuevos campos solicitados (usa valores derivados cuando aplican)
+    const primaMensualActualBase = derived.currentMonthlyPremium || calculation.currentMonthlyPremium || 0
+    const nuevaPrimaMensualBase = derived.newMonthlyPremium || calculation.newMonthlyPremium || 0
     const cuotasRestantes = calculation.remainingInstallments || 0
     const saldoInsoluto = calculation.averageInsuredBalance || 0
     const costoNuevoSeguroTDVBase = nuevaPrimaMensualBase * cuotasRestantes
