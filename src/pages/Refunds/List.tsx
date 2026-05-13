@@ -1741,7 +1741,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
               {/* Vista Mobile - Cards */}
               <div className="md:hidden space-y-3">
-                {paginatedItems.map((refund) => (
+                {sortedPaginatedItems.map((refund) => (
                   <MobileCard
                     key={refund.publicId || refund.id}
                     onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
