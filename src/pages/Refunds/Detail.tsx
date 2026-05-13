@@ -1228,9 +1228,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
                             if (isCesantia) return null
                             const snap = refund.calculationSnapshot
-                            const currentPremium = snap.currentMonthlyPremium || 0
-                            const newPremium = snap.newMonthlyPremium || 0
-                            const monthlySaving = snap.monthlySaving || 0
+                            const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
+                            const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
+                            const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0
+                            const monthlySaving = derived.source === 'derived'
+                              ? derived.monthlySaving
+                              : (snap.monthlySaving || 0)
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
