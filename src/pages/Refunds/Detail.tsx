@@ -93,6 +93,9 @@ const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' |
     if (tipo === 'desgravamen' || tipo === 'cesantia' || tipo === 'ambos') {
       return tipo
     }
+    if (tipo.includes('ambos') || tipo.includes('both') || (tipo.includes('desgrav') && tipo.includes('cesant'))) return 'ambos'
+    if (tipo.includes('desgrav')) return 'desgravamen'
+    if (tipo.includes('cesant')) return 'cesantia'
   }
   
   // Luego buscar insuranceToEvaluate (formato API)
