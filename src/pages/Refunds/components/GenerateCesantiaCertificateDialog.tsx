@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Briefcase, Download, Search, ArrowLeft, Eye, Upload } from 'lucide-react'
+import { Briefcase, Download, Search, ArrowLeft, Eye, Upload, Loader2, Hash, RefreshCw, AlertCircle } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
@@ -113,6 +113,8 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   const [isLoadingRut, setIsLoadingRut] = useState(false)
   const [confirmReplaceOpen, setConfirmReplaceOpen] = useState(false)
   const [existingDocsCount, setExistingDocsCount] = useState(0)
+  const [isAssigningFolio, setIsAssigningFolio] = useState(false)
+  const [folioError, setFolioError] = useState<string | undefined>(undefined)
   const queryClient = useQueryClient()
 
   // Separar nombre completo en partes: Nombre(s) ApellidoPaterno ApellidoMaterno
@@ -165,8 +167,46 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   }
 
   const handlePreview = () => {
+    if (!formData.correlativo) {
+      toast({
+        title: 'Folio requerido',
+        description: 'Debe asignarse un folio antes de previsualizar el certificado',
+        variant: 'destructive',
+      })
+      return
+    }
     setStep('preview')
   }
+
+  const assignFolio = useCallback(async (reassign = false) => {
+    if (!refund.publicId) return
+    setIsAssigningFolio(true)
+    setFolioError(undefined)
+    try {
+      const result = await refundAdminApi.assignFolio(refund.publicId, reassign)
+      if (result.ok && result.nroFolio) {
+        setFormData(prev => ({ ...prev, correlativo: result.nroFolio }))
+        if (result.alreadyAssigned) {
+          toast({ title: 'Folio existente', description: `Folio ${result.nroFolio} ya estaba asignado` })
+        } else {
+          toast({ title: 'Folio asignado', description: `Folio ${result.nroFolio} asignado correctamente` })
+        }
+      }
+    } catch (error: any) {
+      console.error('Error asignando folio:', error)
+      setFolioError(error.message || 'Error al asignar folio')
+      toast({ title: 'Error al asignar folio', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsAssigningFolio(false)
+    }
+  }, [refund.publicId])
+
+  useEffect(() => {
+    if (open && !formData.correlativo) {
+      assignFolio()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const handleBackToEdit = () => {
     setStep('form')
@@ -1042,13 +1082,57 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="correlativo">Folio</Label>
-                    <Input
-                      id="correlativo"
-                      value={formData.correlativo}
-                      onChange={(e) => handleChange('correlativo', e.target.value)}
-                      placeholder="Ej: 001"
-                    />
+                    <Label>Folio <span className="text-destructive">*</span></Label>
+                    {isAssigningFolio ? (
+                      <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-muted">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Asignando...</span>
+                      </div>
+                    ) : formData.correlativo ? (
+                      <div className="flex items-center gap-1.5 h-10 px-3 border rounded-md bg-muted">
+                        <Hash className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-sm font-medium flex-1">{formData.correlativo}</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 shrink-0"
+                                onClick={() => {
+                                  if (window.confirm(`¿Reasignar un nuevo folio?\n\nEl folio actual (${formData.correlativo}) será reemplazado por uno nuevo. Esta acción no se puede deshacer.`)) {
+                                    setFormData(prev => ({ ...prev, correlativo: '' }))
+                                    assignFolio(true)
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-xs">Reasignar nuevo folio</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-10 gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={() => assignFolio()}
+                        >
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          Reintentar asignar folio
+                        </Button>
+                        {folioError && (
+                          <p className="text-[10px] text-destructive">{folioError}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nroOperacion">Nro Operación</Label>
