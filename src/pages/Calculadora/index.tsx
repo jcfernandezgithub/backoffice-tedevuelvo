@@ -169,6 +169,9 @@ export default function CalculadoraPage() {
     doc.text(`Institucion: ${formDataSnapshot.institucion}`, 20, y); y += 6;
     doc.text(`Edad: ${edad} anos`, 20, y); y += 6;
     doc.text(`Monto del credito: ${formatCurrency(formDataSnapshot.montoCredito)}`, 20, y); y += 6;
+    if (formDataSnapshot.saldoInsoluto) {
+      doc.text(`Saldo insoluto: ${formatCurrency(formDataSnapshot.saldoInsoluto)}`, 20, y); y += 6;
+    }
     doc.text(`Cuotas totales: ${formDataSnapshot.cuotasTotales}`, 20, y); y += 6;
     doc.text(`Cuotas pendientes: ${formDataSnapshot.cuotasPendientes}`, 20, y); y += 6;
     
@@ -356,6 +359,9 @@ export default function CalculadoraPage() {
     texto += `- Institucion: ${formDataSnapshot.institucion}\n`;
     texto += `- Edad: ${edad} anos\n`;
     texto += `- Monto: ${formatCurrency(formDataSnapshot.montoCredito)}\n`;
+    if (formDataSnapshot.saldoInsoluto) {
+      texto += `- Saldo insoluto: ${formatCurrency(formDataSnapshot.saldoInsoluto)}\n`;
+    }
     texto += `- Cuotas: ${formDataSnapshot.cuotasPendientes}/${formDataSnapshot.cuotasTotales}\n`;
     texto += `- Tipo: ${tipoSeguroLabel}\n\n`;
     texto += `*AHORRO ESTIMADO: ${formatCurrency(resultado.montoDevolucion)}*\n\n`;
