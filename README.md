@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.5
+## Versión 3.7.6
 
 ## Changelog
+
+### Versión 3.7.6 - 2026-05-13
+
+#### Fix: Derivación independiente de primas cuando faltan tasas
+- **Problema**: tras 3.7.5, los detalles seguían mostrando la prima stale ($3.198) en casos donde `tasaBanco` no estaba disponible (N/A). El helper `derivePremiumsFromSnapshot()` requería ambas tasas (`tasaBanco` y `tasaTDV`) para derivar cualquier prima, así que ante la ausencia de `tasaBanco` caía al snapshot completo y devolvía también la nueva prima vieja.
+- **Fix**:
+  - `currentMonthlyPremium` y `newMonthlyPremium` ahora se derivan **de forma independiente**: si solo falta `tasaBanco`, se sigue recalculando la nueva prima con `saldoConfirmado × tasaTDV`; si solo falta `tasaTDV`, se mantiene la actual recalculada.
+  - `monthlySaving` se deriva cuando ambas primas pudieron calcularse; en otro caso, fallback al snapshot.
+  - Se añadió `saldoInsoluto` al `formDataSnapshot` y al PDF de la Calculadora para que la simulación quede trazable end-to-end.
+- **Resultado verificado**: caso del usuario (saldo $13.326.226, tasaBanco N/A, tasaTDV vigente) ahora muestra correctamente **$4.531** como nueva prima en `/refunds/:id`, exports y certificados, sin que el operador deba intervenir.
+- **Archivos**: `src/lib/snapshotPremiums.ts`, `src/pages/Refunds/Detail.tsx`, `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.7.5 - 2026-05-13
 
