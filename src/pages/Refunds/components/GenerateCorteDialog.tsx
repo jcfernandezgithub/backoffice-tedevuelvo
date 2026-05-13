@@ -967,6 +967,9 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
 
   const institutionLower = refund.institutionId?.toLowerCase() || ''
   const isSantander = institutionLower === 'santander' || institutionLower === 'santander-consumer' || institutionLower === 'santander consumer'
+  const isTanner = institutionLower === 'tanner'
+  const useExtendedFormat = isSantander || isTanner
+  const extendedFormatLabel = isTanner ? 'Tanner' : 'Banco Santander'
 
   const [genericData, setGenericData] = useState<{
     formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
@@ -1010,16 +1013,16 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
         <DialogHeader>
           <DialogTitle>
             Generar Carta de Renuncia y Término Anticipado de Seguro
-            {isSantander && (
+            {useExtendedFormat && (
               <span className="ml-2 text-xs font-normal text-primary bg-primary/10 border border-primary/30 rounded px-2 py-0.5">
-                Banco Santander
+                {extendedFormatLabel}
               </span>
             )}
           </DialogTitle>
         </DialogHeader>
 
         {/* ── GENÉRICO ── */}
-        {!isSantander && !showPreview && (
+        {!useExtendedFormat && !showPreview && (
           <GenericForm
             refund={refund}
             onGenerate={(data, hasPol) => {
@@ -1028,7 +1031,7 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
             }}
           />
         )}
-        {!isSantander && showPreview && genericData && (
+        {!useExtendedFormat && showPreview && genericData && (
           <GenericPreview
             refund={refund}
             formData={genericData.formData}
@@ -1038,17 +1041,18 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
           />
         )}
 
-        {/* ── SANTANDER ── */}
-        {isSantander && !showPreview && (
+        {/* ── SANTANDER / TANNER (formato extendido 4 páginas) ── */}
+        {useExtendedFormat && !showPreview && (
           <SantanderForm
             refund={refund}
+            formatLabel={extendedFormatLabel}
             onGenerate={(data) => {
               setSantanderData(data)
               setShowPreview(true)
             }}
           />
         )}
-        {isSantander && showPreview && santanderData && (
+        {useExtendedFormat && showPreview && santanderData && (
           <SantanderPreview
             refund={refund}
             formData={santanderData}
