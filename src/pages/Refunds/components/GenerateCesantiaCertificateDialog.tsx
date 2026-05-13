@@ -167,8 +167,46 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   }
 
   const handlePreview = () => {
+    if (!formData.correlativo) {
+      toast({
+        title: 'Folio requerido',
+        description: 'Debe asignarse un folio antes de previsualizar el certificado',
+        variant: 'destructive',
+      })
+      return
+    }
     setStep('preview')
   }
+
+  const assignFolio = useCallback(async (reassign = false) => {
+    if (!refund.publicId) return
+    setIsAssigningFolio(true)
+    setFolioError(undefined)
+    try {
+      const result = await refundAdminApi.assignFolio(refund.publicId, reassign)
+      if (result.ok && result.nroFolio) {
+        setFormData(prev => ({ ...prev, correlativo: result.nroFolio }))
+        if (result.alreadyAssigned) {
+          toast({ title: 'Folio existente', description: `Folio ${result.nroFolio} ya estaba asignado` })
+        } else {
+          toast({ title: 'Folio asignado', description: `Folio ${result.nroFolio} asignado correctamente` })
+        }
+      }
+    } catch (error: any) {
+      console.error('Error asignando folio:', error)
+      setFolioError(error.message || 'Error al asignar folio')
+      toast({ title: 'Error al asignar folio', description: error.message, variant: 'destructive' })
+    } finally {
+      setIsAssigningFolio(false)
+    }
+  }, [refund.publicId])
+
+  useEffect(() => {
+    if (open && !formData.correlativo) {
+      assignFolio()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const handleBackToEdit = () => {
     setStep('form')
