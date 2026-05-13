@@ -1405,7 +1405,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedItems.map((refund) => (
+                    {sortedPaginatedItems.map((refund) => (
                       <TableRow key={refund.publicId || refund.id}>
                         <TableCell className="w-12">
                           <Checkbox
