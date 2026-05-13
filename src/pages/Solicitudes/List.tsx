@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast'
 import { exportCSV, exportXLSX } from '@/services/reportesService'
 import { useMemo, useState } from 'react'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { RefundStatus } from '@/types/refund'
 import { CheckCircle, AlertCircle, Flag, Copy, CalendarIcon, X } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -364,8 +365,9 @@ export default function SolicitudesList() {
   const prepareExportData = () => {
     return data.map((item: any) => {
       const calc = item.calculationSnapshot || {}
-      const primaMensualActual = calc.currentMonthlyPremium || 0
-      const nuevaPrimaMensual = calc.newMonthlyPremium || 0
+      const derived = derivePremiumsFromSnapshot(calc, item.institutionId)
+      const primaMensualActual = derived.currentMonthlyPremium || calc.currentMonthlyPremium || 0
+      const nuevaPrimaMensual = derived.newMonthlyPremium || calc.newMonthlyPremium || 0
       const cuotasRestantes = calc.remainingInstallments || 0
       const hasSigned = mandateStatuses?.[item.publicId]?.hasSignedPdf === true
       const hasBankInfo = !!(item as any).bankInfo
