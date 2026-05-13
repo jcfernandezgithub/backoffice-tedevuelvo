@@ -44,52 +44,8 @@ import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantia
 import { Money } from '@/components/common/Money'
 import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
-import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
-import { obtenerTasaPreferencialTDV } from '@/lib/calculadoraUtils'
-import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
-
-const MAPEO_INSTITUCIONES_DETAIL: Record<string, string> = {
-  santander: 'BANCO SANTANDER', bci: 'BANCO BCI', 'lider-bci': 'LIDER-BCI',
-  scotiabank: 'SCOTIABANK', chile: 'BANCO CHILE', security: 'BANCO SECURITY',
-  'itau-corpbanca': 'BANCO ITAU-CORPBANCA', bice: 'BANCO BICE', estado: 'BANCO ESTADO',
-  ripley: 'BANCO RIPLEY', falabella: 'BANCO FALABELLA', consorcio: 'BANCO CONSORCIO',
-  coopeuch: 'COOPEUCH', cencosud: 'BANCO CENCOSUD', forum: 'FORUM', tanner: 'TANNER',
-  cooperativas: 'COOPERATIVAS',
-}
-
-function getRatesForSnapshot(snapshot: any): { tasaBanco: number | null; tasaTDV: number | null } {
-  if (!snapshot) return { tasaBanco: null, tasaTDV: null }
-  const institutionId = (snapshot.institutionId || '').toLowerCase()
-  const bancoKey = MAPEO_INSTITUCIONES_DETAIL[institutionId] || institutionId.toUpperCase()
-  const edad = snapshot.age || 0
-  const monto = snapshot.totalAmount || 0
-  const saldo = snapshot.confirmedAverageInsuredBalance || snapshot.averageInsuredBalance || monto
-  const cuotas = snapshot.originalInstallments || 0
-  const tramo = edad <= 55 ? 'hasta_55' : 'desde_56'
-
-  let tasaBanco: number | null = null
-  try {
-    const datosBanco = (tasasSeguro as any)[bancoKey]
-    if (datosBanco) {
-      const datosTramo = datosBanco[tramo]
-      const montoRedondeado = Math.min(Math.max(Math.round(monto / 1000000) * 1000000, 2000000), 60000000)
-      const datosMonto = datosTramo?.[montoRedondeado.toString()]
-      if (datosMonto) {
-        tasaBanco = datosMonto[cuotas.toString()] ?? null
-        if (tasaBanco === null) {
-          const disponibles = Object.keys(datosMonto).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b)
-          const cercana = disponibles.reduce((prev, curr) => Math.abs(curr - cuotas) < Math.abs(prev - cuotas) ? curr : prev, disponibles[0])
-          if (cercana) tasaBanco = datosMonto[cercana.toString()] ?? null
-        }
-      }
-    }
-  } catch { /* ignore */ }
-
-  const tasaTDV = obtenerTasaPreferencialTDV(saldo, edad)
-
-  return { tasaBanco, tasaTDV }
-}
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -137,6 +93,9 @@ const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' |
     if (tipo === 'desgravamen' || tipo === 'cesantia' || tipo === 'ambos') {
       return tipo
     }
+    if (tipo.includes('ambos') || tipo.includes('both') || (tipo.includes('desgrav') && tipo.includes('cesant'))) return 'ambos'
+    if (tipo.includes('desgrav')) return 'desgravamen'
+    if (tipo.includes('cesant')) return 'cesantia'
   }
   
   // Luego buscar insuranceToEvaluate (formato API)
@@ -145,6 +104,9 @@ const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' |
     if (tipo === 'desgravamen') return 'desgravamen'
     if (tipo === 'cesantia') return 'cesantia'
     if (tipo === 'ambos') return 'ambos'
+    if (tipo.includes('ambos') || tipo.includes('both') || (tipo.includes('desgrav') && tipo.includes('cesant'))) return 'ambos'
+    if (tipo.includes('desgrav')) return 'desgravamen'
+    if (tipo.includes('cesant')) return 'cesantia'
   }
   
   return null
@@ -1061,9 +1023,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
                           {/* ── Tasas utilizadas (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) {
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') {
                               const TASA_CESANTIA = 0.094
                               return (
                                 <div className="col-span-2 mt-1 p-3 rounded-md bg-muted/60 border border-dashed border-muted-foreground/20">
@@ -1103,18 +1064,17 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
                           {/* ── Primas mensuales con fórmula (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) {
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') {
                               // Para cesantía no aplica prima mensual: la prima es única (monto × tasa × cuotas)
                               return null
                             }
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
-                            const montoTotal = snap.totalAmount || saldo
-                            const cuotasOrig = snap.originalInstallments || 0
-                            const cuotasUsadas = snap.originalInstallments || 0 // closest match
+                            const montoTotal = snap.confirmedTotalAmount || snap.totalAmount || saldo
+                            const cuotasOrig = snap.confirmedOriginalInstallments || snap.originalInstallments || 0
+                            const cuotasUsadas = cuotasOrig // closest match
                             // Derivar primas en runtime con datos confirmados actuales para
                             // evitar valores stale del snapshot (fix desincronización).
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
@@ -1224,9 +1184,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           })()}
                           {/* ── Ahorro mensual con desglose (solo desgravamen) ── */}
                           {(() => {
-                            const ins = (refund.calculationSnapshot.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
-                            if (isCesantia) return null
+                            const insuranceType = getInsuranceType(refund.calculationSnapshot)
+                            if (insuranceType === 'cesantia') return null
                             const snap = refund.calculationSnapshot
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
                             const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
@@ -1269,8 +1228,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           {/* ── Ahorro total con desglose ── */}
                           {(() => {
                             const snap = refund.calculationSnapshot
-                            const ins = (snap.insuranceToEvaluate || '').toUpperCase()
-                            const isCesantia = ins === 'CESANTIA' || ins.includes('CESANT')
+                            const isCesantia = getInsuranceType(snap) === 'cesantia'
                             const derived = derivePremiumsFromSnapshot(snap, refund.institutionId)
                             const currentPremium = derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0
                             const newPremium = derived.newMonthlyPremium || snap.newMonthlyPremium || 0

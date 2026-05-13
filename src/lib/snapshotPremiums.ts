@@ -26,6 +26,18 @@ const MAPEO_INSTITUCIONES: Record<string, string> = {
   cooperativas: 'COOPERATIVAS',
 }
 
+function resolveAge(snapshot: any): number {
+  if (snapshot?.age) return Number(snapshot.age) || 0
+  if (!snapshot?.birthDate) return 0
+  const birth = new Date(snapshot.birthDate)
+  if (isNaN(birth.getTime())) return 0
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
 export function getRatesForSnapshot(
   snapshot: any,
   institutionIdOverride?: string,
@@ -33,7 +45,7 @@ export function getRatesForSnapshot(
   if (!snapshot) return { tasaBanco: null, tasaTDV: null }
   const institutionId = (institutionIdOverride || snapshot.institutionId || '').toLowerCase()
   const bancoKey = MAPEO_INSTITUCIONES[institutionId] || institutionId.toUpperCase()
-  const edad = snapshot.age || 0
+  const edad = resolveAge(snapshot)
   const monto = snapshot.confirmedTotalAmount || snapshot.totalAmount || 0
   const saldo =
     snapshot.confirmedAverageInsuredBalance ||
@@ -99,9 +111,16 @@ export function derivePremiumsFromSnapshot(
   }
   if (!snapshot) return fallback
 
-  // Cesantía: la prima es única, no aplica recálculo mensual aquí.
+  // Cesantía pura: la prima es única, no aplica recálculo mensual aquí.
+  // Si viene mixto (AMBOS / DESGRAVAMEN + CESANTÍA), sí debemos recalcular
+  // la parte mensual de desgravamen para no caer al snapshot stale.
   const ins = (snapshot.insuranceToEvaluate || '').toUpperCase()
-  if (ins === 'CESANTIA' || ins.includes('CESANT')) return fallback
+  const isMixedInsurance =
+    ins.includes('AMBOS') ||
+    ins.includes('BOTH') ||
+    (ins.includes('DESGRAV') && ins.includes('CESANT'))
+  const isPureCesantia = (ins === 'CESANTIA' || ins === 'CESANTÍA' || ins.includes('CESANT')) && !isMixedInsurance
+  if (isPureCesantia) return fallback
 
   const { tasaBanco, tasaTDV } = getRatesForSnapshot(snapshot, institutionId)
   const saldo =
