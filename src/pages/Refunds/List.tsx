@@ -649,24 +649,19 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handleSort = (field: string) => {
-    // Con paginación server-side, enviamos el ordenamiento al servidor
     const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
     setSortField(field)
     setSortDirection(newDirection)
-    
-    // Solo enviamos ordenamiento de campos soportados por el backend
-    const supportedSortFields = ['createdAt', 'status']
-    if (supportedSortFields.includes(field)) {
-      const sortValue = `${field}:${newDirection}` as any
-      setLocalFilters(prev => ({ ...prev, sort: sortValue }))
-      // Aplicar ordenamiento inmediatamente
-      const newFilters = { ...filters, sort: sortValue }
-      setFilters(newFilters)
-      const params = new URLSearchParams()
-      Object.entries(newFilters).forEach(([k, v]) => {
-        if (v) params.set(k, String(v))
-      })
-      setSearchParams(params)
+
+    // Para createdAt, además enviamos al backend (recent/old) para ordenar todo el dataset
+    if (field === 'createdAt') {
+      const apiSort: 'recent' | 'old' = newDirection === 'desc' ? 'recent' : 'old'
+      if (useSearchEndpoint) {
+        setSearchFilters(prev => ({ ...prev, sort: apiSort, page: 1 }))
+      } else {
+        const newFilters = { ...filters, sort: apiSort as any, page: 1 }
+        setFilters(newFilters)
+      }
     }
   }
 
@@ -854,6 +849,32 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     return overdueFilteredItems
   }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
+
+  // Ordenamiento client-side aplicado sobre la página/lista visible
+  const sortedPaginatedItems = useMemo(() => {
+    if (!sortField) return paginatedItems
+    const getValue = (r: any): any => {
+      switch (sortField) {
+        case 'publicId': return r.publicId || ''
+        case 'fullName': return (r.fullName || `${r.firstName || ''} ${r.lastName || ''}`).trim().toLowerCase()
+        case 'rut': return (r.rut || '').toLowerCase()
+        case 'email': return (r.email || '').toLowerCase()
+        case 'status': return (r.status || '').toLowerCase()
+        case 'estimatedAmountCLP': return Number(r.estimatedAmountCLP || r.calculationSnapshot?.estimatedAmountCLP || 0)
+        case 'institutionId': return (r.institutionId || '').toLowerCase()
+        case 'createdAt': return new Date(r.createdAt || 0).getTime()
+        default: return r[sortField] ?? ''
+      }
+    }
+    const dir = sortDirection === 'asc' ? 1 : -1
+    return [...paginatedItems].sort((a: any, b: any) => {
+      const av = getValue(a)
+      const bv = getValue(b)
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  }, [paginatedItems, sortField, sortDirection])
 
 
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
@@ -1384,7 +1405,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedItems.map((refund) => (
+                    {sortedPaginatedItems.map((refund) => (
                       <TableRow key={refund.publicId || refund.id}>
                         <TableCell className="w-12">
                           <Checkbox
@@ -1720,7 +1741,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
               {/* Vista Mobile - Cards */}
               <div className="md:hidden space-y-3">
-                {paginatedItems.map((refund) => (
+                {sortedPaginatedItems.map((refund) => (
                   <MobileCard
                     key={refund.publicId || refund.id}
                     onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
