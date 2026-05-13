@@ -39,6 +39,7 @@ const formSchema = z.object({
   cuotasPendientes: z.number({
     required_error: "Ingresa las cuotas pendientes",
   }).min(1, "Mínimo 1 cuota pendiente").max(80, "Máximo 80 cuotas pendientes"),
+  saldoInsoluto: z.number().min(1, "Debe ser mayor a $0").max(100000000, "El saldo máximo es $100.000.000").optional(),
   tipoSeguro: z.enum(["desgravamen", "cesantia", "ambos"], {
     required_error: "Selecciona el tipo de seguro",
   }),
@@ -126,7 +127,8 @@ export default function CalculadoraPage() {
       data.montoCredito,
       data.cuotasTotales,
       data.cuotasPendientes,
-      data.tipoSeguro
+      data.tipoSeguro,
+      data.saldoInsoluto
     );
 
     setTimeout(() => {
@@ -167,6 +169,9 @@ export default function CalculadoraPage() {
     doc.text(`Institucion: ${formDataSnapshot.institucion}`, 20, y); y += 6;
     doc.text(`Edad: ${edad} anos`, 20, y); y += 6;
     doc.text(`Monto del credito: ${formatCurrency(formDataSnapshot.montoCredito)}`, 20, y); y += 6;
+    if (formDataSnapshot.saldoInsoluto) {
+      doc.text(`Saldo insoluto: ${formatCurrency(formDataSnapshot.saldoInsoluto)}`, 20, y); y += 6;
+    }
     doc.text(`Cuotas totales: ${formDataSnapshot.cuotasTotales}`, 20, y); y += 6;
     doc.text(`Cuotas pendientes: ${formDataSnapshot.cuotasPendientes}`, 20, y); y += 6;
     
@@ -354,6 +359,9 @@ export default function CalculadoraPage() {
     texto += `- Institucion: ${formDataSnapshot.institucion}\n`;
     texto += `- Edad: ${edad} anos\n`;
     texto += `- Monto: ${formatCurrency(formDataSnapshot.montoCredito)}\n`;
+    if (formDataSnapshot.saldoInsoluto) {
+      texto += `- Saldo insoluto: ${formatCurrency(formDataSnapshot.saldoInsoluto)}\n`;
+    }
     texto += `- Cuotas: ${formDataSnapshot.cuotasPendientes}/${formDataSnapshot.cuotasTotales}\n`;
     texto += `- Tipo: ${tipoSeguroLabel}\n\n`;
     texto += `*AHORRO ESTIMADO: ${formatCurrency(resultado.montoDevolucion)}*\n\n`;
@@ -678,6 +686,35 @@ export default function CalculadoraPage() {
                     )}
                   />
                 </div>
+
+                {/* Saldo insoluto */}
+                <FormField
+                  control={form.control}
+                  name="saldoInsoluto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Saldo insoluto</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+                          <Input
+                            placeholder="13.326.226"
+                            className="pl-7"
+                            value={field.value ? formatInputCurrency(field.value.toString()) : ""}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value.replace(/\D/g, ""), 10);
+                              field.onChange(isNaN(value) ? undefined : value);
+                            }}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        Usa el saldo real confirmado; si lo dejas vacío se estima por cuotas
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Tipo de seguro */}
                 <FormField
