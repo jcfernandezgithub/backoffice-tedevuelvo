@@ -269,14 +269,18 @@ const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): nu
 // Fórmula: Nueva Prima Mensual × Cuotas Pendientes
 const getPrimaUnicaFromSnapshot = (refund: RefundRequest): number | null => {
   const snapshot = refund.calculationSnapshot
-  
-  // newMonthlyPremium es la nueva prima mensual preferencial
-  const newMonthlyPremium = snapshot?.newMonthlyPremium
+
+  // Capa defensiva: derivar la nueva prima en runtime con datos confirmados
+  // actuales en lugar de confiar en el valor persistido (que puede estar stale).
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { derivePremiumsFromSnapshot } = require('@/lib/snapshotPremiums') as typeof import('@/lib/snapshotPremiums')
+  const derived = derivePremiumsFromSnapshot(snapshot, refund.institutionId)
+  const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium
   const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments
   
   if (typeof newMonthlyPremium === 'number' && typeof remainingInstallments === 'number' && newMonthlyPremium > 0 && remainingInstallments > 0) {
     const primaUnica = newMonthlyPremium * remainingInstallments
-    console.log('Prima Única calculada desde snapshot:', { newMonthlyPremium, remainingInstallments, primaUnica })
+    console.log('Prima Única calculada desde snapshot:', { newMonthlyPremium, remainingInstallments, primaUnica, source: derived.source })
     return primaUnica
   }
   
