@@ -1055,7 +1055,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Cuotas restantes</p>
-                            <p className="font-medium">{refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
+                            <p className="font-medium">{refund.calculationSnapshot.confirmedRemainingInstallments || refund.calculationSnapshot.remainingInstallments || 'N/A'}</p>
                           </div>
 
                           {/* ── Tasas utilizadas (solo desgravamen) ── */}
@@ -1116,7 +1116,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const cuotasUsadas = snap.originalInstallments || 0 // closest match
                             const currentPremium = snap.currentMonthlyPremium || 0
                             const newPremium = snap.newMonthlyPremium || 0
-                            const remaining = snap.remainingInstallments || 0
+                            const remaining = snap.confirmedRemainingInstallments || snap.remainingInstallments || 0
 
                             // Intermediate values for bank premium
                             // La prima única se calcula sobre el monto TOTAL del crédito,
