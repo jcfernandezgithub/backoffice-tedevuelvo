@@ -1588,7 +1588,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           {(() => {
                             const snapshot = (refund as any).calculationSnapshot
                             const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
-                            const remainingInstallments = snapshot?.remainingInstallments || 0
+                            const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
                             const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                             // Caso AMBOS
                             const bd = computeBreakdown(snapshot)
@@ -1847,7 +1847,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         value: (() => {
                           const snapshot = (refund as any).calculationSnapshot
                           const newMonthlyPremium = snapshot?.newMonthlyPremium || 0
-                          const remainingInstallments = snapshot?.remainingInstallments || 0
+                          const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
                           const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
                           const bd = computeBreakdown(snapshot)
                           if (bd) {
