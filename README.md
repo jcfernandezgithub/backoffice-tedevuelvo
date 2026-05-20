@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.6
+## Versión 3.7.7
 
 ## Changelog
+
+### Versión 3.7.7 - 2026-05-20
+
+#### Fix: Datos bancarios quedaban en blanco al editar (Pagos programados)
+- **Problema**: en el detalle de una solicitud (`/refunds/:id`), al editar los datos de la cuenta bancaria desde el bloque "Pagos programados" y confirmar, los campos `Banco` y `Tipo de cuenta` quedaban vacíos si sólo se modificaba un campo (por ejemplo, el número de cuenta).
+- **Causa**: `EditBankInfoDialog` enviaba sólo los campos modificados (`{ bankInfo: { accountNumber: 'x' } }`), pero el backend reemplaza el subdocumento `bankInfo` completo en cada PATCH, por lo que los campos no enviados quedaban en `undefined`.
+- **Fix**: el diálogo ahora siempre envía el objeto `bankInfo` completo (`bank`, `accountType`, `accountNumber`), haciendo merge de los valores actuales con los editados antes del PATCH. La validación de "no hay cambios" se mantiene comparando contra los `defaults` originales.
+- **Archivos**: `src/pages/Refunds/components/EditBankInfoDialog.tsx`.
 
 ### Versión 3.7.6 - 2026-05-13
 
