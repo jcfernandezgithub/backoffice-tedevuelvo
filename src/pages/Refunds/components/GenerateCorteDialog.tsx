@@ -968,8 +968,9 @@ export function GenerateCorteDialog({ refund, isMandateSigned = false }: Generat
   const institutionLower = refund.institutionId?.toLowerCase() || ''
   const isSantander = institutionLower === 'santander' || institutionLower === 'santander-consumer' || institutionLower === 'santander consumer'
   const isTanner = institutionLower === 'tanner'
-  const useExtendedFormat = isSantander || isTanner
-  const extendedFormatLabel = isTanner ? 'Tanner' : 'Banco Santander'
+  const isFinancorp = institutionLower === 'financorp' || institutionLower === 'finacorp' || institutionLower === 'financoop'
+  const useExtendedFormat = isSantander || isTanner || isFinancorp
+  const extendedFormatLabel = isTanner ? 'Tanner' : isFinancorp ? 'Financorp' : 'Banco Santander'
 
   const [genericData, setGenericData] = useState<{
     formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string }
