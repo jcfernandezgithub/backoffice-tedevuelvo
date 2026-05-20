@@ -83,15 +83,22 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
         bankAccountNumber: 'accountNumber',
       } as const
 
-      const bankInfo: Record<string, any> = {}
+      // Detectar si hay al menos un cambio
+      const hasChanges = (Object.entries(data) as [keyof BankFormValues, any][]).some(
+        ([key, value]) => value !== defaults[key] && !(value === '' && (defaults[key] === '' || defaults[key] === undefined))
+      )
 
-      for (const [key, value] of Object.entries(data) as [keyof BankFormValues, any][]) {
-        if (value === defaults[key] || value === '' || value === undefined) continue
-        bankInfo[bankFieldMap[key]] = value
+      if (!hasChanges) {
+        return Promise.reject(new Error('No hay cambios para guardar'))
       }
 
-      if (Object.keys(bankInfo).length === 0) {
-        return Promise.reject(new Error('No hay cambios para guardar'))
+      // IMPORTANT: enviar el objeto bankInfo COMPLETO (merge sobre los valores actuales),
+      // porque el backend reemplaza el subdocumento entero. Si sólo se envían los campos
+      // modificados, los demás quedan en blanco.
+      const bankInfo: Record<string, any> = {
+        bank: (data.bankName ?? defaults.bankName ?? '').toString().trim(),
+        accountType: (data.bankAccountType ?? defaults.bankAccountType ?? '').toString().trim(),
+        accountNumber: (data.bankAccountNumber ?? defaults.bankAccountNumber ?? '').toString().trim(),
       }
 
       return refundAdminApi.updateData(refund.publicId, { bankInfo })
