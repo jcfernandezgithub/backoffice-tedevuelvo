@@ -622,7 +622,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   <Label>Nuevo estado</Label>
                   <Select
                     value={updateForm.status}
-                    onValueChange={(v) => setUpdateForm({ ...updateForm, status: v as RefundStatus, realAmount: undefined })}
+                    onValueChange={(v) => {
+                      setUpdateForm({ ...updateForm, status: v as RefundStatus, realAmount: undefined })
+                      setCedulaValidated(false)
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
