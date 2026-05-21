@@ -1,8 +1,21 @@
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useEffect, useMemo, useState } from 'react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2, ShieldCheck, ShieldAlert, ShieldX, Sparkles, RefreshCw } from 'lucide-react'
+import {
+  Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  ShieldX,
+  Sparkles,
+  RefreshCw,
+  ArrowRight,
+  Lock,
+  ScanLine,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  X,
+} from 'lucide-react'
 import { authService } from '@/services/authService'
 import {
   validateCedulaChilenaDocuments,
@@ -11,8 +24,11 @@ import {
   type ValidationMessage,
 } from '@/lib/cedulaValidation'
 import type { RefundDocument } from '@/types/refund'
+import { cn } from '@/lib/utils'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+const CEDULA_FRENTE_KIND = 'cedula-frente'
+const CEDULA_TRASERA_KIND = 'cedula-trasera'
 
 interface Props {
   open: boolean
@@ -22,8 +38,7 @@ interface Props {
   onValidated: () => void
 }
 
-const CEDULA_FRENTE_KIND = 'cedula-frente'
-const CEDULA_TRASERA_KIND = 'cedula-trasera'
+type Phase = 'idle' | 'loading' | 'result' | 'error'
 
 async function downloadDocAsFile(
   publicId: string,
@@ -44,6 +59,14 @@ async function downloadDocAsFile(
   return new File([blob], `${fallbackName}.${ext}`, { type: contentType })
 }
 
+/** Pasos visibles durante el loading para que se sienta vivo y profesional. */
+const LOADING_STEPS = [
+  { label: 'Preparando imágenes', icon: ScanLine },
+  { label: 'Analizando anverso', icon: Sparkles },
+  { label: 'Analizando reverso', icon: Sparkles },
+  { label: 'Verificando correspondencia', icon: ShieldCheck },
+] as const
+
 export function CedulaValidationDialog({
   open,
   onOpenChange,
@@ -51,16 +74,18 @@ export function CedulaValidationDialog({
   documents,
   onValidated,
 }: Props) {
-  const [phase, setPhase] = useState<'idle' | 'loading' | 'result' | 'error'>('idle')
+  const [phase, setPhase] = useState<Phase>('idle')
   const [message, setMessage] = useState<ValidationMessage | null>(null)
   const [canContinue, setCanContinue] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [loadingStep, setLoadingStep] = useState(0)
 
   const reset = () => {
     setPhase('idle')
     setMessage(null)
     setCanContinue(false)
     setErrorMsg(null)
+    setLoadingStep(0)
   }
 
   const handleClose = (next: boolean) => {
@@ -68,27 +93,40 @@ export function CedulaValidationDialog({
     onOpenChange(next)
   }
 
+  // Animar pasos de loading (cosmético).
+  useEffect(() => {
+    if (phase !== 'loading') return
+    setLoadingStep(0)
+    const interval = setInterval(() => {
+      setLoadingStep((s) => (s < LOADING_STEPS.length - 1 ? s + 1 : s))
+    }, 1400)
+    return () => clearInterval(interval)
+  }, [phase])
+
+  const docsAvailable = useMemo(() => {
+    const frente = documents.find((d) => d.kind === CEDULA_FRENTE_KIND)
+    const trasera = documents.find((d) => d.kind === CEDULA_TRASERA_KIND)
+    return { frente, trasera, ok: !!frente && !!trasera }
+  }, [documents])
+
   const runValidation = async () => {
     setPhase('loading')
     setErrorMsg(null)
     setMessage(null)
     setCanContinue(false)
 
-    const frente = documents.find((d) => d.kind === CEDULA_FRENTE_KIND)
-    const trasera = documents.find((d) => d.kind === CEDULA_TRASERA_KIND)
-
-    if (!frente || !trasera) {
+    if (!docsAvailable.ok) {
       setPhase('error')
       setErrorMsg(
-        'Faltan documentos cargados. Asegúrate de que estén el frente y reverso de la cédula.',
+        'Faltan documentos cargados. Verifica que estén el frente y reverso de la cédula.',
       )
       return
     }
 
     try {
       const [anversoFile, reversoFile] = await Promise.all([
-        downloadDocAsFile(publicId, frente, 'anverso'),
-        downloadDocAsFile(publicId, trasera, 'reverso'),
+        downloadDocAsFile(publicId, docsAvailable.frente!, 'anverso'),
+        downloadDocAsFile(publicId, docsAvailable.trasera!, 'reverso'),
       ])
 
       let validation: CedulaValidationResponse
@@ -117,116 +155,367 @@ export function CedulaValidationDialog({
     handleClose(false)
   }
 
-  const statusVisual = (() => {
-    if (!message) return null
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        className="sm:max-w-xl p-0 overflow-hidden gap-0 border-0 shadow-2xl"
+      >
+        {/* Header con gradient */}
+        <div className="relative bg-gradient-to-br from-primary via-primary to-primary/80 px-6 py-5 text-primary-foreground">
+          <button
+            onClick={() => handleClose(false)}
+            className="absolute right-4 top-4 rounded-md p-1 opacity-70 hover:opacity-100 transition-opacity"
+            aria-label="Cerrar"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-white/15 backdrop-blur-sm p-2.5 ring-1 ring-white/20">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold leading-tight">
+                Validación de documentos con IA
+              </h2>
+              <p className="text-sm text-primary-foreground/85 mt-1 leading-snug">
+                Análisis visual del frente y reverso de la cédula de identidad chilena
+                antes de actualizar el estado.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 bg-background">
+          {phase === 'idle' && (
+            <IdleView
+              docsOk={docsAvailable.ok}
+              onStart={runValidation}
+              onCancel={() => handleClose(false)}
+            />
+          )}
+
+          {phase === 'loading' && <LoadingView step={loadingStep} />}
+
+          {phase === 'result' && message && (
+            <ResultView
+              message={message}
+              canContinue={canContinue}
+              onRetry={runValidation}
+              onClose={() => handleClose(false)}
+              onContinue={handleContinue}
+            />
+          )}
+
+          {phase === 'error' && (
+            <ErrorView
+              errorMsg={errorMsg}
+              onRetry={runValidation}
+              onClose={() => handleClose(false)}
+            />
+          )}
+        </div>
+
+        {/* Footer institucional */}
+        <div className="px-6 py-3 bg-muted/40 border-t flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Lock className="h-3 w-3 shrink-0" />
+          <span>
+            Validación visual no oficial. Las imágenes se envían cifradas y no se
+            almacenan datos personales en el back office.
+          </span>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* -------------------- Sub-views -------------------- */
+
+function IdleView({
+  docsOk,
+  onStart,
+  onCancel,
+}: {
+  docsOk: boolean
+  onStart: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
+        <DocCard
+          label="Anverso"
+          sublabel="Cédula frontal"
+          available={docsOk}
+        />
+        <DocCard
+          label="Reverso"
+          sublabel="Cédula trasera"
+          available={docsOk}
+        />
+      </div>
+
+      <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+        <p className="text-sm font-medium flex items-center gap-2">
+          <ScanLine className="h-4 w-4 text-primary" />
+          ¿Qué vamos a validar?
+        </p>
+        <ul className="text-xs text-muted-foreground space-y-1.5 pl-6 list-disc">
+          <li>Que ambas imágenes correspondan a una cédula de identidad chilena.</li>
+          <li>Que el anverso y reverso sean del mismo documento.</li>
+          <li>Calidad visual suficiente (sin reflejos ni cortes).</li>
+        </ul>
+      </div>
+
+      {!docsOk && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-sm flex gap-2 items-start">
+          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <span className="text-amber-900 dark:text-amber-200">
+            Faltan documentos cargados. Asegúrate de que estén el frente y reverso
+            de la cédula antes de validar.
+          </span>
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button variant="ghost" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={onStart}
+          disabled={!docsOk}
+          className="gap-2 shadow-md shadow-primary/20"
+        >
+          <Sparkles className="h-4 w-4" />
+          Iniciar validación
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function DocCard({
+  label,
+  sublabel,
+  available,
+}: {
+  label: string
+  sublabel: string
+  available: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-lg border p-3 flex items-center gap-3 transition-colors',
+        available
+          ? 'border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-900'
+          : 'border-dashed border-muted-foreground/30 bg-muted/20',
+      )}
+    >
+      <div
+        className={cn(
+          'h-9 w-9 rounded-md grid place-items-center shrink-0',
+          available
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+            : 'bg-muted text-muted-foreground',
+        )}
+      >
+        {available ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium leading-tight">{label}</p>
+        <p className="text-xs text-muted-foreground leading-tight mt-0.5">{sublabel}</p>
+      </div>
+    </div>
+  )
+}
+
+function LoadingView({ step }: { step: number }) {
+  return (
+    <div className="py-6 space-y-6">
+      {/* Scanner animado */}
+      <div className="relative mx-auto h-32 w-52 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-primary animate-[scan_2s_ease-in-out_infinite]" />
+        <div className="absolute inset-0 grid place-items-center">
+          <Sparkles className="h-10 w-10 text-primary/60 animate-pulse" />
+        </div>
+        <style>{`
+          @keyframes scan {
+            0%   { transform: translateY(0); opacity: 1; }
+            50%  { transform: translateY(120px); opacity: 1; }
+            51%  { opacity: 0; }
+            52%  { transform: translateY(0); opacity: 0; }
+            53%  { opacity: 1; }
+            100% { transform: translateY(120px); opacity: 1; }
+          }
+        `}</style>
+      </div>
+
+      <div className="text-center space-y-1">
+        <p className="text-sm font-semibold">Estamos validando los documentos…</p>
+        <p className="text-xs text-muted-foreground">
+          Esto puede tomar unos segundos. No cierres esta ventana.
+        </p>
+      </div>
+
+      <ul className="space-y-2 max-w-sm mx-auto">
+        {LOADING_STEPS.map((s, i) => {
+          const Icon = s.icon
+          const done = i < step
+          const active = i === step
+          return (
+            <li
+              key={s.label}
+              className={cn(
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                active && 'bg-primary/10 text-foreground',
+                done && 'text-muted-foreground',
+                !active && !done && 'text-muted-foreground/60',
+              )}
+            >
+              <div className="h-6 w-6 grid place-items-center shrink-0">
+                {done ? (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                ) : active ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : (
+                  <Icon className="h-4 w-4" />
+                )}
+              </div>
+              <span className="text-sm">{s.label}</span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
+function ResultView({
+  message,
+  canContinue,
+  onRetry,
+  onClose,
+  onContinue,
+}: {
+  message: ValidationMessage
+  canContinue: boolean
+  onRetry: () => void
+  onClose: () => void
+  onContinue: () => void
+}) {
+  const variant = (() => {
     if (message.estado_validacion === 'ok')
-      return { Icon: ShieldCheck, color: 'text-green-600', bg: 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900' }
+      return {
+        Icon: ShieldCheck,
+        ring: 'ring-emerald-200 dark:ring-emerald-900',
+        bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+        iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+        iconText: 'text-emerald-600 dark:text-emerald-400',
+        badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+        badgeText: 'Validación aprobada',
+      }
     if (message.estado_validacion === 'advertencia')
-      return { Icon: ShieldAlert, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900' }
-    return { Icon: ShieldX, color: 'text-destructive', bg: 'bg-destructive/10 border-destructive/30' }
+      return {
+        Icon: ShieldAlert,
+        ring: 'ring-amber-200 dark:ring-amber-900',
+        bg: 'bg-amber-50 dark:bg-amber-950/30',
+        iconBg: 'bg-amber-100 dark:bg-amber-900/60',
+        iconText: 'text-amber-600 dark:text-amber-400',
+        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+        badgeText: 'Requiere atención',
+      }
+    return {
+      Icon: ShieldX,
+      ring: 'ring-destructive/30',
+      bg: 'bg-destructive/5',
+      iconBg: 'bg-destructive/15',
+      iconText: 'text-destructive',
+      badge: 'bg-destructive/15 text-destructive',
+      badgeText: 'Validación rechazada',
+    }
   })()
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Validación de documentos con IA
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Validaremos visualmente que el frente y reverso correspondan a una cédula
-            de identidad chilena antes de cambiar el estado.
-          </p>
-        </DialogHeader>
-
-        {phase === 'idle' && (
-          <div className="space-y-4 py-2">
-            <Alert>
-              <AlertTitle>¿Cómo funciona?</AlertTitle>
-              <AlertDescription>
-                Se enviarán las imágenes ya cargadas de la cédula (frente y reverso) a
-                un servicio de validación visual. La revisión es solo visual y no constituye
-                una certificación oficial.
-              </AlertDescription>
-            </Alert>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => handleClose(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={runValidation}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Iniciar validación
-              </Button>
-            </div>
+    <div className="space-y-5 animate-in fade-in-50 zoom-in-95 duration-300">
+      <div className={cn('rounded-xl p-5 ring-1', variant.bg, variant.ring)}>
+        <div className="flex items-start gap-4">
+          <div className={cn('h-12 w-12 rounded-xl grid place-items-center shrink-0', variant.iconBg)}>
+            <variant.Icon className={cn('h-6 w-6', variant.iconText)} />
           </div>
-        )}
-
-        {phase === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-10 gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm font-medium">Estamos validando los documentos…</p>
-            <p className="text-xs text-muted-foreground">Esto puede tomar unos segundos.</p>
-          </div>
-        )}
-
-        {phase === 'result' && message && statusVisual && (
-          <div className="space-y-4 py-2">
-            <div className={`rounded-lg border p-4 ${statusVisual.bg}`}>
-              <div className="flex items-start gap-3">
-                <statusVisual.Icon className={`h-6 w-6 mt-0.5 ${statusVisual.color}`} />
-                <div className="space-y-1">
-                  <h3 className="font-semibold">{message.titulo}</h3>
-                  <p className="text-sm">{message.mensaje}</p>
-                  <p className="text-sm text-muted-foreground">{message.accion_recomendada}</p>
-                </div>
-              </div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn('text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full', variant.badge)}>
+                {variant.badgeText}
+              </span>
             </div>
-
-            <div className="flex justify-end gap-2">
-              {message.puede_reintentar && (
-                <Button variant="outline" onClick={runValidation}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reintentar validación
-                </Button>
-              )}
-              <Button variant="outline" onClick={() => handleClose(false)}>
-                Volver a cargar documentos
-              </Button>
-              {canContinue ? (
-                <Button onClick={handleContinue}>
-                  Continuar y actualizar estado
-                </Button>
-              ) : (
-                <Button disabled title="La validación no permite continuar">
-                  Continuar y actualizar estado
-                </Button>
-              )}
-            </div>
+            <h3 className="text-base font-semibold leading-tight">{message.titulo}</h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">{message.mensaje}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed border-t border-current/10 pt-2 mt-2">
+              <span className="font-medium text-foreground">Recomendación: </span>
+              {message.accion_recomendada}
+            </p>
           </div>
-        )}
+        </div>
+      </div>
 
-        {phase === 'error' && (
-          <div className="space-y-4 py-2">
-            <Alert variant="destructive">
-              <AlertTitle>No pudimos validar los documentos</AlertTitle>
-              <AlertDescription>
-                {errorMsg ||
-                  'No pudimos validar los documentos en este momento. Intenta nuevamente.'}
-              </AlertDescription>
-            </Alert>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => handleClose(false)}>
-                Cerrar
-              </Button>
-              <Button onClick={runValidation}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reintentar
-              </Button>
-            </div>
-          </div>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        {message.puede_reintentar && (
+          <Button variant="outline" onClick={onRetry} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Reintentar
+          </Button>
         )}
-      </DialogContent>
-    </Dialog>
+        <Button variant="ghost" onClick={onClose}>
+          {canContinue ? 'Cancelar' : 'Volver a cargar documentos'}
+        </Button>
+        {canContinue && (
+          <Button onClick={onContinue} className="gap-2 shadow-md shadow-primary/20">
+            Continuar y actualizar estado
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ErrorView({
+  errorMsg,
+  onRetry,
+  onClose,
+}: {
+  errorMsg: string | null
+  onRetry: () => void
+  onClose: () => void
+}) {
+  return (
+    <div className="space-y-5 animate-in fade-in-50 zoom-in-95 duration-300">
+      <div className="rounded-xl p-5 ring-1 ring-destructive/30 bg-destructive/5">
+        <div className="flex items-start gap-4">
+          <div className="h-12 w-12 rounded-xl bg-destructive/15 text-destructive grid place-items-center shrink-0">
+            <ShieldX className="h-6 w-6" />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-base font-semibold leading-tight">
+              No pudimos validar los documentos
+            </h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              {errorMsg ||
+                'No pudimos validar los documentos en este momento. Intenta nuevamente en unos segundos.'}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          Cerrar
+        </Button>
+        <Button onClick={onRetry} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Reintentar
+        </Button>
+      </div>
+    </div>
   )
 }
