@@ -47,6 +47,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
+import { useAIValidationSettings } from '@/hooks/useAIValidationSettings'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -255,6 +256,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const [bankEmailDialogOpen, setBankEmailDialogOpen] = useState(false)
   const [cedulaValidationOpen, setCedulaValidationOpen] = useState(false)
   const [cedulaValidated, setCedulaValidated] = useState(false)
+  const [cedulaValidationForced, setCedulaValidationForced] = useState(false)
+  const { enabled: aiValidationEnabled } = useAIValidationSettings()
 
   // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
   // o si cambia la solicitud actual.
@@ -754,7 +757,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                {updateForm.status === 'docs_received' ? (
+                {updateForm.status === 'docs_received' && aiValidationEnabled ? (
                   <>
                     {!cedulaValidated ? (
                       <Button
@@ -772,10 +775,18 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                     ) : (
                       <Button
                         onClick={handleUpdateStatus}
-                        className="w-full"
+                        className={`w-full ${
+                          cedulaValidationForced
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : ''
+                        }`}
                         disabled={updateMutation.isPending}
                       >
-                        {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                        {updateMutation.isPending
+                          ? 'Actualizando...'
+                          : cedulaValidationForced
+                            ? 'Actualizar estado (omitiendo validación)'
+                            : 'Actualizar estado'}
                       </Button>
                     )}
                     {(!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
@@ -783,9 +794,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         Genera la Carta de Corte para cargar los datos del crédito
                       </p>
                     )}
-                    {cedulaValidated && (
+                    {cedulaValidated && !cedulaValidationForced && (
                       <p className="text-xs text-green-600 text-center">
                         ✓ Documentos validados. Puedes actualizar el estado.
+                      </p>
+                    )}
+                    {cedulaValidated && cedulaValidationForced && (
+                      <p className="text-xs text-amber-600 text-center">
+                        ⚠ La validación con IA no fue concluyente. Vas a actualizar el estado bajo tu responsabilidad.
                       </p>
                     )}
                   </>
@@ -809,7 +825,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         onOpenChange={setCedulaValidationOpen}
         publicId={getRefundDocumentsPublicId(refund)}
         documents={(documents as any) || []}
-        onValidated={() => setCedulaValidated(true)}
+        onValidated={(forced) => {
+          setCedulaValidated(true)
+          setCedulaValidationForced(!!forced)
+        }}
       />
 
       <Tabs defaultValue="info" className="w-full">
