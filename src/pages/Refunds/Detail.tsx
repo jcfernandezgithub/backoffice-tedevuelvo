@@ -253,6 +253,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const [bankEmailDialogOpen, setBankEmailDialogOpen] = useState(false)
+  const [cedulaValidationOpen, setCedulaValidationOpen] = useState(false)
+  const [cedulaValidated, setCedulaValidated] = useState(false)
+
+  // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
+  // o si cambia la solicitud actual.
+  // Nota: el flag es por sesión del diálogo; al cerrar/reabrir el modal se vuelve a pedir.
 
   const handleConfirmSendBankEmail = () => {
     setBankEmailDialogOpen(false)
