@@ -453,6 +453,7 @@ function ResultView({
   onClose: () => void
   onContinue: () => void
 }) {
+  const [showDetails, setShowDetails] = useState(false)
   const variant = (() => {
     if (message.estado_validacion === 'ok')
       return {
