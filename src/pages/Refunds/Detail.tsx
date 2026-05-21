@@ -751,20 +751,49 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                <Button
-                  onClick={handleUpdateStatus}
-                  className="w-full"
-                  disabled={
-                    updateMutation.isPending ||
-                    (updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()))
-                  }
-                >
-                  {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
-                </Button>
-                {updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
-                  <p className="text-xs text-destructive text-center">
-                    Genera la Carta de Corte para cargar los datos del crédito
-                  </p>
+                {updateForm.status === 'docs_received' ? (
+                  <>
+                    {!cedulaValidated ? (
+                      <Button
+                        onClick={() => setCedulaValidationOpen(true)}
+                        className="w-full"
+                        disabled={
+                          updateMutation.isPending ||
+                          !snapshotFields.nroPoliza?.trim() ||
+                          !snapshotFields.nroCredito?.trim()
+                        }
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Validar documentos con IA
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleUpdateStatus}
+                        className="w-full"
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                      </Button>
+                    )}
+                    {(!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
+                      <p className="text-xs text-destructive text-center">
+                        Genera la Carta de Corte para cargar los datos del crédito
+                      </p>
+                    )}
+                    {cedulaValidated && (
+                      <p className="text-xs text-green-600 text-center">
+                        ✓ Documentos validados. Puedes actualizar el estado.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleUpdateStatus}
+                    className="w-full"
+                    disabled={updateMutation.isPending}
+                  >
+                    {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                  </Button>
                 )}
               </div>
             </DialogContent>
