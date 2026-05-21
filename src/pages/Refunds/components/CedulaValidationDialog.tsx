@@ -17,6 +17,8 @@ import {
   X,
   FileText,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { authService } from '@/services/authService'
 import {
