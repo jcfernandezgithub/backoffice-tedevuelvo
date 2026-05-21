@@ -35,7 +35,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   publicId: string
   documents: RefundDocument[]
-  onValidated: () => void
+  onValidated: (forced?: boolean) => void
 }
 
 type Phase = 'idle' | 'loading' | 'result' | 'error'
@@ -79,6 +79,7 @@ export function CedulaValidationDialog({
   const [canContinue, setCanContinue] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
+  const [confirmForce, setConfirmForce] = useState(false)
 
   const reset = () => {
     setPhase('idle')
@@ -86,6 +87,7 @@ export function CedulaValidationDialog({
     setCanContinue(false)
     setErrorMsg(null)
     setLoadingStep(0)
+    setConfirmForce(false)
   }
 
   const handleClose = (next: boolean) => {
@@ -151,7 +153,12 @@ export function CedulaValidationDialog({
   }
 
   const handleContinue = () => {
-    onValidated()
+    onValidated(false)
+    handleClose(false)
+  }
+
+  const handleForceContinue = () => {
+    onValidated(true)
     handleClose(false)
   }
 
@@ -201,6 +208,9 @@ export function CedulaValidationDialog({
             <ResultView
               message={message}
               canContinue={canContinue}
+              confirmForce={confirmForce}
+              onToggleConfirmForce={setConfirmForce}
+              onForceContinue={handleForceContinue}
               onRetry={runValidation}
               onClose={() => handleClose(false)}
               onContinue={handleContinue}
