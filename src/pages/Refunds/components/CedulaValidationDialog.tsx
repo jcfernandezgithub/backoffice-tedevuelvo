@@ -15,6 +15,8 @@ import {
   XCircle,
   AlertTriangle,
   X,
+  FileText,
+  Info,
 } from 'lucide-react'
 import { authService } from '@/services/authService'
 import {
@@ -39,6 +41,13 @@ interface Props {
 }
 
 type Phase = 'idle' | 'loading' | 'result' | 'error'
+
+interface ValidationDetails {
+  resumen?: string
+  recomendacion?: string
+  alertas?: string[]
+  motivos?: string[]
+}
 
 async function downloadDocAsFile(
   publicId: string,
@@ -77,6 +86,7 @@ export function CedulaValidationDialog({
   const [phase, setPhase] = useState<Phase>('idle')
   const [message, setMessage] = useState<ValidationMessage | null>(null)
   const [canContinue, setCanContinue] = useState(false)
+  const [details, setDetails] = useState<ValidationDetails | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [confirmForce, setConfirmForce] = useState(false)
@@ -85,6 +95,7 @@ export function CedulaValidationDialog({
     setPhase('idle')
     setMessage(null)
     setCanContinue(false)
+    setDetails(null)
     setErrorMsg(null)
     setLoadingStep(0)
     setConfirmForce(false)
@@ -116,6 +127,7 @@ export function CedulaValidationDialog({
     setErrorMsg(null)
     setMessage(null)
     setCanContinue(false)
+    setDetails(null)
 
     if (!docsAvailable.ok) {
       setPhase('error')
@@ -145,6 +157,22 @@ export function CedulaValidationDialog({
       const msg = buildDocumentValidationMessage(validation)
       setMessage(msg)
       setCanContinue(validation.es_valida_para_continuar_proceso === true)
+      setDetails({
+        resumen:
+          typeof validation.resumen === 'string' && validation.resumen.trim()
+            ? validation.resumen.trim()
+            : undefined,
+        recomendacion:
+          typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
+            ? validation.recomendacion.trim()
+            : undefined,
+        alertas: Array.isArray(validation.alertas)
+          ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
+          : undefined,
+        motivos: Array.isArray(validation.motivos_no_validez)
+          ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
+          : undefined,
+      })
       setPhase('result')
     } catch (e: any) {
       setPhase('error')
@@ -208,6 +236,7 @@ export function CedulaValidationDialog({
             <ResultView
               message={message}
               canContinue={canContinue}
+              details={details}
               confirmForce={confirmForce}
               onToggleConfirmForce={setConfirmForce}
               onForceContinue={handleForceContinue}
@@ -404,6 +433,7 @@ function LoadingView({ step }: { step: number }) {
 function ResultView({
   message,
   canContinue,
+  details,
   confirmForce,
   onToggleConfirmForce,
   onForceContinue,
@@ -413,6 +443,7 @@ function ResultView({
 }: {
   message: ValidationMessage
   canContinue: boolean
+  details: ValidationDetails | null
   confirmForce: boolean
   onToggleConfirmForce: (v: boolean) => void
   onForceContinue: () => void
@@ -474,6 +505,82 @@ function ResultView({
           </div>
         </div>
       </div>
+
+      {details && (details.resumen || details.recomendacion || (details.alertas?.length ?? 0) > 0 || (details.motivos?.length ?? 0) > 0) && (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-muted/40">
+            <FileText className="h-4 w-4 text-primary" />
+            <p className="text-sm font-semibold">Detalle del análisis con IA</p>
+          </div>
+          <div className="p-4 space-y-4">
+            {details.resumen && (
+              <div className="flex gap-3">
+                <div className="h-8 w-8 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <Info className="h-4 w-4" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Resumen
+                  </p>
+                  <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line break-words">
+                    {details.resumen}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {details.recomendacion && details.recomendacion !== message.accion_recomendada && (
+              <div className="flex gap-3">
+                <div className="h-8 w-8 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="space-y-1 min-w-0">
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                    Sugerencia del análisis
+                  </p>
+                  <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line break-words">
+                    {details.recomendacion}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {details.alertas && details.alertas.length > 0 && (
+              <div className="rounded-md border border-amber-200 dark:border-amber-900 bg-amber-50/70 dark:bg-amber-950/30 p-3">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Alertas detectadas
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {details.alertas.map((a, i) => (
+                    <li key={i} className="text-xs text-amber-900 dark:text-amber-200 leading-snug flex gap-2">
+                      <span className="mt-1 h-1 w-1 rounded-full bg-amber-600 shrink-0" />
+                      <span className="break-words">{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {details.motivos && details.motivos.length > 0 && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-destructive flex items-center gap-1.5">
+                  <XCircle className="h-3.5 w-3.5" />
+                  Motivos
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {details.motivos.map((m, i) => (
+                    <li key={i} className="text-xs text-destructive leading-snug flex gap-2">
+                      <span className="mt-1 h-1 w-1 rounded-full bg-destructive shrink-0" />
+                      <span className="break-words">{m}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
         {message.puede_reintentar && (
