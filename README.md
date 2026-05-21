@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 3.7.7
+## Versión 3.8.0
 
 ## Changelog
+
+### Versión 3.8.0 - 2026-05-20
+
+#### Feature: Validación visual de cédula con IA antes de "Documentos recibidos"
+- **Cambio**: en el cambio de estado a **"Documentos recibidos"**, el botón "Actualizar estado" queda deshabilitado y se reemplaza por **"Validar documentos con IA"**.
+- **Flujo**:
+  1. Operador genera Carta de Corte (carga `nroPoliza` + `nroCredito`).
+  2. Operador hace clic en "Validar documentos con IA" → modal descarga `cedula-frente` y `cedula-trasera` desde el backend y los envía como `multipart/form-data` (`anverso`, `reverso`, `requiere_ambas_caras=true`) al webhook n8n configurado en `VITE_N8N_CEDULA_VALIDATION_URL` (default: `https://gary-tester.app.n8n.cloud/webhook/validar-cedula-chilena`).
+  3. Estado de carga: "Estamos validando los documentos…".
+  4. Según `resultado_final` se muestra título + mensaje + acción recomendada (via `buildDocumentValidationMessage()`).
+  5. Si `es_valida_para_continuar_proceso === true`, se habilita "Continuar y actualizar estado" y el botón "Actualizar estado" en el diálogo principal.
+  6. Si es `false`, se bloquea el avance y se ofrece "Reintentar" o "Volver a cargar documentos".
+  7. En timeout/red/500 se muestra mensaje genérico y se permite reintentar; no se avanza automáticamente.
+- **Seguridad / privacidad**:
+  - No se exponen scorings técnicos (`scoring_anverso`, `scoring_reverso`, `scoring_consistencia`, MRZ, QR, etc.) ni datos personales.
+  - No se loguea la respuesta completa del servicio.
+  - No se envía `Content-Type` manual; el browser arma el boundary multipart.
+- **Validaciones frontend**: existencia de ambos archivos, tipos permitidos (`image/jpeg`, `image/png`, `image/webp`), tamaño máximo 10 MB por imagen.
+- **Archivos nuevos**: `src/lib/cedulaValidation.ts`, `src/pages/Refunds/components/CedulaValidationDialog.tsx`.
+- **Archivos editados**: `src/pages/Refunds/Detail.tsx`.
 
 ### Versión 3.7.7 - 2026-05-20
 
