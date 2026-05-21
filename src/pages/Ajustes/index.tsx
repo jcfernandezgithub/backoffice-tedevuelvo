@@ -3,12 +3,14 @@ import { cn } from '@/lib/utils';
 import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
+import { AIValidationSection } from './components/AIValidationSection';
 import {
   Timer,
   TrendingUp,
   Percent,
   Settings2,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -46,6 +48,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Percent,
     group: 'Cálculos',
     component: <TasasSection />,
+  },
+  {
+    id: 'ai-validation',
+    label: 'Validación con IA',
+    description: 'Cédula en docs recibidos',
+    icon: Sparkles,
+    group: 'Automatización',
+    component: <AIValidationSection />,
   },
 ];
 
