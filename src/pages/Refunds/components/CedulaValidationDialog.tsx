@@ -15,6 +15,8 @@ import {
   XCircle,
   AlertTriangle,
   X,
+  FileText,
+  Info,
 } from 'lucide-react'
 import { authService } from '@/services/authService'
 import {
@@ -39,6 +41,13 @@ interface Props {
 }
 
 type Phase = 'idle' | 'loading' | 'result' | 'error'
+
+interface ValidationDetails {
+  resumen?: string
+  recomendacion?: string
+  alertas?: string[]
+  motivos?: string[]
+}
 
 async function downloadDocAsFile(
   publicId: string,
@@ -77,6 +86,7 @@ export function CedulaValidationDialog({
   const [phase, setPhase] = useState<Phase>('idle')
   const [message, setMessage] = useState<ValidationMessage | null>(null)
   const [canContinue, setCanContinue] = useState(false)
+  const [details, setDetails] = useState<ValidationDetails | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [confirmForce, setConfirmForce] = useState(false)
@@ -85,6 +95,7 @@ export function CedulaValidationDialog({
     setPhase('idle')
     setMessage(null)
     setCanContinue(false)
+    setDetails(null)
     setErrorMsg(null)
     setLoadingStep(0)
     setConfirmForce(false)
@@ -116,6 +127,7 @@ export function CedulaValidationDialog({
     setErrorMsg(null)
     setMessage(null)
     setCanContinue(false)
+    setDetails(null)
 
     if (!docsAvailable.ok) {
       setPhase('error')
@@ -145,6 +157,22 @@ export function CedulaValidationDialog({
       const msg = buildDocumentValidationMessage(validation)
       setMessage(msg)
       setCanContinue(validation.es_valida_para_continuar_proceso === true)
+      setDetails({
+        resumen:
+          typeof validation.resumen === 'string' && validation.resumen.trim()
+            ? validation.resumen.trim()
+            : undefined,
+        recomendacion:
+          typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
+            ? validation.recomendacion.trim()
+            : undefined,
+        alertas: Array.isArray(validation.alertas)
+          ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
+          : undefined,
+        motivos: Array.isArray(validation.motivos_no_validez)
+          ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
+          : undefined,
+      })
       setPhase('result')
     } catch (e: any) {
       setPhase('error')
@@ -208,6 +236,7 @@ export function CedulaValidationDialog({
             <ResultView
               message={message}
               canContinue={canContinue}
+              details={details}
               confirmForce={confirmForce}
               onToggleConfirmForce={setConfirmForce}
               onForceContinue={handleForceContinue}
