@@ -804,6 +804,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         </div>
       </div>
 
+      <CedulaValidationDialog
+        open={cedulaValidationOpen}
+        onOpenChange={setCedulaValidationOpen}
+        publicId={getRefundDocumentsPublicId(refund)}
+        documents={(documents as any) || []}
+        onValidated={() => setCedulaValidated(true)}
+      />
+
       <Tabs defaultValue="info" className="w-full">
         <TabsList>
           <TabsTrigger value="info">Información</TabsTrigger>
