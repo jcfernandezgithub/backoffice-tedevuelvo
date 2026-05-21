@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator, TrendingDown, Mail } from 'lucide-react'
+import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator, TrendingDown, Mail, Sparkles } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { authService } from '@/services/authService'
@@ -41,6 +41,7 @@ import { EditSnapshotDialog } from './components/EditSnapshotDialog'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
+import { CedulaValidationDialog } from './components/CedulaValidationDialog'
 import { Money } from '@/components/common/Money'
 import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
@@ -252,6 +253,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   })
 
   const [bankEmailDialogOpen, setBankEmailDialogOpen] = useState(false)
+  const [cedulaValidationOpen, setCedulaValidationOpen] = useState(false)
+  const [cedulaValidated, setCedulaValidated] = useState(false)
+
+  // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
+  // o si cambia la solicitud actual.
+  // Nota: el flag es por sesión del diálogo; al cerrar/reabrir el modal se vuelve a pedir.
 
   const handleConfirmSendBankEmail = () => {
     setBankEmailDialogOpen(false)
@@ -615,7 +622,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   <Label>Nuevo estado</Label>
                   <Select
                     value={updateForm.status}
-                    onValueChange={(v) => setUpdateForm({ ...updateForm, status: v as RefundStatus, realAmount: undefined })}
+                    onValueChange={(v) => {
+                      setUpdateForm({ ...updateForm, status: v as RefundStatus, realAmount: undefined })
+                      setCedulaValidated(false)
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -744,26 +754,63 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                <Button
-                  onClick={handleUpdateStatus}
-                  className="w-full"
-                  disabled={
-                    updateMutation.isPending ||
-                    (updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()))
-                  }
-                >
-                  {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
-                </Button>
-                {updateForm.status === 'docs_received' && (!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
-                  <p className="text-xs text-destructive text-center">
-                    Genera la Carta de Corte para cargar los datos del crédito
-                  </p>
+                {updateForm.status === 'docs_received' ? (
+                  <>
+                    {!cedulaValidated ? (
+                      <Button
+                        onClick={() => setCedulaValidationOpen(true)}
+                        className="w-full"
+                        disabled={
+                          updateMutation.isPending ||
+                          !snapshotFields.nroPoliza?.trim() ||
+                          !snapshotFields.nroCredito?.trim()
+                        }
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Validar documentos con IA
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleUpdateStatus}
+                        className="w-full"
+                        disabled={updateMutation.isPending}
+                      >
+                        {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                      </Button>
+                    )}
+                    {(!snapshotFields.nroPoliza?.trim() || !snapshotFields.nroCredito?.trim()) && (
+                      <p className="text-xs text-destructive text-center">
+                        Genera la Carta de Corte para cargar los datos del crédito
+                      </p>
+                    )}
+                    {cedulaValidated && (
+                      <p className="text-xs text-green-600 text-center">
+                        ✓ Documentos validados. Puedes actualizar el estado.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleUpdateStatus}
+                    className="w-full"
+                    disabled={updateMutation.isPending}
+                  >
+                    {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                  </Button>
                 )}
               </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
+
+      <CedulaValidationDialog
+        open={cedulaValidationOpen}
+        onOpenChange={setCedulaValidationOpen}
+        publicId={getRefundDocumentsPublicId(refund)}
+        documents={(documents as any) || []}
+        onValidated={() => setCedulaValidated(true)}
+      />
 
       <Tabs defaultValue="info" className="w-full">
         <TabsList>
