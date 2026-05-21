@@ -404,12 +404,18 @@ function LoadingView({ step }: { step: number }) {
 function ResultView({
   message,
   canContinue,
+  confirmForce,
+  onToggleConfirmForce,
+  onForceContinue,
   onRetry,
   onClose,
   onContinue,
 }: {
   message: ValidationMessage
   canContinue: boolean
+  confirmForce: boolean
+  onToggleConfirmForce: (v: boolean) => void
+  onForceContinue: () => void
   onRetry: () => void
   onClose: () => void
   onContinue: () => void
@@ -477,7 +483,7 @@ function ResultView({
           </Button>
         )}
         <Button variant="ghost" onClick={onClose}>
-          {canContinue ? 'Cancelar' : 'Volver a cargar documentos'}
+          Cancelar
         </Button>
         {canContinue && (
           <Button onClick={onContinue} className="gap-2 shadow-md shadow-primary/20">
@@ -486,6 +492,47 @@ function ResultView({
           </Button>
         )}
       </div>
+
+      {!canContinue && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                ¿Avanzar de todas formas?
+              </p>
+              <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                Puedes continuar con el cambio de estado bajo tu responsabilidad.
+                Quedará registrado que la validación con IA no fue concluyente.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer select-none rounded-md bg-white/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 px-3 py-2">
+            <input
+              type="checkbox"
+              checked={confirmForce}
+              onChange={(e) => onToggleConfirmForce(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-xs text-amber-900 dark:text-amber-200 leading-snug">
+              Confirmo que revisé los documentos manualmente y deseo actualizar el
+              estado igualmente.
+            </span>
+          </label>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={onForceContinue}
+              disabled={!confirmForce}
+              className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Actualizar estado de todas formas
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
