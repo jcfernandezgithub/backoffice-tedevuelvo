@@ -261,8 +261,8 @@ export function CedulaValidationDialog({
         <div className="px-6 py-3 bg-muted/40 border-t flex items-center gap-2 text-[11px] text-muted-foreground">
           <Lock className="h-3 w-3 shrink-0" />
           <span>
-            Validación visual no oficial. Las imágenes se envían cifradas y no se
-            almacenan datos personales en el back office.
+            El análisis con IA es una sugerencia de apoyo. La decisión final
+            siempre queda en manos del equipo humano.
           </span>
         </div>
       </DialogContent>
@@ -598,12 +598,6 @@ function ResultView({
       )}
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-        {message.puede_reintentar && (
-          <Button variant="outline" onClick={onRetry} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Reintentar
-          </Button>
-        )}
         <Button variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
