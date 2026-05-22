@@ -198,14 +198,7 @@ export function CedulaValidationDialog({
         className="sm:max-w-xl p-0 overflow-hidden gap-0 border-0 shadow-2xl"
       >
         {/* Header con gradient */}
-        <div className="relative bg-gradient-to-br from-primary via-primary to-primary/80 px-6 py-5 text-primary-foreground">
-          <button
-            onClick={() => handleClose(false)}
-            className="absolute right-4 top-4 rounded-md p-1 opacity-70 hover:opacity-100 transition-opacity"
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </button>
+        <div className="relative bg-gradient-to-br from-primary via-primary to-primary/80 px-6 py-5 text-primary-foreground [&_~_button[aria-label='Close']]:text-primary-foreground">
           <div className="flex items-start gap-3">
             <div className="rounded-xl bg-white/15 backdrop-blur-sm p-2.5 ring-1 ring-white/20">
               <Sparkles className="h-6 w-6" />
