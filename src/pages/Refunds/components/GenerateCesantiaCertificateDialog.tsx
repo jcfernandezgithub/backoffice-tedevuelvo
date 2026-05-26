@@ -271,6 +271,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   }
 
   const calculatePrimaNeta = () => {
+    // Override manual desde snapshot (casos de borde editados desde "Prima total override")
+    const manualOverride = Number((refund.calculationSnapshot as any)?.newTotalPremium) || 0
+    if (manualOverride > 0) return Math.round(manualOverride)
     const montoCredito = parseFloat(formData.montoCredito.replace(/\./g, '').replace(',', '.')) || 0
     const plazoMeses = parseInt(formData.plazoMeses) || 0
     const tasa = getTasaCesantia(montoCredito)
