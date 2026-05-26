@@ -785,7 +785,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     variant={overridePrimas ? 'destructive' : 'ghost'}
                     size="sm"
                     className="h-7 gap-1.5 text-xs"
-                    onClick={() => setOverridePrimas(!overridePrimas)}
+                    onClick={() => {
+                      const next = !overridePrimas
+                      setOverridePrimas(next)
+                      if (next) {
+                        // Pre-popula valores auto-calculados al desbloquear
+                        runRecalculation({ force: true })
+                      }
+                    }}
                   >
                     {overridePrimas ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
                     {overridePrimas ? 'Modo manual' : 'Desbloquear'}
