@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import { calcularDevolucion } from '@/lib/calculadoraUtils'
+import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ const snapshotSchema = z.object({
   nroCredito: z.string().trim().max(50).optional().or(z.literal('')),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
+  newTotalPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
   totalSaving: z.coerce.number().min(0).optional(),
   birthDate: z.string().trim().optional().or(z.literal('')),
@@ -84,6 +86,7 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   nroCredito: 'Nro. Crédito',
   currentMonthlyPremium: 'Prima mensual actual',
   newMonthlyPremium: 'Nueva prima mensual',
+  newTotalPremium: 'Prima total (override manual)',
   monthlySaving: 'Ahorro mensual',
   totalSaving: 'Ahorro total',
   birthDate: 'Fecha de nacimiento',
