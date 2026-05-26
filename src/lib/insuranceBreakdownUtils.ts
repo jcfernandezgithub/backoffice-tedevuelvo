@@ -155,16 +155,22 @@ export function computePureCesantiaTotalTDV(snapshot: any): number | null {
   const isPureCesantia = (ins === 'cesantia' || ins === 'cesantía' || ins.includes('cesant')) && !isMixed
   if (!isPureCesantia) return null
 
-  const totalAmount = snapshot.confirmedTotalAmount || snapshot.totalAmount
+  // El certificado de cesantía usa el SALDO INSOLUTO (averageInsuredBalance),
+  // no el monto total del crédito. Replicamos la misma prioridad.
+  const saldoInsoluto =
+    snapshot.confirmedAverageInsuredBalance ||
+    snapshot.averageInsuredBalance ||
+    snapshot.confirmedTotalAmount ||
+    snapshot.totalAmount
   const remainingInstallments =
     snapshot.confirmedRemainingInstallments || snapshot.remainingInstallments
-  if (!totalAmount || !remainingInstallments) return null
+  if (!saldoInsoluto || !remainingInstallments) return null
 
-  const tramo = getTramo(totalAmount)
+  const tramo = getTramo(saldoInsoluto)
   const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
   const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
   const tasaTDV = tdvTramo?.tasa_mensual || 0
   if (!tasaTDV) return null
 
-  return Math.round(totalAmount * tasaTDV * remainingInstallments)
+  return Math.round(saldoInsoluto * tasaTDV * remainingInstallments)
 }
