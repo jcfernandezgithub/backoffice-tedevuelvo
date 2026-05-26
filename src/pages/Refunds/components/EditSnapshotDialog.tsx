@@ -859,6 +859,40 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     )}
                   />
                 </div>
+                <FormField
+                  control={form.control}
+                  name="newTotalPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs flex items-center justify-between">
+                        <span>Prima total (override manual)</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          Editable siempre · usa este valor si está definido
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type="text"
+                            inputMode="numeric"
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9.]/g, '')
+                              field.onChange(val === '' ? '' : val)
+                            }}
+                            className="pl-7"
+                            placeholder="Auto: prima mensual × cuotas restantes"
+                          />
+                        </div>
+                      </FormControl>
+                      <p className="text-[11px] text-muted-foreground">
+                        Si lo dejas vacío, la lista y los reportes calcularán el total automáticamente. Úsalo solo para casos borde donde el cálculo no cuadra.
+                      </p>
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <Separator />
