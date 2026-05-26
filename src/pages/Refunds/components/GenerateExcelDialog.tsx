@@ -121,7 +121,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
 
   const handleGenerate = () => {
     const missingData = selectedRefunds.filter(refund => {
-      const data = refundData[refund.id]
+      const data = refundData[refund.id] || EMPTY_REFUND_DATA
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
 
