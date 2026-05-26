@@ -349,6 +349,32 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
           form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false, shouldDirty: true })
         }
+        // Calcula prima total preferida usando las mismas fórmulas que la vista de la solicitud
+        const snapForCalc = {
+          ...snapshot,
+          insuranceToEvaluate: tipoSeguro,
+          institutionId: refund.institutionId,
+          totalAmount: monto,
+          averageInsuredBalance: saldoInsoluto,
+          confirmedTotalAmount: monto,
+          confirmedAverageInsuredBalance: saldoInsoluto,
+          confirmedRemainingInstallments: cuotasPendientes,
+          remainingInstallments: cuotasPendientes,
+          currentMonthlyPremium: result.primaBanco,
+          newMonthlyPremium: result.primaPreferencial,
+          totalSaving: result.ahorroTotal,
+        }
+        let primaTotalAuto = 0
+        const bd = computeBreakdown(snapForCalc)
+        if (bd) {
+          primaTotalAuto = bd.desgravamen.primaTotalTDV + bd.cesantia.primaTotalTDV
+        } else {
+          const cesTotal = computePureCesantiaTotalTDV(snapForCalc)
+          primaTotalAuto = cesTotal !== null
+            ? cesTotal
+            : Math.round((result.primaPreferencial || 0) * (cuotasPendientes || 0))
+        }
+        form.setValue('newTotalPremium', primaTotalAuto, { shouldValidate: false, shouldDirty: true })
       }
       if (force || !overrideAhorros) {
         if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
