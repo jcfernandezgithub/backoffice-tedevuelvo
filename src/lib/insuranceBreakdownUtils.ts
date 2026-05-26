@@ -133,3 +133,38 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
     margen,
   }
 }
+
+/**
+ * Calcula la prima TOTAL de cesantía TDV (saldo × tasa × cuotas restantes)
+ * para solicitudes de CESANTÍA PURA (nuevo flujo donde cada seguro es una
+ * solicitud independiente). Retorna null si el snapshot no es cesantía pura
+ * o si faltan datos.
+ *
+ * Usa la misma fórmula que el certificado de cobertura de cesantía, evitando
+ * que la UI muestre `newMonthlyPremium × cuotas` (fórmula de desgravamen que
+ * produce valores erróneos para snapshots antiguos donde ese campo quedó con
+ * un residual).
+ */
+export function computePureCesantiaTotalTDV(snapshot: any): number | null {
+  if (!snapshot) return null
+  const ins = (snapshot.insuranceToEvaluate || snapshot.tipoSeguro || '').toLowerCase()
+  const isMixed =
+    ins.includes('ambos') ||
+    ins.includes('both') ||
+    (ins.includes('desgrav') && ins.includes('cesant'))
+  const isPureCesantia = (ins === 'cesantia' || ins === 'cesantía' || ins.includes('cesant')) && !isMixed
+  if (!isPureCesantia) return null
+
+  const totalAmount = snapshot.confirmedTotalAmount || snapshot.totalAmount
+  const remainingInstallments =
+    snapshot.confirmedRemainingInstallments || snapshot.remainingInstallments
+  if (!totalAmount || !remainingInstallments) return null
+
+  const tramo = getTramo(totalAmount)
+  const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
+  const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
+  const tasaTDV = tdvTramo?.tasa_mensual || 0
+  if (!tasaTDV) return null
+
+  return Math.round(totalAmount * tasaTDV * remainingInstallments)
+}
