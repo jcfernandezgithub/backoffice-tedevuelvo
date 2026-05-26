@@ -155,7 +155,11 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       0
     ).toString(),
     montoCuota: '',
-    plazoMeses: (refund.calculationSnapshot?.remainingInstallments || 0).toString(),
+    plazoMeses: (
+      refund.calculationSnapshot?.confirmedRemainingInstallments ||
+      refund.calculationSnapshot?.remainingInstallments ||
+      0
+    ).toString(),
     primaNeta: '',
   })
 
