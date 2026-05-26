@@ -15,7 +15,20 @@ export function exportXLSX<T extends Record<string, any>>(rows: T[], filename: s
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Datos')
-  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`)
+  const finalName = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`
+  // Use blob + anchor download (more reliable than XLSX.writeFile inside iframes / sandboxed previews)
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+  const blob = new Blob([wbout], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = finalName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function toCSV<T extends Record<string, any>>(rows: T[]) {
