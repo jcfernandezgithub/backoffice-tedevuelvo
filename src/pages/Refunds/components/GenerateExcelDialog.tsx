@@ -122,7 +122,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   const handleGenerate = () => {
     const missingData = selectedRefunds.filter(refund => {
       const data = refundData[refund.id]
-      return !data?.policyNumber?.trim() || !data?.creditCode?.trim() || !data?.sexo?.trim()
+      return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
 
     if (missingData.length > 0) {
@@ -199,7 +199,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'DV Cliente': rutDV,
         Nombre_Cliente: refund.fullName,
         Fecha_Nacimiento: fechaNacimiento,
-        Sexo: data.sexo,
+        Sexo: data?.sexo || '',
         Codigo_producto: codigoProducto,
         'Prima Seguro  $': primaSeguro,
         Prima_periodo_neta_pesos: primaSeguro,
@@ -210,8 +210,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Codigo_De_credito_o Nro de operación': data.creditCode,
         'Capital Asegurado': calculation.averageInsuredBalance || 0,
         'Corre electrónico': refund.email,
-        'Dirección particular': data.direccion || 'N/A',
-        Comuna: data.comuna || 'N/A',
+        'Dirección particular': data?.direccion || 'N/A',
+        Comuna: data?.comuna || 'N/A',
         'Región': 'N/A',
       }
     })
@@ -378,7 +378,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor={`sexo-${refund.id}`}>Sexo *</Label>
+                        <Label htmlFor={`sexo-${refund.id}`}>Sexo</Label>
                         <Input
                           id={`sexo-${refund.id}`}
                           value={data.sexo}
