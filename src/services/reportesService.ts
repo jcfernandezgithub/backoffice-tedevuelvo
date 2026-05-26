@@ -22,13 +22,36 @@ export function exportXLSX<T extends Record<string, any>>(rows: T[], filename: s
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = finalName
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+  // Detect sandboxed preview iframe (downloads blocked silently when
+  // the iframe lacks `allow-downloads`). In that case, open the blob in
+  // a new top-level tab so the browser triggers the download there.
+  const inIframe = (() => {
+    try { return window.self !== window.top } catch { return true }
+  })()
+
+  if (inIframe) {
+    const win = window.open(url, '_blank')
+    if (!win) {
+      // Popup blocked → fallback to anchor with target=_top
+      const a = document.createElement('a')
+      a.href = url
+      a.download = finalName
+      a.target = '_top'
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+  } else {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = finalName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
 
 function toCSV<T extends Record<string, any>>(rows: T[]) {
