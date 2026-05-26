@@ -203,6 +203,30 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     forum: 'Forum', tanner: 'Tanner', cooperativas: 'Cooperativas',
   }
 
+  // Normaliza institutionId: minúsculas, sin acentos, sin espacios alrededor de guiones,
+  // y colapsa separadores (espacios/guiones) para que "Itaú - Corpbanca" matchee con "itau-corpbanca".
+  const normalizeInstitutionKey = (raw: string): string => {
+    const base = (raw || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+    // Intentamos varias variantes para maximizar matches
+    const collapsed = base.replace(/\s*-\s*/g, '-').replace(/\s+/g, '-')
+    return collapsed
+  }
+
+  const resolveBanco = (raw: string): string | undefined => {
+    if (!raw) return undefined
+    const direct = INSTITUTION_TO_CALC[raw.toLowerCase()]
+    if (direct) return direct
+    const norm = normalizeInstitutionKey(raw)
+    if (INSTITUTION_TO_CALC[norm]) return INSTITUTION_TO_CALC[norm]
+    // Probar también sin guiones (solo palabras)
+    const firstWord = norm.split('-')[0]
+    return INSTITUTION_TO_CALC[firstWord]
+  }
+
   const calcAge = useCallback((dateStr: string): number | undefined => {
     if (!dateStr) return undefined
     const birth = new Date(dateStr)
@@ -296,7 +320,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   )
 
   const runRecalculation = useCallback((opts?: { force?: boolean }): { ok: boolean; reason?: string } => {
-    const banco = INSTITUTION_TO_CALC[(refund.institutionId || '').toLowerCase()]
+    const banco = resolveBanco(refund.institutionId || '')
     const age = Number(form.watch('age'))
     const monto = Number(form.watch('confirmedTotalAmount') || form.watch('totalAmount'))
     const saldoInsoluto = Number(form.watch('confirmedAverageInsuredBalance') || form.watch('averageInsuredBalance'))
