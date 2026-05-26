@@ -12,9 +12,9 @@ const PAGE_SIZE = 100;
 export function useAllRefunds() {
   return useQuery<RefundRequest[]>({
     queryKey: ['operacion-all-refunds'],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       // Primera página para conocer el total
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 });
+      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 }, signal);
       const total = firstPage.total || 0;
       const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -26,9 +26,10 @@ export function useAllRefunds() {
         const BATCH_SIZE = 10;
 
         for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
+          if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
           const batch = remainingPages.slice(i, i + BATCH_SIZE);
           const results = await Promise.all(
-            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page }))
+            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page }, signal))
           );
           results.forEach(r => { allItems = allItems.concat(r.items || []); });
         }

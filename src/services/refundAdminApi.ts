@@ -110,7 +110,7 @@ class RefundAdminApiClient {
     }
   }
 
-  async list(params: AdminQueryParams): Promise<AdminListResponse> {
+  async list(params: AdminQueryParams, signal?: AbortSignal): Promise<AdminListResponse> {
     const query = new URLSearchParams()
     
     // Mapear parámetros al nuevo endpoint listV2
@@ -126,6 +126,7 @@ class RefundAdminApiClient {
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/listV2?${query}`, {
       headers: await this.getAuthHeaders(),
+      signal,
     })
 
     if (response.status === 401) {
