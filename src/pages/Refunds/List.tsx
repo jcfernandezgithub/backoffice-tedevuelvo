@@ -698,6 +698,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   useEffect(() => {
     if (error) {
       const errorMessage = (error as Error).message
+      const errorName = (error as Error).name
+      // Ignorar errores de aborto (StrictMode/WebKit produce "Load failed" al cancelar fetches)
+      if (
+        errorName === 'AbortError' ||
+        errorMessage === 'Load failed' ||
+        errorMessage === 'Failed to fetch' ||
+        errorMessage?.toLowerCase().includes('aborted')
+      ) {
+        return
+      }
       if (errorMessage === 'UNAUTHORIZED') {
         toast({
           title: 'Sesión expirada',
