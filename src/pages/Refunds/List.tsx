@@ -40,7 +40,7 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { AllianceCombobox } from './components/AllianceCombobox'
 import { formatCLPNumber } from '@/lib/formatters'
 import { PairedAmountCell } from './components/SiblingPairCell'
-import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
+import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -1626,9 +1626,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                                 />
                               )
                             }
-                            return valorNuevaPrima > 0 ? (
+                            // Caso CESANTÍA PURA: usa fórmula del certificado (saldo × tasa × cuotas)
+                            const cesantiaTotal = computePureCesantiaTotalTDV(snapshot)
+                            const finalValor = cesantiaTotal !== null ? cesantiaTotal : valorNuevaPrima
+                            return finalValor > 0 ? (
                               <span className="font-medium text-primary">
-                                ${formatCLPNumber(valorNuevaPrima)}
+                                ${formatCLPNumber(finalValor)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">-</span>
