@@ -1881,6 +1881,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         label: 'Valor Nueva Prima',
                         value: (() => {
                           const snapshot = (refund as any).calculationSnapshot
+                          const manualTotal = Number(snapshot?.newTotalPremium) || 0
+                          if (manualTotal > 0) {
+                            return (
+                              <span className="font-medium text-primary" title="Prima total ingresada manualmente">
+                                ${formatCLPNumber(manualTotal)}
+                              </span>
+                            )
+                          }
                           const derived = derivePremiumsFromSnapshot(snapshot, (refund as any).institutionId)
                           const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium || 0
                           const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
