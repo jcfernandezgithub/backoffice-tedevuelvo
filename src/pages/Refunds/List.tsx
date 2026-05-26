@@ -1888,9 +1888,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                               />
                             )
                           }
-                          return valorNuevaPrima > 0 ? (
+                          const cesantiaTotal = computePureCesantiaTotalTDV(snapshot)
+                          const finalValor = cesantiaTotal !== null ? cesantiaTotal : valorNuevaPrima
+                          return finalValor > 0 ? (
                             <span className="font-medium text-primary">
-                              ${formatCLPNumber(valorNuevaPrima)}
+                              ${formatCLPNumber(finalValor)}
                             </span>
                           ) : '-'
                         })()
