@@ -867,24 +867,34 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       <FormLabel className="text-xs flex items-center justify-between">
                         <span>Prima total (override manual)</span>
                         <span className="text-[10px] text-muted-foreground font-normal">
-                          Editable siempre · usa este valor si está definido
+                          {overridePrimas ? 'Editable' : 'Bloqueado · desbloquea primas para editar'}
                         </span>
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                          <Input
-                            {...field}
-                            value={field.value ?? ''}
-                            type="text"
-                            inputMode="numeric"
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9.]/g, '')
-                              field.onChange(val === '' ? '' : val)
-                            }}
-                            className="pl-7"
-                            placeholder="Auto: prima mensual × cuotas restantes"
-                          />
+                          {overridePrimas ? (
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              inputMode="numeric"
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9.]/g, '')
+                                field.onChange(val === '' ? '' : val)
+                              }}
+                              className="pl-7 border-destructive/50 focus-visible:ring-destructive/30"
+                              placeholder="Auto: prima mensual × cuotas restantes"
+                            />
+                          ) : (
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              readOnly
+                              tabIndex={-1}
+                              className="pl-7 bg-muted cursor-not-allowed"
+                            />
+                          )}
                         </div>
                       </FormControl>
                       <p className="text-[11px] text-muted-foreground">
