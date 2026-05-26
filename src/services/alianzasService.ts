@@ -63,7 +63,12 @@ export const alianzasService = {
       const items = rows.slice(start, start + pageSize)
       return { items, total, page, pageSize }
     } catch (error) {
-      console.error('Error fetching partners:', error)
+      const msg = (error as Error)?.message
+      const name = (error as Error)?.name
+      // Silenciar abortos de fetch (StrictMode/WebKit lanza "Load failed")
+      if (name !== 'AbortError' && msg !== 'Load failed' && msg !== 'Failed to fetch') {
+        console.error('Error fetching partners:', error)
+      }
       return { items: [], total: 0, page: 1, pageSize: 10 }
     }
   },
