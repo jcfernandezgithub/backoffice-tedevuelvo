@@ -259,6 +259,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       nroCredito: currentSnapshot.nroCredito || '',
       currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
       newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
+      newTotalPremium: currentSnapshot.newTotalPremium ?? undefined,
       monthlySaving: currentSnapshot.monthlySaving ?? undefined,
       totalSaving: currentSnapshot.totalSaving ?? undefined,
       birthDate: currentSnapshot.birthDate ? (() => {
