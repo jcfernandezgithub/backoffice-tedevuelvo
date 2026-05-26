@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import { calcularDevolucion } from '@/lib/calculadoraUtils'
+import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ const snapshotSchema = z.object({
   nroCredito: z.string().trim().max(50).optional().or(z.literal('')),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
+  newTotalPremium: z.coerce.number().min(0).optional(),
   monthlySaving: z.coerce.number().min(0).optional(),
   totalSaving: z.coerce.number().min(0).optional(),
   birthDate: z.string().trim().optional().or(z.literal('')),
@@ -84,6 +86,7 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   nroCredito: 'Nro. Crédito',
   currentMonthlyPremium: 'Prima mensual actual',
   newMonthlyPremium: 'Nueva prima mensual',
+  newTotalPremium: 'Prima total (override manual)',
   monthlySaving: 'Ahorro mensual',
   totalSaving: 'Ahorro total',
   birthDate: 'Fecha de nacimiento',
@@ -256,6 +259,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       nroCredito: currentSnapshot.nroCredito || '',
       currentMonthlyPremium: currentSnapshot.currentMonthlyPremium ?? undefined,
       newMonthlyPremium: currentSnapshot.newMonthlyPremium ?? undefined,
+      newTotalPremium: currentSnapshot.newTotalPremium ?? undefined,
       monthlySaving: currentSnapshot.monthlySaving ?? undefined,
       totalSaving: currentSnapshot.totalSaving ?? undefined,
       birthDate: currentSnapshot.birthDate ? (() => {
@@ -345,6 +349,32 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
           form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false, shouldDirty: true })
         }
+        // Calcula prima total preferida usando las mismas fórmulas que la vista de la solicitud
+        const snapForCalc = {
+          ...snapshot,
+          insuranceToEvaluate: tipoSeguro,
+          institutionId: refund.institutionId,
+          totalAmount: monto,
+          averageInsuredBalance: saldoInsoluto,
+          confirmedTotalAmount: monto,
+          confirmedAverageInsuredBalance: saldoInsoluto,
+          confirmedRemainingInstallments: cuotasPendientes,
+          remainingInstallments: cuotasPendientes,
+          currentMonthlyPremium: result.primaBanco,
+          newMonthlyPremium: result.primaPreferencial,
+          totalSaving: result.ahorroTotal,
+        }
+        let primaTotalAuto = 0
+        const bd = computeBreakdown(snapForCalc)
+        if (bd) {
+          primaTotalAuto = bd.desgravamen.primaTotalTDV + bd.cesantia.primaTotalTDV
+        } else {
+          const cesTotal = computePureCesantiaTotalTDV(snapForCalc)
+          primaTotalAuto = cesTotal !== null
+            ? cesTotal
+            : Math.round((result.primaPreferencial || 0) * (cuotasPendientes || 0))
+        }
+        form.setValue('newTotalPremium', primaTotalAuto, { shouldValidate: false, shouldDirty: true })
       }
       if (force || !overrideAhorros) {
         if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
@@ -829,6 +859,40 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     )}
                   />
                 </div>
+                <FormField
+                  control={form.control}
+                  name="newTotalPremium"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs flex items-center justify-between">
+                        <span>Prima total (override manual)</span>
+                        <span className="text-[10px] text-muted-foreground font-normal">
+                          Editable siempre · usa este valor si está definido
+                        </span>
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type="text"
+                            inputMode="numeric"
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9.]/g, '')
+                              field.onChange(val === '' ? '' : val)
+                            }}
+                            className="pl-7"
+                            placeholder="Auto: prima mensual × cuotas restantes"
+                          />
+                        </div>
+                      </FormControl>
+                      <p className="text-[11px] text-muted-foreground">
+                        Si lo dejas vacío, la lista y los reportes calcularán el total automáticamente. Úsalo solo para casos borde donde el cálculo no cuadra.
+                      </p>
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <Separator />
