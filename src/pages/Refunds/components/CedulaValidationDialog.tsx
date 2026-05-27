@@ -317,6 +317,28 @@ export function CedulaValidationDialog({
     handleClose(false)
   }
 
+  const headerInfo = (() => {
+    if (onlyCredito) {
+      return {
+        Icon: FileText,
+        title: 'Validación de documentos de crédito con IA',
+        subtitle: `Análisis visual de ${otrosDocs.length} documento${otrosDocs.length === 1 ? '' : 's'} de crédito de consumo cargado${otrosDocs.length === 1 ? '' : 's'} como "Otros" antes de actualizar el estado.`,
+      }
+    }
+    if (cedulaEnabled && creditoEnabled) {
+      return {
+        Icon: Sparkles,
+        title: 'Validación de documentos con IA',
+        subtitle: 'Análisis visual de cédulas y documentos de crédito antes de actualizar el estado.',
+      }
+    }
+    return {
+      Icon: Sparkles,
+      title: 'Validación de documentos con IA',
+      subtitle: 'Análisis visual del frente y reverso de la cédula de identidad chilena antes de actualizar el estado.',
+    }
+  })()
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
@@ -326,15 +348,14 @@ export function CedulaValidationDialog({
         <div className="relative bg-gradient-to-br from-primary via-primary to-primary/80 px-6 py-5 text-primary-foreground [&_~_button[aria-label='Close']]:text-primary-foreground">
           <div className="flex items-start gap-3">
             <div className="rounded-xl bg-white/15 backdrop-blur-sm p-2.5 ring-1 ring-white/20">
-              <Sparkles className="h-6 w-6" />
+              <headerInfo.Icon className="h-6 w-6" />
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold leading-tight">
-                Validación de documentos con IA
+                {headerInfo.title}
               </h2>
               <p className="text-sm text-primary-foreground/85 mt-1 leading-snug">
-                Análisis visual del frente y reverso de la cédula de identidad chilena
-                antes de actualizar el estado.
+                {headerInfo.subtitle}
               </p>
             </div>
           </div>
