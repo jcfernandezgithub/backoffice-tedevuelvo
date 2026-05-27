@@ -115,6 +115,11 @@ export function CedulaValidationDialog({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [confirmForce, setConfirmForce] = useState(false)
+  const [forcedCedula, setForcedCedula] = useState(false)
+  const [creditoResults, setCreditoResults] = useState<CreditoDocResult[]>([])
+  const [creditoProgress, setCreditoProgress] = useState<{ current: number; total: number; fileName?: string }>({ current: 0, total: 0 })
+  const [creditoConfirmForce, setCreditoConfirmForce] = useState(false)
+  const { enabled: creditoEnabled } = useCreditoDocsValidationSettings()
 
   const reset = () => {
     setPhase('idle')
@@ -124,6 +129,10 @@ export function CedulaValidationDialog({
     setErrorMsg(null)
     setLoadingStep(0)
     setConfirmForce(false)
+    setForcedCedula(false)
+    setCreditoResults([])
+    setCreditoProgress({ current: 0, total: 0 })
+    setCreditoConfirmForce(false)
   }
 
   const handleClose = (next: boolean) => {
@@ -146,6 +155,12 @@ export function CedulaValidationDialog({
     const trasera = documents.find((d) => d.kind === CEDULA_TRASERA_KIND)
     return { frente, trasera, ok: !!frente && !!trasera }
   }, [documents])
+
+  const otrosDocs = useMemo(
+    () => documents.filter((d) => d.kind === OTROS_KIND),
+    [documents],
+  )
+  const shouldRunCredito = creditoEnabled && otrosDocs.length > 0
 
   const runValidation = async () => {
     setPhase('loading')
@@ -205,12 +220,86 @@ export function CedulaValidationDialog({
     }
   }
 
+  const runCreditoValidation = async () => {
+    setPhase('credito-loading')
+    setErrorMsg(null)
+    setCreditoResults([])
+    setCreditoConfirmForce(false)
+    setCreditoProgress({ current: 0, total: otrosDocs.length })
+
+    const results: CreditoDocResult[] = []
+    try {
+      for (let i = 0; i < otrosDocs.length; i++) {
+        const doc = otrosDocs[i]
+        const fileName = (doc as any).fileName || (doc as any).filename || `Documento ${i + 1}`
+        setCreditoProgress({ current: i + 1, total: otrosDocs.length, fileName })
+        const file = await downloadDocAsFile(publicId, doc, `credito-${i + 1}`)
+        let validation: CreditoValidationResponse
+        try {
+          validation = await validateCreditoDocument({ file })
+        } catch {
+          validation = {}
+        }
+        const msg = buildCreditoValidationMessage(validation)
+        results.push({
+          doc,
+          fileName,
+          message: msg,
+          canContinue: validation.es_valida_para_continuar_proceso === true,
+          details: {
+            resumen:
+              typeof validation.resumen === 'string' && validation.resumen.trim()
+                ? validation.resumen.trim()
+                : undefined,
+            recomendacion:
+              typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
+                ? validation.recomendacion.trim()
+                : undefined,
+            alertas: Array.isArray(validation.alertas)
+              ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
+              : undefined,
+            motivos: Array.isArray(validation.motivos_no_validez)
+              ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
+              : undefined,
+          },
+        })
+      }
+      setCreditoResults(results)
+      setPhase('credito-result')
+    } catch (e: any) {
+      setPhase('credito-error')
+      setErrorMsg(e?.message || 'Error al preparar los documentos de crédito para validación.')
+    }
+  }
+
   const handleContinue = () => {
+    if (shouldRunCredito) {
+      setForcedCedula(false)
+      void runCreditoValidation()
+      return
+    }
     onValidated(false)
     handleClose(false)
   }
 
   const handleForceContinue = () => {
+    if (shouldRunCredito) {
+      setForcedCedula(true)
+      void runCreditoValidation()
+      return
+    }
+    onValidated(true)
+    handleClose(false)
+  }
+
+  const creditoAllOk = creditoResults.length > 0 && creditoResults.every((r) => r.canContinue)
+
+  const handleCreditoContinue = () => {
+    onValidated(forcedCedula)
+    handleClose(false)
+  }
+
+  const handleCreditoForceContinue = () => {
     onValidated(true)
     handleClose(false)
   }
@@ -261,6 +350,13 @@ export function CedulaValidationDialog({
               onRetry={runValidation}
               onClose={() => handleClose(false)}
               onContinue={handleContinue}
+              continueLabel={shouldRunCredito ? 'Continuar con validación de crédito' : undefined}
+              forceContinueLabel={shouldRunCredito ? 'Continuar con validación de crédito' : undefined}
+              nextStepHint={
+                shouldRunCredito
+                  ? `Siguiente paso: validar ${otrosDocs.length} documento${otrosDocs.length === 1 ? '' : 's'} de crédito cargado${otrosDocs.length === 1 ? '' : 's'} (tipo "Otros").`
+                  : undefined
+              }
             />
           )}
 
@@ -268,6 +364,36 @@ export function CedulaValidationDialog({
             <ErrorView
               errorMsg={errorMsg}
               onRetry={runValidation}
+              onClose={() => handleClose(false)}
+            />
+          )}
+
+          {phase === 'credito-loading' && (
+            <CreditoLoadingView
+              current={creditoProgress.current}
+              total={creditoProgress.total}
+              fileName={creditoProgress.fileName}
+            />
+          )}
+
+          {phase === 'credito-result' && (
+            <CreditoResultView
+              results={creditoResults}
+              allOk={creditoAllOk}
+              confirmForce={creditoConfirmForce}
+              onToggleConfirmForce={setCreditoConfirmForce}
+              onContinue={handleCreditoContinue}
+              onForceContinue={handleCreditoForceContinue}
+              onRetry={runCreditoValidation}
+              onClose={() => handleClose(false)}
+              forcedCedula={forcedCedula}
+            />
+          )}
+
+          {phase === 'credito-error' && (
+            <ErrorView
+              errorMsg={errorMsg}
+              onRetry={runCreditoValidation}
               onClose={() => handleClose(false)}
             />
           )}
