@@ -33,7 +33,10 @@ import {
   type CreditoValidationResponse,
   type CreditoValidationMessage,
 } from '@/lib/creditoValidation'
-import { useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
+import {
+  useAIValidationSettings,
+  useCreditoDocsValidationSettings,
+} from '@/hooks/useAIValidationSettings'
 import type { RefundDocument } from '@/types/refund'
 import { cn } from '@/lib/utils'
 
@@ -119,6 +122,7 @@ export function CedulaValidationDialog({
   const [creditoResults, setCreditoResults] = useState<CreditoDocResult[]>([])
   const [creditoProgress, setCreditoProgress] = useState<{ current: number; total: number; fileName?: string }>({ current: 0, total: 0 })
   const [creditoConfirmForce, setCreditoConfirmForce] = useState(false)
+  const { enabled: cedulaEnabled } = useAIValidationSettings()
   const { enabled: creditoEnabled } = useCreditoDocsValidationSettings()
 
   const reset = () => {
@@ -161,6 +165,15 @@ export function CedulaValidationDialog({
     [documents],
   )
   const shouldRunCredito = creditoEnabled && otrosDocs.length > 0
+  const onlyCredito = !cedulaEnabled && creditoEnabled
+
+  const handleStart = () => {
+    if (onlyCredito) {
+      void runCreditoValidation()
+      return
+    }
+    void runValidation()
+  }
 
   const runValidation = async () => {
     setPhase('loading')
@@ -331,9 +344,11 @@ export function CedulaValidationDialog({
         <div className="px-6 py-5 bg-background">
           {phase === 'idle' && (
             <IdleView
-              docsOk={docsAvailable.ok}
-              onStart={runValidation}
+              docsOk={onlyCredito ? otrosDocs.length > 0 : docsAvailable.ok}
+              onStart={handleStart}
               onCancel={() => handleClose(false)}
+              mode={onlyCredito ? 'credito' : 'cedula'}
+              otrosCount={otrosDocs.length}
             />
           )}
 
