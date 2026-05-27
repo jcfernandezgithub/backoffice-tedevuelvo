@@ -1,8 +1,32 @@
 # Welcome to your Lovable project
 
-## Versión 3.8.0
+## Versión 3.9.1
 
 ## Changelog
+
+### Versión 3.9.1 - 2026-05-27
+
+#### Feature: Validación de documentos de crédito de consumo con IA
+- **Nuevo flujo**: al hacer clic en **"Validar documentos con IA"** (cambio a "Documentos recibidos"), además de la cédula se validan automáticamente los archivos cargados en la carpeta `otros` del cliente.
+- **Endpoint**: `POST` a webhook n8n configurado en `VITE_N8N_CREDITO_VALIDATION_URL`. Envía el archivo como `multipart/form-data` bajo los campos `documento`, `archivo` y `file`.
+- **Detección del servicio**: devuelve `tipo_documento_detectado`, `subtipo_documento`, `corresponde_credito_consumo`, `campos_detectados` (análisis OCR de campos clave), `campos_minimos_credito` (cantidad presentes y si cumple mínimo), `validaciones_clave`, `alertas`, `motivos_no_validez` y `recomendacion`.
+- **Criterio de recomendación**: la UI usa exclusivamente `cumple_minimo` + `recomendacion` del campo `extra` para decidir si se muestra **"Recomendado avanzar"** o **"Revisión sugerida"**. Se eliminó la dualidad con `es_valida_para_continuar_proceso` para evitar mensajes contradictorios.
+- **Visualización por documento**: se muestra badge de estado, lista de campos detectados (ej. "monto_credito", "tasa_interes", "numero_credito"), si corresponde a crédito de consumo, y observación de campos mínimos.
+- **Resumen grupal**: al finalizar se presenta un resumen consolidado con conteo de documentos recomendados vs. con revisión sugerida, y permite forzar el avance si hay advertencias.
+- **Archivos nuevos**: `src/lib/creditoValidation.ts`.
+- **Archivos editados**: `src/pages/Refunds/components/CedulaValidationDialog.tsx`, `src/pages/Refunds/Detail.tsx`.
+
+#### Feature: Toggle en Ajustes para activar/desactivar validación de crédito
+- **Nuevo flag independiente**: en `Ajustes > Validación con IA` se agregó un segundo toggle **"Validación de documentos de crédito con IA"** (hook `useCreditoDocsValidationSettings`). Permite operar con solo cédula, solo crédito, ambos o ninguno.
+- **Archivos**: `src/pages/Ajustes/components/AIValidationSection.tsx`, `src/hooks/useAIValidationSettings.ts`.
+
+#### UX: Animación de pasos durante validación
+- **Estados de carga visibles**: durante la validación de cédula se muestran 4 pasos animados secuencialmente ("Preparando imágenes", "Analizando anverso", "Analizando reverso", "Verificando correspondencia") para evitar la sensación de proceso "pegado".
+- **Duración**: cambio de paso cada ~1.4 segundos con íconos distintos por etapa.
+
+#### Fix: Error "Cannot read properties of undefined (reading 'campos')"
+- **Causa**: resultados de validación de crédito previos (desde HMR o estado persistente) carecían del campo `extra`.
+- **Fix**: se agregó fallback `extra = result.extra ?? { recomendado: false }` antes de acceder a `extra.campos` o `extra.corresponde`.
 
 ### Versión 3.8.0 - 2026-05-20
 
