@@ -1204,7 +1204,7 @@ function CreditoResultView({
                 ¿Avanzar de todas formas?
               </p>
               <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
-                Algunos documentos de crédito no fueron validados por la IA. Puedes
+                La IA no recomienda avanzar con todos los documentos. Puedes
                 continuar bajo tu responsabilidad o reintentar la validación.
               </p>
             </div>
