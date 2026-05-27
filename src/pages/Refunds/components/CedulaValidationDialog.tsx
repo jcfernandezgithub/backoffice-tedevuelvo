@@ -1133,9 +1133,9 @@ function CreditoResultView({
         iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
         iconText: 'text-emerald-600 dark:text-emerald-400',
         badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
-        badgeText: 'Validación aprobada',
-        title: 'Documentos de crédito reconocidos',
-        message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} corresponden visualmente a un crédito de consumo.`,
+        badgeText: 'Recomendado avanzar',
+        title: 'Documentos de crédito validados',
+        message: `La IA recomienda avanzar con ${okCount === totalCount && totalCount === 1 ? 'el documento cargado' : `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'}`}.`,
       }
     }
     return {
@@ -1145,9 +1145,15 @@ function CreditoResultView({
       iconBg: 'bg-amber-100 dark:bg-amber-900/60',
       iconText: 'text-amber-600 dark:text-amber-400',
       badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
-      badgeText: 'Requiere atención',
-      title: 'Algunos documentos no fueron validados',
-      message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} pasaron la validación visual de crédito de consumo.`,
+      badgeText: 'Revisión sugerida',
+      title:
+        okCount === 0
+          ? 'La IA no recomienda avanzar'
+          : 'Algunos documentos requieren revisión',
+      message:
+        okCount === 0
+          ? `La IA sugiere revisar ${totalCount === 1 ? 'el documento cargado' : 'los documentos cargados'} antes de continuar.`
+          : `La IA recomienda avanzar con ${okCount} de ${totalCount} documentos. Revisa el resto antes de continuar.`,
     }
   })()
 
