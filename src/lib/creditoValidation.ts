@@ -96,8 +96,54 @@ const MESSAGES: Record<CreditoResultadoFinal, CreditoValidationMessage> = {
 export function buildCreditoValidationMessage(
   validation: CreditoValidationResponse | null | undefined,
 ): CreditoValidationMessage {
-  const result = (validation?.resultado_final as CreditoResultadoFinal) || 'no_concluyente'
+  const result = normalizeResultadoFinal(validation)
   return MESSAGES[result] || MESSAGES.no_concluyente
+}
+
+/**
+ * Mapea el `resultado_final` del servicio (que puede traer códigos propios del
+ * dominio crédito) a la taxonomía interna que usamos para construir mensajes.
+ * Si no se reconoce, se infiere a partir de otras señales (corresponde_credito_consumo,
+ * es_valida_para_continuar_proceso, nivel_confianza).
+ */
+function normalizeResultadoFinal(
+  validation: CreditoValidationResponse | null | undefined,
+): CreditoResultadoFinal {
+  const raw = (validation?.resultado_final ?? '').toString().toLowerCase().trim()
+
+  // Aliases directos del servicio de validación de crédito de consumo.
+  const ALIAS: Record<string, CreditoResultadoFinal> = {
+    valido_visualmente: 'valido_visualmente',
+    probablemente_valido_visualmente: 'probablemente_valido_visualmente',
+    no_valido_para_validacion_completa: 'no_valido_para_validacion_completa',
+    no_concluyente: 'no_concluyente',
+    no_valido: 'no_valido',
+    no_corresponde: 'no_corresponde',
+    // Códigos específicos del endpoint de crédito de consumo.
+    valido_documento_credito: 'valido_visualmente',
+    valido_credito_consumo: 'valido_visualmente',
+    posible_documento_credito: 'probablemente_valido_visualmente',
+    posible_credito_consumo: 'probablemente_valido_visualmente',
+    documento_credito_incompleto: 'no_valido_para_validacion_completa',
+    documento_complementario: 'probablemente_valido_visualmente',
+    no_corresponde_credito_consumo: 'no_corresponde',
+    no_credito_consumo: 'no_corresponde',
+  }
+
+  if (raw && ALIAS[raw]) return ALIAS[raw]
+
+  // Fallback por señales semánticas.
+  const continuar = validation?.es_valida_para_continuar_proceso === true
+  const corresponde = (validation as any)?.corresponde_credito_consumo === true
+  const confianza = ((validation as any)?.nivel_confianza ?? '').toString().toLowerCase()
+
+  if (continuar && corresponde) {
+    if (confianza === 'alto' || confianza === 'alta') return 'valido_visualmente'
+    return 'probablemente_valido_visualmente'
+  }
+  if (corresponde && !continuar) return 'no_valido_para_validacion_completa'
+  if (!corresponde && raw) return 'no_corresponde'
+  return 'no_concluyente'
 }
 
 export async function validateCreditoDocument(params: {
