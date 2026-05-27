@@ -33,7 +33,10 @@ import {
   type CreditoValidationResponse,
   type CreditoValidationMessage,
 } from '@/lib/creditoValidation'
-import { useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
+import {
+  useAIValidationSettings,
+  useCreditoDocsValidationSettings,
+} from '@/hooks/useAIValidationSettings'
 import type { RefundDocument } from '@/types/refund'
 import { cn } from '@/lib/utils'
 
@@ -119,6 +122,7 @@ export function CedulaValidationDialog({
   const [creditoResults, setCreditoResults] = useState<CreditoDocResult[]>([])
   const [creditoProgress, setCreditoProgress] = useState<{ current: number; total: number; fileName?: string }>({ current: 0, total: 0 })
   const [creditoConfirmForce, setCreditoConfirmForce] = useState(false)
+  const { enabled: cedulaEnabled } = useAIValidationSettings()
   const { enabled: creditoEnabled } = useCreditoDocsValidationSettings()
 
   const reset = () => {
@@ -161,6 +165,15 @@ export function CedulaValidationDialog({
     [documents],
   )
   const shouldRunCredito = creditoEnabled && otrosDocs.length > 0
+  const onlyCredito = !cedulaEnabled && creditoEnabled
+
+  const handleStart = () => {
+    if (onlyCredito) {
+      void runCreditoValidation()
+      return
+    }
+    void runValidation()
+  }
 
   const runValidation = async () => {
     setPhase('loading')
@@ -331,9 +344,11 @@ export function CedulaValidationDialog({
         <div className="px-6 py-5 bg-background">
           {phase === 'idle' && (
             <IdleView
-              docsOk={docsAvailable.ok}
-              onStart={runValidation}
+              docsOk={onlyCredito ? otrosDocs.length > 0 : docsAvailable.ok}
+              onStart={handleStart}
               onCancel={() => handleClose(false)}
+              mode={onlyCredito ? 'credito' : 'cedula'}
+              otrosCount={otrosDocs.length}
             />
           )}
 
@@ -418,13 +433,33 @@ function IdleView({
   docsOk,
   onStart,
   onCancel,
+  mode = 'cedula',
+  otrosCount = 0,
 }: {
   docsOk: boolean
   onStart: () => void
   onCancel: () => void
+  mode?: 'cedula' | 'credito'
+  otrosCount?: number
 }) {
+  const isCredito = mode === 'credito'
   return (
     <div className="space-y-5">
+      {isCredito ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 dark:border-emerald-900 p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-md grid place-items-center shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+            <FileText className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-tight">
+              {otrosCount} documento{otrosCount === 1 ? '' : 's'} de crédito
+            </p>
+            <p className="text-xs text-muted-foreground leading-tight mt-0.5">
+              Archivos cargados con tipo "Otros"
+            </p>
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 gap-3">
         <DocCard
           label="Anverso"
@@ -437,25 +472,35 @@ function IdleView({
           available={docsOk}
         />
       </div>
+      )}
 
       <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
         <p className="text-sm font-medium flex items-center gap-2">
           <ScanLine className="h-4 w-4 text-primary" />
           ¿Qué vamos a validar?
         </p>
-        <ul className="text-xs text-muted-foreground space-y-1.5 pl-6 list-disc">
-          <li>Que ambas imágenes correspondan a una cédula de identidad chilena.</li>
-          <li>Que el anverso y reverso sean del mismo documento.</li>
-          <li>Calidad visual suficiente (sin reflejos ni cortes).</li>
-        </ul>
+        {isCredito ? (
+          <ul className="text-xs text-muted-foreground space-y-1.5 pl-6 list-disc">
+            <li>Que cada archivo corresponda a un documento de crédito de consumo.</li>
+            <li>Que el contenido sea legible y consistente con un contrato o pagaré.</li>
+            <li>Calidad visual suficiente para reconocer el documento.</li>
+          </ul>
+        ) : (
+          <ul className="text-xs text-muted-foreground space-y-1.5 pl-6 list-disc">
+            <li>Que ambas imágenes correspondan a una cédula de identidad chilena.</li>
+            <li>Que el anverso y reverso sean del mismo documento.</li>
+            <li>Calidad visual suficiente (sin reflejos ni cortes).</li>
+          </ul>
+        )}
       </div>
 
       {!docsOk && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-sm flex gap-2 items-start">
           <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
           <span className="text-amber-900 dark:text-amber-200">
-            Faltan documentos cargados. Asegúrate de que estén el frente y reverso
-            de la cédula antes de validar.
+            {isCredito
+              ? 'No hay documentos cargados con tipo "Otros" para validar.'
+              : 'Faltan documentos cargados. Asegúrate de que estén el frente y reverso de la cédula antes de validar.'}
           </span>
         </div>
       )}

@@ -47,7 +47,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
-import { useAIValidationSettings } from '@/hooks/useAIValidationSettings'
+import { useAIValidationSettings, useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -258,6 +258,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const [cedulaValidated, setCedulaValidated] = useState(false)
   const [cedulaValidationForced, setCedulaValidationForced] = useState(false)
   const { enabled: aiValidationEnabled } = useAIValidationSettings()
+  const { enabled: creditoValidationEnabled } = useCreditoDocsValidationSettings()
+  const anyAIValidationEnabled = aiValidationEnabled || creditoValidationEnabled
 
   // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
   // o si cambia la solicitud actual.
@@ -757,7 +759,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                {updateForm.status === 'docs_received' && aiValidationEnabled ? (
+                {updateForm.status === 'docs_received' && anyAIValidationEnabled ? (
                   <>
                     {!cedulaValidated ? (
                       <Button
