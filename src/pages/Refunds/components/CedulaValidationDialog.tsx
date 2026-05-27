@@ -75,6 +75,18 @@ interface CreditoDocResult {
   message: CreditoValidationMessage
   canContinue: boolean
   details: ValidationDetails
+  extra: CreditoExtra
+}
+
+interface CreditoExtra {
+  corresponde?: boolean
+  cumpleMinimo?: boolean
+  nivelConfianza?: string
+  tipoDetectado?: string
+  subtipoDetectado?: string
+  campos?: Record<string, string>
+  observacionMinimos?: string
+  recomendado: boolean
 }
 
 async function downloadDocAsFile(
@@ -254,26 +266,69 @@ export function CedulaValidationDialog({
           validation = {}
         }
         const msg = buildCreditoValidationMessage(validation)
+        const v: any = validation || {}
+        const camposRaw = v.campos_detectados && typeof v.campos_detectados === 'object'
+          ? (v.campos_detectados as Record<string, any>)
+          : undefined
+        const campos: Record<string, string> | undefined = camposRaw
+          ? Object.fromEntries(
+              Object.entries(camposRaw).filter(([, val]) => typeof val === 'string'),
+            )
+          : undefined
+        const cumpleMinimo =
+          typeof v.campos_minimos_credito?.cumple_minimo === 'boolean'
+            ? v.campos_minimos_credito.cumple_minimo
+            : undefined
+        const apiRecomendacion =
+          typeof v.recomendacion === 'string' && v.recomendacion.trim()
+            ? v.recomendacion.trim()
+            : undefined
+        // Recomendamos avanzar si el servicio dice que cumple los mínimos
+        // Y su recomendación textual sugiere continuar.
+        const recomendado =
+          cumpleMinimo === true &&
+          !!apiRecomendacion &&
+          /continuar|avanzar|proceder|aprobar/i.test(apiRecomendacion)
         results.push({
           doc,
           fileName,
-          message: msg,
+          // Sobreescribimos la acción recomendada con el texto del servicio
+          // cuando viene, para reflejar fielmente lo que la IA sugiere.
+          message: apiRecomendacion
+            ? { ...msg, accion_recomendada: apiRecomendacion }
+            : msg,
           canContinue: validation.es_valida_para_continuar_proceso === true,
           details: {
             resumen:
               typeof validation.resumen === 'string' && validation.resumen.trim()
                 ? validation.resumen.trim()
                 : undefined,
-            recomendacion:
-              typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
-                ? validation.recomendacion.trim()
-                : undefined,
+            recomendacion: apiRecomendacion,
             alertas: Array.isArray(validation.alertas)
               ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
               : undefined,
             motivos: Array.isArray(validation.motivos_no_validez)
               ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
               : undefined,
+          },
+          extra: {
+            corresponde:
+              typeof v.corresponde_credito_consumo === 'boolean'
+                ? v.corresponde_credito_consumo
+                : undefined,
+            cumpleMinimo,
+            nivelConfianza:
+              typeof v.nivel_confianza === 'string' ? v.nivel_confianza : undefined,
+            tipoDetectado:
+              typeof v.tipo_documento_detectado === 'string' ? v.tipo_documento_detectado : undefined,
+            subtipoDetectado:
+              typeof v.subtipo_documento === 'string' ? v.subtipo_documento : undefined,
+            campos,
+            observacionMinimos:
+              typeof v.campos_minimos_credito?.observacion === 'string'
+                ? v.campos_minimos_credito.observacion
+                : undefined,
+            recomendado,
           },
         })
       }
@@ -1203,11 +1258,28 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
             borderClass: 'border-destructive/30',
           }
 
+  const camposEntries = result.extra.campos ? Object.entries(result.extra.campos) : []
   const hasDetails =
     !!result.details.resumen ||
     !!result.details.recomendacion ||
     (result.details.alertas?.length ?? 0) > 0 ||
-    (result.details.motivos?.length ?? 0) > 0
+    (result.details.motivos?.length ?? 0) > 0 ||
+    camposEntries.length > 0 ||
+    result.extra.corresponde !== undefined ||
+    result.extra.cumpleMinimo !== undefined
+
+  // Badge "Recomendado" según cumple_minimo + recomendacion textual.
+  const recBadge = result.extra.recomendado
+    ? {
+        label: 'Recomendado avanzar',
+        cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+        Icon: CheckCircle2,
+      }
+    : {
+        label: 'Revisión sugerida',
+        cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+        Icon: AlertTriangle,
+      }
 
   return (
     <div className={cn('rounded-lg border bg-card overflow-hidden', variant.borderClass)}>
@@ -1227,9 +1299,29 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
             <span className="text-muted-foreground text-xs">#{index}</span>
             <span className="truncate">{result.fileName}</span>
           </p>
-          <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-            {result.message.titulo}
-          </p>
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold', recBadge.cls)}>
+              <recBadge.Icon className="h-2.5 w-2.5" />
+              {recBadge.label}
+            </span>
+            {result.extra.corresponde !== undefined && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium',
+                  result.extra.corresponde
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {result.extra.corresponde ? 'Corresponde a crédito de consumo' : 'No corresponde a crédito'}
+              </span>
+            )}
+            {result.extra.nivelConfianza && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
+                Confianza: {result.extra.nivelConfianza}
+              </span>
+            )}
+          </div>
         </div>
         {hasDetails && (
           open ? <ChevronUp className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
@@ -1241,12 +1333,75 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
           <p className="text-xs text-foreground/80 leading-relaxed pt-2">
             {result.message.mensaje}
           </p>
+
+          {(result.extra.tipoDetectado || result.extra.subtipoDetectado) && (
+            <div className="flex flex-wrap gap-1.5">
+              {result.extra.tipoDetectado && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
+                  {humanize(result.extra.tipoDetectado)}
+                </span>
+              )}
+              {result.extra.subtipoDetectado && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
+                  {humanize(result.extra.subtipoDetectado)}
+                </span>
+              )}
+            </div>
+          )}
+
           {result.details.resumen && (
             <div className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line break-words">
               <span className="font-semibold">Resumen: </span>
               {result.details.resumen}
             </div>
           )}
+
+          {camposEntries.length > 0 && (
+            <div className="rounded-md border bg-background/60 p-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
+                  Campos detectados
+                </p>
+                {result.extra.cumpleMinimo !== undefined && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
+                      result.extra.cumpleMinimo
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+                    )}
+                  >
+                    {result.extra.cumpleMinimo ? (
+                      <CheckCircle2 className="h-2.5 w-2.5" />
+                    ) : (
+                      <AlertTriangle className="h-2.5 w-2.5" />
+                    )}
+                    {result.extra.cumpleMinimo ? 'Cumple mínimos' : 'No cumple mínimos'}
+                  </span>
+                )}
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
+                {camposEntries.map(([k, v]) => {
+                  const status = fieldStatus(v)
+                  return (
+                    <li key={k} className="flex items-center justify-between gap-2 text-[11px] py-0.5">
+                      <span className="text-muted-foreground truncate">{humanize(k)}</span>
+                      <span className={cn('inline-flex items-center gap-1 font-medium shrink-0', status.cls)}>
+                        <status.Icon className="h-3 w-3" />
+                        {status.label}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+              {result.extra.observacionMinimos && (
+                <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
+                  {result.extra.observacionMinimos}
+                </p>
+              )}
+            </div>
+          )}
+
           {result.details.alertas && result.details.alertas.length > 0 && (
             <ul className="space-y-1">
               {result.details.alertas.map((a, i) => (
@@ -1275,4 +1430,27 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
       )}
     </div>
   )
+}
+
+/** Convierte snake_case a "Título legible". */
+function humanize(s: string): string {
+  return s
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/** Mapea el valor textual de un campo detectado a un estado visual. */
+function fieldStatus(value: string): { label: string; cls: string; Icon: typeof CheckCircle2 } {
+  const v = (value || '').toLowerCase()
+  if (v.startsWith('detectado')) {
+    return {
+      label: v.includes('enmascarado') ? 'Detectado (enmascarado)' : 'Detectado',
+      cls: 'text-emerald-700 dark:text-emerald-400',
+      Icon: CheckCircle2,
+    }
+  }
+  if (v === 'no_visible' || v === 'no visible') {
+    return { label: 'No visible', cls: 'text-muted-foreground', Icon: XCircle }
+  }
+  return { label: humanize(value), cls: 'text-muted-foreground', Icon: Info }
 }
