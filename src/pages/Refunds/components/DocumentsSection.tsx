@@ -48,7 +48,6 @@ export function DocumentsSection({ publicId, clientToken, documents: propDocumen
     { value: 'certificado-de-cobertura', label: 'Certificado de cobertura' },
     { value: 'certificado-de-cobertura-cesantia', label: 'Certificado de cobertura (Cesantía)' },
     { value: 'certificado-de-cobertura-desgravamen', label: 'Certificado de cobertura (Desgravamen)' },
-    { value: 'certificado-inscripcion-tdv', label: 'Certificado de inscripción TDV' },
     { value: 'otros', label: 'Otros' },
   ]
 
