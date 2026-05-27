@@ -266,26 +266,69 @@ export function CedulaValidationDialog({
           validation = {}
         }
         const msg = buildCreditoValidationMessage(validation)
+        const v: any = validation || {}
+        const camposRaw = v.campos_detectados && typeof v.campos_detectados === 'object'
+          ? (v.campos_detectados as Record<string, any>)
+          : undefined
+        const campos: Record<string, string> | undefined = camposRaw
+          ? Object.fromEntries(
+              Object.entries(camposRaw).filter(([, val]) => typeof val === 'string'),
+            )
+          : undefined
+        const cumpleMinimo =
+          typeof v.campos_minimos_credito?.cumple_minimo === 'boolean'
+            ? v.campos_minimos_credito.cumple_minimo
+            : undefined
+        const apiRecomendacion =
+          typeof v.recomendacion === 'string' && v.recomendacion.trim()
+            ? v.recomendacion.trim()
+            : undefined
+        // Recomendamos avanzar si el servicio dice que cumple los mínimos
+        // Y su recomendación textual sugiere continuar.
+        const recomendado =
+          cumpleMinimo === true &&
+          !!apiRecomendacion &&
+          /continuar|avanzar|proceder|aprobar/i.test(apiRecomendacion)
         results.push({
           doc,
           fileName,
-          message: msg,
+          // Sobreescribimos la acción recomendada con el texto del servicio
+          // cuando viene, para reflejar fielmente lo que la IA sugiere.
+          message: apiRecomendacion
+            ? { ...msg, accion_recomendada: apiRecomendacion }
+            : msg,
           canContinue: validation.es_valida_para_continuar_proceso === true,
           details: {
             resumen:
               typeof validation.resumen === 'string' && validation.resumen.trim()
                 ? validation.resumen.trim()
                 : undefined,
-            recomendacion:
-              typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
-                ? validation.recomendacion.trim()
-                : undefined,
+            recomendacion: apiRecomendacion,
             alertas: Array.isArray(validation.alertas)
               ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
               : undefined,
             motivos: Array.isArray(validation.motivos_no_validez)
               ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
               : undefined,
+          },
+          extra: {
+            corresponde:
+              typeof v.corresponde_credito_consumo === 'boolean'
+                ? v.corresponde_credito_consumo
+                : undefined,
+            cumpleMinimo,
+            nivelConfianza:
+              typeof v.nivel_confianza === 'string' ? v.nivel_confianza : undefined,
+            tipoDetectado:
+              typeof v.tipo_documento_detectado === 'string' ? v.tipo_documento_detectado : undefined,
+            subtipoDetectado:
+              typeof v.subtipo_documento === 'string' ? v.subtipo_documento : undefined,
+            campos,
+            observacionMinimos:
+              typeof v.campos_minimos_credito?.observacion === 'string'
+                ? v.campos_minimos_credito.observacion
+                : undefined,
+            recomendado,
           },
         })
       }
