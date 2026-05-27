@@ -916,6 +916,13 @@ function ErrorView({
 
 /* -------------------- Crédito sub-views -------------------- */
 
+const CREDITO_LOADING_STEPS = [
+  { label: 'Descargando documento', icon: ScanLine },
+  { label: 'Extrayendo contenido', icon: FileText },
+  { label: 'Identificando institución y tipo de crédito', icon: Sparkles },
+  { label: 'Validando campos mínimos', icon: ShieldCheck },
+] as const
+
 function CreditoLoadingView({
   current,
   total,
@@ -925,28 +932,107 @@ function CreditoLoadingView({
   total: number
   fileName?: string
 }) {
-  const pct = total > 0 ? Math.round(((current - 0.5) / total) * 100) : 0
+  const [step, setStep] = useState(0)
+  const safeCurrent = Math.max(current, 1)
+  const safeTotal = Math.max(total, 1)
+  // Progreso por documento + sub-progreso por step.
+  const perDoc = 100 / safeTotal
+  const subPct = ((step + 1) / CREDITO_LOADING_STEPS.length) * perDoc
+  const pct = Math.min((safeCurrent - 1) * perDoc + subPct, 99)
+
+  // Ciclo de pasos para que no parezca pegado.
+  useEffect(() => {
+    setStep(0)
+    const id = setInterval(() => {
+      setStep((s) => (s + 1) % CREDITO_LOADING_STEPS.length)
+    }, 1200)
+    return () => clearInterval(id)
+  }, [safeCurrent, fileName])
+
   return (
     <div className="py-6 space-y-6">
-      <div className="relative mx-auto h-32 w-52 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-[2px] bg-primary animate-[scan_2s_ease-in-out_infinite]" />
-        <div className="absolute inset-0 grid place-items-center">
-          <FileText className="h-10 w-10 text-primary/60 animate-pulse" />
+      {/* Tarjeta animada con beam de escaneo y skeleton de líneas */}
+      <div className="relative mx-auto h-36 w-56 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden">
+        {/* Líneas de "texto" del documento */}
+        <div className="absolute inset-0 p-4 flex flex-col gap-2 justify-center">
+          {[90, 70, 80, 50, 65].map((w, i) => (
+            <div
+              key={i}
+              className="h-1.5 rounded bg-primary/15 overflow-hidden relative"
+              style={{ width: `${w}%` }}
+            >
+              <div
+                className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-primary/40 to-transparent animate-shimmer"
+                style={{ animationDelay: `${i * 120}ms` }}
+              />
+            </div>
+          ))}
+        </div>
+        {/* Beam de scan vertical */}
+        <div className="pointer-events-none absolute inset-x-2 top-1 h-[2px] rounded-full bg-primary shadow-[0_0_12px_2px_hsl(var(--primary)/0.6)] animate-scan-y" />
+        {/* Icono central translúcido */}
+        <div className="pointer-events-none absolute top-2 right-2 text-primary/40">
+          <FileText className="h-5 w-5" />
         </div>
       </div>
+
       <div className="text-center space-y-1">
-        <p className="text-sm font-semibold">Validando documentos de crédito…</p>
+        <p className="text-sm font-semibold flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Validando documentos de crédito…
+        </p>
         <p className="text-xs text-muted-foreground">
-          Analizando {Math.max(current, 1)} de {total}
+          Analizando {safeCurrent} de {safeTotal}
           {fileName ? ` · ${fileName}` : ''}
         </p>
       </div>
+
+      {/* Lista de pasos animados */}
+      <ul className="max-w-sm mx-auto space-y-1.5">
+        {CREDITO_LOADING_STEPS.map((s, i) => {
+          const isActive = i === step
+          const isDone = i < step
+          const Icon = s.icon
+          return (
+            <li
+              key={s.label}
+              className={cn(
+                'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs transition-all duration-300',
+                isActive && 'bg-primary/10 text-foreground',
+                isDone && 'text-muted-foreground',
+                !isActive && !isDone && 'text-muted-foreground/70',
+              )}
+            >
+              <span
+                className={cn(
+                  'h-5 w-5 rounded-full grid place-items-center shrink-0 transition-colors',
+                  isActive && 'bg-primary text-primary-foreground',
+                  isDone && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+                  !isActive && !isDone && 'bg-muted text-muted-foreground',
+                )}
+              >
+                {isDone ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : isActive ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Icon className="h-3 w-3" />
+                )}
+              </span>
+              <span className="truncate">{s.label}</span>
+            </li>
+          )
+        })}
+      </ul>
+
+      {/* Barra de progreso con efecto indeterminado encima */}
       <div className="max-w-sm mx-auto">
-        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div className="relative h-2 w-full rounded-full bg-muted overflow-hidden">
           <div
             className="h-full bg-primary transition-all duration-500 ease-out"
-            style={{ width: `${Math.min(Math.max(pct, 5), 100)}%` }}
+            style={{ width: `${Math.max(pct, 5)}%` }}
           />
+          <div className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-progress-indeterminate" />
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground text-center">
           No cierres esta ventana hasta finalizar el análisis.
