@@ -1258,18 +1258,19 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
             borderClass: 'border-destructive/30',
           }
 
-  const camposEntries = result.extra.campos ? Object.entries(result.extra.campos) : []
+  const extra = result.extra ?? ({ recomendado: false } as CreditoExtra)
+  const camposEntries = extra.campos ? Object.entries(extra.campos) : []
   const hasDetails =
     !!result.details.resumen ||
     !!result.details.recomendacion ||
     (result.details.alertas?.length ?? 0) > 0 ||
     (result.details.motivos?.length ?? 0) > 0 ||
     camposEntries.length > 0 ||
-    result.extra.corresponde !== undefined ||
-    result.extra.cumpleMinimo !== undefined
+    extra.corresponde !== undefined ||
+    extra.cumpleMinimo !== undefined
 
   // Badge "Recomendado" según cumple_minimo + recomendacion textual.
-  const recBadge = result.extra.recomendado
+  const recBadge = extra.recomendado
     ? {
         label: 'Recomendado avanzar',
         cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
