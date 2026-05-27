@@ -297,7 +297,10 @@ export function CedulaValidationDialog({
           message: apiRecomendacion
             ? { ...msg, accion_recomendada: apiRecomendacion }
             : msg,
-          canContinue: validation.es_valida_para_continuar_proceso === true,
+          // Para alinear el resumen con la recomendación de la IA, usamos
+          // `recomendado` (basado en `cumple_minimo` + `recomendacion`) como
+          // criterio para "se puede continuar".
+          canContinue: recomendado,
           details: {
             resumen:
               typeof validation.resumen === 'string' && validation.resumen.trim()
