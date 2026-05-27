@@ -47,7 +47,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
-import { useAIValidationSettings } from '@/hooks/useAIValidationSettings'
+import { useAIValidationSettings, useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
