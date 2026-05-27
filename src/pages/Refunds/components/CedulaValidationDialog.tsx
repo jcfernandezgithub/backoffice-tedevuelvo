@@ -297,7 +297,10 @@ export function CedulaValidationDialog({
           message: apiRecomendacion
             ? { ...msg, accion_recomendada: apiRecomendacion }
             : msg,
-          canContinue: validation.es_valida_para_continuar_proceso === true,
+          // Para alinear el resumen con la recomendación de la IA, usamos
+          // `recomendado` (basado en `cumple_minimo` + `recomendacion`) como
+          // criterio para "se puede continuar".
+          canContinue: recomendado,
           details: {
             resumen:
               typeof validation.resumen === 'string' && validation.resumen.trim()
@@ -1130,9 +1133,9 @@ function CreditoResultView({
         iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
         iconText: 'text-emerald-600 dark:text-emerald-400',
         badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
-        badgeText: 'Validación aprobada',
-        title: 'Documentos de crédito reconocidos',
-        message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} corresponden visualmente a un crédito de consumo.`,
+        badgeText: 'Recomendado avanzar',
+        title: 'Documentos de crédito validados',
+        message: `La IA recomienda avanzar con ${okCount === totalCount && totalCount === 1 ? 'el documento cargado' : `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'}`}.`,
       }
     }
     return {
@@ -1142,9 +1145,15 @@ function CreditoResultView({
       iconBg: 'bg-amber-100 dark:bg-amber-900/60',
       iconText: 'text-amber-600 dark:text-amber-400',
       badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
-      badgeText: 'Requiere atención',
-      title: 'Algunos documentos no fueron validados',
-      message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} pasaron la validación visual de crédito de consumo.`,
+      badgeText: 'Revisión sugerida',
+      title:
+        okCount === 0
+          ? 'La IA no recomienda avanzar'
+          : 'Algunos documentos requieren revisión',
+      message:
+        okCount === 0
+          ? `La IA sugiere revisar ${totalCount === 1 ? 'el documento cargado' : 'los documentos cargados'} antes de continuar.`
+          : `La IA recomienda avanzar con ${okCount} de ${totalCount} documentos. Revisa el resto antes de continuar.`,
     }
   })()
 
@@ -1195,7 +1204,7 @@ function CreditoResultView({
                 ¿Avanzar de todas formas?
               </p>
               <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
-                Algunos documentos de crédito no fueron validados por la IA. Puedes
+                La IA no recomienda avanzar con todos los documentos. Puedes
                 continuar bajo tu responsabilidad o reintentar la validación.
               </p>
             </div>
