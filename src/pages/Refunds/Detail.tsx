@@ -258,6 +258,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const [cedulaValidated, setCedulaValidated] = useState(false)
   const [cedulaValidationForced, setCedulaValidationForced] = useState(false)
   const { enabled: aiValidationEnabled } = useAIValidationSettings()
+  const { enabled: creditoValidationEnabled } = useCreditoDocsValidationSettings()
+  const anyAIValidationEnabled = aiValidationEnabled || creditoValidationEnabled
 
   // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
   // o si cambia la solicitud actual.
