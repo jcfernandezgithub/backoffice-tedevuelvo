@@ -75,6 +75,18 @@ interface CreditoDocResult {
   message: CreditoValidationMessage
   canContinue: boolean
   details: ValidationDetails
+  extra: CreditoExtra
+}
+
+interface CreditoExtra {
+  corresponde?: boolean
+  cumpleMinimo?: boolean
+  nivelConfianza?: string
+  tipoDetectado?: string
+  subtipoDetectado?: string
+  campos?: Record<string, string>
+  observacionMinimos?: string
+  recomendado: boolean
 }
 
 async function downloadDocAsFile(
