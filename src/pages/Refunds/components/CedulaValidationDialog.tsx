@@ -27,12 +27,20 @@ import {
   type CedulaValidationResponse,
   type ValidationMessage,
 } from '@/lib/cedulaValidation'
+import {
+  validateCreditoDocument,
+  buildCreditoValidationMessage,
+  type CreditoValidationResponse,
+  type CreditoValidationMessage,
+} from '@/lib/creditoValidation'
+import { useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
 import type { RefundDocument } from '@/types/refund'
 import { cn } from '@/lib/utils'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 const CEDULA_FRENTE_KIND = 'cedula-frente'
 const CEDULA_TRASERA_KIND = 'cedula-trasera'
+const OTROS_KIND = 'otros'
 
 interface Props {
   open: boolean
@@ -42,13 +50,28 @@ interface Props {
   onValidated: (forced?: boolean) => void
 }
 
-type Phase = 'idle' | 'loading' | 'result' | 'error'
+type Phase =
+  | 'idle'
+  | 'loading'
+  | 'result'
+  | 'error'
+  | 'credito-loading'
+  | 'credito-result'
+  | 'credito-error'
 
 interface ValidationDetails {
   resumen?: string
   recomendacion?: string
   alertas?: string[]
   motivos?: string[]
+}
+
+interface CreditoDocResult {
+  doc: RefundDocument
+  fileName: string
+  message: CreditoValidationMessage
+  canContinue: boolean
+  details: ValidationDetails
 }
 
 async function downloadDocAsFile(
@@ -92,6 +115,11 @@ export function CedulaValidationDialog({
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [loadingStep, setLoadingStep] = useState(0)
   const [confirmForce, setConfirmForce] = useState(false)
+  const [forcedCedula, setForcedCedula] = useState(false)
+  const [creditoResults, setCreditoResults] = useState<CreditoDocResult[]>([])
+  const [creditoProgress, setCreditoProgress] = useState<{ current: number; total: number; fileName?: string }>({ current: 0, total: 0 })
+  const [creditoConfirmForce, setCreditoConfirmForce] = useState(false)
+  const { enabled: creditoEnabled } = useCreditoDocsValidationSettings()
 
   const reset = () => {
     setPhase('idle')
@@ -101,6 +129,10 @@ export function CedulaValidationDialog({
     setErrorMsg(null)
     setLoadingStep(0)
     setConfirmForce(false)
+    setForcedCedula(false)
+    setCreditoResults([])
+    setCreditoProgress({ current: 0, total: 0 })
+    setCreditoConfirmForce(false)
   }
 
   const handleClose = (next: boolean) => {
@@ -123,6 +155,12 @@ export function CedulaValidationDialog({
     const trasera = documents.find((d) => d.kind === CEDULA_TRASERA_KIND)
     return { frente, trasera, ok: !!frente && !!trasera }
   }, [documents])
+
+  const otrosDocs = useMemo(
+    () => documents.filter((d) => d.kind === OTROS_KIND),
+    [documents],
+  )
+  const shouldRunCredito = creditoEnabled && otrosDocs.length > 0
 
   const runValidation = async () => {
     setPhase('loading')
@@ -182,12 +220,86 @@ export function CedulaValidationDialog({
     }
   }
 
+  const runCreditoValidation = async () => {
+    setPhase('credito-loading')
+    setErrorMsg(null)
+    setCreditoResults([])
+    setCreditoConfirmForce(false)
+    setCreditoProgress({ current: 0, total: otrosDocs.length })
+
+    const results: CreditoDocResult[] = []
+    try {
+      for (let i = 0; i < otrosDocs.length; i++) {
+        const doc = otrosDocs[i]
+        const fileName = (doc as any).fileName || (doc as any).filename || `Documento ${i + 1}`
+        setCreditoProgress({ current: i + 1, total: otrosDocs.length, fileName })
+        const file = await downloadDocAsFile(publicId, doc, `credito-${i + 1}`)
+        let validation: CreditoValidationResponse
+        try {
+          validation = await validateCreditoDocument({ file })
+        } catch {
+          validation = {}
+        }
+        const msg = buildCreditoValidationMessage(validation)
+        results.push({
+          doc,
+          fileName,
+          message: msg,
+          canContinue: validation.es_valida_para_continuar_proceso === true,
+          details: {
+            resumen:
+              typeof validation.resumen === 'string' && validation.resumen.trim()
+                ? validation.resumen.trim()
+                : undefined,
+            recomendacion:
+              typeof validation.recomendacion === 'string' && validation.recomendacion.trim()
+                ? validation.recomendacion.trim()
+                : undefined,
+            alertas: Array.isArray(validation.alertas)
+              ? validation.alertas.filter((a: any) => typeof a === 'string' && a.trim())
+              : undefined,
+            motivos: Array.isArray(validation.motivos_no_validez)
+              ? validation.motivos_no_validez.filter((m: any) => typeof m === 'string' && m.trim())
+              : undefined,
+          },
+        })
+      }
+      setCreditoResults(results)
+      setPhase('credito-result')
+    } catch (e: any) {
+      setPhase('credito-error')
+      setErrorMsg(e?.message || 'Error al preparar los documentos de crédito para validación.')
+    }
+  }
+
   const handleContinue = () => {
+    if (shouldRunCredito) {
+      setForcedCedula(false)
+      void runCreditoValidation()
+      return
+    }
     onValidated(false)
     handleClose(false)
   }
 
   const handleForceContinue = () => {
+    if (shouldRunCredito) {
+      setForcedCedula(true)
+      void runCreditoValidation()
+      return
+    }
+    onValidated(true)
+    handleClose(false)
+  }
+
+  const creditoAllOk = creditoResults.length > 0 && creditoResults.every((r) => r.canContinue)
+
+  const handleCreditoContinue = () => {
+    onValidated(forcedCedula)
+    handleClose(false)
+  }
+
+  const handleCreditoForceContinue = () => {
     onValidated(true)
     handleClose(false)
   }
@@ -238,6 +350,13 @@ export function CedulaValidationDialog({
               onRetry={runValidation}
               onClose={() => handleClose(false)}
               onContinue={handleContinue}
+              continueLabel={shouldRunCredito ? 'Continuar con validación de crédito' : undefined}
+              forceContinueLabel={shouldRunCredito ? 'Continuar con validación de crédito' : undefined}
+              nextStepHint={
+                shouldRunCredito
+                  ? `Siguiente paso: validar ${otrosDocs.length} documento${otrosDocs.length === 1 ? '' : 's'} de crédito cargado${otrosDocs.length === 1 ? '' : 's'} (tipo "Otros").`
+                  : undefined
+              }
             />
           )}
 
@@ -245,6 +364,36 @@ export function CedulaValidationDialog({
             <ErrorView
               errorMsg={errorMsg}
               onRetry={runValidation}
+              onClose={() => handleClose(false)}
+            />
+          )}
+
+          {phase === 'credito-loading' && (
+            <CreditoLoadingView
+              current={creditoProgress.current}
+              total={creditoProgress.total}
+              fileName={creditoProgress.fileName}
+            />
+          )}
+
+          {phase === 'credito-result' && (
+            <CreditoResultView
+              results={creditoResults}
+              allOk={creditoAllOk}
+              confirmForce={creditoConfirmForce}
+              onToggleConfirmForce={setCreditoConfirmForce}
+              onContinue={handleCreditoContinue}
+              onForceContinue={handleCreditoForceContinue}
+              onRetry={runCreditoValidation}
+              onClose={() => handleClose(false)}
+              forcedCedula={forcedCedula}
+            />
+          )}
+
+          {phase === 'credito-error' && (
+            <ErrorView
+              errorMsg={errorMsg}
+              onRetry={runCreditoValidation}
               onClose={() => handleClose(false)}
             />
           )}
@@ -435,6 +584,9 @@ function ResultView({
   onRetry,
   onClose,
   onContinue,
+  continueLabel,
+  forceContinueLabel,
+  nextStepHint,
 }: {
   message: ValidationMessage
   canContinue: boolean
@@ -445,6 +597,9 @@ function ResultView({
   onRetry: () => void
   onClose: () => void
   onContinue: () => void
+  continueLabel?: string
+  forceContinueLabel?: string
+  nextStepHint?: string
 }) {
   const [showDetails, setShowDetails] = useState(false)
   const variant = (() => {
@@ -590,13 +745,20 @@ function ResultView({
         </div>
       )}
 
+      {nextStepHint && canContinue && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 flex items-start gap-2 text-xs text-foreground/80">
+          <ArrowRight className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+          <span>{nextStepHint}</span>
+        </div>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
         {canContinue && (
           <Button onClick={onContinue} className="gap-2 shadow-md shadow-primary/20">
-            Continuar y actualizar estado
+            {continueLabel || 'Continuar y actualizar estado'}
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}
@@ -637,7 +799,7 @@ function ResultView({
               className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
             >
               <ArrowRight className="h-4 w-4" />
-              Actualizar estado de todas formas
+              {forceContinueLabel || 'Actualizar estado de todas formas'}
             </Button>
           </div>
         </div>
@@ -682,6 +844,283 @@ function ErrorView({
           Reintentar
         </Button>
       </div>
+    </div>
+  )
+}
+
+/* -------------------- Crédito sub-views -------------------- */
+
+function CreditoLoadingView({
+  current,
+  total,
+  fileName,
+}: {
+  current: number
+  total: number
+  fileName?: string
+}) {
+  const pct = total > 0 ? Math.round(((current - 0.5) / total) * 100) : 0
+  return (
+    <div className="py-6 space-y-6">
+      <div className="relative mx-auto h-32 w-52 rounded-xl border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-primary animate-[scan_2s_ease-in-out_infinite]" />
+        <div className="absolute inset-0 grid place-items-center">
+          <FileText className="h-10 w-10 text-primary/60 animate-pulse" />
+        </div>
+      </div>
+      <div className="text-center space-y-1">
+        <p className="text-sm font-semibold">Validando documentos de crédito…</p>
+        <p className="text-xs text-muted-foreground">
+          Analizando {Math.max(current, 1)} de {total}
+          {fileName ? ` · ${fileName}` : ''}
+        </p>
+      </div>
+      <div className="max-w-sm mx-auto">
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-500 ease-out"
+            style={{ width: `${Math.min(Math.max(pct, 5), 100)}%` }}
+          />
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground text-center">
+          No cierres esta ventana hasta finalizar el análisis.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function CreditoResultView({
+  results,
+  allOk,
+  confirmForce,
+  onToggleConfirmForce,
+  onContinue,
+  onForceContinue,
+  onRetry,
+  onClose,
+  forcedCedula,
+}: {
+  results: CreditoDocResult[]
+  allOk: boolean
+  confirmForce: boolean
+  onToggleConfirmForce: (v: boolean) => void
+  onContinue: () => void
+  onForceContinue: () => void
+  onRetry: () => void
+  onClose: () => void
+  forcedCedula: boolean
+}) {
+  const okCount = results.filter((r) => r.canContinue).length
+  const totalCount = results.length
+
+  const summary = (() => {
+    if (allOk) {
+      return {
+        Icon: ShieldCheck,
+        ring: 'ring-emerald-200 dark:ring-emerald-900',
+        bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+        iconBg: 'bg-emerald-100 dark:bg-emerald-900/60',
+        iconText: 'text-emerald-600 dark:text-emerald-400',
+        badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+        badgeText: 'Validación aprobada',
+        title: 'Documentos de crédito reconocidos',
+        message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} corresponden visualmente a un crédito de consumo.`,
+      }
+    }
+    return {
+      Icon: ShieldAlert,
+      ring: 'ring-amber-200 dark:ring-amber-900',
+      bg: 'bg-amber-50 dark:bg-amber-950/30',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/60',
+      iconText: 'text-amber-600 dark:text-amber-400',
+      badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
+      badgeText: 'Requiere atención',
+      title: 'Algunos documentos no fueron validados',
+      message: `${okCount} de ${totalCount} documento${totalCount === 1 ? '' : 's'} pasaron la validación visual de crédito de consumo.`,
+    }
+  })()
+
+  return (
+    <div className="space-y-5 animate-in fade-in-50 zoom-in-95 duration-300">
+      <div className={cn('rounded-xl p-5 ring-1', summary.bg, summary.ring)}>
+        <div className="flex items-start gap-4">
+          <div className={cn('h-12 w-12 rounded-xl grid place-items-center shrink-0', summary.iconBg)}>
+            <summary.Icon className={cn('h-6 w-6', summary.iconText)} />
+          </div>
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={cn('text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full', summary.badge)}>
+                {summary.badgeText}
+              </span>
+              {forcedCedula && (
+                <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
+                  Cédula forzada
+                </span>
+              )}
+            </div>
+            <h3 className="text-base font-semibold leading-tight">{summary.title}</h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">{summary.message}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {results.map((r, i) => (
+          <CreditoDocItem key={i} result={r} index={i + 1} />
+        ))}
+      </div>
+
+      {allOk ? (
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={onContinue} className="gap-2 shadow-md shadow-primary/20">
+            Continuar y actualizar estado
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-4 space-y-3">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                ¿Avanzar de todas formas?
+              </p>
+              <p className="text-xs text-amber-900/90 dark:text-amber-200/90 leading-relaxed">
+                Algunos documentos de crédito no fueron validados por la IA. Puedes
+                continuar bajo tu responsabilidad o reintentar la validación.
+              </p>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer select-none rounded-md bg-white/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 px-3 py-2">
+            <input
+              type="checkbox"
+              checked={confirmForce}
+              onChange={(e) => onToggleConfirmForce(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+            />
+            <span className="text-xs text-amber-900 dark:text-amber-200 leading-snug">
+              Confirmo que revisé manualmente los documentos de crédito y deseo
+              actualizar el estado igualmente.
+            </span>
+          </label>
+
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <Button variant="ghost" onClick={onRetry} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Reintentar
+            </Button>
+            <Button
+              onClick={onForceContinue}
+              disabled={!confirmForce}
+              className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Actualizar estado de todas formas
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: number }) {
+  const [open, setOpen] = useState(false)
+  const variant =
+    result.message.estado_validacion === 'ok'
+      ? {
+          Icon: CheckCircle2,
+          iconClass: 'text-emerald-600 dark:text-emerald-400',
+          iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
+          borderClass: 'border-emerald-200 dark:border-emerald-900',
+        }
+      : result.message.estado_validacion === 'advertencia'
+        ? {
+            Icon: AlertTriangle,
+            iconClass: 'text-amber-600 dark:text-amber-400',
+            iconBg: 'bg-amber-100 dark:bg-amber-900/50',
+            borderClass: 'border-amber-200 dark:border-amber-900',
+          }
+        : {
+            Icon: XCircle,
+            iconClass: 'text-destructive',
+            iconBg: 'bg-destructive/15',
+            borderClass: 'border-destructive/30',
+          }
+
+  const hasDetails =
+    !!result.details.resumen ||
+    !!result.details.recomendacion ||
+    (result.details.alertas?.length ?? 0) > 0 ||
+    (result.details.motivos?.length ?? 0) > 0
+
+  return (
+    <div className={cn('rounded-lg border bg-card overflow-hidden', variant.borderClass)}>
+      <button
+        onClick={() => hasDetails && setOpen((s) => !s)}
+        disabled={!hasDetails}
+        className={cn(
+          'w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors',
+          hasDetails && 'hover:bg-muted/50 cursor-pointer',
+        )}
+      >
+        <div className={cn('h-8 w-8 rounded-md grid place-items-center shrink-0', variant.iconBg)}>
+          <variant.Icon className={cn('h-4 w-4', variant.iconClass)} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium leading-tight flex items-center gap-2">
+            <span className="text-muted-foreground text-xs">#{index}</span>
+            <span className="truncate">{result.fileName}</span>
+          </p>
+          <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+            {result.message.titulo}
+          </p>
+        </div>
+        {hasDetails && (
+          open ? <ChevronUp className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+               : <ChevronDown className="h-4 w-4 text-muted-foreground mt-1 shrink-0" />
+        )}
+      </button>
+      {open && hasDetails && (
+        <div className="px-3 pb-3 pt-1 space-y-3 border-t bg-muted/20">
+          <p className="text-xs text-foreground/80 leading-relaxed pt-2">
+            {result.message.mensaje}
+          </p>
+          {result.details.resumen && (
+            <div className="text-xs text-foreground/80 leading-relaxed whitespace-pre-line break-words">
+              <span className="font-semibold">Resumen: </span>
+              {result.details.resumen}
+            </div>
+          )}
+          {result.details.alertas && result.details.alertas.length > 0 && (
+            <ul className="space-y-1">
+              {result.details.alertas.map((a, i) => (
+                <li key={i} className="text-[11px] text-amber-700 dark:text-amber-300 flex gap-2">
+                  <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                  <span className="break-words">{a}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {result.details.motivos && result.details.motivos.length > 0 && (
+            <ul className="space-y-1">
+              {result.details.motivos.map((m, i) => (
+                <li key={i} className="text-[11px] text-destructive flex gap-2">
+                  <XCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                  <span className="break-words">{m}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">Recomendación: </span>
+            {result.message.accion_recomendada}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
