@@ -584,6 +584,9 @@ function ResultView({
   onRetry,
   onClose,
   onContinue,
+  continueLabel,
+  forceContinueLabel,
+  nextStepHint,
 }: {
   message: ValidationMessage
   canContinue: boolean
@@ -594,6 +597,9 @@ function ResultView({
   onRetry: () => void
   onClose: () => void
   onContinue: () => void
+  continueLabel?: string
+  forceContinueLabel?: string
+  nextStepHint?: string
 }) {
   const [showDetails, setShowDetails] = useState(false)
   const variant = (() => {
