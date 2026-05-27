@@ -745,13 +745,20 @@ function ResultView({
         </div>
       )}
 
+      {nextStepHint && canContinue && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 flex items-start gap-2 text-xs text-foreground/80">
+          <ArrowRight className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+          <span>{nextStepHint}</span>
+        </div>
+      )}
+
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
           Cancelar
         </Button>
         {canContinue && (
           <Button onClick={onContinue} className="gap-2 shadow-md shadow-primary/20">
-            Continuar y actualizar estado
+            {continueLabel || 'Continuar y actualizar estado'}
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}
@@ -792,7 +799,7 @@ function ResultView({
               className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
             >
               <ArrowRight className="h-4 w-4" />
-              Actualizar estado de todas formas
+              {forceContinueLabel || 'Actualizar estado de todas formas'}
             </Button>
           </div>
         </div>
