@@ -1126,7 +1126,7 @@ function CreditoResultView({
   onClose: () => void
   forcedCedula: boolean
 }) {
-  const okCount = results.filter((r) => r.canContinue).length
+  const okCount = results.filter((r) => r.extra?.recomendado ?? r.canContinue).length
   const totalCount = results.length
 
   const summary = (() => {
