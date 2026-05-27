@@ -27,12 +27,20 @@ import {
   type CedulaValidationResponse,
   type ValidationMessage,
 } from '@/lib/cedulaValidation'
+import {
+  validateCreditoDocument,
+  buildCreditoValidationMessage,
+  type CreditoValidationResponse,
+  type CreditoValidationMessage,
+} from '@/lib/creditoValidation'
+import { useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
 import type { RefundDocument } from '@/types/refund'
 import { cn } from '@/lib/utils'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 const CEDULA_FRENTE_KIND = 'cedula-frente'
 const CEDULA_TRASERA_KIND = 'cedula-trasera'
+const OTROS_KIND = 'otros'
 
 interface Props {
   open: boolean
@@ -42,13 +50,28 @@ interface Props {
   onValidated: (forced?: boolean) => void
 }
 
-type Phase = 'idle' | 'loading' | 'result' | 'error'
+type Phase =
+  | 'idle'
+  | 'loading'
+  | 'result'
+  | 'error'
+  | 'credito-loading'
+  | 'credito-result'
+  | 'credito-error'
 
 interface ValidationDetails {
   resumen?: string
   recomendacion?: string
   alertas?: string[]
   motivos?: string[]
+}
+
+interface CreditoDocResult {
+  doc: RefundDocument
+  fileName: string
+  message: CreditoValidationMessage
+  canContinue: boolean
+  details: ValidationDetails
 }
 
 async function downloadDocAsFile(
