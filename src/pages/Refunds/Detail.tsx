@@ -759,7 +759,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </Label>
                 </div>
 
-                {updateForm.status === 'docs_received' && aiValidationEnabled ? (
+                {updateForm.status === 'docs_received' && anyAIValidationEnabled ? (
                   <>
                     {!cedulaValidated ? (
                       <Button
