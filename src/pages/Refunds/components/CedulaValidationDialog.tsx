@@ -1305,21 +1305,21 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
               <recBadge.Icon className="h-2.5 w-2.5" />
               {recBadge.label}
             </span>
-            {result.extra.corresponde !== undefined && (
+            {extra.corresponde !== undefined && (
               <span
                 className={cn(
                   'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium',
-                  result.extra.corresponde
+                  extra.corresponde
                     ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground',
                 )}
               >
-                {result.extra.corresponde ? 'Corresponde a crédito de consumo' : 'No corresponde a crédito'}
+                {extra.corresponde ? 'Corresponde a crédito de consumo' : 'No corresponde a crédito'}
               </span>
             )}
-            {result.extra.nivelConfianza && (
+            {extra.nivelConfianza && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-                Confianza: {result.extra.nivelConfianza}
+                Confianza: {extra.nivelConfianza}
               </span>
             )}
           </div>
@@ -1335,16 +1335,16 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
             {result.message.mensaje}
           </p>
 
-          {(result.extra.tipoDetectado || result.extra.subtipoDetectado) && (
+          {(extra.tipoDetectado || extra.subtipoDetectado) && (
             <div className="flex flex-wrap gap-1.5">
-              {result.extra.tipoDetectado && (
+              {extra.tipoDetectado && (
                 <span className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
-                  {humanize(result.extra.tipoDetectado)}
+                  {humanize(extra.tipoDetectado)}
                 </span>
               )}
-              {result.extra.subtipoDetectado && (
+              {extra.subtipoDetectado && (
                 <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
-                  {humanize(result.extra.subtipoDetectado)}
+                  {humanize(extra.subtipoDetectado)}
                 </span>
               )}
             </div>
@@ -1363,21 +1363,21 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
                 <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                   Campos detectados
                 </p>
-                {result.extra.cumpleMinimo !== undefined && (
+                {extra.cumpleMinimo !== undefined && (
                   <span
                     className={cn(
                       'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold',
-                      result.extra.cumpleMinimo
+                      extra.cumpleMinimo
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
                         : 'bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300',
                     )}
                   >
-                    {result.extra.cumpleMinimo ? (
+                    {extra.cumpleMinimo ? (
                       <CheckCircle2 className="h-2.5 w-2.5" />
                     ) : (
                       <AlertTriangle className="h-2.5 w-2.5" />
                     )}
-                    {result.extra.cumpleMinimo ? 'Cumple mínimos' : 'No cumple mínimos'}
+                    {extra.cumpleMinimo ? 'Cumple mínimos' : 'No cumple mínimos'}
                   </span>
                 )}
               </div>
@@ -1395,9 +1395,9 @@ function CreditoDocItem({ result, index }: { result: CreditoDocResult; index: nu
                   )
                 })}
               </ul>
-              {result.extra.observacionMinimos && (
+              {extra.observacionMinimos && (
                 <p className="text-[10px] text-muted-foreground mt-2 leading-snug">
-                  {result.extra.observacionMinimos}
+                  {extra.observacionMinimos}
                 </p>
               )}
             </div>
