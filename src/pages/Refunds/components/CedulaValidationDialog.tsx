@@ -363,7 +363,12 @@ export function CedulaValidationDialog({
     handleClose(false)
   }
 
-  const creditoAllOk = creditoResults.length > 0 && creditoResults.every((r) => r.canContinue)
+  // La recomendación de la IA (cumple_minimo + texto "continuar/avanzar") es la
+  // fuente única de verdad para el resumen y los CTAs. Hacemos fallback a
+  // canContinue por compatibilidad con resultados previos.
+  const creditoAllOk =
+    creditoResults.length > 0 &&
+    creditoResults.every((r) => r.extra?.recomendado ?? r.canContinue)
 
   const handleCreditoContinue = () => {
     onValidated(forcedCedula)
@@ -1121,7 +1126,7 @@ function CreditoResultView({
   onClose: () => void
   forcedCedula: boolean
 }) {
-  const okCount = results.filter((r) => r.canContinue).length
+  const okCount = results.filter((r) => r.extra?.recomendado ?? r.canContinue).length
   const totalCount = results.length
 
   const summary = (() => {
