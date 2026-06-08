@@ -1,8 +1,14 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.2
+## Versión 3.9.3
 
 ## Changelog
+
+### Versión 3.9.3 - 2026-06-08
+
+#### Ajuste: Calculadora - monto del crédito sin límite superior
+- **Monto del crédito**: se elimina el tope máximo de $100.000.000. Ahora acepta cualquier monto numérico ≥ $500.000.
+- **Archivos**: `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.9.2 - 2026-06-08
 
