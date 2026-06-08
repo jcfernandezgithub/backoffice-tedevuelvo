@@ -32,7 +32,7 @@ const formSchema = z.object({
   }, "La edad debe estar entre 18 y 65 años"),
   montoCredito: z.number({
     required_error: "Ingresa el monto del crédito",
-  }).min(500000, "El monto mínimo es $500.000").max(100000000, "El monto máximo es $100.000.000"),
+  }).min(500000, "El monto mínimo es $500.000"),
   cuotasTotales: z.number({
     required_error: "Ingresa las cuotas totales",
     invalid_type_error: "Debe ser numérico",
