@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.1
+## Versión 3.9.2
 
 ## Changelog
+
+### Versión 3.9.2 - 2026-06-08
+
+#### Ajuste: Calculadora - límites de cuotas
+- **Cuotas totales**: se eliminan los límites min/max. Ahora acepta cualquier valor numérico.
+- **Cuotas pendientes**: máximo permitido **80** (mínimo 1). Se elimina el tope dinámico atado a cuotas totales.
+- **Archivos**: `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.9.1 - 2026-05-27
 
