@@ -35,7 +35,8 @@ const formSchema = z.object({
   }).min(500000, "El monto mínimo es $500.000").max(100000000, "El monto máximo es $100.000.000"),
   cuotasTotales: z.number({
     required_error: "Ingresa las cuotas totales",
-  }).min(3, "Mínimo 3 cuotas").max(80, "Máximo 80 cuotas"),
+    invalid_type_error: "Debe ser numérico",
+  }),
   cuotasPendientes: z.number({
     required_error: "Ingresa las cuotas pendientes",
   }).min(1, "Mínimo 1 cuota pendiente").max(80, "Máximo 80 cuotas pendientes"),
@@ -654,8 +655,6 @@ export default function CalculadoraPage() {
                           <Input
                             type="number"
                             placeholder="36"
-                            min={3}
-                            max={80}
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
                           />
@@ -676,7 +675,7 @@ export default function CalculadoraPage() {
                             type="number"
                             placeholder="24"
                             min={1}
-                            max={cuotasTotales || 80}
+                            max={80}
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value, 10) || undefined)}
                           />
