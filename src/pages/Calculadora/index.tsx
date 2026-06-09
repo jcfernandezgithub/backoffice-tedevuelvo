@@ -358,6 +358,13 @@ export default function CalculadoraPage() {
     if (!resultado || resultado.error || !formDataSnapshot) return "";
     
     const edad = calcularEdad(formDataSnapshot.fechaNacimiento);
+    const montoFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
+    const desgravamenFinal = resultado.desgravamen
+      ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
+      : 0;
+    const cesantiaFinal = resultado.cesantia
+      ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
+      : 0;
     const tipoSeguroLabel = formDataSnapshot.tipoSeguro === "desgravamen" 
       ? "Desgravamen" 
       : formDataSnapshot.tipoSeguro === "cesantia" 
@@ -374,13 +381,13 @@ export default function CalculadoraPage() {
     }
     texto += `- Cuotas: ${formDataSnapshot.cuotasPendientes}/${formDataSnapshot.cuotasTotales}\n`;
     texto += `- Tipo: ${tipoSeguroLabel}\n\n`;
-    texto += `*AHORRO ESTIMADO: ${formatCurrency(resultado.montoDevolucion)}*\n\n`;
+    texto += `*AHORRO ESTIMADO: ${formatCurrency(montoFinal)}*\n\n`;
     
     if (resultado.desgravamen) {
-      texto += `Desgravamen: ${formatCurrency(resultado.desgravamen.montoDevolucion)}\n`;
+      texto += `Desgravamen: ${formatCurrency(desgravamenFinal)}\n`;
     }
     if (resultado.cesantia) {
-      texto += `Cesantia: ${formatCurrency(resultado.cesantia.montoDevolucion)}\n`;
+      texto += `Cesantia: ${formatCurrency(cesantiaFinal)}\n`;
     }
     if (resultado.ahorroMensual > 0) {
       texto += `Ahorro mensual: ${formatCurrency(resultado.ahorroMensual)}/mes\n`;
@@ -402,7 +409,8 @@ export default function CalculadoraPage() {
   const compartirEmail = () => {
     if (!resultado || resultado.error || !formDataSnapshot) return;
     
-    const asunto = `Calculo de Ahorro en Seguros - ${formatCurrency(resultado.montoDevolucion)}`;
+    const montoFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
+    const asunto = `Calculo de Ahorro en Seguros - ${formatCurrency(montoFinal)}`;
     const cuerpo = generarTextoCompartir().replace(/\*/g, "").replace(/_/g, "");
     
     const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
