@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.4
+## Versión 3.9.5
 
 ## Changelog
+
+### Versión 3.9.5 - 2026-06-09
+
+#### Fix: Calculadora - comparativa también reactiva al margen de seguridad
+- **Bug**: al cambiar el `Margen de seguridad` en el select, solo se actualizaba el monto destacado de "Devolución estimada". Las líneas de "Devolución" dentro de la tarjeta de Comparativa (desgravamen y cesantía) seguían mostrando el monto de la primera estimación.
+- **Fix**: los montos de devolución por seguro en la comparativa ahora usan `calcularConMargenPersonalizado` y se recalculan en vivo al cambiar el select (mismo criterio ya aplicado al PDF y al texto de compartir).
+- **Archivos**: `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.9.4 - 2026-06-09
 
