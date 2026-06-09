@@ -142,6 +142,15 @@ export default function CalculadoraPage() {
   const exportarPDF = () => {
     if (!resultado || resultado.error || !formDataSnapshot) return;
 
+    // Recalcular montos con el margen seleccionado actualmente
+    const montoDevolucionFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
+    const desgravamenDevolucionFinal = resultado.desgravamen
+      ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
+      : 0;
+    const cesantiaDevolucionFinal = resultado.cesantia
+      ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
+      : 0;
+
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 20;
@@ -196,7 +205,7 @@ export default function CalculadoraPage() {
     
     doc.setFontSize(18);
     doc.setTextColor(41, 98, 255);
-    doc.text(formatCurrency(resultado.montoDevolucion), pageWidth / 2, y, { align: "center" });
+    doc.text(formatCurrency(montoDevolucionFinal), pageWidth / 2, y, { align: "center" });
     y += 20;
 
     // Detalles por tipo de seguro
@@ -210,7 +219,7 @@ export default function CalculadoraPage() {
       doc.setTextColor(60);
       doc.text(`Prima banco: ${formatCurrency(resultado.desgravamen.primaBanco)}`, 25, y); y += 6;
       doc.text(`Prima preferencial: ${formatCurrency(resultado.desgravamen.primaPreferencial)}`, 25, y); y += 6;
-      doc.text(`Devolucion: ${formatCurrency(resultado.desgravamen.montoDevolucion)}`, 25, y);
+      doc.text(`Devolucion: ${formatCurrency(desgravamenDevolucionFinal)}`, 25, y);
       y += 12;
     }
 
@@ -224,7 +233,7 @@ export default function CalculadoraPage() {
       doc.setTextColor(60);
       doc.text(`Prima banco: ${formatCurrency(resultado.cesantia.primaBanco)}`, 25, y); y += 6;
       doc.text(`Prima preferencial: ${formatCurrency(resultado.cesantia.primaPreferencial)}`, 25, y); y += 6;
-      doc.text(`Devolucion: ${formatCurrency(resultado.cesantia.montoDevolucion)}`, 25, y);
+      doc.text(`Devolucion: ${formatCurrency(cesantiaDevolucionFinal)}`, 25, y);
       y += 12;
     }
 
@@ -267,7 +276,7 @@ export default function CalculadoraPage() {
       doc.text(`  Seguro restante: ${formatCurrency(resultado.desgravamen.seguroRestantePreferencial || 0)}`, 25, y); y += 6;
       
       doc.setTextColor(41, 98, 255);
-      doc.text(`Devolucion desgravamen: ${formatCurrency(resultado.desgravamen.montoDevolucion)}`, 25, y); y += 8;
+      doc.text(`Devolucion desgravamen: ${formatCurrency(desgravamenDevolucionFinal)}`, 25, y); y += 8;
       
       doc.setTextColor(80);
       doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
@@ -303,7 +312,7 @@ export default function CalculadoraPage() {
       doc.text(`Prima restante preferencial: ${formatCurrency(resultado.cesantia.primaRestantePreferencial || resultado.cesantia.primaPreferencial)}`, 25, y); y += 6;
       
       doc.setTextColor(41, 98, 255);
-      doc.text(`Devolucion cesantia: ${formatCurrency(resultado.cesantia.montoDevolucion)}`, 25, y); y += 8;
+      doc.text(`Devolucion cesantia: ${formatCurrency(cesantiaDevolucionFinal)}`, 25, y); y += 8;
       
       doc.setTextColor(80);
       doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
@@ -326,12 +335,12 @@ export default function CalculadoraPage() {
     
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text(`Margen aplicado: 10%`, 25, y); y += 5;
+    doc.text(`Margen aplicado: ${margenSeguridad}%`, 25, y); y += 5;
     doc.text(`Tramo etario: ${resultado.tramoUsado}`, 25, y); y += 5;
     
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text("El monto final incluye un margen de seguridad del 10% sobre la devolucion calculada.", 25, y);
+    doc.text(`El monto final incluye un margen de seguridad del ${margenSeguridad}% sobre la devolucion calculada.`, 25, y);
     y += 15;
 
     // Disclaimer
