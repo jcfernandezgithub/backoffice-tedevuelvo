@@ -108,6 +108,14 @@ export default function CalculadoraPage() {
     ? calcularConMargenPersonalizado(resultado.montoDevolucion)
     : 0;
 
+  const desgravamenDevolucionAjustado = resultado && !resultado.error && resultado.desgravamen
+    ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
+    : 0;
+
+  const cesantiaDevolucionAjustado = resultado && !resultado.error && resultado.cesantia
+    ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
+    : 0;
+
   const onSubmit = (data: FormData) => {
     setIsCalculating(true);
     
@@ -940,7 +948,7 @@ export default function CalculadoraPage() {
                           </div>
                         </div>
                         <p className="text-sm text-center text-muted-foreground">
-                          Devolución: <span className="font-medium text-primary">{formatCurrency(resultado.desgravamen.montoDevolucion)}</span>
+                          Devolución: <span className="font-medium text-primary">{formatCurrency(desgravamenDevolucionAjustado)}</span>
                         </p>
                       </div>
                     )}
@@ -965,7 +973,7 @@ export default function CalculadoraPage() {
                             </div>
                           </div>
                           <p className="text-sm text-center text-muted-foreground">
-                            Devolución: <span className="font-medium text-primary">{formatCurrency(resultado.cesantia.montoDevolucion)}</span>
+                            Devolución: <span className="font-medium text-primary">{formatCurrency(cesantiaDevolucionAjustado)}</span>
                           </p>
                         </div>
                       </>
