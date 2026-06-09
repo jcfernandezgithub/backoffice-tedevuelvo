@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.3
+## Versión 3.9.4
 
 ## Changelog
+
+### Versión 3.9.4 - 2026-06-09
+
+#### Fix: Calculadora - PDF y compartir reflejan la última estimación
+- **Bug**: al recalcular o cambiar el margen de seguridad, el PDF y el texto de WhatsApp/Email seguían mostrando el monto de la primera estimación (con margen 10% hardcodeado).
+- **Fix**: `exportarPDF`, `generarTextoCompartir` y `compartirEmail` ahora recalculan los montos (total, desgravamen y cesantía) usando `calcularConMargenPersonalizado` con el `margenSeguridad` actual. El PDF muestra el margen seleccionado en lugar del literal "10%".
+- **Archivos**: `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.9.3 - 2026-06-08
 
