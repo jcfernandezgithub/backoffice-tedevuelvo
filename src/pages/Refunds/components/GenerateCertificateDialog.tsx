@@ -250,6 +250,38 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
+// Compute coverage dates from the moment refund transitioned to 'submitted' (Ingresada).
+// Returns empty strings if the refund never went through 'submitted'.
+const getCoverageDatesFromSubmitted = (refund: RefundRequest): { fechaInicio: string; fechaFin: string } => {
+  const history = refund.statusHistory || []
+  const submittedEntry = [...history].reverse().find((h) => h.to === 'submitted')
+  if (!submittedEntry?.at) return { fechaInicio: '', fechaFin: '' }
+
+  const start = new Date(submittedEntry.at)
+  if (isNaN(start.getTime())) return { fechaInicio: '', fechaFin: '' }
+
+  const remaining =
+    refund.calculationSnapshot?.confirmedRemainingInstallments ||
+    refund.calculationSnapshot?.remainingInstallments ||
+    0
+
+  const fmt = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yy = d.getFullYear()
+    return `${dd}/${mm}/${yy}`
+  }
+
+  const fechaInicio = fmt(start)
+  let fechaFin = ''
+  if (typeof remaining === 'number' && remaining > 0) {
+    const end = new Date(start)
+    end.setMonth(end.getMonth() + remaining)
+    fechaFin = fmt(end)
+  }
+  return { fechaInicio, fechaFin }
+}
+
 // Fallback rates if not available in calculationSnapshot
 const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): number => {
   if (isPrime) {
