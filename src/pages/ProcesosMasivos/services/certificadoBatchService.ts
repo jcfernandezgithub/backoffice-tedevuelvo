@@ -311,8 +311,8 @@ async function persistSnapshotData(
   refund: RefundRequest,
   patch: Record<string, any>,
 ): Promise<void> {
-  const id = refund.publicId || (refund as any)._id || (refund as any).id
-  await refundAdminApi.updateData(id, {
+  // El endpoint PATCH /admin/:publicId/update busca por publicId, NO por _id de Mongo
+  await refundAdminApi.updateData(refund.publicId, {
     calculationSnapshot: {
       ...(refund.calculationSnapshot || {}),
       ...patch,
