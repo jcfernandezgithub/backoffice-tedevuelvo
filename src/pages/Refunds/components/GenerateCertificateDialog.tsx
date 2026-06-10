@@ -250,6 +250,38 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
+// Compute coverage dates from the moment refund transitioned to 'submitted' (Ingresada).
+// Returns empty strings if the refund never went through 'submitted'.
+const getCoverageDatesFromSubmitted = (refund: RefundRequest): { fechaInicio: string; fechaFin: string } => {
+  const history = refund.statusHistory || []
+  const submittedEntry = [...history].reverse().find((h) => h.to === 'submitted')
+  if (!submittedEntry?.at) return { fechaInicio: '', fechaFin: '' }
+
+  const start = new Date(submittedEntry.at)
+  if (isNaN(start.getTime())) return { fechaInicio: '', fechaFin: '' }
+
+  const remaining =
+    refund.calculationSnapshot?.confirmedRemainingInstallments ||
+    refund.calculationSnapshot?.remainingInstallments ||
+    0
+
+  const fmt = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yy = d.getFullYear()
+    return `${dd}/${mm}/${yy}`
+  }
+
+  const fechaInicio = fmt(start)
+  let fechaFin = ''
+  if (typeof remaining === 'number' && remaining > 0) {
+    const end = new Date(start)
+    end.setMonth(end.getMonth() + remaining)
+    fechaFin = fmt(end)
+  }
+  return { fechaInicio, fechaFin }
+}
+
 // Fallback rates if not available in calculationSnapshot
 const getTasaBrutaMensualFallback = (age?: number, isPrime: boolean = false): number => {
   if (isPrime) {
@@ -353,8 +385,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     sexo: '',
     autorizaEmail: 'SI',
     nroOperacion: refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : '',
-    fechaInicioCredito: '',
-    fechaFinCredito: '',
+    fechaInicioCredito: getCoverageDatesFromSubmitted(refund).fechaInicio,
+    fechaFinCredito: getCoverageDatesFromSubmitted(refund).fechaFin,
     saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
     beneficiarioNombre: refund.fullName || '',
     beneficiarioRut: refund.rut || '',
@@ -380,6 +412,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     if (open) {
       const freshSaldo = (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString()
       const snapNroCredito = refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : ''
+      const coverageDates = getCoverageDatesFromSubmitted(refund)
       setFormData(prev => ({
         ...prev,
         saldoInsoluto: freshSaldo,
@@ -387,6 +420,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
         nroOperacion: prev.nroOperacion || snapNroCredito,
         beneficiarioNombre: prev.beneficiarioNombre || refund.fullName || '',
         beneficiarioRut: prev.beneficiarioRut || refund.rut || '',
+        fechaInicioCredito: coverageDates.fechaInicio,
+        fechaFinCredito: coverageDates.fechaFin,
       }))
       // Auto-assign folio when dialog opens if not already set
       if (!formData.folio) {
