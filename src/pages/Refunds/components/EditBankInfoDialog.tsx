@@ -21,6 +21,13 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Settings2, Landmark } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
@@ -39,6 +46,13 @@ const FIELD_LABELS: Record<keyof BankFormValues, string> = {
   bankAccountType: 'Tipo de cuenta',
   bankAccountNumber: 'Número de cuenta',
 }
+
+const ACCOUNT_TYPE_OPTIONS = [
+  'Cuenta Corriente',
+  'Cuenta Vista',
+  'Cuenta de Ahorro',
+  'Cuenta RUT',
+] as const
 
 interface EditBankInfoDialogProps {
   refund: RefundRequest
@@ -189,7 +203,23 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs">Tipo de cuenta</FormLabel>
-                      <FormControl><Input {...field} placeholder="Cuenta corriente" /></FormControl>
+                      <Select
+                        value={field.value || ''}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona tipo de cuenta" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ACCOUNT_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt} value={opt}>
+                              {opt}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
