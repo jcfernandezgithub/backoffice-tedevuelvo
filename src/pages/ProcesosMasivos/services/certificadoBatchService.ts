@@ -392,7 +392,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     return {
       ...enriched,
       status: 'skipped',
-      reason: `Estado de la solicitud (${refund.status}) es anterior a "Documentos recibidos"`,
+      reason: `Estado de la solicitud (${refund.status}) es anterior a "Ingresada"`,
     }
   }
 
