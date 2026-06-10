@@ -1,8 +1,50 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.5
+## Versión 3.9.6
 
 ## Changelog
+
+### Versión 3.9.6 - 2026-06-10
+
+#### Feature: Procesos Masivos - Generación masiva de cartas de corte
+- **Nueva sección "Procesos Masivos"** en el sidebar (solo ADMIN), ruta `/procesos-masivos`.
+- **Primera operación: Generación masiva de cartas de corte** a partir de un archivo CSV.
+  - **Header esperado**: `publicId,nroCredito,nroPoliza,companyName`.
+  - **Límite**: 100 solicitudes por archivo.
+  - **CSV de ejemplo descargable** desde la pantalla.
+- **Validaciones por fila** (las que fallan se omiten y se informan en el resumen):
+  1. Existencia de `publicId` en backend.
+  2. Mandato firmado (`experianStatus.hasSignedPdf === true`).
+  3. **No debe existir** previamente un documento con el `kind` correspondiente (`carta-de-corte`, `carta-de-corte-cesantia` o `carta-de-corte-desgravamen`). Si existe, se omite y se solicita al usuario eliminar la carta actual antes de reprocesar.
+  4. Campos `nroCredito`, `nroPoliza` y `companyName` presentes en el CSV.
+- **Procesamiento por fila válida**:
+  1. Persiste `nroCredito`, `nroPoliza` y `companyName` en el `calculationSnapshot`.
+  2. Determina el `kind` según `tipoSeguro` y el formato (extendido para Santander/Tanner/Financorp, genérico para el resto) reutilizando exactamente la lógica del diálogo individual.
+  3. Genera el PDF y lo sube a la carpeta del cliente.
+- **UI por fases**: Carga → Revisión → Procesamiento (barra de progreso + log en vivo) → Resultado.
+- **Pantalla de resultado**: 4 KPI cards (Generadas, Omitidas, Con error, Duración), pestañas filtro por estado, tabla detallada con motivo y enlace directo a cada solicitud, y descargas:
+  - **ZIP** con todos los PDFs + `resumen.csv`.
+  - **Solo `resumen.csv`**.
+- **Archivos nuevos**: `src/pages/ProcesosMasivos/index.tsx`, `src/pages/ProcesosMasivos/services/corteBatchService.ts`.
+- **Archivos editados**: `src/App.tsx`, `src/components/app/AppSidebar.tsx`.
+
+#### Feature: Certificado de cobertura - fechas calculadas desde "Ingresada"
+- **Fecha de inicio**: fecha en que la solicitud transitó al estado `submitted` (Ingresada) según `statusHistory`.
+- **Fecha de fin**: fecha de inicio + `confirmedRemainingInstallments` (o `remainingInstallments` como fallback) meses.
+- Si la solicitud nunca pasó por `submitted`, ambos campos quedan en blanco.
+- **Archivos**: `src/pages/Refunds/components/GenerateCertificateDialog.tsx`.
+
+#### Feature: Certificado de cobertura - precarga de beneficiario
+- En certificados que requieren beneficiario, los campos **nombre** y **RUT** se precargan con el nombre y RUT del asegurado.
+- **Archivos**: `src/pages/Refunds/components/GenerateCertificateDialog.tsx`.
+
+#### Feature: Edición de datos bancarios - Tipo de cuenta como combo
+- El campo "Tipo de cuenta" en la edición de datos bancarios pasa de input libre a combo con valores predefinidos.
+- **Archivos**: `src/pages/Refunds/components/EditBankInfoDialog.tsx`.
+
+#### Ajuste: Calculadora - margen "Te devuelvo" al 20%
+- El margen de seguridad asociado a la opción "Te devuelvo" se actualiza de 10% a **20%**.
+- **Archivos**: `src/pages/Calculadora/index.tsx`.
 
 ### Versión 3.9.5 - 2026-06-09
 
