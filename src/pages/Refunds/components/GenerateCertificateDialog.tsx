@@ -385,6 +385,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
         saldoInsoluto: freshSaldo,
         celular: refund.phone || prev.celular,
         nroOperacion: prev.nroOperacion || snapNroCredito,
+        beneficiarioNombre: prev.beneficiarioNombre || refund.fullName || '',
+        beneficiarioRut: prev.beneficiarioRut || refund.rut || '',
       }))
       // Auto-assign folio when dialog opens if not already set
       if (!formData.folio) {
