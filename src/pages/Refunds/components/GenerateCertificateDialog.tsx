@@ -352,7 +352,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     celular: refund.phone || '',
     sexo: '',
     autorizaEmail: 'SI',
-    nroOperacion: '',
+    nroOperacion: refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : '',
     fechaInicioCredito: '',
     fechaFinCredito: '',
     saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
@@ -379,7 +379,13 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   useEffect(() => {
     if (open) {
       const freshSaldo = (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString()
-      setFormData(prev => ({ ...prev, saldoInsoluto: freshSaldo, celular: refund.phone || prev.celular }))
+      const snapNroCredito = refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : ''
+      setFormData(prev => ({
+        ...prev,
+        saldoInsoluto: freshSaldo,
+        celular: refund.phone || prev.celular,
+        nroOperacion: prev.nroOperacion || snapNroCredito,
+      }))
       // Auto-assign folio when dialog opens if not already set
       if (!formData.folio) {
         assignFolio()
