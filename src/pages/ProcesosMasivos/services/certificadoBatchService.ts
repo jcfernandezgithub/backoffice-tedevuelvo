@@ -307,20 +307,6 @@ async function uploadCertificateToFolder(
   }
 }
 
-async function persistSnapshotData(
-  publicId: string,
-  refund: RefundRequest,
-  patch: Record<string, any>,
-): Promise<void> {
-  // El endpoint PATCH /admin/:publicId/update busca por publicId, NO por _id de Mongo
-  await refundAdminApi.updateData(publicId, {
-    calculationSnapshot: {
-      ...(refund.calculationSnapshot || {}),
-      ...patch,
-    },
-  })
-}
-
 // ──────────────────────────────────────────────────────
 // Firma loading (singletons cached per session)
 // ──────────────────────────────────────────────────────
@@ -483,20 +469,13 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     return { ...enriched, status: 'error', reason: 'No se obtuvo número de folio' }
   }
 
-  // 9. Persist snapshot updates with the data from the CSV (mirrors what the dialog produces)
-  try {
-    const snapPatch: Record<string, any> = { nroCredito: row.nroOperacion }
-    if (row.saldoInsoluto) snapPatch.csvSaldoInsoluto = saldoInsolutoNum
-    await persistSnapshotData(row.publicId, refund, snapPatch)
-    // keep our local refund snapshot in sync for the PDF call
-    refund.calculationSnapshot = { ...(refund.calculationSnapshot || {}), ...snapPatch }
-  } catch (err: any) {
-    return {
-      ...enriched,
-      status: 'error',
-      reason: `No se pudo actualizar el snapshot: ${err?.message || 'error desconocido'}`,
-    }
-  }
+  // 9. Keep local snapshot in sync for the PDF call.
+  // The individual certificate flow does not persist this before upload, and the
+  // backend PATCH /admin/:publicId/update can return 404 even when detail/folio
+  // endpoints find the same publicId. The batch must not fail on that non-critical call.
+  const snapPatch: Record<string, any> = { nroCredito: row.nroOperacion }
+  if (row.saldoInsoluto) snapPatch.csvSaldoInsoluto = saldoInsolutoNum
+  refund.calculationSnapshot = { ...(refund.calculationSnapshot || {}), ...snapPatch }
 
   // 10. Build formData for the PDF generator
   const fallbackDates = getCoverageDatesFromSubmitted(refund)
