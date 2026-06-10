@@ -412,6 +412,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     if (open) {
       const freshSaldo = (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString()
       const snapNroCredito = refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : ''
+      const coverageDates = getCoverageDatesFromSubmitted(refund)
       setFormData(prev => ({
         ...prev,
         saldoInsoluto: freshSaldo,
@@ -419,6 +420,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
         nroOperacion: prev.nroOperacion || snapNroCredito,
         beneficiarioNombre: prev.beneficiarioNombre || refund.fullName || '',
         beneficiarioRut: prev.beneficiarioRut || refund.rut || '',
+        fechaInicioCredito: coverageDates.fechaInicio,
+        fechaFinCredito: coverageDates.fechaFin,
       }))
       // Auto-assign folio when dialog opens if not already set
       if (!formData.folio) {
