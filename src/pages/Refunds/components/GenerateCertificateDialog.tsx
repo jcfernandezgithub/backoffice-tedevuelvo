@@ -356,8 +356,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     fechaInicioCredito: '',
     fechaFinCredito: '',
     saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
-    beneficiarioNombre: '',
-    beneficiarioRut: '',
+    beneficiarioNombre: refund.fullName || '',
+    beneficiarioRut: refund.rut || '',
   })
 
   // Check if this refund is for Banco de Chile
