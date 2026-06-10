@@ -51,7 +51,7 @@ type FormData = z.infer<typeof formSchema>;
 const MARGEN_TE_DEVUELVO_KEY = "margen_te_devuelvo";
 const getMargenTeDevuelvo = (): number => {
   const saved = localStorage.getItem(MARGEN_TE_DEVUELVO_KEY);
-  return saved ? Number(saved) : 10;
+  return saved ? Number(saved) : 20;
 };
 
 const generarMargenes = (margenTeDevuelvo: number) => {
