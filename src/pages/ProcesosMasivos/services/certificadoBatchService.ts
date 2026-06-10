@@ -308,11 +308,12 @@ async function uploadCertificateToFolder(
 }
 
 async function persistSnapshotData(
+  publicId: string,
   refund: RefundRequest,
   patch: Record<string, any>,
 ): Promise<void> {
   // El endpoint PATCH /admin/:publicId/update busca por publicId, NO por _id de Mongo
-  await refundAdminApi.updateData(refund.publicId, {
+  await refundAdminApi.updateData(publicId, {
     calculationSnapshot: {
       ...(refund.calculationSnapshot || {}),
       ...patch,
@@ -486,7 +487,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   try {
     const snapPatch: Record<string, any> = { nroCredito: row.nroOperacion }
     if (row.saldoInsoluto) snapPatch.csvSaldoInsoluto = saldoInsolutoNum
-    await persistSnapshotData(refund, snapPatch)
+    await persistSnapshotData(row.publicId, refund, snapPatch)
     // keep our local refund snapshot in sync for the PDF call
     refund.calculationSnapshot = { ...(refund.calculationSnapshot || {}), ...snapPatch }
   } catch (err: any) {
