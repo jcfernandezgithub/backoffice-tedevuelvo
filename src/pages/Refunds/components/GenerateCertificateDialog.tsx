@@ -356,8 +356,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
     fechaInicioCredito: '',
     fechaFinCredito: '',
     saldoInsoluto: (refund.calculationSnapshot?.confirmedAverageInsuredBalance || refund.calculationSnapshot?.averageInsuredBalance || refund.calculationSnapshot?.remainingBalance || refund.estimatedAmountCLP || 0).toString(),
-    beneficiarioNombre: '',
-    beneficiarioRut: '',
+    beneficiarioNombre: refund.fullName || '',
+    beneficiarioRut: refund.rut || '',
   })
 
   // Check if this refund is for Banco de Chile
@@ -385,6 +385,8 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
         saldoInsoluto: freshSaldo,
         celular: refund.phone || prev.celular,
         nroOperacion: prev.nroOperacion || snapNroCredito,
+        beneficiarioNombre: prev.beneficiarioNombre || refund.fullName || '',
+        beneficiarioRut: prev.beneficiarioRut || refund.rut || '',
       }))
       // Auto-assign folio when dialog opens if not already set
       if (!formData.folio) {
