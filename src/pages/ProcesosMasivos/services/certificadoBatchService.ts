@@ -11,6 +11,10 @@ import {
   generateChevroletSfPol347PDF,
   type BancoChileCertificateData,
 } from '@/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator'
+import {
+  buildCesantiaPdf,
+  buildCesantiaFormFromRefund,
+} from '@/pages/Refunds/components/pdfGenerators/cesantiaPdfGenerator'
 import type { RefundRequest, RefundDocument, RefundStatus } from '@/types/refund'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
@@ -26,6 +30,8 @@ const ALLOWED_STATUSES: RefundStatus[] = [
 
 // Kind used to detect duplicates and uploaded by the dialog today.
 export const CERTIFICATE_KIND = 'certificado-de-cobertura-desgravamen'
+// Cesantía cert (Southbridge) — generated through `GenerateCesantiaCertificateDialog`.
+export const CERTIFICATE_KIND_CESANTIA = 'certificado-de-cobertura-cesantia'
 // Legacy kind kept around in the platform; if present we also treat it as "already exists"
 const LEGACY_CERTIFICATE_KIND = 'n-desgravamen'
 
@@ -266,6 +272,20 @@ function validateRut(rut: string): boolean {
 }
 
 // ──────────────────────────────────────────────────────
+// Insurance-type detection (same logic as Refunds/Detail.tsx)
+// ──────────────────────────────────────────────────────
+function getInsuranceType(refund: RefundRequest): 'desgravamen' | 'cesantia' | 'ambos' | null {
+  const snap: any = refund.calculationSnapshot || {}
+  const raw = (snap.tipoSeguro || snap.insuranceToEvaluate || '').toLowerCase()
+  if (!raw) return null
+  if (raw === 'desgravamen' || raw === 'cesantia' || raw === 'ambos') return raw as any
+  if (raw.includes('ambos') || raw.includes('both') || (raw.includes('desgrav') && raw.includes('cesant'))) return 'ambos'
+  if (raw.includes('desgrav')) return 'desgravamen'
+  if (raw.includes('cesant')) return 'cesantia'
+  return null
+}
+
+// ──────────────────────────────────────────────────────
 // API helpers
 // ──────────────────────────────────────────────────────
 export async function fetchExperianStatus(publicId: string): Promise<{ hasSignedPdf?: boolean } | null> {
@@ -287,13 +307,15 @@ async function uploadCertificateToFolder(
   filePublicId: string,
   pdfBlob: Blob,
   folio: string,
+  kind: string = CERTIFICATE_KIND,
+  fileNamePrefix: string = 'certificado-cobertura',
 ): Promise<void> {
   const token = authService.getAccessToken()
   const formData = new FormData()
   const folioSuffix = folio ? `-folio-${folio}` : ''
   const timestamp = Date.now()
-  formData.append('file', pdfBlob, `certificado-cobertura-${filePublicId}${folioSuffix}-${timestamp}.pdf`)
-  formData.append('kind', CERTIFICATE_KIND)
+  formData.append('file', pdfBlob, `${fileNamePrefix}-${filePublicId}${folioSuffix}-${timestamp}.pdf`)
+  formData.append('kind', kind)
 
   const response = await fetch(`${API_BASE_URL}/refund-requests/${docsPublicId}/upload-file`, {
     method: 'POST',
@@ -400,12 +422,22 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   } catch {
     docs = []
   }
-  const existing = docs.find(
-    (d: any) => d.kind === CERTIFICATE_KIND || d.kind === LEGACY_CERTIFICATE_KIND,
+
+  // Determinar tipo de seguro: cesantía pura usa el formato Southbridge,
+  // todo lo demás (desgravamen / ambos) usa el formato Pol347.
+  const insuranceType = getInsuranceType(refund)
+  const isPureCesantia = insuranceType === 'cesantia'
+  const targetKind = isPureCesantia ? CERTIFICATE_KIND_CESANTIA : CERTIFICATE_KIND
+
+  const existing = docs.find((d: any) =>
+    isPureCesantia
+      ? d.kind === CERTIFICATE_KIND_CESANTIA
+      : d.kind === CERTIFICATE_KIND || d.kind === LEGACY_CERTIFICATE_KIND,
   )
   if (existing) {
     return {
       ...enriched,
+      kind: targetKind,
       status: 'skipped',
       reason: `Ya existe un certificado de cobertura cargado (kind="${(existing as any).kind}"). Elimínalo antes de reprocesar.`,
     }
@@ -436,7 +468,8 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   // For Banco de Chile the generator forces a fixed beneficiary internally, so the
   // CSV columns are only mandatory for Chevrolet SF. We still validate the RUT when
   // provided.
-  if (usesChileTpl && !isBC) {
+  // Cesantía no usa beneficiario del CSV (el cert lo deja como "[ENTIDAD FINANCIERA]").
+  if (!isPureCesantia && usesChileTpl && !isBC) {
     if (!row.beneficiarioNombre || !row.beneficiarioRut) {
       return {
         ...enriched,
@@ -445,7 +478,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
       }
     }
   }
-  if (row.beneficiarioRut && !validateRut(row.beneficiarioRut)) {
+  if (!isPureCesantia && row.beneficiarioRut && !validateRut(row.beneficiarioRut)) {
     return {
       ...enriched,
       status: 'skipped',
@@ -504,15 +537,27 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   }
 
   // 11. Generate PDF
-  const { augustar, tdv, cng } = await preloadFirmas()
   let pdfBlob: Blob
   try {
-    if (isBC) {
-      pdfBlob = await generateBancoChilePol347PDF(refund, formData, augustar, tdv, cng)
-    } else if (usesChileTpl) {
-      pdfBlob = await generateChevroletSfPol347PDF(refund, formData, augustar, tdv, cng)
+    if (isPureCesantia) {
+      // Cesantía pura: usar el mismo generador que el flujo individual
+      // (Southbridge, Póliza 0020123902). Autocompletamos lo que está en el
+      // snapshot; el resto (estado civil, región, ejecutivo) queda en blanco.
+      const cesantiaForm = buildCesantiaFormFromRefund(refund, folio, {
+        nroOperacion: row.nroOperacion,
+        montoCredito: String(saldoInsolutoNum),
+      })
+      const { blob } = await buildCesantiaPdf(refund, cesantiaForm)
+      pdfBlob = blob
     } else {
-      pdfBlob = await generateGenericPol347PDF(refund, formData, augustar, tdv, cng)
+      const { augustar, tdv, cng } = await preloadFirmas()
+      if (isBC) {
+        pdfBlob = await generateBancoChilePol347PDF(refund, formData, augustar, tdv, cng)
+      } else if (usesChileTpl) {
+        pdfBlob = await generateChevroletSfPol347PDF(refund, formData, augustar, tdv, cng)
+      } else {
+        pdfBlob = await generateGenericPol347PDF(refund, formData, augustar, tdv, cng)
+      }
     }
   } catch (err: any) {
     return {
@@ -525,7 +570,14 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
 
   // 12. Upload to client folder
   try {
-    await uploadCertificateToFolder(docsPublicId, refund.publicId, pdfBlob, folio)
+    await uploadCertificateToFolder(
+      docsPublicId,
+      refund.publicId,
+      pdfBlob,
+      folio,
+      targetKind,
+      isPureCesantia ? 'certificado-cesantia' : 'certificado-cobertura',
+    )
   } catch (err: any) {
     return {
       ...enriched,
@@ -533,6 +585,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
       status: 'error',
       reason: `Error subiendo el PDF: ${err?.message || 'error desconocido'}`,
       pdfBlob,
+      kind: targetKind,
     }
   }
 
@@ -540,8 +593,9 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     ...enriched,
     folio,
     status: 'success',
-    reason: `Certificado generado y subido (folio ${folio})`,
+    reason: `Certificado ${isPureCesantia ? 'CESANTÍA' : 'DESGRAVAMEN'} generado y subido (folio ${folio})`,
     pdfBlob,
+    kind: targetKind,
   }
 }
 
