@@ -422,12 +422,22 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   } catch {
     docs = []
   }
-  const existing = docs.find(
-    (d: any) => d.kind === CERTIFICATE_KIND || d.kind === LEGACY_CERTIFICATE_KIND,
+
+  // Determinar tipo de seguro: cesantía pura usa el formato Southbridge,
+  // todo lo demás (desgravamen / ambos) usa el formato Pol347.
+  const insuranceType = getInsuranceType(refund)
+  const isPureCesantia = insuranceType === 'cesantia'
+  const targetKind = isPureCesantia ? CERTIFICATE_KIND_CESANTIA : CERTIFICATE_KIND
+
+  const existing = docs.find((d: any) =>
+    isPureCesantia
+      ? d.kind === CERTIFICATE_KIND_CESANTIA
+      : d.kind === CERTIFICATE_KIND || d.kind === LEGACY_CERTIFICATE_KIND,
   )
   if (existing) {
     return {
       ...enriched,
+      kind: targetKind,
       status: 'skipped',
       reason: `Ya existe un certificado de cobertura cargado (kind="${(existing as any).kind}"). Elimínalo antes de reprocesar.`,
     }
