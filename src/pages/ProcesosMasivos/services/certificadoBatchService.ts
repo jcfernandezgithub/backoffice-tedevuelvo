@@ -272,6 +272,20 @@ function validateRut(rut: string): boolean {
 }
 
 // ──────────────────────────────────────────────────────
+// Insurance-type detection (same logic as Refunds/Detail.tsx)
+// ──────────────────────────────────────────────────────
+function getInsuranceType(refund: RefundRequest): 'desgravamen' | 'cesantia' | 'ambos' | null {
+  const snap: any = refund.calculationSnapshot || {}
+  const raw = (snap.tipoSeguro || snap.insuranceToEvaluate || '').toLowerCase()
+  if (!raw) return null
+  if (raw === 'desgravamen' || raw === 'cesantia' || raw === 'ambos') return raw as any
+  if (raw.includes('ambos') || raw.includes('both') || (raw.includes('desgrav') && raw.includes('cesant'))) return 'ambos'
+  if (raw.includes('desgrav')) return 'desgravamen'
+  if (raw.includes('cesant')) return 'cesantia'
+  return null
+}
+
+// ──────────────────────────────────────────────────────
 // API helpers
 // ──────────────────────────────────────────────────────
 export async function fetchExperianStatus(publicId: string): Promise<{ hasSignedPdf?: boolean } | null> {
