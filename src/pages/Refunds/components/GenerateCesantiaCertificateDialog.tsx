@@ -19,6 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
 import { useQueryClient } from '@tanstack/react-query'
+import { buildCesantiaPdf } from './pdfGenerators/cesantiaPdfGenerator'
 import {
   AlertDialog,
   AlertDialogAction,
