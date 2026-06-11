@@ -11,6 +11,10 @@ import {
   generateChevroletSfPol347PDF,
   type BancoChileCertificateData,
 } from '@/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator'
+import {
+  buildCesantiaPdf,
+  buildCesantiaFormFromRefund,
+} from '@/pages/Refunds/components/pdfGenerators/cesantiaPdfGenerator'
 import type { RefundRequest, RefundDocument, RefundStatus } from '@/types/refund'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
@@ -26,6 +30,8 @@ const ALLOWED_STATUSES: RefundStatus[] = [
 
 // Kind used to detect duplicates and uploaded by the dialog today.
 export const CERTIFICATE_KIND = 'certificado-de-cobertura-desgravamen'
+// Cesantía cert (Southbridge) — generated through `GenerateCesantiaCertificateDialog`.
+export const CERTIFICATE_KIND_CESANTIA = 'certificado-de-cobertura-cesantia'
 // Legacy kind kept around in the platform; if present we also treat it as "already exists"
 const LEGACY_CERTIFICATE_KIND = 'n-desgravamen'
 
