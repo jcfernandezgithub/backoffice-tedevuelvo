@@ -307,13 +307,15 @@ async function uploadCertificateToFolder(
   filePublicId: string,
   pdfBlob: Blob,
   folio: string,
+  kind: string = CERTIFICATE_KIND,
+  fileNamePrefix: string = 'certificado-cobertura',
 ): Promise<void> {
   const token = authService.getAccessToken()
   const formData = new FormData()
   const folioSuffix = folio ? `-folio-${folio}` : ''
   const timestamp = Date.now()
-  formData.append('file', pdfBlob, `certificado-cobertura-${filePublicId}${folioSuffix}-${timestamp}.pdf`)
-  formData.append('kind', CERTIFICATE_KIND)
+  formData.append('file', pdfBlob, `${fileNamePrefix}-${filePublicId}${folioSuffix}-${timestamp}.pdf`)
+  formData.append('kind', kind)
 
   const response = await fetch(`${API_BASE_URL}/refund-requests/${docsPublicId}/upload-file`, {
     method: 'POST',
