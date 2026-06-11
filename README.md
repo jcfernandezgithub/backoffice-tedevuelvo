@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.6
+## Versión 3.9.7
 
 ## Changelog
+
+### Versión 3.9.7 - 2026-06-11
+
+#### Procesos Masivos - Certificados: formato unificado con backoffice
+- Tanto el flujo individual (diálogo del backoffice) como el flujo masivo de generación de certificados ahora invocan **exactamente los mismos generadores de PDF**:
+  - Desgravamen: `generateBancoChilePol347PDF`, `generateChevroletSfPol347PDF`, `generateGenericPol347PDF` (`pdfGenerators/bancoChilePdfGenerator.ts`).
+  - Cesantía: `buildCesantiaPdf` (`pdfGenerators/cesantiaPdfGenerator.ts`, Southbridge Pol 0020123902).
+- Para los mismos datos de entrada, el PDF generado en lote es **byte-equivalente** al del backoffice individual.
+- En el batch de Cesantía, los campos que no vienen en el CSV (estado civil, región, ejecutivo, oficina) quedan vacíos; el resto del formato visual es idéntico.
 
 ### Versión 3.9.6 - 2026-06-10
 
