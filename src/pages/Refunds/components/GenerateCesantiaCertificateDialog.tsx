@@ -17,7 +17,6 @@ import { RefundRequest } from '@/types/refund'
 import { authService } from '@/services/authService'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import jsPDF from 'jspdf'
 import { useQueryClient } from '@tanstack/react-query'
 import { buildCesantiaPdf } from './pdfGenerators/cesantiaPdfGenerator'
 import {
