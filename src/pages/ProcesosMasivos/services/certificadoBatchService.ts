@@ -468,7 +468,8 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   // For Banco de Chile the generator forces a fixed beneficiary internally, so the
   // CSV columns are only mandatory for Chevrolet SF. We still validate the RUT when
   // provided.
-  if (usesChileTpl && !isBC) {
+  // Cesantía no usa beneficiario del CSV (el cert lo deja como "[ENTIDAD FINANCIERA]").
+  if (!isPureCesantia && usesChileTpl && !isBC) {
     if (!row.beneficiarioNombre || !row.beneficiarioRut) {
       return {
         ...enriched,
@@ -477,7 +478,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
       }
     }
   }
-  if (row.beneficiarioRut && !validateRut(row.beneficiarioRut)) {
+  if (!isPureCesantia && row.beneficiarioRut && !validateRut(row.beneficiarioRut)) {
     return {
       ...enriched,
       status: 'skipped',
@@ -536,15 +537,27 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   }
 
   // 11. Generate PDF
-  const { augustar, tdv, cng } = await preloadFirmas()
   let pdfBlob: Blob
   try {
-    if (isBC) {
-      pdfBlob = await generateBancoChilePol347PDF(refund, formData, augustar, tdv, cng)
-    } else if (usesChileTpl) {
-      pdfBlob = await generateChevroletSfPol347PDF(refund, formData, augustar, tdv, cng)
+    if (isPureCesantia) {
+      // Cesantía pura: usar el mismo generador que el flujo individual
+      // (Southbridge, Póliza 0020123902). Autocompletamos lo que está en el
+      // snapshot; el resto (estado civil, región, ejecutivo) queda en blanco.
+      const cesantiaForm = buildCesantiaFormFromRefund(refund, folio, {
+        nroOperacion: row.nroOperacion,
+        montoCredito: String(saldoInsolutoNum),
+      })
+      const { blob } = await buildCesantiaPdf(refund, cesantiaForm)
+      pdfBlob = blob
     } else {
-      pdfBlob = await generateGenericPol347PDF(refund, formData, augustar, tdv, cng)
+      const { augustar, tdv, cng } = await preloadFirmas()
+      if (isBC) {
+        pdfBlob = await generateBancoChilePol347PDF(refund, formData, augustar, tdv, cng)
+      } else if (usesChileTpl) {
+        pdfBlob = await generateChevroletSfPol347PDF(refund, formData, augustar, tdv, cng)
+      } else {
+        pdfBlob = await generateGenericPol347PDF(refund, formData, augustar, tdv, cng)
+      }
     }
   } catch (err: any) {
     return {
@@ -557,7 +570,14 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
 
   // 12. Upload to client folder
   try {
-    await uploadCertificateToFolder(docsPublicId, refund.publicId, pdfBlob, folio)
+    await uploadCertificateToFolder(
+      docsPublicId,
+      refund.publicId,
+      pdfBlob,
+      folio,
+      targetKind,
+      isPureCesantia ? 'certificado-cesantia' : 'certificado-cobertura',
+    )
   } catch (err: any) {
     return {
       ...enriched,
@@ -565,6 +585,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
       status: 'error',
       reason: `Error subiendo el PDF: ${err?.message || 'error desconocido'}`,
       pdfBlob,
+      kind: targetKind,
     }
   }
 
@@ -572,8 +593,9 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     ...enriched,
     folio,
     status: 'success',
-    reason: `Certificado generado y subido (folio ${folio})`,
+    reason: `Certificado ${isPureCesantia ? 'CESANTÍA' : 'DESGRAVAMEN'} generado y subido (folio ${folio})`,
     pdfBlob,
+    kind: targetKind,
   }
 }
 
