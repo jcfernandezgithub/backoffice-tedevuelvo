@@ -282,13 +282,21 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
   }
 
   const buildPDF = async (): Promise<{ blob: Blob; fileName: string }> => {
-      const doc = new jsPDF()
-      const pageWidth = doc.internal.pageSize.getWidth()
-      const pageHeight = doc.internal.pageSize.getHeight()
-      const margin = 15
-      const contentWidth = pageWidth - margin * 2
-      let y = 15
-      const FOOTER_RESERVED = 18
+    // Override prima si el usuario editó el snapshot manualmente. Inyectamos
+    // primaNeta calculada para que el helper la respete vía calculatePrimaNeta.
+    return buildCesantiaPdf(refund, { ...formData, primaNeta: String(calculatePrimaNeta()) })
+  }
+
+  // Legacy local builder kept dead-code-eliminated by bundler. Remove once
+  // the helper has been QA'd in production.
+  const _legacyBuildPDF = async (): Promise<{ blob: Blob; fileName: string }> => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 15
+    const contentWidth = pageWidth - margin * 2
+    let y = 15
+    const FOOTER_RESERVED = 18
 
       const drawHeader = () => {
         doc.setFont('helvetica', 'bold')
