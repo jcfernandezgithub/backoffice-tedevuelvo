@@ -96,28 +96,24 @@ export default function CalculadoraPage() {
 
   const cuotasTotales = form.watch("cuotasTotales");
 
-  // Función para calcular monto con margen personalizado
-  // El resultado original viene con el margen de Te Devuelvo aplicado, lo revertimos y aplicamos el nuevo
-  const calcularConMargenPersonalizado = (montoOriginal: number): number => {
-    // Revertir el margen original (el de Te Devuelvo)
-    const montoSinMargen = montoOriginal / (1 - margenTeDevuelvo / 100);
-    // Aplicar nuevo margen
-    const montoConNuevoMargen = montoSinMargen * (1 - margenSeguridad / 100);
-    return Math.round(montoConNuevoMargen);
+  // Aplica el margen de seguridad seleccionado sobre el monto crudo (sin margen).
+  // Los sub-objetos `desgravamen.montoDevolucion` y `cesantia.montoDevolucion`
+  // del resultado ya vienen SIN margen aplicado, por eso son la fuente de verdad.
+  const calcularConMargenPersonalizado = (montoRaw: number): number => {
+    return Math.round(montoRaw * (1 - margenSeguridad / 100));
   };
 
-  // Monto de devolución ajustado al margen seleccionado
-  const montoDevolucionAjustado = resultado && !resultado.error 
-    ? calcularConMargenPersonalizado(resultado.montoDevolucion)
+  const rawDesgravamen = resultado && !resultado.error && resultado.desgravamen
+    ? resultado.desgravamen.montoDevolucion
     : 0;
+  const rawCesantia = resultado && !resultado.error && resultado.cesantia
+    ? resultado.cesantia.montoDevolucion
+    : 0;
+  const rawTotal = rawDesgravamen + rawCesantia;
 
-  const desgravamenDevolucionAjustado = resultado && !resultado.error && resultado.desgravamen
-    ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
-    : 0;
-
-  const cesantiaDevolucionAjustado = resultado && !resultado.error && resultado.cesantia
-    ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
-    : 0;
+  const montoDevolucionAjustado = calcularConMargenPersonalizado(rawTotal);
+  const desgravamenDevolucionAjustado = calcularConMargenPersonalizado(rawDesgravamen);
+  const cesantiaDevolucionAjustado = calcularConMargenPersonalizado(rawCesantia);
 
   const onSubmit = (data: FormData) => {
     setIsCalculating(true);
