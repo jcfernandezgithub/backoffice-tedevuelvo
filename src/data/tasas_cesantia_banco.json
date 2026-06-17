@@ -3,162 +3,162 @@
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.0015
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.0015
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.0015
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.0015
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.0015
     }
   },
   "BANCO BCI": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.0019
+      "tasa_mensual": 0.00259
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.0019
+      "tasa_mensual": 0.00259
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.0019
+      "tasa_mensual": 0.00259
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.0019
+      "tasa_mensual": 0.00259
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.0019
+      "tasa_mensual": 0.00259
     }
   },
   "SCOTIABANK": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00192
+      "tasa_mensual": 0.00149
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00192
+      "tasa_mensual": 0.00149
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00192
+      "tasa_mensual": 0.00149
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00192
+      "tasa_mensual": 0.00149
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00192
+      "tasa_mensual": 0.00149
     }
   },
   "BANCO CHILE": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00185
+      "tasa_mensual": 0.00189
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00185
+      "tasa_mensual": 0.00189
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00185
+      "tasa_mensual": 0.00189
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00185
+      "tasa_mensual": 0.00189
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00185
+      "tasa_mensual": 0.00189
     }
   },
   "BANCO ITAÚ": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     }
   },
   "BANCO ITAU-CORPBANCA": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00189
+      "tasa_mensual": 0.00166
     }
   },
   "BANCO BICE": {
@@ -219,27 +219,27 @@
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     }
   },
   "BANCO CONSORCIO": {
@@ -273,54 +273,54 @@
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00245
+      "tasa_mensual": 0.0015
     }
   },
   "COOPEUCH": {
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.00102
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.00102
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.00102
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.00102
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00188
+      "tasa_mensual": 0.00102
     }
   },
   "COOPERATIVAS": {
@@ -354,27 +354,27 @@
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00182
+      "tasa_mensual": 0.0015
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00182
+      "tasa_mensual": 0.0015
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00182
+      "tasa_mensual": 0.0015
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00182
+      "tasa_mensual": 0.0015
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00182
+      "tasa_mensual": 0.0015
     }
   },
   "LIDER-BCI": {
@@ -462,27 +462,27 @@
     "tramo_1": {
       "desde": 500000,
       "hasta": 1000000,
-      "tasa_mensual": 0.00275
+      "tasa_mensual": 0.00163
     },
     "tramo_2": {
       "desde": 1000001,
       "hasta": 3000000,
-      "tasa_mensual": 0.00275
+      "tasa_mensual": 0.00163
     },
     "tramo_3": {
       "desde": 3000001,
       "hasta": 5000000,
-      "tasa_mensual": 0.00275
+      "tasa_mensual": 0.00163
     },
     "tramo_4": {
       "desde": 5000001,
       "hasta": 7000000,
-      "tasa_mensual": 0.00275
+      "tasa_mensual": 0.00163
     },
     "tramo_5": {
       "desde": 7000001,
       "hasta": null,
-      "tasa_mensual": 0.00275
+      "tasa_mensual": 0.00163
     }
   },
   "TANNER": {
@@ -537,6 +537,33 @@
       "desde": 7000001,
       "hasta": null,
       "tasa_mensual": 0.0028
+    }
+  },
+  "BANCO INTERNACIONAL": {
+    "tramo_1": {
+      "desde": 500000,
+      "hasta": 1000000,
+      "tasa_mensual": 0.0015
+    },
+    "tramo_2": {
+      "desde": 1000001,
+      "hasta": 3000000,
+      "tasa_mensual": 0.0015
+    },
+    "tramo_3": {
+      "desde": 3000001,
+      "hasta": 5000000,
+      "tasa_mensual": 0.0015
+    },
+    "tramo_4": {
+      "desde": 5000001,
+      "hasta": 7000000,
+      "tasa_mensual": 0.0015
+    },
+    "tramo_5": {
+      "desde": 7000001,
+      "hasta": null,
+      "tasa_mensual": 0.0015
     }
   }
 }

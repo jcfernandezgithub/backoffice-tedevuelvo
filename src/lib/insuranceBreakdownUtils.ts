@@ -17,6 +17,7 @@ const INSTITUTION_MAP: Record<string, string> = {
   consorcio: 'BANCO CONSORCIO',
   coopeuch: 'COOPEUCH',
   cencosud: 'BANCO CENCOSUD',
+  internacional: 'BANCO INTERNACIONAL',
   'lider-bci': 'LIDER-BCI',
   forum: 'FORUM',
   tanner: 'TANNER',

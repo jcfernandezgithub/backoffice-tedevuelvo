@@ -46,7 +46,7 @@ const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   Falabella: "BANCO FALABELLA",
   Consorcio: "BANCO CONSORCIO",
   Condell: "BANCO CONSORCIO",
-  Internacional: "BANCO CONSORCIO",
+  Internacional: "BANCO INTERNACIONAL",
   Cencosud: "BANCO CENCOSUD",
   Coopeuch: "COOPEUCH",
   Cooperativas: "COOPERATIVAS",
