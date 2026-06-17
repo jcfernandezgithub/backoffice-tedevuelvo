@@ -284,27 +284,33 @@ export default function CalculadoraPage() {
       
       doc.setTextColor(41, 98, 255);
       doc.text(`Devolucion desgravamen: ${formatCurrency(desgravamenDevolucionFinal)}`, 25, y); y += 8;
-      
-      doc.setTextColor(80);
-      doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-      doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
-      
-      if (resultado.desgravamen.cuotasUtilizadas) {
-        doc.text(`Cuotas utilizadas para tasa: ${resultado.desgravamen.cuotasUtilizadas}`, 25, y); y += 5;
+
+      if (!isCallcenter) {
+        doc.setTextColor(80);
+        doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+
+        if (resultado.desgravamen.cuotasUtilizadas) {
+          doc.text(`Cuotas utilizadas para tasa: ${resultado.desgravamen.cuotasUtilizadas}`, 25, y); y += 5;
+        }
       }
       if (resultado.desgravamen.montoRedondeado) {
         doc.text(`Monto redondeado: ${formatCurrency(resultado.desgravamen.montoRedondeado)}`, 25, y); y += 5;
       }
-      
-      y += 3;
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      doc.text("Formula: Prima unica = Monto x Tasa", 25, y); y += 4;
-      doc.text("Seguro total = Prima unica", 25, y); y += 4;
-      doc.text("Prima mensual = Prima unica / Cuotas originales", 25, y); y += 4;
-      doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
-      doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
-      y += 10;
+
+      if (!isCallcenter) {
+        y += 3;
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text("Formula: Prima unica = Monto x Tasa", 25, y); y += 4;
+        doc.text("Seguro total = Prima unica", 25, y); y += 4;
+        doc.text("Prima mensual = Prima unica / Cuotas originales", 25, y); y += 4;
+        doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
+        doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
+        y += 10;
+      } else {
+        y += 6;
+      }
     }
 
     if (resultado.cesantia) {
@@ -320,35 +326,41 @@ export default function CalculadoraPage() {
       
       doc.setTextColor(41, 98, 255);
       doc.text(`Devolucion cesantia: ${formatCurrency(cesantiaDevolucionFinal)}`, 25, y); y += 8;
-      
-      doc.setTextColor(80);
-      doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
-      doc.text(`Tasa banco: ${(resultado.cesantia.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-      doc.text(`Tasa preferencial: ${(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
-      
-      y += 3;
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      doc.text("Formula: Prima restante = Monto x Tasa mensual x Cuotas pendientes", 25, y); y += 4;
-      doc.text("Devolucion = Prima banco - Prima preferencial", 25, y);
-      y += 10;
+
+      if (!isCallcenter) {
+        doc.setTextColor(80);
+        doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
+        doc.text(`Tasa banco: ${(resultado.cesantia.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa preferencial: ${(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+
+        y += 3;
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text("Formula: Prima restante = Monto x Tasa mensual x Cuotas pendientes", 25, y); y += 4;
+        doc.text("Devolucion = Prima banco - Prima preferencial", 25, y);
+        y += 10;
+      } else {
+        y += 6;
+      }
     }
 
-    // Margen aplicado
-    doc.setFontSize(10);
-    doc.setTextColor(40);
-    doc.text("Margen de seguridad:", 20, y);
-    y += 6;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(80);
-    doc.text(`Margen aplicado: ${margenSeguridad}%`, 25, y); y += 5;
-    doc.text(`Tramo etario: ${resultado.tramoUsado}`, 25, y); y += 5;
-    
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(`El monto final incluye un margen de seguridad del ${margenSeguridad}% sobre la devolucion calculada.`, 25, y);
-    y += 15;
+    // Margen aplicado (oculto para call center)
+    if (!isCallcenter) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.text("Margen de seguridad:", 20, y);
+      y += 6;
+
+      doc.setFontSize(9);
+      doc.setTextColor(80);
+      doc.text(`Margen aplicado: ${margenSeguridad}%`, 25, y); y += 5;
+      doc.text(`Tramo etario: ${resultado.tramoUsado}`, 25, y); y += 5;
+
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(`El monto final incluye un margen de seguridad del ${margenSeguridad}% sobre la devolucion calculada.`, 25, y);
+      y += 15;
+    }
 
     // Disclaimer
     doc.setFontSize(8);
