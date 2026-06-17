@@ -69,7 +69,7 @@ const generarMargenes = (margenTeDevuelvo: number) => {
 
 export default function CalculadoraPage() {
   const { user } = useAuth();
-  const isCallcenter = user?.email === "admin@callcenter.cl";
+  const isCallcenter = user?.email?.trim().toLowerCase() === "admin@callcenter.cl";
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
@@ -150,13 +150,13 @@ export default function CalculadoraPage() {
     if (!resultado || resultado.error || !formDataSnapshot) return;
 
     // Recalcular montos con el margen seleccionado actualmente
-    const montoDevolucionFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
     const desgravamenDevolucionFinal = resultado.desgravamen
       ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
       : 0;
     const cesantiaDevolucionFinal = resultado.cesantia
       ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
       : 0;
+    const montoDevolucionFinal = desgravamenDevolucionFinal + cesantiaDevolucionFinal;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -207,7 +207,7 @@ export default function CalculadoraPage() {
     
     doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text("Ahorro Estimado", pageWidth / 2, y, { align: "center" });
+    doc.text("Devolucion Estimada", pageWidth / 2, y, { align: "center" });
     y += 8;
     
     doc.setFontSize(18);
@@ -377,13 +377,13 @@ export default function CalculadoraPage() {
     if (!resultado || resultado.error || !formDataSnapshot) return "";
     
     const edad = calcularEdad(formDataSnapshot.fechaNacimiento);
-    const montoFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
     const desgravamenFinal = resultado.desgravamen
       ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
       : 0;
     const cesantiaFinal = resultado.cesantia
       ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
       : 0;
+    const montoFinal = desgravamenFinal + cesantiaFinal;
     const tipoSeguroLabel = formDataSnapshot.tipoSeguro === "desgravamen" 
       ? "Desgravamen" 
       : formDataSnapshot.tipoSeguro === "cesantia" 
@@ -400,7 +400,7 @@ export default function CalculadoraPage() {
     }
     texto += `- Cuotas: ${formDataSnapshot.cuotasPendientes}/${formDataSnapshot.cuotasTotales}\n`;
     texto += `- Tipo: ${tipoSeguroLabel}\n\n`;
-    texto += `*AHORRO ESTIMADO: ${formatCurrency(montoFinal)}*\n\n`;
+    texto += `*DEVOLUCION ESTIMADA: ${formatCurrency(montoFinal)}*\n\n`;
     
     if (resultado.desgravamen) {
       texto += `Desgravamen: ${formatCurrency(desgravamenFinal)}\n`;
@@ -428,8 +428,14 @@ export default function CalculadoraPage() {
   const compartirEmail = () => {
     if (!resultado || resultado.error || !formDataSnapshot) return;
     
-    const montoFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
-    const asunto = `Calculo de Ahorro en Seguros - ${formatCurrency(montoFinal)}`;
+    const desgFinal = resultado.desgravamen
+      ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
+      : 0;
+    const cesFinal = resultado.cesantia
+      ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
+      : 0;
+    const montoFinal = desgFinal + cesFinal;
+    const asunto = `Devolucion Estimada en Seguros - ${formatCurrency(montoFinal)}`;
     const cuerpo = generarTextoCompartir().replace(/\*/g, "").replace(/_/g, "");
     
     const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
