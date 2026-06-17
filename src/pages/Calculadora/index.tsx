@@ -21,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useAuth } from "@/state/AuthContext";
 
 const formSchema = z.object({
   institucion: z.string().min(1, "Selecciona una institución"),
@@ -67,6 +68,8 @@ const generarMargenes = (margenTeDevuelvo: number) => {
 };
 
 export default function CalculadoraPage() {
+  const { user } = useAuth();
+  const isCallcenter = user?.email === "admin@callcenter.cl";
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
@@ -1058,12 +1061,16 @@ export default function CalculadoraPage() {
                             
                             {/* Tasas y parámetros */}
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2">
-                              <span className="text-muted-foreground">Tasa banco:</span>
-                              <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
-                              
-                              <span className="text-muted-foreground">Tasa preferencial:</span>
-                              <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%</span>
-                              
+                              {!isCallcenter && (
+                                <>
+                                  <span className="text-muted-foreground">Tasa banco:</span>
+                                  <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
+
+                                  <span className="text-muted-foreground">Tasa preferencial:</span>
+                                  <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%</span>
+                                </>
+                              )}
+
                               {resultado.desgravamen.cuotasUtilizadas && (
                                 <>
                                   <span className="text-muted-foreground">Cuotas usadas para tasa:</span>
@@ -1078,6 +1085,7 @@ export default function CalculadoraPage() {
                                 </>
                               )}
                             </div>
+                            {!isCallcenter && (
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
                               <p className="text-muted-foreground">Prima única = Monto total crédito × Tasa</p>
@@ -1087,6 +1095,7 @@ export default function CalculadoraPage() {
                               <p className="text-muted-foreground">Devolución = Seguro restante banco - Seguro restante preferencial</p>
                               <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>
+                            )}
                           </div>
                         )}
                         
@@ -1115,12 +1124,16 @@ export default function CalculadoraPage() {
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2">
                               <span className="text-muted-foreground">Tramo:</span>
                               <span className="font-mono">{resultado.cesantia.tramoUsado}</span>
-                              
-                              <span className="text-muted-foreground">Tasa banco:</span>
-                              <span className="font-mono">{(resultado.cesantia.tasaBanco * 100).toFixed(4)}%</span>
-                              
-                              <span className="text-muted-foreground">Tasa preferencial:</span>
-                              <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
+
+                              {!isCallcenter && (
+                                <>
+                                  <span className="text-muted-foreground">Tasa banco:</span>
+                                  <span className="font-mono">{(resultado.cesantia.tasaBanco * 100).toFixed(4)}%</span>
+
+                                  <span className="text-muted-foreground">Tasa preferencial:</span>
+                                  <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
+                                </>
+                              )}
                             </div>
                             <div className="bg-muted/30 p-2 rounded text-xs space-y-1">
                               <p className="font-medium">Montos utilizados:</p>
@@ -1131,28 +1144,32 @@ export default function CalculadoraPage() {
                                 <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
                               </div>
                             </div>
+                            {!isCallcenter && (
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
                               <p className="text-muted-foreground">Prima restante = Saldo insoluto × Tasa mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Prima banco - Prima preferencial</p>
                               <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>
+                            )}
                           </div>
                         )}
-                        
+
+                        {!isCallcenter && (
                         <div className="space-y-2">
                           <h4 className="font-medium text-muted-foreground border-b pb-1">Margen aplicado</h4>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             <span className="text-muted-foreground">Margen de seguridad:</span>
-                                <span className="font-mono">10%</span>
+                                <span className="font-mono">{margenSeguridad}%</span>
                             
                             <span className="text-muted-foreground">Tramo etario:</span>
                             <span className="font-mono">{resultado.tramoUsado}</span>
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            El monto final se calcula aplicando un margen de seguridad del 10% sobre la devolución calculada.
+                            El monto final se calcula aplicando un margen de seguridad del {margenSeguridad}% sobre la devolución calculada.
                           </p>
                         </div>
+                        )}
                       </CardContent>
                     </CollapsibleContent>
                   </Card>
