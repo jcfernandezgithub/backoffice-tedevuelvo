@@ -428,8 +428,14 @@ export default function CalculadoraPage() {
   const compartirEmail = () => {
     if (!resultado || resultado.error || !formDataSnapshot) return;
     
-    const montoFinal = calcularConMargenPersonalizado(resultado.montoDevolucion);
-    const asunto = `Calculo de Ahorro en Seguros - ${formatCurrency(montoFinal)}`;
+    const desgFinal = resultado.desgravamen
+      ? calcularConMargenPersonalizado(resultado.desgravamen.montoDevolucion)
+      : 0;
+    const cesFinal = resultado.cesantia
+      ? calcularConMargenPersonalizado(resultado.cesantia.montoDevolucion)
+      : 0;
+    const montoFinal = desgFinal + cesFinal;
+    const asunto = `Devolucion Estimada en Seguros - ${formatCurrency(montoFinal)}`;
     const cuerpo = generarTextoCompartir().replace(/\*/g, "").replace(/_/g, "");
     
     const url = `mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
