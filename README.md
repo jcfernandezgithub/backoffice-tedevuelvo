@@ -1,8 +1,23 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.7
+## Versión 3.9.8
 
 ## Changelog
+
+### Versión 3.9.8 - 2026-06-18
+
+#### Calculadora: restricciones para admin@callcenter.cl y mejoras de simulación
+- **Ocultamiento de información sensible para `admin@callcenter.cl`** en la calculadora:
+  - Se ocultan las tasas preferenciales (tan preferencial como la del banco).
+  - Se oculta la fórmula de cálculo del seguro.
+  - Se oculta la sección "Margen aplicado".
+  - El usuario `admin@tedevuelvo.cl` mantiene visibilidad completa.
+- **Margen de seguridad aplicado en el detalle del cálculo**: al seleccionar un margen personalizado, ahora se refleja también en el detalle, no solo en el resumen.
+- **Exportaciones (PDF, WhatsApp, Email)**: ahora reflejan la copia exacta de la simulación realizada (con o sin margen, según corresponda). Para `admin@callcenter.cl`, los tres canales ocultan tasas y fórmulas, igual que en la calculadora.
+- **Corrección de monto en "Devolución Estimada"**: el encabezado del PDF y los mensajes de WhatsApp/Email ahora suman correctamente `desgravamen + cesantía` aplicando el margen seleccionado, coincidiendo con el detalle.
+- **Renombre de etiqueta**: "Ahorro Estimado" → **"Devolución Estimada"** en el PDF, WhatsApp y asunto de email, para ambos perfiles.
+- **Detección robusta de usuario**: la validación del email ahora normaliza (`trim().toLowerCase()`) para evitar fallas por mayúsculas/minúsculas o espacios.
+- **Detalle del cálculo**: se removió la fila "Devolución cesantía" del detalle para ambos usuarios, dejando una vista más limpia.
 
 ### Versión 3.9.7 - 2026-06-11
 
