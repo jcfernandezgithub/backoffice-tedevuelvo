@@ -1129,11 +1129,6 @@ export default function CalculadoraPage() {
                               </div>
                             </div>
                             
-                            <div className="bg-primary/10 p-2 rounded text-center">
-                              <p className="text-xs text-muted-foreground">Devolución cesantía:</p>
-                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.cesantia.montoDevolucion)}</p>
-                            </div>
-                            
                             {/* Tasas y parámetros */}
                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-2">
                               <span className="text-muted-foreground">Tramo:</span>
