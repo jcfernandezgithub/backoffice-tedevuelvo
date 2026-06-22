@@ -120,7 +120,7 @@ class RefundAdminApiClient {
     // Pasar filtros adicionales si el backend los soporta
     if (params.search) query.append('search', params.search)
     if (params.status) query.append('status', params.status.toUpperCase())
-    if (params.from) query.append('from', params.from)
+    if (params.from) query.append('since', params.from)
     if (params.to) query.append('to', params.to)
     if (params.sort) query.append('sort', params.sort)
 
