@@ -5,16 +5,26 @@ import type { RefundRequest } from '@/types/refund';
 const STALE_TIME = 10 * 60 * 1000; // 10 minutos
 const PAGE_SIZE = 100;
 
+// Rango por defecto: mes corriente (día 1 → hoy)
+function getDefaultDateRange() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return { from: `${yyyy}-${mm}-01`, to: `${yyyy}-${mm}-${dd}` };
+}
+
 /**
  * Hook compartido que carga TODOS los refunds una sola vez para toda la pantalla Operación.
  * Todos los tabs consumen este mismo caché — sin fetches duplicados.
  */
 export function useAllRefunds() {
+  const { from, to } = getDefaultDateRange();
   return useQuery<RefundRequest[]>({
-    queryKey: ['operacion-all-refunds'],
+    queryKey: ['operacion-all-refunds', from, to],
     queryFn: async ({ signal }) => {
       // Primera página para conocer el total
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 }, signal);
+      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1, from, to }, signal);
       const total = firstPage.total || 0;
       const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -29,7 +39,7 @@ export function useAllRefunds() {
           if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
           const batch = remainingPages.slice(i, i + BATCH_SIZE);
           const results = await Promise.all(
-            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page }, signal))
+            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page, from, to }, signal))
           );
           results.forEach(r => { allItems = allItems.concat(r.items || []); });
         }
