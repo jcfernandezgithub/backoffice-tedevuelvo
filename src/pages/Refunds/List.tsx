@@ -175,8 +175,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [filters, setFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
     status: (searchParams.get('status') as RefundStatus) || undefined,
-    from: searchParams.get('from') || '',
-    to: searchParams.get('to') || '',
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
     page: Number(searchParams.get('page')) || 1,
     pageSize: Number(searchParams.get('pageSize')) || 20,
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
@@ -186,8 +186,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [localFilters, setLocalFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
     status: (searchParams.get('status') as RefundStatus) || undefined,
-    from: searchParams.get('from') || '',
-    to: searchParams.get('to') || '',
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
   })
   
