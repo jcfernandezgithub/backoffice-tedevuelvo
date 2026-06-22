@@ -43,6 +43,23 @@ import { PairedAmountCell } from './components/SiblingPairCell'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 
+// Helpers para fechas por defecto (mes corriente: día 1 → hoy)
+const _today = () => {
+  const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+const _firstDayOfMonth = () => {
+  const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  return `${yyyy}-${mm}-01`
+}
+const DEFAULT_FROM = _firstDayOfMonth()
+const DEFAULT_TO = _today()
+
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
   requested: 'Solicitado',
@@ -158,8 +175,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [filters, setFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
     status: (searchParams.get('status') as RefundStatus) || undefined,
-    from: searchParams.get('from') || '',
-    to: searchParams.get('to') || '',
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
     page: Number(searchParams.get('page')) || 1,
     pageSize: Number(searchParams.get('pageSize')) || 20,
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
@@ -169,8 +186,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [localFilters, setLocalFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
     status: (searchParams.get('status') as RefundStatus) || undefined,
-    from: searchParams.get('from') || '',
-    to: searchParams.get('to') || '',
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
     sort: (searchParams.get('sort') as any) || 'createdAt:desc',
   })
   
