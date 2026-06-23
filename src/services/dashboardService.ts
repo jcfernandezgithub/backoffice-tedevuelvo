@@ -13,7 +13,7 @@ import type { RefundRequest, RefundStatus } from '@/types/refund'
 
 export type Aggregation = 'day' | 'week' | 'month'
 
-const PAGE_SIZE = 100
+const PAGE_SIZE = 1000
 const CACHE_TTL_MS = 30 * 1000 // 30 segundos
 
 // Caché simple para evitar múltiples llamadas paralelas
