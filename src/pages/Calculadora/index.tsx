@@ -821,9 +821,9 @@ export default function CalculadoraPage() {
                   </Select>
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-muted-foreground flex-1">
-                      {margenSeguridad === margenTeDevuelvo 
-                        ? "Este es el valor usado en la calculadora de Te Devuelvo" 
-                        : `Valor personalizado (el oficial es ${margenTeDevuelvo}%)`}
+                      {margenSeguridad === margenTeDevuelvo
+                        ? "Este es el valor usado en la calculadora"
+                        : ""}
                     </p>
                     <Button
                       type="button"
