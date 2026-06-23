@@ -74,7 +74,7 @@ export default function CalculadoraPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
   const [margenTeDevuelvo, setMargenTeDevuelvo] = useState(getMargenTeDevuelvo);
-  const [margenSeguridad, setMargenSeguridad] = useState(getMargenTeDevuelvo);
+  const [margenSeguridad, setMargenSeguridad] = useState(0);
   const [editandoMargenTeDevuelvo, setEditandoMargenTeDevuelvo] = useState(false);
   const [openInstitution, setOpenInstitution] = useState(false);
 
