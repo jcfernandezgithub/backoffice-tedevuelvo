@@ -60,7 +60,7 @@ const generarMargenes = (margenTeDevuelvo: number) => {
   for (let i = 0; i <= 75; i += 5) {
     margenes.push({
       value: i,
-      label: i === 0 ? "0% (Sin margen)" : i === margenTeDevuelvo ? `${i}% (Te Devuelvo)` : `${i}%`,
+      label: i === 0 ? "0% (Sin margen)" : `${i}%`,
       isDefault: i === margenTeDevuelvo,
     });
   }
@@ -821,9 +821,9 @@ export default function CalculadoraPage() {
                   </Select>
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-muted-foreground flex-1">
-                      {margenSeguridad === margenTeDevuelvo 
-                        ? "Este es el valor usado en la calculadora de Te Devuelvo" 
-                        : `Valor personalizado (el oficial es ${margenTeDevuelvo}%)`}
+                      {margenSeguridad === margenTeDevuelvo
+                        ? "Este es el valor usado en la calculadora"
+                        : ""}
                     </p>
                     <Button
                       type="button"
