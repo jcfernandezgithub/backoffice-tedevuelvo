@@ -1306,9 +1306,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const monthlySavingForTotal = derived.source === 'derived'
                               ? derived.monthlySaving
                               : (snap.monthlySaving || 0)
-                            const totalSaving = derived.source === 'derived'
-                              ? Math.round(monthlySavingForTotal * remaining * 0.9)
-                              : (snap.totalSaving || 0)
+                            // Siempre preferir el `totalSaving` real del snapshot
+                            // (devolución efectivamente ofrecida al cliente).
+                            // Solo si no existe, caer a la devolución bruta sin
+                            // margen — el porcentaje se deriva más abajo a
+                            // partir de este valor real, evitando asumir 10%.
+                            const totalSaving = snap.totalSaving && snap.totalSaving > 0
+                              ? snap.totalSaving
+                              : Math.round(monthlySavingForTotal * remaining)
 
                             if (isCesantia) {
                               const TASA_CESANTIA = 0.094 // %
