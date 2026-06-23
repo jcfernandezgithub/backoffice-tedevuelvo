@@ -17,7 +17,13 @@ const TASA_TDV_TRAMO_3_JOVEN = 0.00044; // $60M - $100M, 18-55
 const TASA_TDV_TRAMO_3_MAYOR = 0.00050; // $60M - $100M, 56-64
 const UMBRAL_TRAMO_1 = 20_000_000;
 const UMBRAL_TRAMO_2 = 60_000_000;
-const REFUND_MARGIN_PERCENTAGE = 10; // 10% margen
+// Margen aplicado dentro de `calcularDevolucion`. Se mantiene en 0 para que
+// los montos devueltos sean "crudos" (devolución = seguro restante banco -
+// seguro restante preferencial). El margen de seguridad ahora se aplica
+// exclusivamente en la UI (selector en la calculadora), evitando doble
+// aplicación. Ver bug: la UI mostraba 844.480 cuando con margen 0% debía
+// mostrar 938.311 (2.260.267 - 1.321.956).
+const REFUND_MARGIN_PERCENTAGE = 0;
 
 /**
  * Selección de tasa preferencial TDV (Plan 3) para desgravamen.
