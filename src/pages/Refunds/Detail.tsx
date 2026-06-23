@@ -1364,9 +1364,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             // almacenada en el snapshot (totalSaving). Evita asumir 10% fijo
             // ya que cada institución/solicitud puede tener un margen distinto.
             const margenDerivado = devolucionBruta > 0 && totalSaving > 0
-              ? Math.max(0, round3((1 - totalSaving / devolucionBruta) * 100))
+              ? Math.max(0, Math.round((1 - totalSaving / devolucionBruta) * 100))
               : 0
-            const margenDisplay = Math.round(margenDerivado * 100) / 100
+            const margenDisplay = margenDerivado
             const totalCalculado = round3(devolucionBruta * (1 - margenDerivado / 100))
                             return (
                               <div className="col-span-2 mt-1">
