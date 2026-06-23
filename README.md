@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.9
+## Versión 3.9.10
 
 ## Changelog
+
+### Versión 3.9.10 - 2026-06-20
+
+#### Detalle de solicitud: margen derivado dinámicamente
+- En el desglose "Ahorro total (devolución al cliente)" del detalle de solicitud, el porcentaje de margen del **Paso 3** ya no se asume fijo en 10%. Ahora se calcula a partir de la devolución real ofrecida (`totalSaving` del snapshot) versus la devolución bruta: `margen = (1 − totalSaving / devoluciónBruta) × 100`.
+- El valor mostrado se redondea al entero más cercano para mejor lectura.
+- Se prioriza siempre el `totalSaving` real del snapshot, evitando recalcular con un margen hardcoded del 10%.
+
+#### Calculadora: limpieza de glosas en "Margen de seguridad"
+- Se eliminó la etiqueta "(Te Devuelvo)" junto al valor coincidente en el combo de margen de seguridad.
+- Se eliminó la glosa "Valor personalizado (el oficial es X%)" debajo del selector.
 
 ### Versión 3.9.9 - 2026-06-19
 
