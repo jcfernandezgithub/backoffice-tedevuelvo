@@ -3,7 +3,7 @@ import { refundAdminApi } from '@/services/refundAdminApi';
 import type { RefundRequest } from '@/types/refund';
 
 const STALE_TIME = 10 * 60 * 1000; // 10 minutos
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 1000;
 
 // Rango por defecto: mes corriente (día 1 → hoy)
 function getDefaultDateRange() {
