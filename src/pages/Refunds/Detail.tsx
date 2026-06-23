@@ -1354,9 +1354,15 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const round3 = (n: number) => Math.round(n * 1000) / 1000
                             const primaTotalBanco = round3(currentPremium * remaining)
                             const primaTotalTDV = round3(newPremium * remaining)
-                            const MARGEN_FIJO = 10
                             const devolucionBruta = round3(primaTotalBanco - primaTotalTDV)
-                            const totalCalculado = round3(devolucionBruta * (1 - MARGEN_FIJO / 100))
+            // Margen derivado dinámicamente a partir de la devolución real
+            // almacenada en el snapshot (totalSaving). Evita asumir 10% fijo
+            // ya que cada institución/solicitud puede tener un margen distinto.
+            const margenDerivado = devolucionBruta > 0 && totalSaving > 0
+              ? Math.max(0, round3((1 - totalSaving / devolucionBruta) * 100))
+              : 0
+            const margenDisplay = Math.round(margenDerivado * 100) / 100
+            const totalCalculado = round3(devolucionBruta * (1 - margenDerivado / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1396,9 +1402,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   {/* Step 3: Apply margin */}
                                   <div className="space-y-1">
-                                    <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({MARGEN_FIJO}%)</p>
+                  <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenDisplay}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - MARGEN_FIJO) / 100).toFixed(2)}</p>
+                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenDerivado) / 100).toFixed(4)}</p>
                                       <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalSaving)} CLP</p>
                                       {totalCalculado !== totalSaving && (
                                         <p className="text-[10px] text-muted-foreground mt-1 italic">
