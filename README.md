@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 3.9.8
+## Versión 3.9.9
 
 ## Changelog
+
+### Versión 3.9.9 - 2026-06-19
+
+#### Operación y Dashboard: ajustes en consumo de `listV2`
+- Se eliminaron los parámetros `from` y `to` (fechas desde/hasta) en las llamadas a `listV2` desde el hook `useAllRefunds` de Operación, para realizar pruebas de obtención de datos sin filtro temporal en el backend.
+- Se mantiene el `limit` (PAGE_SIZE) en **100** tanto en Operación (`useAllRefunds`) como en Dashboard (`dashboardService`).
+- El filtrado por fecha continúa aplicándose en el cliente según la lógica de cada vista.
+
+#### Calculadora
+- El combo "Margen de seguridad" ahora inicia en **0%** y se utiliza este valor de forma consistente para todos los cálculos.
+- Validación y corrección del cálculo de la "Devolución estimada" para que coincida exactamente con la diferencia entre seguro restante y seguro restante preferencial (sin aplicar margen de forma duplicada).
 
 ### Versión 3.9.8 - 2026-06-18
 
