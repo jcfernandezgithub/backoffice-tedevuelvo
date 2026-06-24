@@ -4,6 +4,7 @@ import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
 import { AIValidationSection } from './components/AIValidationSection';
+import { SafetyMarginsSection } from './components/SafetyMarginsSection';
 import {
   Timer,
   TrendingUp,
@@ -11,6 +12,7 @@ import {
   Settings2,
   ChevronRight,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -48,6 +50,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Percent,
     group: 'Cálculos',
     component: <TasasSection />,
+  },
+  {
+    id: 'margen-seguridad',
+    label: 'Margen de seguridad',
+    description: 'Resguardo % por institución',
+    icon: ShieldCheck,
+    group: 'Cálculos',
+    component: <SafetyMarginsSection />,
   },
   {
     id: 'ai-validation',
