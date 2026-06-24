@@ -11,7 +11,7 @@ const STALE_TIME = 10 * 60 * 1000; // 10 minutos (usado solo en useAlertas que s
  */
 
 export function useKpisResumen(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getKpisResumen(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -24,7 +24,7 @@ export function useSerieTemporal(
   granularidad: Granularidad,
   campo: 'cantidad' | 'montoRecuperado' | 'montoPagado' | 'tasaExito'
 ) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getSerieTemporal(filtros, granularidad, campo, allRefunds) : undefined,
     [allRefunds, filtros, granularidad, campo]
@@ -33,7 +33,7 @@ export function useSerieTemporal(
 }
 
 export function useDistribucionPorEstado(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getDistribucionPorEstado(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -42,7 +42,7 @@ export function useDistribucionPorEstado(filtros: FiltrosReporte) {
 }
 
 export function useDistribucionPorAlianza(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getDistribucionPorAlianza(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -51,7 +51,7 @@ export function useDistribucionPorAlianza(filtros: FiltrosReporte) {
 }
 
 export function useDistribucionPorTipoSeguro(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getDistribucionPorTipoSeguro(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -60,7 +60,7 @@ export function useDistribucionPorTipoSeguro(filtros: FiltrosReporte) {
 }
 
 export function useKpisSegmentos(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getKpisSegmentos(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -69,7 +69,7 @@ export function useKpisSegmentos(filtros: FiltrosReporte) {
 }
 
 export function useFunnelData(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getFunnelData(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -78,7 +78,7 @@ export function useFunnelData(filtros: FiltrosReporte) {
 }
 
 export function useSlaMetrics(filtros: FiltrosReporte) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getSlaMetrics(filtros, allRefunds) : undefined,
     [allRefunds, filtros]
@@ -93,7 +93,7 @@ export function useAlertas() {
 }
 
 export function useTablaResumen(filtros: FiltrosReporte, page = 1, pageSize = 10) {
-  const { data: allRefunds = [], isLoading } = useAllRefunds();
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since: filtros.fechaDesde, to: filtros.fechaHasta });
   const data = useMemo(
     () => allRefunds.length ? reportsClient.getTablaResumen(filtros, allRefunds, page, pageSize) : undefined,
     [allRefunds, filtros, page, pageSize]
