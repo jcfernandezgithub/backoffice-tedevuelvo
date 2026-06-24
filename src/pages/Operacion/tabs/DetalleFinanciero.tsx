@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useDetalleFinancieroRefunds } from '../hooks/useDetalleFinancieroRefunds';
+import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
 import {
   BarChart,
   Bar,
@@ -135,10 +135,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // ── Dataset año en curso (listV2 / createdAt). Caché propio, independiente
-  //    del rango de fechas del URL que usan los demás tabs de Operación.
-  const { data: refunds = [], isLoading } = useDetalleFinancieroRefunds();
-  const currentYear = new Date().getFullYear();
+  // ── Query compartido: reutiliza el caché de toda la pantalla Operación ───────
+  const { data: refunds = [], isLoading } = useAllRefunds();
 
   // Construir datos mensuales a partir de las solicitudes pagadas
   const monthlyData = useMemo(() => {
@@ -218,6 +216,10 @@ export function TabDetalleFinanciero() {
     return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
   }, [monthlyData]);
 
+  const isCurrentYear = monthlyData.filter(d => d.monthKey.startsWith(String(new Date().getFullYear())));
+  const ytdMonto = isCurrentYear.reduce((s, d) => s + d.monto, 0);
+  const ytdPrima = isCurrentYear.reduce((s, d) => s + d.prima, 0);
+
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
 
@@ -235,13 +237,23 @@ export function TabDetalleFinanciero() {
       'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
     }));
 
-    // ── Hoja 2: Resumen de totales del año en curso ──────────────────────────
+    // ── Hoja 2: Resumen de totales históricos ────────────────────────────────
+    const ytdCount = isCurrentYear.reduce((s, d) => s + d.count, 0);
+    const ytdMonto2 = isCurrentYear.reduce((s, d) => s + d.monto, 0);
+    const ytdPrima2 = isCurrentYear.reduce((s, d) => s + d.prima, 0);
+
     const summaryRows = [
-      { 'Métrica': `Total solicitudes pagadas (año ${currentYear})`, 'Valor': totals.totalCount },
-      { 'Métrica': `Monto total pagado a clientes (año ${currentYear})`, 'Valor': totals.totalMonto },
-      { 'Métrica': `Ticket promedio global (año ${currentYear})`, 'Valor': Math.round(totals.ticketPromedioGlobal) },
-      { 'Métrica': `Prima total recuperada (año ${currentYear})`, 'Valor': Math.round(totals.totalPrima) },
-      { 'Métrica': `Prima promedio global (año ${currentYear})`, 'Valor': Math.round(totals.primaPromedioGlobal) },
+      { 'Métrica': 'Total solicitudes pagadas (histórico)', 'Valor': totals.totalCount },
+      { 'Métrica': 'Monto total pagado a clientes (histórico)', 'Valor': totals.totalMonto },
+      { 'Métrica': 'Ticket promedio global (histórico)', 'Valor': Math.round(totals.ticketPromedioGlobal) },
+      { 'Métrica': 'Prima total recuperada (histórico)', 'Valor': Math.round(totals.totalPrima) },
+      { 'Métrica': 'Prima promedio global (histórico)', 'Valor': Math.round(totals.primaPromedioGlobal) },
+      { 'Métrica': '', 'Valor': '' },
+      { 'Métrica': `Solicitudes pagadas (${new Date().getFullYear()})`, 'Valor': ytdCount },
+      { 'Métrica': `Monto total pagado (${new Date().getFullYear()})`, 'Valor': ytdMonto2 },
+      { 'Métrica': `Ticket promedio (${new Date().getFullYear()})`, 'Valor': ytdCount > 0 ? Math.round(ytdMonto2 / ytdCount) : 0 },
+      { 'Métrica': `Prima total recuperada (${new Date().getFullYear()})`, 'Valor': Math.round(ytdPrima2) },
+      { 'Métrica': `Prima promedio (${new Date().getFullYear()})`, 'Valor': ytdCount > 0 ? Math.round(ytdPrima2 / ytdCount) : 0 },
       { 'Métrica': '', 'Valor': '' },
       { 'Métrica': 'Meses con datos registrados', 'Valor': monthlyData.length },
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
@@ -249,9 +261,9 @@ export function TabDetalleFinanciero() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), 'Detalle Mensual');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
-    XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
-  }, [monthlyData, totals, currentYear]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen Histórico');
+    XLSX.writeFile(wb, `detalle-financiero-historico-${timestamp}.xlsx`);
+  }, [monthlyData, totals, isCurrentYear]);
 
   if (isLoading) {
     return (
@@ -275,9 +287,9 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Año {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero Histórico</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Solicitudes creadas en {currentYear}</Badge>
+        <Badge variant="outline" className="text-xs">Sin filtro de fechas · Vista completa</Badge>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
@@ -296,7 +308,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{formatCLP(totals.totalMonto, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes · histórico completo</p>
             {lastVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastVar.color}`}>
                 {lastVar.icon}<span>{lastVar.label} vs mes anterior</span>
@@ -315,7 +327,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
             {lastTicketVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
                 {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
@@ -334,7 +346,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{formatCLP(totals.totalPrima, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Histórico completo</p>
             {lastPrimaVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaVar.color}`}>
                 {lastPrimaVar.icon}<span>{lastPrimaVar.label} vs mes anterior</span>
@@ -353,7 +365,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
             {lastPrimaAvgVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
                 {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
@@ -362,6 +374,27 @@ export function TabDetalleFinanciero() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Año en curso — fila 2 compacta */}
+      <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
+        <CardContent className="py-3 px-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            <span className="font-semibold text-cyan-700 dark:text-cyan-400">Año {new Date().getFullYear()}</span>
+            <span className="text-muted-foreground">Monto: <span className="font-medium text-foreground">{formatCLP(ytdMonto, true)}</span></span>
+            <span className="text-muted-foreground">Prima: <span className="font-medium text-foreground">{formatCLP(ytdPrima, true)}</span></span>
+            {(() => {
+              const ytdCount = isCurrentYear.reduce((s, d) => s + d.count, 0);
+              const ytdTicket = ytdCount > 0 ? ytdMonto / ytdCount : 0;
+              const ytdPrimaAvg = ytdCount > 0 ? ytdPrima / ytdCount : 0;
+              return <>
+                <span className="text-muted-foreground">Ticket prom.: <span className="font-medium text-foreground">{formatCLP(ytdTicket, true)}</span></span>
+                <span className="text-muted-foreground">Prima prom.: <span className="font-medium text-foreground">{formatCLP(ytdPrimaAvg, true)}</span></span>
+                <span className="text-muted-foreground">Solicitudes: <span className="font-medium text-foreground">{ytdCount}</span></span>
+              </>;
+            })()}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Gráfico: Monto Total Pagado por mes */}
       <Card>
