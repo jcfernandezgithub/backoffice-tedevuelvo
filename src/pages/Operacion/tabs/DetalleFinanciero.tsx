@@ -239,23 +239,13 @@ export function TabDetalleFinanciero() {
       'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
     }));
 
-    // ── Hoja 2: Resumen de totales históricos ────────────────────────────────
-    const ytdCount = isCurrentYear.reduce((s, d) => s + d.count, 0);
-    const ytdMonto2 = isCurrentYear.reduce((s, d) => s + d.monto, 0);
-    const ytdPrima2 = isCurrentYear.reduce((s, d) => s + d.prima, 0);
-
+    // ── Hoja 2: Resumen de totales del año en curso ──────────────────────────
     const summaryRows = [
-      { 'Métrica': 'Total solicitudes pagadas (histórico)', 'Valor': totals.totalCount },
-      { 'Métrica': 'Monto total pagado a clientes (histórico)', 'Valor': totals.totalMonto },
-      { 'Métrica': 'Ticket promedio global (histórico)', 'Valor': Math.round(totals.ticketPromedioGlobal) },
-      { 'Métrica': 'Prima total recuperada (histórico)', 'Valor': Math.round(totals.totalPrima) },
-      { 'Métrica': 'Prima promedio global (histórico)', 'Valor': Math.round(totals.primaPromedioGlobal) },
-      { 'Métrica': '', 'Valor': '' },
-      { 'Métrica': `Solicitudes pagadas (${new Date().getFullYear()})`, 'Valor': ytdCount },
-      { 'Métrica': `Monto total pagado (${new Date().getFullYear()})`, 'Valor': ytdMonto2 },
-      { 'Métrica': `Ticket promedio (${new Date().getFullYear()})`, 'Valor': ytdCount > 0 ? Math.round(ytdMonto2 / ytdCount) : 0 },
-      { 'Métrica': `Prima total recuperada (${new Date().getFullYear()})`, 'Valor': Math.round(ytdPrima2) },
-      { 'Métrica': `Prima promedio (${new Date().getFullYear()})`, 'Valor': ytdCount > 0 ? Math.round(ytdPrima2 / ytdCount) : 0 },
+      { 'Métrica': `Total solicitudes pagadas (año ${currentYear})`, 'Valor': totals.totalCount },
+      { 'Métrica': `Monto total pagado a clientes (año ${currentYear})`, 'Valor': totals.totalMonto },
+      { 'Métrica': `Ticket promedio global (año ${currentYear})`, 'Valor': Math.round(totals.ticketPromedioGlobal) },
+      { 'Métrica': `Prima total recuperada (año ${currentYear})`, 'Valor': Math.round(totals.totalPrima) },
+      { 'Métrica': `Prima promedio global (año ${currentYear})`, 'Valor': Math.round(totals.primaPromedioGlobal) },
       { 'Métrica': '', 'Valor': '' },
       { 'Métrica': 'Meses con datos registrados', 'Valor': monthlyData.length },
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
@@ -263,9 +253,9 @@ export function TabDetalleFinanciero() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), 'Detalle Mensual');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen Histórico');
-    XLSX.writeFile(wb, `detalle-financiero-historico-${timestamp}.xlsx`);
-  }, [monthlyData, totals, isCurrentYear]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
+    XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
+  }, [monthlyData, totals, currentYear]);
 
   if (isLoading) {
     return (
