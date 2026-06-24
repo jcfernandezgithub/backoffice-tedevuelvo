@@ -7,7 +7,7 @@ import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
-import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
