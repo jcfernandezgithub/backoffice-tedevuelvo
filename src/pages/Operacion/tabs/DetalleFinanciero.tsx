@@ -213,8 +213,12 @@ export function TabDetalleFinanciero() {
 
   const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds), [cohortRefunds]);
   const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds), [cashflowRefunds]);
+  const cashflowCurrentYearMonthly = useMemo(
+    () => cashflowMonthly.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
+    [cashflowMonthly, currentYear]
+  );
   const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
-  const cashflowTotals = useMemo(() => buildTotals(cashflowMonthly), [cashflowMonthly]);
+  const cashflowTotals = useMemo(() => buildTotals(cashflowCurrentYearMonthly), [cashflowCurrentYearMonthly]);
 
   // El gráfico de Plan de cumplimiento usa la caja real del año (lo recuperado en el período).
   const monthlyData = cashflowMonthly;
@@ -416,7 +420,7 @@ export function TabDetalleFinanciero() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plan de Cumplimiento · Prima Recuperada</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
-        <PlanCumplimientoChart monthlyData={monthlyData} />
+        <PlanCumplimientoChart monthlyData={cashflowCurrentYearMonthly} />
       </div>
 
       {/* Gráfico: Prima Recuperada por mes */}
