@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useDetalleFinancieroRefunds, useDetalleFinancieroCashflow } from '../hooks/useDetalleFinancieroRefunds';
+import { useDetalleFinancieroRefunds } from '../hooks/useDetalleFinancieroRefunds';
 import {
   BarChart,
   Bar,
@@ -215,26 +215,20 @@ function buildTotals(monthlyData: ReturnType<typeof buildMonthlyData>) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // Dos universos paralelos:
-  //   - Cohorte: solicitudes CREADAS en el año (listV2 / createdAt)
-  //   - Universo completo: todo lo retornado por listV3, sin filtrar por estado en frontend
-  const { data: cohortRefunds = [], isLoading: loadingCohort } = useDetalleFinancieroRefunds();
-  const { data: cashflowRefunds = [], isLoading: loadingCashflow } = useDetalleFinancieroCashflow();
-  const isLoading = loadingCohort || loadingCashflow;
+  // Universo único: histórico completo vía listV2 sin filtro de fechas.
+  // Se filtra por estado "paid" en el frontend y se agrupa por fecha de pago.
+  const { data: refunds = [], isLoading } = useDetalleFinancieroRefunds();
   const currentYear = new Date().getFullYear();
 
-  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds, { onlyPaid: true, dateMode: 'paid' }), [cohortRefunds]);
-  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds, { dateMode: 'updated' }), [cashflowRefunds]);
-  const cashflowCurrentYearMonthly = useMemo(
-    () => cashflowMonthly.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
-    [cashflowMonthly, currentYear]
+  const monthlyData = useMemo(
+    () => buildMonthlyData(refunds, { onlyPaid: true, dateMode: 'paid' }),
+    [refunds]
   );
-  const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
-  const cashflowTotals = useMemo(() => buildTotals(cashflowCurrentYearMonthly), [cashflowCurrentYearMonthly]);
-
-  // El gráfico de Plan de cumplimiento usa el universo completo del año retornado por listV3.
-  const monthlyData = cashflowMonthly;
-  const totals = cashflowTotals;
+  const currentYearMonthly = useMemo(
+    () => monthlyData.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
+    [monthlyData, currentYear]
+  );
+  const totals = useMemo(() => buildTotals(monthlyData), [monthlyData]);
 
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
@@ -253,28 +247,21 @@ export function TabDetalleFinanciero() {
         'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
       }));
 
-    const totalsToRows = (label: string, t: typeof totals, monthCount: number) => [
-      { 'Métrica': `[${label}] Total solicitudes (${currentYear})`, 'Valor': t.totalCount },
-      { 'Métrica': `[${label}] Monto total pagado (${currentYear})`, 'Valor': t.totalMonto },
-      { 'Métrica': `[${label}] Ticket promedio global (${currentYear})`, 'Valor': Math.round(t.ticketPromedioGlobal) },
-      { 'Métrica': `[${label}] Prima total recuperada (${currentYear})`, 'Valor': Math.round(t.totalPrima) },
-      { 'Métrica': `[${label}] Prima promedio global (${currentYear})`, 'Valor': Math.round(t.primaPromedioGlobal) },
-      { 'Métrica': `[${label}] Meses con datos`, 'Valor': monthCount },
-      { 'Métrica': '', 'Valor': '' },
-    ];
-
     const summaryRows = [
-      ...totalsToRows('Universo completo', cashflowTotals, cashflowMonthly.length),
-      ...totalsToRows('Cohorte creadas', cohortTotals, cohortMonthly.length),
+      { 'Métrica': 'Total solicitudes pagadas (histórico)', 'Valor': totals.totalCount },
+      { 'Métrica': 'Monto total pagado (histórico)', 'Valor': totals.totalMonto },
+      { 'Métrica': 'Ticket promedio global', 'Valor': Math.round(totals.ticketPromedioGlobal) },
+      { 'Métrica': 'Prima total recuperada', 'Valor': Math.round(totals.totalPrima) },
+      { 'Métrica': 'Prima promedio global', 'Valor': Math.round(totals.primaPromedioGlobal) },
+      { 'Métrica': 'Meses con datos', 'Valor': monthlyData.length },
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Universo - mensual');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cohortMonthly)), 'Cohorte - mensual');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
-    XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
-  }, [cashflowMonthly, cohortMonthly, cashflowTotals, cohortTotals, currentYear]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(monthlyData)), 'Pagados - mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), 'Resumen');
+    XLSX.writeFile(wb, `detalle-financiero-${timestamp}.xlsx`);
+  }, [monthlyData, totals]);
 
   if (isLoading) {
     return (
@@ -298,10 +285,10 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Universo completo {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Solicitudes Pagadas (histórico)</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Todo lo retornado por listV3</Badge>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0 && cohortMonthly.length === 0}>
+        <Badge variant="outline" className="text-xs">listV2 · filtrado por estado Pagado</Badge>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
         </Button>
@@ -432,7 +419,7 @@ export function TabDetalleFinanciero() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plan de Cumplimiento · Prima Recuperada</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
-        <PlanCumplimientoChart monthlyData={cashflowCurrentYearMonthly} />
+        <PlanCumplimientoChart monthlyData={currentYearMonthly} />
       </div>
 
       {/* Gráfico: Prima Recuperada por mes */}
@@ -531,100 +518,6 @@ export function TabDetalleFinanciero() {
         </CardContent>
       </Card>
 
-      {/* ── Sección 2: Cohorte (creadas en el año) ───────────────────────── */}
-      <div className="pt-4">
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Cohorte · Creadas en {currentYear}
-          </h2>
-          <div className="flex-1 h-px bg-border" />
-          <Badge variant="outline" className="text-xs">
-            Solicitudes creadas y ya pagadas en {currentYear}
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="border-l-4 border-l-emerald-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Monto Pagado (cohorte)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.totalMonto, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{cohortTotals.totalCount} solicitudes</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-amber-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Promedio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.ticketPromedioGlobal, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Por solicitud cohorte</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-indigo-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Recuperada</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.totalPrima, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Creadas y pagadas en {currentYear}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-violet-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Promedio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.primaPromedioGlobal, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Por solicitud cohorte</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Cohorte mensual · pagos de solicitudes creadas en {currentYear}</CardTitle>
-            <CardDescription>
-              Cuenta sólo solicitudes cuyo <code>createdAt</code> cae en {currentYear} y ya están pagadas, agrupadas por el mes en que pasaron a "paid".
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            {cohortMonthly.length === 0 ? (
-              <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
-                No hay solicitudes de la cohorte {currentYear} pagadas aún
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Mes</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Solic.</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Monto Pagado</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ticket Prom.</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Recuperada</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Prom.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...cohortMonthly].reverse().map((row) => (
-                      <tr key={row.monthKey} className="border-b hover:bg-muted/30">
-                        <td className="px-4 py-3 capitalize">{row.label}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{row.count}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.monto)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-amber-700 dark:text-amber-400">{formatCLP(row.ticketPromedio)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.prima)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-violet-700 dark:text-violet-400">{formatCLP(row.primaPromedio)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
