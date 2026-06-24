@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import { calcularDevolucion } from '@/lib/calculadoraUtils'
+import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
@@ -380,7 +381,15 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
           form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false, shouldDirty: true })
         }
-        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false, shouldDirty: true })
+        // Aplicar el margen de seguridad configurado para la institución
+        // (Ajustes → Margen de Seguridad). `calcularDevolucion` retorna la
+        // devolución bruta sin margen (REFUND_MARGIN_PERCENTAGE = 0).
+        const margenPct = getSafetyMarginByInstitutionId(refund.institutionId)
+        const ahorroTotalConMargen = Math.max(
+          0,
+          Math.round(result.ahorroTotal * (1 - margenPct / 100)),
+        )
+        form.setValue('totalSaving', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
       }
       return { ok: true }
     } catch (e) {
