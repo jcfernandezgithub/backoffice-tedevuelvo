@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -158,8 +156,6 @@ const PIE_LABELS: Record<string, string> = {
   rejected: 'Rechazado',
   canceled: 'Cancelado',
 }
-
-const API_BASE = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
