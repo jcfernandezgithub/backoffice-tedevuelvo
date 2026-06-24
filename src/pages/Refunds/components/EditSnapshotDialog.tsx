@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import { calcularDevolucion } from '@/lib/calculadoraUtils'
+import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
