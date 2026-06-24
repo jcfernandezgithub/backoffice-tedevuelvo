@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
+import { useDetalleFinancieroRefunds } from '../hooks/useDetalleFinancieroRefunds';
 import {
   BarChart,
   Bar,
@@ -135,8 +135,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // ── Query compartido: reutiliza el caché de toda la pantalla Operación ───────
-  const { data: refunds = [], isLoading } = useAllRefunds();
+  // ── Dataset año en curso (listV2 / createdAt). Caché propio, independiente
+  //    del rango de fechas del URL que usan los demás tabs de Operación.
+  const { data: refunds = [], isLoading } = useDetalleFinancieroRefunds();
+  const currentYear = new Date().getFullYear();
 
   // Construir datos mensuales a partir de las solicitudes pagadas
   const monthlyData = useMemo(() => {
