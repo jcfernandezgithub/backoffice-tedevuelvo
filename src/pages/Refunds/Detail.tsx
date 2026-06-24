@@ -38,6 +38,7 @@ import { publicFilesApi } from '@/services/publicFilesApi'
 import { EditClientDialog } from './components/EditClientDialog'
 import { EditBankInfoDialog } from './components/EditBankInfoDialog'
 import { EditSnapshotDialog } from './components/EditSnapshotDialog'
+import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
 import { GenerateCertificateDialog } from './components/GenerateCertificateDialog'
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
@@ -1358,11 +1359,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             // Margen derivado dinámicamente a partir de la devolución real
             // almacenada en el snapshot (totalSaving). Evita asumir 10% fijo
             // ya que cada institución/solicitud puede tener un margen distinto.
-            const margenDerivado = devolucionBruta > 0 && totalSaving > 0
-              ? Math.max(0, Math.round((1 - totalSaving / devolucionBruta) * 100))
-              : 0
-            const margenDisplay = margenDerivado
-            const totalCalculado = round3(devolucionBruta * (1 - margenDerivado / 100))
+            // Margen configurado en Ajustes → Margen de Seguridad, según la
+            // institución financiera asociada a la solicitud. Si la sección de
+            // ajustes se actualiza, este valor se reflejará al re-abrir la
+            // solicitud (lectura síncrona desde localStorage).
+            const margenConfigurado = getSafetyMarginByInstitutionId(refund.institutionId)
+            const margenDisplay = margenConfigurado
+            const totalCalculado = round3(devolucionBruta * (1 - margenConfigurado / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1404,11 +1407,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <div className="space-y-1">
                   <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenDisplay}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenDerivado) / 100).toFixed(4)}</p>
+                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenConfigurado) / 100).toFixed(4)}</p>
                                       <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalSaving)} CLP</p>
-                                      {totalCalculado !== totalSaving && (
+                                      {Math.abs(totalCalculado - totalSaving) > 1 && (
                                         <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                          Cálculo teórico: ${formatCLPNumber(totalCalculado)} — diferencia por redondeos en primas intermedias
+                                          Cálculo con margen configurado: ${formatCLPNumber(totalCalculado)} — el snapshot fue generado con un margen distinto.
                                         </p>
                                       )}
                                     </div>

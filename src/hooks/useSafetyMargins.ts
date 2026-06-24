@@ -71,3 +71,43 @@ export function getSafetyMarginFor(institution: string | undefined | null): numb
   );
   return found?.margin ?? 10;
 }
+
+/**
+ * Mapeo de institutionId (slug usado en snapshots / refunds) al label
+ * de la institución mostrado en `INSTITUCIONES_DISPONIBLES`.
+ */
+const INSTITUTION_ID_TO_LABEL: Record<string, string> = {
+  santander: 'Santander',
+  bci: 'BCI',
+  'lider-bci': 'Lider BCI',
+  scotiabank: 'Scotiabank',
+  chile: 'Chile',
+  security: 'Security',
+  'itau-corpbanca': 'Itaú - Corpbanca',
+  itau: 'Itaú - Corpbanca',
+  bice: 'BICE',
+  estado: 'Estado',
+  ripley: 'Banco Ripley',
+  'banco-ripley': 'Banco Ripley',
+  falabella: 'Falabella',
+  consorcio: 'Consorcio',
+  coopeuch: 'Coopeuch',
+  cencosud: 'Cencosud',
+  forum: 'Forum',
+  tanner: 'Tanner',
+  cooperativas: 'Cooperativas',
+  'chevrolet-sf': 'Chevrolet SF',
+  marubeni: 'Marubeni',
+  'santander-consumer': 'Santander Consumer',
+};
+
+/** Obtiene el margen configurado a partir del institutionId (slug). */
+export function getSafetyMarginByInstitutionId(
+  institutionId: string | undefined | null,
+): number {
+  if (!institutionId) return 10;
+  const key = institutionId.toLowerCase().trim();
+  const label = INSTITUTION_ID_TO_LABEL[key];
+  if (label) return getSafetyMarginFor(label);
+  return getSafetyMarginFor(institutionId);
+}
