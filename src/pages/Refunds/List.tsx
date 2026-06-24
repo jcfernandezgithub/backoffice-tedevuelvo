@@ -1257,7 +1257,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <Switch
                   id="historical-status"
                   checked={historicalStatusMode}
-                  onCheckedChange={setHistoricalStatusMode}
+                  onCheckedChange={(checked) => {
+                    setHistoricalStatusMode(checked)
+                    // Al activar el modo, exigir que el usuario presione "Buscar"
+                    // antes de cualquier fetch del dataset completo.
+                    setHasSearched(false)
+                  }}
                   disabled={!localFilters.to}
                 />
                 <label
