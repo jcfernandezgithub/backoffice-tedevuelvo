@@ -846,12 +846,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
 
     // durante el rango de fechas [from, to], sin importar su estado actual
-    if (historicalStatusMode && localFilters.status) {
-      const fromDate = localFilters.from || '2000-01-01'
-      const toDate = localFilters.to || toLocalDateString(new Date())
-      
+    if (historicalStatusMode && appliedLocalFilters.status) {
+      const fromDate = appliedLocalFilters.from || '2000-01-01'
+      const toDate = appliedLocalFilters.to || toLocalDateString(new Date())
+
       // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
-      const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+      const statusList = (appliedLocalFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
       
       if (dashboardSnapshot) {
         // Modo Dashboard: filtrar por createdAt en rango + estado actual + mandate/bank por campo directo
@@ -866,9 +866,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           return lcStatusList.includes((r.status?.toLowerCase() || ''))
         })
         // Filtro de mandato por campo directo (mismo criterio que el Dashboard)
-        if (mandateFilter === 'signed') {
+        if (appliedLocalFilters.mandate === 'signed') {
           result = result.filter((r: any) => r.hasSignedPdf === true)
-        } else if (mandateFilter === 'pending') {
+        } else if (appliedLocalFilters.mandate === 'pending') {
           result = result.filter((r: any) => r.hasSignedPdf !== true)
         }
       } else {
@@ -882,11 +882,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           const lcStatusList = statusList.map(s => s.toLowerCase())
           result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
         }
+
+        // Filtro de mandato (snapshot) — usa hasSignedPdf si está disponible
+        if (appliedLocalFilters.mandate === 'signed') {
+          result = result.filter((r: any) => r.hasSignedPdf === true)
+        } else if (appliedLocalFilters.mandate === 'pending') {
+          result = result.filter((r: any) => r.hasSignedPdf !== true)
+        }
       }
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot, mandateFilter, localFilters.from, localFilters.to, localFilters.status])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
