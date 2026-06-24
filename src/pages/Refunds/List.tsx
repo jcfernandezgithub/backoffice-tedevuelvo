@@ -219,6 +219,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
   // de solicitudes que ya avanzaron a otro estado).
   const currentStatusOnly = searchParams.get('currentStatusOnly') === 'true'
+  // Cuando viene desde una sub-caluga del Dashboard (Firmado/Pendiente, Con/Sin datos):
+  // replicamos exactamente la lógica del Dashboard: filtrar por createdAt en rango,
+  // estado actual = status param, y mandate/bank desde los campos r.hasSignedPdf / r.bankInfo
+  // (sin usar wasInStatusDuringRange ni el fetch de /experian/status).
+  const dashboardSnapshot = searchParams.get('dashboardSnapshot') === 'true'
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
