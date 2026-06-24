@@ -363,27 +363,6 @@ export function TabDetalleFinanciero() {
         </Card>
       </div>
 
-      {/* Año en curso — fila 2 compacta */}
-      <Card className="border-l-4 border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10">
-        <CardContent className="py-3 px-4">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-            <span className="font-semibold text-cyan-700 dark:text-cyan-400">Año {new Date().getFullYear()}</span>
-            <span className="text-muted-foreground">Monto: <span className="font-medium text-foreground">{formatCLP(ytdMonto, true)}</span></span>
-            <span className="text-muted-foreground">Prima: <span className="font-medium text-foreground">{formatCLP(ytdPrima, true)}</span></span>
-            {(() => {
-              const ytdCount = isCurrentYear.reduce((s, d) => s + d.count, 0);
-              const ytdTicket = ytdCount > 0 ? ytdMonto / ytdCount : 0;
-              const ytdPrimaAvg = ytdCount > 0 ? ytdPrima / ytdCount : 0;
-              return <>
-                <span className="text-muted-foreground">Ticket prom.: <span className="font-medium text-foreground">{formatCLP(ytdTicket, true)}</span></span>
-                <span className="text-muted-foreground">Prima prom.: <span className="font-medium text-foreground">{formatCLP(ytdPrimaAvg, true)}</span></span>
-                <span className="text-muted-foreground">Solicitudes: <span className="font-medium text-foreground">{ytdCount}</span></span>
-              </>;
-            })()}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Gráfico: Monto Total Pagado por mes */}
       <Card>
         <CardHeader>
