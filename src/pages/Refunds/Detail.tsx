@@ -1359,11 +1359,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             // Margen derivado dinámicamente a partir de la devolución real
             // almacenada en el snapshot (totalSaving). Evita asumir 10% fijo
             // ya que cada institución/solicitud puede tener un margen distinto.
-            const margenDerivado = devolucionBruta > 0 && totalSaving > 0
-              ? Math.max(0, Math.round((1 - totalSaving / devolucionBruta) * 100))
-              : 0
-            const margenDisplay = margenDerivado
-            const totalCalculado = round3(devolucionBruta * (1 - margenDerivado / 100))
+            // Margen configurado en Ajustes → Margen de Seguridad, según la
+            // institución financiera asociada a la solicitud. Si la sección de
+            // ajustes se actualiza, este valor se reflejará al re-abrir la
+            // solicitud (lectura síncrona desde localStorage).
+            const margenConfigurado = getSafetyMarginByInstitutionId(refund.institutionId)
+            const margenDisplay = margenConfigurado
+            const totalCalculado = round3(devolucionBruta * (1 - margenConfigurado / 100))
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
