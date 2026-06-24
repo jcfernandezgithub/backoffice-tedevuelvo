@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.0.0
+## Versión 4.0.1
 
 ## Changelog
+
+### Versión 4.0.1 - 2026-06-21
+
+#### Eliminación de avalancha de llamadas a `experian/status`
+- Se removieron las consultas masivas e individuales al endpoint `GET/PATCH /refund-requests/{publicId}/experian/status` en Dashboard, Operación (Resumen), Solicitudes, Refunds (List y Detail) y en los servicios de Procesos Masivos (`corteBatchService`, `certificadoBatchService`).
+- Ahora el estado del mandato firmado se deriva directamente del campo `hasSignedPdf` que ya entrega `listV2`, evitando cientos de requests adicionales por carga de página.
+- Se agregaron `hasSignedPdf`, `signedPdfUrl` y `signUrl` al tipo `Refund` para soportar este flujo sin llamadas extra.
+- En el detalle de solicitud, `handleViewMandate` usa primero `signedPdfUrl` del snapshot y solo recurre a `publicFilesApi.getSignedPdfInfo` como fallback.
 
 ### Versión 4.0.0 - 2026-06-20
 
