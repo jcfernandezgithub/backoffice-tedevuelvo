@@ -1,14 +1,17 @@
 import { useMemo } from 'react'
+import dayjs from 'dayjs'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
 
 /**
- * Alertas urgentes: cuenta GLOBAL (sin filtro de fecha) de solicitudes
- * en estados que requieren acción inmediata.
- * 
- * Reutiliza el caché compartido useAllRefunds — sin fetch adicional.
+ * Alertas urgentes: cuenta de solicitudes del MES ACTUAL en estados que requieren
+ * acción inmediata. Reutiliza el caché compartido useAllRefunds — usa el mismo
+ * rango de fechas que las primeras cargas de Dashboard y Operación (sin pedirle
+ * al backend traer el histórico completo).
  */
 export function useUrgentAlerts() {
-  const { data: allRefunds = [], isLoading } = useAllRefunds()
+  const since = useMemo(() => dayjs().startOf('month').format('YYYY-MM-DD'), [])
+  const to = useMemo(() => dayjs().format('YYYY-MM-DD'), [])
+  const { data: allRefunds = [], isLoading } = useAllRefunds({ since, to })
 
   const counts = useMemo(() => {
     const docsReceived = allRefunds.filter((r: any) => r.status === 'docs_received').length
