@@ -16,6 +16,8 @@ export interface UseAllRefundsOptions {
    * - `listV3`: filtra por `updatedAt`. Ideal para Operación (cubre transiciones de estado).
    */
   endpoint?: 'listV2' | 'listV3';
+  /** Si es `false`, el query no se ejecuta. Default: `true`. */
+  enabled?: boolean;
 }
 
 /**
@@ -24,9 +26,10 @@ export interface UseAllRefundsOptions {
  * El queryKey incluye los parámetros, por lo que cambios de rango invalidan el caché correctamente.
  */
 export function useAllRefunds(options: UseAllRefundsOptions = {}) {
-  const { fechaDesde, fechaHasta, endpoint = 'listV2' } = options;
+  const { fechaDesde, fechaHasta, endpoint = 'listV2', enabled = true } = options;
   return useQuery<RefundRequest[]>({
     queryKey: ['all-refunds', endpoint, fechaDesde || null, fechaHasta || null],
+    enabled,
     queryFn: async ({ signal }) => {
       const baseParams = {
         pageSize: PAGE_SIZE,
