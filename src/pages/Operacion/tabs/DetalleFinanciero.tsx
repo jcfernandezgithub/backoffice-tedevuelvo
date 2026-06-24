@@ -218,10 +218,6 @@ export function TabDetalleFinanciero() {
     return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
   }, [monthlyData]);
 
-  const isCurrentYear = monthlyData.filter(d => d.monthKey.startsWith(String(new Date().getFullYear())));
-  const ytdMonto = isCurrentYear.reduce((s, d) => s + d.monto, 0);
-  const ytdPrima = isCurrentYear.reduce((s, d) => s + d.prima, 0);
-
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
 
