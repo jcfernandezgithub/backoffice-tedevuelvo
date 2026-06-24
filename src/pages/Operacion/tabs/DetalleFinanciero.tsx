@@ -282,10 +282,10 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Año {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Caja real {currentYear}</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Solicitudes creadas en {currentYear}</Badge>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
+        <Badge variant="outline" className="text-xs">Solicitudes pagadas en {currentYear}</Badge>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0 && cohortMonthly.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
         </Button>
