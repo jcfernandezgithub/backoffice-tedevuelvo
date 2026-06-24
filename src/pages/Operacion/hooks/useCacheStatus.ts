@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useAllRefunds } from './useAllRefunds';
+import { useOperacionRefunds } from './useOperacionRefunds';
 import { useCallback } from 'react';
 
 /**
@@ -8,10 +8,11 @@ import { useCallback } from 'react';
  */
 export function useCacheStatus() {
   const queryClient = useQueryClient();
-  const { isFetching, dataUpdatedAt } = useAllRefunds();
+  const { isFetching, dataUpdatedAt } = useOperacionRefunds();
 
   const refresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['operacion-all-refunds'] });
+    // Invalida todas las variantes de all-refunds (cualquier rango/endpoint)
+    queryClient.invalidateQueries({ queryKey: ['all-refunds'] });
   }, [queryClient]);
 
   return { isFetching, dataUpdatedAt, refresh };

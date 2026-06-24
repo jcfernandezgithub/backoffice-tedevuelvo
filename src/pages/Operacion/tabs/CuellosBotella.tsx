@@ -16,7 +16,7 @@ import {
 import { FunnelChart } from '../components/FunnelChart';
 import { useFilters } from '../hooks/useFilters';
 import { useFunnelData } from '../hooks/useReportsData';
-import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
 import dayjs from 'dayjs';
 import type { RefundRequest } from '@/types/refund';
 import { readStageObjectives } from '@/hooks/useStageObjectives';

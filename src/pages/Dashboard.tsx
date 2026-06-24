@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -159,8 +157,6 @@ const PIE_LABELS: Record<string, string> = {
   canceled: 'Cancelado',
 }
 
-const API_BASE = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -172,8 +168,12 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  // Fuente de datos unificada (mismo caché que Operación)
-  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds()
+  // Fuente de datos: listV2 (filtra por createdAt en backend) acotado por el rango activo
+  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds({
+    fechaDesde: desde || undefined,
+    fechaHasta: hasta || undefined,
+    endpoint: 'listV2',
+  })
 
   // Filtrado por fecha (memoizado)
   const filteredRefunds = useMemo(
@@ -196,52 +196,18 @@ export default function Dashboard() {
     return counts
   }, [filteredRefunds])
 
-  // Sub-métricas: qualifying (mandatos)
+  // Sub-métricas: qualifying (mandatos) — hasSignedPdf viene en cada refund (sin fan-out a /experian/status)
   const qualifyingRefunds = useMemo(
     () => filteredRefunds.filter((r: any) => r.status === 'qualifying'),
     [filteredRefunds]
   )
-  const qualifyingPublicIds = useMemo(
-    () => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean),
+  const qualifyingFirmados = useMemo(
+    () => qualifyingRefunds.filter((r: any) => r.hasSignedPdf === true).length,
     [qualifyingRefunds]
   )
-  const qualifyingIdsKey = useMemo(
-    () => [...qualifyingPublicIds].sort().join(','),
-    [qualifyingPublicIds]
-  )
-
-  const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
-    queryKey: ['dashboard', 'mandate-statuses', qualifyingIdsKey],
-    queryFn: async () => {
-      if (!qualifyingPublicIds.length) return {}
-      const token = authService.getAccessToken()
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-      const statuses: Record<string, any> = {}
-      const BATCH = 10
-      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH) {
-        await Promise.all(
-          qualifyingPublicIds.slice(i, i + BATCH).map(async (publicId: string) => {
-            try {
-              const res = await fetch(`${API_BASE}/refund-requests/${publicId}/experian/status`, { headers })
-              if (res.ok) statuses[publicId] = await res.json()
-            } catch { /* silencioso */ }
-          })
-        )
-      }
-      return statuses
-    },
-    enabled: qualifyingPublicIds.length > 0,
-    staleTime: 10 * 60 * 1000,
-    retry: 2,
-  })
-
-  const qualifyingFirmados = useMemo(
-    () => qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
-    [qualifyingRefunds, mandateStatuses]
-  )
   const qualifyingPendientes = useMemo(
-    () => qualifyingRefunds.filter((r: any) => !mandateStatuses?.[r.publicId]?.hasSignedPdf).length,
-    [qualifyingRefunds, mandateStatuses]
+    () => qualifyingRefunds.filter((r: any) => r.hasSignedPdf !== true).length,
+    [qualifyingRefunds]
   )
 
   // Sub-métricas: payment_scheduled (datos bancarios)
@@ -445,7 +411,7 @@ export default function Dashboard() {
       }))
   }, [granularCounts, totalSolicitudes])
 
-  const isRefreshing = isFetchingRefunds || isFetchingMandates
+  const isRefreshing = isFetchingRefunds
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
@@ -672,7 +638,7 @@ export default function Dashboard() {
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {isQualifying && mandateStatuses && (
+                                  {isQualifying && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"

@@ -1,13 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { TimeSeriesChart } from '../components/TimeSeriesChart';
 import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
-import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -126,46 +125,7 @@ export function TabResumen() {
     });
   }, [allRefunds, filtros.fechaDesde, filtros.fechaHasta]);
 
-  // ── Mejora: solo consultar mandatos de solicitudes en estado "qualifying" ────
-  // Son las únicas que necesitan el dato de firma para los KPIs de este tab.
-  const qualifyingPublicIds = useMemo(() =>
-    filteredRefunds
-      .filter((r: any) => r.status === 'qualifying')
-      .map((r: any) => r.publicId)
-      .filter(Boolean),
-    [filteredRefunds]
-  );
-
-  // Usamos un hash estable de los IDs para evitar re-fetches por reordenamiento
-  const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds]);
-
-  const { data: mandateStatuses, isLoading: loadingMandates } = useQuery({
-    queryKey: ['mandate-statuses-qualifying', qualifyingIdsKey],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {};
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH_SIZE) {
-        const batch = qualifyingPublicIds.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (publicId: string) => {
-            try {
-              const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-              );
-              if (response.ok) {
-                statuses[publicId] = await response.json();
-              }
-            } catch {
-              // Silently fail
-            }
-          })
-        );
-      }
-      return statuses;
-    },
-    enabled: qualifyingPublicIds.length > 0,
-    staleTime: 10 * 60 * 1000,
-  });
+  // hasSignedPdf viene directamente en cada refund desde listV3 — sin fan-out a /experian/status
 
   // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
   const { overdueStages } = useOverdueData(filteredRefunds);
@@ -187,12 +147,8 @@ export function TabResumen() {
 
   // Todas las calugas respetan el filtro de fechas
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
-  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
-    mandateStatuses?.[r.publicId]?.hasSignedPdf === true
-  );
-  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => 
-    !mandateStatuses?.[r.publicId]?.hasSignedPdf
-  );
+  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => r.hasSignedPdf === true);
+  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => r.hasSignedPdf !== true);
 
   const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
   const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
@@ -379,7 +335,7 @@ export function TabResumen() {
         </TooltipProvider>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loadingRefunds || loadingMandates ? (
+        {loadingRefunds ? (
           <>
             {Array.from({ length: 7 }).map((_, i) => (
               <Card key={i}>

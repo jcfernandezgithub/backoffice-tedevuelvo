@@ -5,16 +5,37 @@ import type { RefundRequest } from '@/types/refund';
 const STALE_TIME = 10 * 60 * 1000; // 10 minutos
 const PAGE_SIZE = 100;
 
+export interface UseAllRefundsOptions {
+  /** Fecha inicio en formato YYYY-MM-DD (se envía como `since` al backend). */
+  fechaDesde?: string;
+  /** Fecha fin en formato YYYY-MM-DD (se envía como `to` al backend). */
+  fechaHasta?: string;
+  /**
+   * Endpoint a consultar:
+   * - `listV2` (default): filtra por `createdAt`. Ideal para Dashboard.
+   * - `listV3`: filtra por `updatedAt`. Ideal para Operación (cubre transiciones de estado).
+   */
+  endpoint?: 'listV2' | 'listV3';
+}
+
 /**
- * Hook compartido que carga TODOS los refunds una sola vez para toda la pantalla Operación.
- * Todos los tabs consumen este mismo caché — sin fetches duplicados.
+ * Hook compartido que carga TODOS los refunds (paginado interno) para una ventana de fechas.
+ * El backend filtra por fecha → drásticamente menos datos cuando se acota el rango.
+ * El queryKey incluye los parámetros, por lo que cambios de rango invalidan el caché correctamente.
  */
-export function useAllRefunds() {
+export function useAllRefunds(options: UseAllRefundsOptions = {}) {
+  const { fechaDesde, fechaHasta, endpoint = 'listV2' } = options;
   return useQuery<RefundRequest[]>({
-    queryKey: ['operacion-all-refunds'],
+    queryKey: ['all-refunds', endpoint, fechaDesde || null, fechaHasta || null],
     queryFn: async ({ signal }) => {
+      const baseParams = {
+        pageSize: PAGE_SIZE,
+        endpoint,
+        from: fechaDesde,
+        to: fechaHasta,
+      };
       // Primera página para conocer el total
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 }, signal);
+      const firstPage = await refundAdminApi.list({ ...baseParams, page: 1 }, signal);
       const total = firstPage.total || 0;
       const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -29,7 +50,7 @@ export function useAllRefunds() {
           if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
           const batch = remainingPages.slice(i, i + BATCH_SIZE);
           const results = await Promise.all(
-            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page }, signal))
+            batch.map(page => refundAdminApi.list({ ...baseParams, page }, signal))
           );
           results.forEach(r => { allItems = allItems.concat(r.items || []); });
         }

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
 import {
   BarChart,
   Bar,
