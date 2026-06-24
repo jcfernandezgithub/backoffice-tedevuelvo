@@ -916,39 +916,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return paginatedItems.map((r: any) => r.publicId).filter(Boolean)
   }, [paginatedItems, locallyFilteredItems, mandateFilter])
 
-  const { data: mandateStatuses, isLoading: isMandateLoading } = useQuery({
-    queryKey: ['mandate-statuses-page', idsToFetch],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {}
-      const batchSize = 10
-      for (let i = 0; i < idsToFetch.length; i += batchSize) {
-        const batch = idsToFetch.slice(i, i + batchSize)
-        await Promise.all(
-          batch.map(async (publicId: string) => {
-            try {
-              const token = authService.getAccessToken()
-              const headers: HeadersInit = {
-                'Content-Type': 'application/json',
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              }
-              const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
-                { headers }
-              )
-              if (response.ok) {
-                statuses[publicId] = await response.json()
-              }
-            } catch (error) {
-              // Silently fail for individual requests
-            }
-          })
-        )
-      }
-      return statuses
-    },
-    enabled: idsToFetch.length > 0,
-    staleTime: 2 * 60 * 1000,
-  })
+  // hasSignedPdf ya viene en cada refund desde listV2 — sin fetch por ítem.
+  const mandateStatuses = useMemo(() => {
+    const map: Record<string, { hasSignedPdf: boolean }> = {}
+    const source = mandateFilter !== 'all' ? locallyFilteredItems.slice(0, 200) : paginatedItems
+    source.forEach((r: any) => {
+      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
+    })
+    return map
+  }, [paginatedItems, locallyFilteredItems, mandateFilter])
+  const isMandateLoading = false
   
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems

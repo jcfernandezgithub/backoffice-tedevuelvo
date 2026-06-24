@@ -149,28 +149,16 @@ export default function SolicitudesList() {
     return partnerData.map((r: any) => r.publicId)
   }, [alianzaIdFilter, partnerData])
 
-  const { data: mandateStatuses } = useQuery({
-    queryKey: ['mandate-statuses-alianza', publicIds],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {}
-      await Promise.all(
-        publicIds.map(async (publicId: string) => {
-          try {
-            const response = await fetch(
-              `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-            )
-            if (response.ok) {
-              statuses[publicId] = await response.json()
-            }
-          } catch (error) {
-            // Silently fail for individual requests
-          }
-        })
-      )
-      return statuses
-    },
-    enabled: publicIds.length > 0,
-  })
+  // hasSignedPdf viene en cada refund desde listV2 — sin fetch por ítem.
+  const mandateStatuses = useMemo(() => {
+    const map: Record<string, { hasSignedPdf: boolean }> = {}
+    if (alianzaIdFilter) {
+      partnerData.forEach((r: any) => {
+        if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
+      })
+    }
+    return map
+  }, [alianzaIdFilter, partnerData])
 
   // Filtrar datos según los filtros aplicados
   const data = useMemo(() => {
