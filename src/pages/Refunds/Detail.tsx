@@ -1407,11 +1407,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   <div className="space-y-1">
                   <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenDisplay}%)</p>
                                     <div className="p-2 rounded bg-background border text-xs">
-                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenDerivado) / 100).toFixed(4)}</p>
+                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenConfigurado) / 100).toFixed(4)}</p>
                                       <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalSaving)} CLP</p>
-                                      {totalCalculado !== totalSaving && (
+                                      {Math.abs(totalCalculado - totalSaving) > 1 && (
                                         <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                          Cálculo teórico: ${formatCLPNumber(totalCalculado)} — diferencia por redondeos en primas intermedias
+                                          Cálculo con margen configurado: ${formatCLPNumber(totalCalculado)} — el snapshot fue generado con un margen distinto.
                                         </p>
                                       )}
                                     </div>
