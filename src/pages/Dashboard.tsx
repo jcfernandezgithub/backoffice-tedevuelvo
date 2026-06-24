@@ -172,8 +172,12 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  // Fuente de datos unificada (mismo caché que Operación)
-  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds()
+  // Fuente de datos unificada (mismo caché que Operación).
+  // Enviamos las fechas filtradas (YYYY-MM-DD) al endpoint listV2 como since/to.
+  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds({
+    since: desde || undefined,
+    to: hasta || undefined,
+  })
 
   // Filtrado por fecha (memoizado)
   const filteredRefunds = useMemo(
