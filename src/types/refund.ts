@@ -45,6 +45,9 @@ export interface RefundRequest {
   createdAt: string
   updatedAt: string
   signatureUrl?: string
+  hasSignedPdf?: boolean
+  signedPdfUrl?: string
+  signUrl?: string
   signedAt?: string
   clientTokenHash?: string
   partnerId?: string | null
