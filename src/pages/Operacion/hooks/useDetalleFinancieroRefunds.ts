@@ -18,35 +18,40 @@ export function useDetalleFinancieroRefunds() {
  * CAJA REAL: solicitudes que pasaron a "paid" dentro del año en curso,
  * sin importar cuándo se crearon.
  *
- * - Pedimos al backend listV3 (filtra por updatedAt) acotado al año → conjunto
- *   reducido de candidatos que tuvieron actividad en el año.
- * - Luego filtramos client-side por la fecha real del transición a "paid".
+ * - Pedimos al backend listV3 (filtra por updatedAt) desde diciembre del año
+ *   anterior para conservar el mes base de comparación del Δ de enero.
+ * - Luego filtramos client-side por la fecha real de pago. Si el historial no
+ *   trae una transición explícita a "paid", usamos updatedAt como fallback para
+ *   no perder pagos históricos que sí vienen con status paid.
  * - `queryKey` propio → caché independiente; convive con la cohorte sin
  *   invalidarse mutuamente.
  */
 export function useDetalleFinancieroCashflow() {
   const year = new Date().getFullYear();
+  const baselineStart = `${year - 1}-12-01`;
   const query = useAllRefunds({
-    fechaDesde: `${year}-01-01`,
+    fechaDesde: baselineStart,
     fechaHasta: `${year}-12-31`,
     endpoint: 'listV3',
   });
 
   const data = useMemo(() => {
-    const start = `${year}-01-01`;
+    const start = baselineStart;
     const end = `${year}-12-31`;
     return (query.data || []).filter((r: any) => {
+      if (r.status !== 'paid') return false;
+
       // Buscar la transición a "paid" más reciente (statusHistory ya viene lowercased)
       const paidEntry = r.statusHistory
         ?.slice()
         .reverse()
         .find((e: any) => e.to === 'paid');
-      const dateStr = paidEntry?.at;
+      const dateStr = paidEntry?.at || r.updatedAt || r.createdAt;
       if (!dateStr) return false;
       const day = dateStr.split('T')[0];
       return day >= start && day <= end;
     });
-  }, [query.data, year]);
+  }, [query.data, baselineStart, year]);
 
   return { ...query, data };
 }
