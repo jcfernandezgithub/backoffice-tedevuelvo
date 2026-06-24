@@ -143,22 +143,41 @@ export default function SolicitudesList() {
   const renderCopyableRut = (r: any) => renderCopyable(r.rut || '')
   const renderCopyableEmail = (r: any) => renderCopyable(r.email || '')
 
-  // Query para obtener estados de mandatos (firma) cuando hay filtro de alianza
+  // Query para obtener estados de mandatos (firma) cuando hay filtro de alianza.
+  // El endpoint /partner-refunds/partner/:id NO incluye hasSignedPdf, así que se
+  // consulta /refund-requests/:publicId/signed-pdf en lotes paralelos (10 a la vez).
   const publicIds = useMemo(() => {
     if (!alianzaIdFilter || !partnerData.length) return []
-    return partnerData.map((r: any) => r.publicId)
+    return partnerData
+      .map((r: any) => r.publicId)
+      .filter((id: string | undefined): id is string => !!id)
   }, [alianzaIdFilter, partnerData])
 
-  // hasSignedPdf viene en cada refund desde listV2 — sin fetch por ítem.
-  const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {}
-    if (alianzaIdFilter) {
-      partnerData.forEach((r: any) => {
-        if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
-      })
-    }
-    return map
-  }, [alianzaIdFilter, partnerData])
+  const { data: mandateStatuses = {} } = useQuery({
+    queryKey: ['solicitudes-mandate-statuses', alianzaIdFilter, publicIds.join(',')],
+    queryFn: async () => {
+      const map: Record<string, { hasSignedPdf: boolean }> = {}
+      const batchSize = 10
+      for (let i = 0; i < publicIds.length; i += batchSize) {
+        const batch = publicIds.slice(i, i + batchSize)
+        const results = await Promise.all(
+          batch.map(async (pid) => {
+            try {
+              const info = await publicFilesApi.getSignedPdfInfo(pid)
+              const signed = !!(info?.hasSignedPdf || info?.signedPdfUrl || info?.url)
+              return [pid, { hasSignedPdf: signed }] as const
+            } catch {
+              return [pid, { hasSignedPdf: false }] as const
+            }
+          })
+        )
+        for (const [pid, v] of results) map[pid] = v
+      }
+      return map
+    },
+    enabled: !!alianzaIdFilter && publicIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  })
 
   // Filtrar datos según los filtros aplicados
   const data = useMemo(() => {
