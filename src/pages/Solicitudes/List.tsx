@@ -2,6 +2,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { solicitudesService } from '@/services/solicitudesService'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { authenticatedFetch } from '@/services/apiClient'
+import { publicFilesApi } from '@/services/publicFilesApi'
 
 import { DataGrid, Column } from '@/components/datagrid/DataGrid'
 import { Button } from '@/components/ui/button'
