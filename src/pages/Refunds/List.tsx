@@ -209,6 +209,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     nroPoliza: searchParams.get('nroPoliza') || '',
     nroCredito: searchParams.get('nroCredito') || '',
     institution: searchParams.get('institution') || 'all',
+    // Snapshot de filtros usados por el modo histórico (estados por fecha).
+    // Solo se actualizan al presionar "Buscar".
+    status: (searchParams.get('status') as RefundStatus | string) || undefined as any,
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
+    mandate: searchParams.get('mandate') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
@@ -440,6 +446,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: nroPolizaFilter,
       nroCredito: nroCreditoFilter,
       institution: institutionFilter,
+      status: localFilters.status,
+      from: localFilters.from || DEFAULT_FROM,
+      to: localFilters.to || DEFAULT_TO,
+      mandate: mandateFilter,
     })
     
     // Actualizar URL params
@@ -516,6 +526,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: '',
       nroCredito: '',
       institution: 'all',
+      status: undefined as any,
+      from: '',
+      to: '',
+      mandate: 'all',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
@@ -832,12 +846,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
 
     // durante el rango de fechas [from, to], sin importar su estado actual
-    if (historicalStatusMode && localFilters.status) {
-      const fromDate = localFilters.from || '2000-01-01'
-      const toDate = localFilters.to || toLocalDateString(new Date())
-      
+    if (historicalStatusMode && appliedLocalFilters.status) {
+      const fromDate = appliedLocalFilters.from || '2000-01-01'
+      const toDate = appliedLocalFilters.to || toLocalDateString(new Date())
+
       // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
-      const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+      const statusList = (appliedLocalFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
       
       if (dashboardSnapshot) {
         // Modo Dashboard: filtrar por createdAt en rango + estado actual + mandate/bank por campo directo
@@ -852,9 +866,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           return lcStatusList.includes((r.status?.toLowerCase() || ''))
         })
         // Filtro de mandato por campo directo (mismo criterio que el Dashboard)
-        if (mandateFilter === 'signed') {
+        if (appliedLocalFilters.mandate === 'signed') {
           result = result.filter((r: any) => r.hasSignedPdf === true)
-        } else if (mandateFilter === 'pending') {
+        } else if (appliedLocalFilters.mandate === 'pending') {
           result = result.filter((r: any) => r.hasSignedPdf !== true)
         }
       } else {
@@ -868,11 +882,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           const lcStatusList = statusList.map(s => s.toLowerCase())
           result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
         }
+
+        // Filtro de mandato (snapshot) — usa hasSignedPdf si está disponible
+        if (appliedLocalFilters.mandate === 'signed') {
+          result = result.filter((r: any) => r.hasSignedPdf === true)
+        } else if (appliedLocalFilters.mandate === 'pending') {
+          result = result.filter((r: any) => r.hasSignedPdf !== true)
+        }
       }
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot, mandateFilter, localFilters.from, localFilters.to, localFilters.status])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
