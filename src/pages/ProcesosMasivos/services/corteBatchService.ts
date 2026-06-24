@@ -3,7 +3,6 @@ import firmaImg from '@/assets/firma-cng.jpeg'
 import corteCedulaImg from '@/assets/corte-cedula-legalizada.jpg'
 import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
 import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
-import { authService } from '@/services/authService'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import type { RefundRequest, RefundDocument } from '@/types/refund'
@@ -317,21 +316,8 @@ export async function generateExtendedCorteBlob(
 // ──────────────────────────────────────────────────────
 // API helpers
 // ──────────────────────────────────────────────────────
-export async function fetchExperianStatus(publicId: string): Promise<{ hasSignedPdf?: boolean } | null> {
-  const token = authService.getAccessToken()
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/refund-requests/${publicId}/experian/status`,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-    )
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 export async function uploadCorteToFolder(publicId: string, pdfBlob: Blob, kind: string): Promise<void> {
+  const { authService } = await import('@/services/authService')
   const token = authService.getAccessToken()
   const formData = new FormData()
   formData.append('file', pdfBlob, `${kind}-${publicId}.pdf`)
@@ -415,9 +401,9 @@ export async function processSingleRow(row: CsvRow, _opts: ProcessOptions = {}):
     kind,
   }
 
-  // 3. Signed mandate check
-  const experian = await fetchExperianStatus(row.publicId)
-  if (!experian?.hasSignedPdf) {
+  // 3. Signed mandate check: hasSignedPdf viene desde los datos de la solicitud/listV2.
+  // No consultar /experian/status por registro.
+  if (!refund.hasSignedPdf) {
     return { ...enrichedBase, status: 'skipped', reason: 'Mandato no firmado' }
   }
 

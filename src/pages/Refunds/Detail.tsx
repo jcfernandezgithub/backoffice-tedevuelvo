@@ -34,7 +34,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ArrowLeft, Download, Edit, FileText, Copy, Check, AlertCircle, CheckCircle, Landmark, CreditCard, Shield, Briefcase, Calculator, TrendingDown, Mail, Sparkles } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
-import { authService } from '@/services/authService'
+import { publicFilesApi } from '@/services/publicFilesApi'
 import { EditClientDialog } from './components/EditClientDialog'
 import { EditBankInfoDialog } from './components/EditBankInfoDialog'
 import { EditSnapshotDialog } from './components/EditSnapshotDialog'
@@ -161,27 +161,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     enabled: !!getRefundDocumentsPublicId(refund),
   })
 
-  const fetchExperianStatus = async (publicId: string) => {
-    const token = authService.getAccessToken()
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    }
-
-    const response = await fetch(
-      `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`,
-      { headers }
-    )
-
-    if (!response.ok) throw new Error('Error al obtener estado de mandato')
-    return response.json()
-  }
-
-  const { data: experianStatus } = useQuery({
-    queryKey: ['experian-status', refund?.publicId],
-    queryFn: () => fetchExperianStatus(refund!.publicId),
-    enabled: !!refund?.publicId,
-  })
+  const mandateStatus = useMemo(() => ({
+    hasSignedPdf: !!refund?.hasSignedPdf,
+    signedPdfUrl: refund?.signedPdfUrl,
+  }), [refund?.hasSignedPdf, refund?.signedPdfUrl])
 
   // Fetch partner name for origin display
   const { data: partnerName } = useQuery({
@@ -321,10 +304,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     if (!refund?.publicId) return
     
     try {
-      const data = await fetchExperianStatus(refund.publicId)
-      
-      if (data.signedPdfUrl) {
-        const decodedUrl = decodeURIComponent(data.signedPdfUrl)
+      const signedPdfInfo = mandateStatus.signedPdfUrl
+        ? mandateStatus
+        : await publicFilesApi.getSignedPdfInfo(refund.publicId)
+
+      const url = signedPdfInfo.signedPdfUrl || signedPdfInfo.url
+      if (url) {
+        const decodedUrl = decodeURIComponent(url)
         window.open(decodedUrl, '_blank')
       } else {
         toast({
@@ -454,12 +440,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
               </Badge>
             )
           })()}
-          {experianStatus && (
+          {refund && (
             <Badge 
-              variant={experianStatus.hasSignedPdf ? "default" : "destructive"}
+              variant={mandateStatus.hasSignedPdf ? "default" : "destructive"}
               className="text-sm px-3 py-1"
             >
-              {experianStatus.hasSignedPdf ? (
+              {mandateStatus.hasSignedPdf ? (
                 <>
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Mandato firmado
@@ -522,7 +508,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   ) : (
                     <GenerateCertificateDialog 
                       refund={refund} 
-                      isMandateSigned={experianStatus?.hasSignedPdf}
+                      isMandateSigned={mandateStatus.hasSignedPdf}
                       certificateType="desgravamen"
                     />
                   )}
@@ -552,7 +538,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   ) : (
                     <GenerateCesantiaCertificateDialog 
                       refund={refund} 
-                      isMandateSigned={experianStatus?.hasSignedPdf}
+                      isMandateSigned={mandateStatus.hasSignedPdf}
                     />
                   )}
                 </>
@@ -561,7 +547,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           )}
           {/* Corte: visible para admin o call center */}
           {(showDocumentButtons || user?.email === 'admin@callcenter.cl') && (
-            <GenerateCorteDialog refund={refund} isMandateSigned={experianStatus?.hasSignedPdf} />
+            <GenerateCorteDialog refund={refund} isMandateSigned={mandateStatus.hasSignedPdf} />
           )}
           {/* Reenviar email datos bancarios - solo en payment_scheduled */}
           {refund.status === 'payment_scheduled' && (

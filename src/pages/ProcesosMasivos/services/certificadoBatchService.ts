@@ -1,7 +1,6 @@
 import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
 import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
-import { authService } from '@/services/authService'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import {
   isBancoChile,
@@ -288,20 +287,6 @@ function getInsuranceType(refund: RefundRequest): 'desgravamen' | 'cesantia' | '
 // ──────────────────────────────────────────────────────
 // API helpers
 // ──────────────────────────────────────────────────────
-export async function fetchExperianStatus(publicId: string): Promise<{ hasSignedPdf?: boolean } | null> {
-  const token = authService.getAccessToken()
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/refund-requests/${publicId}/experian/status`,
-      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
-    )
-    if (!response.ok) return null
-    return await response.json()
-  } catch {
-    return null
-  }
-}
-
 async function uploadCertificateToFolder(
   docsPublicId: string,
   filePublicId: string,
@@ -310,6 +295,7 @@ async function uploadCertificateToFolder(
   kind: string = CERTIFICATE_KIND,
   fileNamePrefix: string = 'certificado-cobertura',
 ): Promise<void> {
+  const { authService } = await import('@/services/authService')
   const token = authService.getAccessToken()
   const formData = new FormData()
   const folioSuffix = folio ? `-folio-${folio}` : ''
@@ -405,9 +391,9 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     }
   }
 
-  // 4. Signed mandate check
-  const experian = await fetchExperianStatus(row.publicId)
-  if (!experian?.hasSignedPdf) {
+  // 4. Signed mandate check: hasSignedPdf viene desde los datos de la solicitud/listV2.
+  // No consultar /experian/status por registro.
+  if (!refund.hasSignedPdf) {
     return { ...enriched, status: 'skipped', reason: 'Mandato no firmado' }
   }
 
