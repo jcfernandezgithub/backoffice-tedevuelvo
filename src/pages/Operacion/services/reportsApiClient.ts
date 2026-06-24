@@ -33,20 +33,43 @@ function applyFiltros(items: RefundRequest[], filtros: FiltrosReporte): RefundRe
   let result = items;
 
   if (filtros.fechaDesde || filtros.fechaHasta) {
+    let dropNoHistory = 0;
+    let dropNoMatchingTransition = 0;
+    let dropOutOfRange = 0;
+    const sampleNoMatch: string[] = [];
+    const sampleOutOfRange: Array<{ id: string; statusDate: string; status: string }> = [];
     result = result.filter(r => {
       // Filtrar por fecha del último cambio al estado actual (no por createdAt)
       const history = (r as any).statusHistory;
-      if (!history?.length) return false;
+      if (!history?.length) {
+        dropNoHistory++;
+        return false;
+      }
       const lastChange = [...history].reverse().find(
         (entry: any) => entry.to === r.status && entry.from !== entry.to
       );
-      if (!lastChange?.at) return false;
+      if (!lastChange?.at) {
+        dropNoMatchingTransition++;
+        if (sampleNoMatch.length < 5) sampleNoMatch.push((r as any).publicId || (r as any).id);
+        return false;
+      }
       const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
       const statusDate = match ? match[1] : lastChange.at.split('T')[0];
-      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
-      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
+      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) {
+        dropOutOfRange++;
+        if (sampleOutOfRange.length < 5) sampleOutOfRange.push({ id: (r as any).publicId, statusDate, status: r.status });
+        return false;
+      }
+      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) {
+        dropOutOfRange++;
+        if (sampleOutOfRange.length < 5) sampleOutOfRange.push({ id: (r as any).publicId, statusDate, status: r.status });
+        return false;
+      }
       return true;
     });
+    console.groupCollapsed(`[applyFiltros] entrada=${items.length} salida=${result.length} diff=${items.length - result.length} (rango ${filtros.fechaDesde}→${filtros.fechaHasta})`);
+    console.log({ dropNoHistory, dropNoMatchingTransition, dropOutOfRange, sampleNoMatch, sampleOutOfRange });
+    console.groupEnd();
   }
 
   if (filtros.estados?.length) {
