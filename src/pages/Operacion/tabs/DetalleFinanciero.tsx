@@ -279,9 +279,9 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero Histórico</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Año {currentYear}</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Sin filtro de fechas · Vista completa</Badge>
+        <Badge variant="outline" className="text-xs">Solicitudes creadas en {currentYear}</Badge>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
@@ -300,7 +300,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{formatCLP(totals.totalMonto, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes · histórico completo</p>
+            <p className="text-xs text-muted-foreground mt-1">{totals.totalCount} solicitudes · año {currentYear}</p>
             {lastVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastVar.color}`}>
                 {lastVar.icon}<span>{lastVar.label} vs mes anterior</span>
@@ -319,7 +319,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
             {lastTicketVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
                 {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
@@ -338,7 +338,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-400">{formatCLP(totals.totalPrima, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Histórico completo</p>
+            <p className="text-xs text-muted-foreground mt-1">Año {currentYear}</p>
             {lastPrimaVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaVar.color}`}>
                 {lastPrimaVar.icon}<span>{lastPrimaVar.label} vs mes anterior</span>
@@ -357,7 +357,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · histórico</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
             {lastPrimaAvgVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
                 {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
