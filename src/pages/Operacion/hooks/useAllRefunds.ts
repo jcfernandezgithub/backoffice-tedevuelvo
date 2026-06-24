@@ -44,6 +44,20 @@ export function useAllRefunds(options: UseAllRefundsOptions = {}) {
         ? firstPage.totalPages
         : Math.ceil(total / effectivePageSize);
 
+      // [DEBUG] Validación de desfase: log de los meta de la primera página
+      console.groupCollapsed(`[useAllRefunds] ${endpoint} → page 1 meta`);
+      console.log({
+        requestedPageSize: PAGE_SIZE,
+        metaLimit: firstPage.pageSize,
+        metaTotal: total,
+        metaPages: firstPage.totalPages,
+        itemsReturned: firstPage.items?.length ?? 0,
+        effectivePageSize,
+        totalPagesUsed: totalPages,
+        expectedByCalc: effectivePageSize > 0 ? Math.ceil(total / effectivePageSize) : 1,
+      });
+      console.groupEnd();
+
       let allItems = [...(firstPage.items || [])];
 
       // Páginas restantes en paralelo (lotes de 10 para no saturar)
@@ -57,8 +71,32 @@ export function useAllRefunds(options: UseAllRefundsOptions = {}) {
           const results = await Promise.all(
             batch.map(page => refundAdminApi.list({ ...baseParams, page }, signal))
           );
-          results.forEach(r => { allItems = allItems.concat(r.items || []); });
+          results.forEach((r, idx) => {
+            const pageNum = batch[idx];
+            const got = r.items?.length ?? 0;
+            // Última página puede traer menos; el resto debería traer effectivePageSize
+            const isLast = pageNum === totalPages;
+            const expected = isLast
+              ? Math.max(0, total - effectivePageSize * (totalPages - 1))
+              : effectivePageSize;
+            if (got !== expected) {
+              console.warn(
+                `[useAllRefunds] ${endpoint} page ${pageNum}: esperaba ${expected}, recibió ${got}`,
+                { metaLimit: r.pageSize, metaTotal: r.total, metaPages: r.totalPages }
+              );
+            }
+            allItems = allItems.concat(r.items || []);
+          });
         }
+      }
+
+      // [DEBUG] Resumen final: comparar acumulado vs total reportado
+      if (allItems.length !== total) {
+        console.warn(
+          `[useAllRefunds] ${endpoint} DESFASE: acumulé ${allItems.length} items, meta.total=${total} (diff=${total - allItems.length})`
+        );
+      } else {
+        console.info(`[useAllRefunds] ${endpoint} OK: ${allItems.length} items === meta.total`);
       }
 
       // Normalizar status Y statusHistory a minúsculas
