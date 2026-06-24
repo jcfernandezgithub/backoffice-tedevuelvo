@@ -132,91 +132,93 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+// ─── Helper: agregación mensual a partir de un set de refunds ────────────────
+
+function buildMonthlyData(refunds: any[]) {
+  const paidRefunds = refunds.filter((r: any) => r.status === 'paid');
+  const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
+
+  paidRefunds.forEach((r: any) => {
+    const paidEntry = r.statusHistory?.slice().reverse().find(
+      (e: any) => e.to?.toLowerCase() === 'paid'
+    );
+    const dateStr = paidEntry?.at || r.createdAt;
+    if (!dateStr) return;
+
+    const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
+    if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
+
+    const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => {
+      const s = e.to?.toLowerCase();
+      return (s === 'payment_scheduled' || s === 'paid') && e.realAmount;
+    });
+    byMonth[monthKey].monto += realAmountEntry?.realAmount || 0;
+
+    const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
+    const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
+    byMonth[monthKey].prima += newMonthlyPremium * remainingInstallments;
+    byMonth[monthKey].count += 1;
+  });
+
+  const sorted = Object.entries(byMonth)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, vals]) => ({ monthKey: key, ...vals }));
+
+  return sorted.map((item, i) => {
+    const prev = sorted[i - 1];
+    const ticketPromedio = item.count > 0 ? item.monto / item.count : 0;
+    const primaPromedio = item.count > 0 ? item.prima / item.count : 0;
+    const prevTicket = prev && prev.count > 0 ? prev.monto / prev.count : 0;
+    const prevPrimaAvg = prev && prev.count > 0 ? prev.prima / prev.count : 0;
+
+    const montoPct = prev && prev.monto > 0 ? ((item.monto - prev.monto) / prev.monto) * 100 : null;
+    const primaPct = prev && prev.prima > 0 ? ((item.prima - prev.prima) / prev.prima) * 100 : null;
+    const ticketPct = prev && prevTicket > 0 ? ((ticketPromedio - prevTicket) / prevTicket) * 100 : null;
+    const primaAvgPct = prev && prevPrimaAvg > 0 ? ((primaPromedio - prevPrimaAvg) / prevPrimaAvg) * 100 : null;
+
+    return {
+      ...item,
+      ticketPromedio,
+      primaPromedio,
+      label: format(parseISO(`${item.monthKey}-01`), 'MMM yyyy', { locale: es }),
+      labelShort: format(parseISO(`${item.monthKey}-01`), 'MMM yy', { locale: es }),
+      montoPct,
+      primaPct,
+      ticketPct,
+      primaAvgPct,
+    };
+  });
+}
+
+function buildTotals(monthlyData: ReturnType<typeof buildMonthlyData>) {
+  const totalMonto = monthlyData.reduce((s, d) => s + d.monto, 0);
+  const totalPrima = monthlyData.reduce((s, d) => s + d.prima, 0);
+  const totalCount = monthlyData.reduce((s, d) => s + d.count, 0);
+  const ticketPromedioGlobal = totalCount > 0 ? totalMonto / totalCount : 0;
+  const primaPromedioGlobal = totalCount > 0 ? totalPrima / totalCount : 0;
+  const last = monthlyData[monthlyData.length - 1];
+  return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // ── Dataset año en curso (listV2 / createdAt). Caché propio, independiente
-  //    del rango de fechas del URL que usan los demás tabs de Operación.
-  const { data: refunds = [], isLoading } = useDetalleFinancieroRefunds();
+  // Dos universos paralelos:
+  //   - Cohorte: solicitudes CREADAS en el año (listV2 / createdAt)
+  //   - Caja real: solicitudes PAGADAS en el año (listV3 + filtro client-side)
+  const { data: cohortRefunds = [], isLoading: loadingCohort } = useDetalleFinancieroRefunds();
+  const { data: cashflowRefunds = [], isLoading: loadingCashflow } = useDetalleFinancieroCashflow();
+  const isLoading = loadingCohort || loadingCashflow;
   const currentYear = new Date().getFullYear();
 
-  // Construir datos mensuales a partir de las solicitudes pagadas
-  const monthlyData = useMemo(() => {
-    const paidRefunds = refunds.filter((r: any) => r.status === 'paid');
+  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds), [cohortRefunds]);
+  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds), [cashflowRefunds]);
+  const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
+  const cashflowTotals = useMemo(() => buildTotals(cashflowMonthly), [cashflowMonthly]);
 
-    const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
-
-    paidRefunds.forEach((r: any) => {
-      // Usar createdAt para asignar al mes (la solicitud fue pagada, pero la fecha más relevante
-      // para el histórico es cuando se creó; ajustamos a cuando pasó a "paid" si está disponible)
-      const paidEntry = r.statusHistory?.slice().reverse().find(
-        (e: any) => e.to?.toLowerCase() === 'paid'
-      );
-      const dateStr = paidEntry?.at || r.createdAt;
-      if (!dateStr) return;
-
-      const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
-      if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
-
-      // Monto real pagado al cliente
-      const realAmountEntry = r.statusHistory?.slice().reverse().find(
-        (e: any) => {
-          const s = e.to?.toLowerCase();
-          return (s === 'payment_scheduled' || s === 'paid') && e.realAmount;
-        }
-      );
-      byMonth[monthKey].monto += realAmountEntry?.realAmount || 0;
-
-      // Prima total recuperada
-      const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
-      const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
-      byMonth[monthKey].prima += newMonthlyPremium * remainingInstallments;
-      byMonth[monthKey].count += 1;
-    });
-
-    // Ordenar por fecha y calcular variaciones
-    const sorted = Object.entries(byMonth)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, vals]) => ({ monthKey: key, ...vals }));
-
-    return sorted.map((item, i) => {
-      const prev = sorted[i - 1];
-      const ticketPromedio = item.count > 0 ? item.monto / item.count : 0;
-      const primaPromedio = item.count > 0 ? item.prima / item.count : 0;
-      const prevTicket = prev && prev.count > 0 ? prev.monto / prev.count : 0;
-      const prevPrimaAvg = prev && prev.count > 0 ? prev.prima / prev.count : 0;
-
-      const montoPct = prev && prev.monto > 0 ? ((item.monto - prev.monto) / prev.monto) * 100 : null;
-      const primaPct = prev && prev.prima > 0 ? ((item.prima - prev.prima) / prev.prima) * 100 : null;
-      const ticketPct = prev && prevTicket > 0 ? ((ticketPromedio - prevTicket) / prevTicket) * 100 : null;
-      const primaAvgPct = prev && prevPrimaAvg > 0 ? ((primaPromedio - prevPrimaAvg) / prevPrimaAvg) * 100 : null;
-
-      return {
-        ...item,
-        ticketPromedio,
-        primaPromedio,
-        label: format(parseISO(`${item.monthKey}-01`), 'MMM yyyy', { locale: es }),
-        labelShort: format(parseISO(`${item.monthKey}-01`), 'MMM yy', { locale: es }),
-        montoPct,
-        primaPct,
-        ticketPct,
-        primaAvgPct,
-      };
-    });
-  }, [refunds]);
-
-  // Totales acumulados (todo el histórico)
-  const totals = useMemo(() => {
-    const totalMonto = monthlyData.reduce((s, d) => s + d.monto, 0);
-    const totalPrima = monthlyData.reduce((s, d) => s + d.prima, 0);
-    const totalCount = monthlyData.reduce((s, d) => s + d.count, 0);
-    const ticketPromedioGlobal = totalCount > 0 ? totalMonto / totalCount : 0;
-    const primaPromedioGlobal = totalCount > 0 ? totalPrima / totalCount : 0;
-
-    const last = monthlyData[monthlyData.length - 1];
-
-    return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
-  }, [monthlyData]);
+  // El gráfico de Plan de cumplimiento usa la caja real del año (lo recuperado en el período).
+  const monthlyData = cashflowMonthly;
+  const totals = cashflowTotals;
 
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
