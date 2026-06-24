@@ -445,6 +445,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     
     setSearchFilters(newSearchFilters)
     setUseSearchEndpoint(!historicalStatusMode)
+    setHasSearched(true)
     
     // Guardar filtros locales aplicados (los que no soporta el servidor)
     setAppliedLocalFilters({
@@ -542,6 +543,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
+    setHasSearched(false)
   }
   
   const handleOriginFilterChange = (value: string) => {
