@@ -37,7 +37,12 @@ export function useAllRefunds(options: UseAllRefundsOptions = {}) {
       // Primera página para conocer el total
       const firstPage = await refundAdminApi.list({ ...baseParams, page: 1 }, signal);
       const total = firstPage.total || 0;
-      const totalPages = Math.ceil(total / PAGE_SIZE);
+      // Usar el pageSize REAL devuelto por el backend (meta.limit), no el solicitado.
+      // Si el backend recorta el límite (ej: pide 500, entrega 200), recalculamos para no perder páginas.
+      const effectivePageSize = firstPage.pageSize || (firstPage.items?.length ?? PAGE_SIZE) || PAGE_SIZE;
+      const totalPages = firstPage.totalPages && firstPage.totalPages > 0
+        ? firstPage.totalPages
+        : Math.ceil(total / effectivePageSize);
 
       let allItems = [...(firstPage.items || [])];
 
