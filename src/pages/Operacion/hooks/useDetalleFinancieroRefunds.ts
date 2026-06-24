@@ -1,5 +1,4 @@
 import { useAllRefunds } from './useAllRefunds';
-import { useMemo } from 'react';
 
 /**
  * COHORTE: solicitudes CREADAS en el año en curso (listV2 → createdAt).

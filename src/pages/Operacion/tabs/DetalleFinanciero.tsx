@@ -134,25 +134,36 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // ─── Helper: agregación mensual a partir de un set de refunds ────────────────
 
-function buildMonthlyData(refunds: any[]) {
-  const paidRefunds = refunds.filter((r: any) => r.status === 'paid');
+type MonthlyBuildOptions = {
+  onlyPaid?: boolean;
+  dateMode?: 'updated' | 'paid';
+};
+
+function getLatestRealAmount(r: any) {
+  if (r.realAmount && r.realAmount > 0) return r.realAmount;
+  const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => e.realAmount && e.realAmount > 0);
+  return realAmountEntry?.realAmount || 0;
+}
+
+function buildMonthlyData(refunds: any[], options: MonthlyBuildOptions = {}) {
+  const scopedRefunds = options.onlyPaid
+    ? refunds.filter((r: any) => r.status === 'paid')
+    : refunds;
   const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
 
-  paidRefunds.forEach((r: any) => {
+  scopedRefunds.forEach((r: any) => {
     const paidEntry = r.statusHistory?.slice().reverse().find(
       (e: any) => e.to?.toLowerCase() === 'paid'
     );
-    const dateStr = paidEntry?.at || r.updatedAt || r.createdAt;
+    const dateStr = options.dateMode === 'paid'
+      ? paidEntry?.at || r.updatedAt || r.createdAt
+      : r.updatedAt || paidEntry?.at || r.createdAt;
     if (!dateStr) return;
 
     const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
     if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
 
-    const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => {
-      const s = e.to?.toLowerCase();
-      return (s === 'payment_scheduled' || s === 'paid') && e.realAmount;
-    });
-    byMonth[monthKey].monto += realAmountEntry?.realAmount || 0;
+    byMonth[monthKey].monto += getLatestRealAmount(r);
 
     const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
     const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
@@ -211,8 +222,8 @@ export function TabDetalleFinanciero() {
   const isLoading = loadingCohort || loadingCashflow;
   const currentYear = new Date().getFullYear();
 
-  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds), [cohortRefunds]);
-  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds), [cashflowRefunds]);
+  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds, { onlyPaid: true, dateMode: 'paid' }), [cohortRefunds]);
+  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds, { dateMode: 'updated' }), [cashflowRefunds]);
   const cashflowCurrentYearMonthly = useMemo(
     () => cashflowMonthly.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
     [cashflowMonthly, currentYear]
@@ -230,7 +241,7 @@ export function TabDetalleFinanciero() {
     const monthlyToRows = (data: typeof monthlyData) =>
       [...data].reverse().map(row => ({
         'Mes': row.label,
-        'Solicitudes Pagadas': row.count,
+        'Solicitudes': row.count,
         'Monto Total Pagado (CLP)': row.monto,
         'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
         'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
@@ -242,7 +253,7 @@ export function TabDetalleFinanciero() {
       }));
 
     const totalsToRows = (label: string, t: typeof totals, monthCount: number) => [
-      { 'Métrica': `[${label}] Total solicitudes pagadas (${currentYear})`, 'Valor': t.totalCount },
+      { 'Métrica': `[${label}] Total solicitudes (${currentYear})`, 'Valor': t.totalCount },
       { 'Métrica': `[${label}] Monto total pagado (${currentYear})`, 'Valor': t.totalMonto },
       { 'Métrica': `[${label}] Ticket promedio global (${currentYear})`, 'Valor': Math.round(t.ticketPromedioGlobal) },
       { 'Métrica': `[${label}] Prima total recuperada (${currentYear})`, 'Valor': Math.round(t.totalPrima) },
@@ -286,9 +297,9 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Caja real {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Universo completo {currentYear}</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Solicitudes pagadas en {currentYear}</Badge>
+        <Badge variant="outline" className="text-xs">Todo lo retornado por listV3</Badge>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0 && cohortMonthly.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
@@ -326,7 +337,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
             {lastTicketVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
                 {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
@@ -364,7 +375,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
             {lastPrimaAvgVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
                 {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
