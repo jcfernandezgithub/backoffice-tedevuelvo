@@ -223,37 +223,42 @@ export function TabDetalleFinanciero() {
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
 
-    // ── Hoja 1: Detalle mensual ───────────────────────────────────────────────
-    const monthlyRows = [...monthlyData].reverse().map(row => ({
-      'Mes': row.label,
-      'Solicitudes Pagadas': row.count,
-      'Monto Total Pagado (CLP)': row.monto,
-      'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
-      'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
-      'Δ Ticket Promedio (%)': row.ticketPct !== null ? Number(row.ticketPct.toFixed(2)) : '',
-      'Prima Total Recuperada (CLP)': Math.round(row.prima),
-      'Δ Prima (%)': row.primaPct !== null ? Number(row.primaPct.toFixed(2)) : '',
-      'Prima Promedio (CLP)': Math.round(row.primaPromedio),
-      'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
-    }));
+    const monthlyToRows = (data: typeof monthlyData) =>
+      [...data].reverse().map(row => ({
+        'Mes': row.label,
+        'Solicitudes Pagadas': row.count,
+        'Monto Total Pagado (CLP)': row.monto,
+        'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
+        'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
+        'Δ Ticket Promedio (%)': row.ticketPct !== null ? Number(row.ticketPct.toFixed(2)) : '',
+        'Prima Total Recuperada (CLP)': Math.round(row.prima),
+        'Δ Prima (%)': row.primaPct !== null ? Number(row.primaPct.toFixed(2)) : '',
+        'Prima Promedio (CLP)': Math.round(row.primaPromedio),
+        'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
+      }));
 
-    // ── Hoja 2: Resumen de totales del año en curso ──────────────────────────
-    const summaryRows = [
-      { 'Métrica': `Total solicitudes pagadas (año ${currentYear})`, 'Valor': totals.totalCount },
-      { 'Métrica': `Monto total pagado a clientes (año ${currentYear})`, 'Valor': totals.totalMonto },
-      { 'Métrica': `Ticket promedio global (año ${currentYear})`, 'Valor': Math.round(totals.ticketPromedioGlobal) },
-      { 'Métrica': `Prima total recuperada (año ${currentYear})`, 'Valor': Math.round(totals.totalPrima) },
-      { 'Métrica': `Prima promedio global (año ${currentYear})`, 'Valor': Math.round(totals.primaPromedioGlobal) },
+    const totalsToRows = (label: string, t: typeof totals, monthCount: number) => [
+      { 'Métrica': `[${label}] Total solicitudes pagadas (${currentYear})`, 'Valor': t.totalCount },
+      { 'Métrica': `[${label}] Monto total pagado (${currentYear})`, 'Valor': t.totalMonto },
+      { 'Métrica': `[${label}] Ticket promedio global (${currentYear})`, 'Valor': Math.round(t.ticketPromedioGlobal) },
+      { 'Métrica': `[${label}] Prima total recuperada (${currentYear})`, 'Valor': Math.round(t.totalPrima) },
+      { 'Métrica': `[${label}] Prima promedio global (${currentYear})`, 'Valor': Math.round(t.primaPromedioGlobal) },
+      { 'Métrica': `[${label}] Meses con datos`, 'Valor': monthCount },
       { 'Métrica': '', 'Valor': '' },
-      { 'Métrica': 'Meses con datos registrados', 'Valor': monthlyData.length },
+    ];
+
+    const summaryRows = [
+      ...totalsToRows('Caja real', cashflowTotals, cashflowMonthly.length),
+      ...totalsToRows('Cohorte creadas', cohortTotals, cohortMonthly.length),
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), 'Detalle Mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Caja real - mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cohortMonthly)), 'Cohorte - mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
     XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
-  }, [monthlyData, totals, currentYear]);
+  }, [cashflowMonthly, cohortMonthly, cashflowTotals, cohortTotals, currentYear]);
 
   if (isLoading) {
     return (
