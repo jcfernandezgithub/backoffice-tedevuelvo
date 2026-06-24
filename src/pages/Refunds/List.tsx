@@ -209,6 +209,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     nroPoliza: searchParams.get('nroPoliza') || '',
     nroCredito: searchParams.get('nroCredito') || '',
     institution: searchParams.get('institution') || 'all',
+    // Snapshot de filtros usados por el modo histórico (estados por fecha).
+    // Solo se actualizan al presionar "Buscar".
+    status: (searchParams.get('status') as RefundStatus | string) || undefined as any,
+    from: searchParams.get('from') || DEFAULT_FROM,
+    to: searchParams.get('to') || DEFAULT_TO,
+    mandate: searchParams.get('mandate') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
