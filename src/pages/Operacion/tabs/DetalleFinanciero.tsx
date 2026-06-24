@@ -142,7 +142,7 @@ function buildMonthlyData(refunds: any[]) {
     const paidEntry = r.statusHistory?.slice().reverse().find(
       (e: any) => e.to?.toLowerCase() === 'paid'
     );
-    const dateStr = paidEntry?.at || r.createdAt;
+    const dateStr = paidEntry?.at || r.updatedAt || r.createdAt;
     if (!dateStr) return;
 
     const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
