@@ -143,33 +143,17 @@ export function TabResumen() {
   // Usamos un hash estable de los IDs para evitar re-fetches por reordenamiento
   const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds]);
 
-  const { data: mandateStatuses, isLoading: loadingMandates } = useQuery({
-    queryKey: ['mandate-statuses-qualifying', qualifyingIdsKey],
-    queryFn: async () => {
-      const statuses: Record<string, any> = {};
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH_SIZE) {
-        const batch = qualifyingPublicIds.slice(i, i + BATCH_SIZE);
-        await Promise.all(
-          batch.map(async (publicId: string) => {
-            try {
-              const response = await fetch(
-                `https://tedevuelvo-app-be.onrender.com/api/v1/refund-requests/${publicId}/experian/status`
-              );
-              if (response.ok) {
-                statuses[publicId] = await response.json();
-              }
-            } catch {
-              // Silently fail
-            }
-          })
-        );
-      }
-      return statuses;
-    },
-    enabled: qualifyingPublicIds.length > 0,
-    staleTime: 10 * 60 * 1000,
-  });
+  // hasSignedPdf viene en cada refund desde listV2 — sin fetch por ítem.
+  const mandateStatuses = useMemo(() => {
+    const map: Record<string, { hasSignedPdf: boolean }> = {};
+    filteredRefunds
+      .filter((r: any) => r.status === 'qualifying')
+      .forEach((r: any) => {
+        if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf };
+      });
+    return map;
+  }, [filteredRefunds]);
+  const loadingMandates = false;
 
   // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
   const { overdueStages } = useOverdueData(filteredRefunds);

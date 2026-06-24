@@ -214,30 +214,15 @@ export default function Dashboard() {
     [qualifyingPublicIds]
   )
 
-  const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
-    queryKey: ['dashboard', 'mandate-statuses', qualifyingIdsKey],
-    queryFn: async () => {
-      if (!qualifyingPublicIds.length) return {}
-      const token = authService.getAccessToken()
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
-      const statuses: Record<string, any> = {}
-      const BATCH = 10
-      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH) {
-        await Promise.all(
-          qualifyingPublicIds.slice(i, i + BATCH).map(async (publicId: string) => {
-            try {
-              const res = await fetch(`${API_BASE}/refund-requests/${publicId}/experian/status`, { headers })
-              if (res.ok) statuses[publicId] = await res.json()
-            } catch { /* silencioso */ }
-          })
-        )
-      }
-      return statuses
-    },
-    enabled: qualifyingPublicIds.length > 0,
-    staleTime: 10 * 60 * 1000,
-    retry: 2,
-  })
+  // hasSignedPdf ya viene en cada refund desde listV2 — no se necesita un fetch por ítem.
+  const mandateStatuses = useMemo(() => {
+    const map: Record<string, { hasSignedPdf: boolean }> = {}
+    qualifyingRefunds.forEach((r: any) => {
+      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
+    })
+    return map
+  }, [qualifyingRefunds])
+  const isFetchingMandates = false
 
   const qualifyingFirmados = useMemo(
     () => qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
