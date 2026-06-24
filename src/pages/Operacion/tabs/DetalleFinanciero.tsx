@@ -263,13 +263,13 @@ export function TabDetalleFinanciero() {
     ];
 
     const summaryRows = [
-      ...totalsToRows('Caja real', cashflowTotals, cashflowMonthly.length),
+      ...totalsToRows('Universo completo', cashflowTotals, cashflowMonthly.length),
       ...totalsToRows('Cohorte creadas', cohortTotals, cohortMonthly.length),
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Caja real - mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Universo - mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cohortMonthly)), 'Cohorte - mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
     XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
@@ -439,7 +439,7 @@ export function TabDetalleFinanciero() {
 
         <CardHeader>
           <CardTitle className="text-base">Prima Total Recuperada · por Mes</CardTitle>
-          <CardDescription>Prima acumulada de todas las solicitudes pagadas en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
+          <CardDescription>Prima acumulada de todas las solicitudes retornadas por el servicio en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (
