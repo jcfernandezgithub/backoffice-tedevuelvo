@@ -918,10 +918,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   // hasSignedPdf ya viene en cada refund desde listV2 — sin fetch por ítem.
   const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {}
+    const map: Record<string, { hasSignedPdf: boolean; signUrl?: string }> = {}
     const source = mandateFilter !== 'all' ? locallyFilteredItems.slice(0, 200) : paginatedItems
     source.forEach((r: any) => {
-      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
+      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf, signUrl: r.signUrl }
     })
     return map
   }, [paginatedItems, locallyFilteredItems, mandateFilter])
