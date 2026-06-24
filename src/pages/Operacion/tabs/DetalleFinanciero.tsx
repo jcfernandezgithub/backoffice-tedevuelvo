@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useDetalleFinancieroRefunds } from '../hooks/useDetalleFinancieroRefunds';
+import { useDetalleFinancieroRefunds, useDetalleFinancieroCashflow } from '../hooks/useDetalleFinancieroRefunds';
 import {
   BarChart,
   Bar,
