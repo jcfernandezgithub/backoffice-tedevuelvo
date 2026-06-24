@@ -220,6 +220,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const initialAutoSearch = searchParams.get('autoSearch') === 'true'
   const [historicalStatusMode, setHistoricalStatusMode] = useState(initialAutoSearch)
+  // Marca si el usuario ya ejecutó al menos una búsqueda explícita (clic en "Buscar").
+  // En modo "Estado en fecha", mientras esté en false NO disparamos fetches
+  // (ni listV2 ni useAllRefunds) para evitar trabajo innecesario.
+  const [hasSearched, setHasSearched] = useState(initialAutoSearch)
   // Cuando viene desde una caluga de Operación, restringir el resultado a las
   // solicitudes que ACTUALMENTE están en ese estado Y entraron a él dentro del rango.
   // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
@@ -257,7 +261,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     isLoading: isAllRefundsLoading,
     error: allRefundsError,
     refetch: refetchAllRefunds,
-  } = useAllRefunds()
+  } = useAllRefunds({
+    // Solo cargar el dataset completo cuando el modo histórico esté activo
+    // Y el usuario haya presionado "Buscar" (o haya llegado vía autoSearch=true).
+    enabled: historicalStatusMode && hasSearched,
+  })
 
   // Query para listado inicial (listV2)
   const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
@@ -265,6 +273,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
     staleTime: 30 * 1000,
+    // En modo "Estado en fecha" no se ejecuta listV2 hasta que el usuario presione Buscar
     enabled: !useSearchEndpoint && !historicalStatusMode,
   })
   
