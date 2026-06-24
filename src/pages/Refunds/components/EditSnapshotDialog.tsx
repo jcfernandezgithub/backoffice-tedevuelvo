@@ -381,7 +381,15 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         if (result.ahorroMensual !== 0 || tipoSeguro !== 'cesantia') {
           form.setValue('monthlySaving', result.ahorroMensual, { shouldValidate: false, shouldDirty: true })
         }
-        form.setValue('totalSaving', result.ahorroTotal, { shouldValidate: false, shouldDirty: true })
+        // Aplicar el margen de seguridad configurado para la institución
+        // (Ajustes → Margen de Seguridad). `calcularDevolucion` retorna la
+        // devolución bruta sin margen (REFUND_MARGIN_PERCENTAGE = 0).
+        const margenPct = getSafetyMarginByInstitutionId(refund.institutionId)
+        const ahorroTotalConMargen = Math.max(
+          0,
+          Math.round(result.ahorroTotal * (1 - margenPct / 100)),
+        )
+        form.setValue('totalSaving', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
       }
       return { ok: true }
     } catch (e) {
