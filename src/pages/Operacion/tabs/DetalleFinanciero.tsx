@@ -124,7 +124,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
       <div className="border-t pt-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Solicitudes pagadas</span>
+          <span>Solicitudes</span>
           <span className="font-semibold text-foreground">{d?.count ?? 0}</span>
         </div>
       </div>
@@ -216,7 +216,7 @@ function buildTotals(monthlyData: ReturnType<typeof buildMonthlyData>) {
 export function TabDetalleFinanciero() {
   // Dos universos paralelos:
   //   - Cohorte: solicitudes CREADAS en el año (listV2 / createdAt)
-  //   - Caja real: solicitudes PAGADAS en el año (listV3 + filtro client-side)
+  //   - Universo completo: todo lo retornado por listV3, sin filtrar por estado en frontend
   const { data: cohortRefunds = [], isLoading: loadingCohort } = useDetalleFinancieroRefunds();
   const { data: cashflowRefunds = [], isLoading: loadingCashflow } = useDetalleFinancieroCashflow();
   const isLoading = loadingCohort || loadingCashflow;
@@ -231,7 +231,7 @@ export function TabDetalleFinanciero() {
   const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
   const cashflowTotals = useMemo(() => buildTotals(cashflowCurrentYearMonthly), [cashflowCurrentYearMonthly]);
 
-  // El gráfico de Plan de cumplimiento usa la caja real del año (lo recuperado en el período).
+  // El gráfico de Plan de cumplimiento usa el universo completo del año retornado por listV3.
   const monthlyData = cashflowMonthly;
   const totals = cashflowTotals;
 
@@ -393,7 +393,7 @@ export function TabDetalleFinanciero() {
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos de pagos registrados</div>
+            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos financieros registrados</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
