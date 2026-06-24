@@ -124,7 +124,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
       <div className="border-t pt-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Solicitudes pagadas</span>
+          <span>Solicitudes</span>
           <span className="font-semibold text-foreground">{d?.count ?? 0}</span>
         </div>
       </div>
@@ -134,25 +134,37 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // ─── Helper: agregación mensual a partir de un set de refunds ────────────────
 
-function buildMonthlyData(refunds: any[]) {
-  const paidRefunds = refunds.filter((r: any) => r.status === 'paid');
+type MonthlyBuildOptions = {
+  onlyPaid?: boolean;
+  dateMode?: 'updated' | 'paid';
+};
+
+function getLatestRealAmount(r: any) {
+  const topLevelAmount = Number(r.realAmount || 0);
+  if (topLevelAmount > 0) return topLevelAmount;
+  const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => e.realAmount && e.realAmount > 0);
+  return Number(realAmountEntry?.realAmount || 0);
+}
+
+function buildMonthlyData(refunds: any[], options: MonthlyBuildOptions = {}) {
+  const scopedRefunds = options.onlyPaid
+    ? refunds.filter((r: any) => r.status === 'paid')
+    : refunds;
   const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
 
-  paidRefunds.forEach((r: any) => {
+  scopedRefunds.forEach((r: any) => {
     const paidEntry = r.statusHistory?.slice().reverse().find(
       (e: any) => e.to?.toLowerCase() === 'paid'
     );
-    const dateStr = paidEntry?.at || r.updatedAt || r.createdAt;
+    const dateStr = options.dateMode === 'paid'
+      ? paidEntry?.at || r.updatedAt || r.createdAt
+      : r.updatedAt || paidEntry?.at || r.createdAt;
     if (!dateStr) return;
 
     const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
     if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
 
-    const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => {
-      const s = e.to?.toLowerCase();
-      return (s === 'payment_scheduled' || s === 'paid') && e.realAmount;
-    });
-    byMonth[monthKey].monto += realAmountEntry?.realAmount || 0;
+    byMonth[monthKey].monto += getLatestRealAmount(r);
 
     const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
     const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
@@ -205,14 +217,14 @@ function buildTotals(monthlyData: ReturnType<typeof buildMonthlyData>) {
 export function TabDetalleFinanciero() {
   // Dos universos paralelos:
   //   - Cohorte: solicitudes CREADAS en el año (listV2 / createdAt)
-  //   - Caja real: solicitudes PAGADAS en el año (listV3 + filtro client-side)
+  //   - Universo completo: todo lo retornado por listV3, sin filtrar por estado en frontend
   const { data: cohortRefunds = [], isLoading: loadingCohort } = useDetalleFinancieroRefunds();
   const { data: cashflowRefunds = [], isLoading: loadingCashflow } = useDetalleFinancieroCashflow();
   const isLoading = loadingCohort || loadingCashflow;
   const currentYear = new Date().getFullYear();
 
-  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds), [cohortRefunds]);
-  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds), [cashflowRefunds]);
+  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds, { onlyPaid: true, dateMode: 'paid' }), [cohortRefunds]);
+  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds, { dateMode: 'updated' }), [cashflowRefunds]);
   const cashflowCurrentYearMonthly = useMemo(
     () => cashflowMonthly.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
     [cashflowMonthly, currentYear]
@@ -220,7 +232,7 @@ export function TabDetalleFinanciero() {
   const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
   const cashflowTotals = useMemo(() => buildTotals(cashflowCurrentYearMonthly), [cashflowCurrentYearMonthly]);
 
-  // El gráfico de Plan de cumplimiento usa la caja real del año (lo recuperado en el período).
+  // El gráfico de Plan de cumplimiento usa el universo completo del año retornado por listV3.
   const monthlyData = cashflowMonthly;
   const totals = cashflowTotals;
 
@@ -230,7 +242,7 @@ export function TabDetalleFinanciero() {
     const monthlyToRows = (data: typeof monthlyData) =>
       [...data].reverse().map(row => ({
         'Mes': row.label,
-        'Solicitudes Pagadas': row.count,
+        'Solicitudes': row.count,
         'Monto Total Pagado (CLP)': row.monto,
         'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
         'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
@@ -242,7 +254,7 @@ export function TabDetalleFinanciero() {
       }));
 
     const totalsToRows = (label: string, t: typeof totals, monthCount: number) => [
-      { 'Métrica': `[${label}] Total solicitudes pagadas (${currentYear})`, 'Valor': t.totalCount },
+      { 'Métrica': `[${label}] Total solicitudes (${currentYear})`, 'Valor': t.totalCount },
       { 'Métrica': `[${label}] Monto total pagado (${currentYear})`, 'Valor': t.totalMonto },
       { 'Métrica': `[${label}] Ticket promedio global (${currentYear})`, 'Valor': Math.round(t.ticketPromedioGlobal) },
       { 'Métrica': `[${label}] Prima total recuperada (${currentYear})`, 'Valor': Math.round(t.totalPrima) },
@@ -252,13 +264,13 @@ export function TabDetalleFinanciero() {
     ];
 
     const summaryRows = [
-      ...totalsToRows('Caja real', cashflowTotals, cashflowMonthly.length),
+      ...totalsToRows('Universo completo', cashflowTotals, cashflowMonthly.length),
       ...totalsToRows('Cohorte creadas', cohortTotals, cohortMonthly.length),
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Caja real - mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Universo - mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cohortMonthly)), 'Cohorte - mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
     XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
@@ -286,9 +298,9 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Caja real {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Universo completo {currentYear}</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Solicitudes pagadas en {currentYear}</Badge>
+        <Badge variant="outline" className="text-xs">Todo lo retornado por listV3</Badge>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0 && cohortMonthly.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
@@ -326,7 +338,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
             {lastTicketVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
                 {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
@@ -364,7 +376,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
             {lastPrimaAvgVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
                 {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
@@ -382,7 +394,7 @@ export function TabDetalleFinanciero() {
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos de pagos registrados</div>
+            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos financieros registrados</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
@@ -428,7 +440,7 @@ export function TabDetalleFinanciero() {
 
         <CardHeader>
           <CardTitle className="text-base">Prima Total Recuperada · por Mes</CardTitle>
-          <CardDescription>Prima acumulada de todas las solicitudes pagadas en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
+          <CardDescription>Prima acumulada de todas las solicitudes retornadas por el servicio en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (

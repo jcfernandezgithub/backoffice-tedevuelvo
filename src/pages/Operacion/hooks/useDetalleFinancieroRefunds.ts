@@ -1,5 +1,4 @@
 import { useAllRefunds } from './useAllRefunds';
-import { useMemo } from 'react';
 
 /**
  * COHORTE: solicitudes CREADAS en el año en curso (listV2 → createdAt).
@@ -15,43 +14,23 @@ export function useDetalleFinancieroRefunds() {
 }
 
 /**
- * CAJA REAL: solicitudes que pasaron a "paid" dentro del año en curso,
- * sin importar cuándo se crearon.
+ * UNIVERSO COMPLETO / listV3: solicitudes actualizadas dentro del año en curso,
+ * sin filtrar en frontend por estado.
  *
  * - Pedimos al backend listV3 (filtra por updatedAt) desde diciembre del año
  *   anterior para conservar el mes base de comparación del Δ de enero.
- * - Luego filtramos client-side por la fecha real de pago. Si el historial no
- *   trae una transición explícita a "paid", usamos updatedAt como fallback para
- *   no perder pagos históricos que sí vienen con status paid.
+ * - No aplicamos un segundo filtro client-side por `paid`: el servicio ya trae
+ *   el universo requerido para Detalle Financiero y la vista debe dibujar todo
+ *   lo que retorna.
  * - `queryKey` propio → caché independiente; convive con la cohorte sin
  *   invalidarse mutuamente.
  */
 export function useDetalleFinancieroCashflow() {
   const year = new Date().getFullYear();
   const baselineStart = `${year - 1}-12-01`;
-  const query = useAllRefunds({
+  return useAllRefunds({
     fechaDesde: baselineStart,
     fechaHasta: `${year}-12-31`,
     endpoint: 'listV3',
   });
-
-  const data = useMemo(() => {
-    const start = baselineStart;
-    const end = `${year}-12-31`;
-    return (query.data || []).filter((r: any) => {
-      if (r.status !== 'paid') return false;
-
-      // Buscar la transición a "paid" más reciente (statusHistory ya viene lowercased)
-      const paidEntry = r.statusHistory
-        ?.slice()
-        .reverse()
-        .find((e: any) => e.to === 'paid');
-      const dateStr = paidEntry?.at || r.updatedAt || r.createdAt;
-      if (!dateStr) return false;
-      const day = dateStr.split('T')[0];
-      return day >= start && day <= end;
-    });
-  }, [query.data, baselineStart, year]);
-
-  return { ...query, data };
 }
