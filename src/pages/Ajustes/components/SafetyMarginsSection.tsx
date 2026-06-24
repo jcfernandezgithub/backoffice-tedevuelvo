@@ -11,14 +11,26 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { RotateCcw, Save, ShieldAlert, ShieldCheck, Search } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { AlertTriangle, ArrowRight } from 'lucide-react';
 
 const HIGH_RISK_THRESHOLD = 15; // > 15% se muestra como "alto riesgo"
+const CONFIRM_WORD = 'cambiar';
 
 export function SafetyMarginsSection() {
   const { margins, save, reset } = useSafetyMargins();
   const [draft, setDraft] = useState<SafetyMargin[]>(margins.map((m) => ({ ...m })));
   const [isDirty, setIsDirty] = useState(false);
   const [search, setSearch] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
   const handleChange = (institution: string, value: string) => {
     const num = parseFloat(value);
@@ -32,6 +44,8 @@ export function SafetyMarginsSection() {
   const handleSave = () => {
     save(draft);
     setIsDirty(false);
+    setConfirmOpen(false);
+    setConfirmText('');
     toast.success('Márgenes actualizados', {
       description: 'Los nuevos márgenes se aplicarán en las próximas simulaciones.',
     });
@@ -60,6 +74,28 @@ export function SafetyMarginsSection() {
     draft.length > 0
       ? Math.round((draft.reduce((s, m) => s + m.margin, 0) / draft.length) * 10) / 10
       : 0;
+
+  // Diferencias entre draft y valores persistidos (para el preview del dialog)
+  const diffs = useMemo(
+    () =>
+      draft
+        .map((d) => {
+          const current = margins.find((m) => m.institution === d.institution);
+          return current && current.margin !== d.margin
+            ? { institution: d.institution, from: current.margin, to: d.margin }
+            : null;
+        })
+        .filter((x): x is { institution: string; from: number; to: number } => !!x)
+        .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from)),
+    [draft, margins]
+  );
+
+  const confirmValid = confirmText.trim().toLowerCase() === CONFIRM_WORD;
+
+  const handleOpenConfirm = () => {
+    setConfirmText('');
+    setConfirmOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -185,11 +221,101 @@ export function SafetyMarginsSection() {
           <RotateCcw className="h-3.5 w-3.5" />
           Restaurar defaults
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={!isDirty} className="gap-2">
+        <Button size="sm" onClick={handleOpenConfirm} disabled={!isDirty} className="gap-2">
           <Save className="h-3.5 w-3.5" />
           Guardar cambios
         </Button>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => { setConfirmOpen(o); if (!o) setConfirmText(''); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <DialogTitle>Confirmar cambio de márgenes</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Esta acción es <strong>sensible</strong>: afectará el recálculo de
+                  todas las devoluciones que usen estos márgenes a partir de ahora.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {diffs.length > 0 && (
+            <div className="rounded-lg border border-border/60 bg-muted/30 max-h-56 overflow-auto">
+              <div className="px-3 py-2 border-b border-border/60 text-xs font-medium text-muted-foreground">
+                {diffs.length} {diffs.length === 1 ? 'cambio' : 'cambios'} a aplicar
+              </div>
+              <ul className="divide-y divide-border/60">
+                {diffs.map((d) => {
+                  const up = d.to > d.from;
+                  return (
+                    <li
+                      key={d.institution}
+                      className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                    >
+                      <span className="truncate font-medium">{d.institution}</span>
+                      <span className="flex items-center gap-2 shrink-0 font-mono text-xs">
+                        <span className="text-muted-foreground">{d.from}%</span>
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        <span
+                          className={
+                            up
+                              ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                              : 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                          }
+                        >
+                          {d.to}%
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-input" className="text-sm">
+              Para confirmar, escribe{' '}
+              <span className="font-mono font-semibold text-foreground">{CONFIRM_WORD}</span>{' '}
+              en el campo de abajo.
+            </Label>
+            <Input
+              id="confirm-input"
+              autoFocus
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={CONFIRM_WORD}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && confirmValid) handleSave();
+              }}
+              className={
+                confirmText && !confirmValid
+                  ? 'border-destructive focus-visible:ring-destructive'
+                  : ''
+              }
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!confirmValid}
+              className="gap-2"
+            >
+              <Save className="h-3.5 w-3.5" />
+              Aplicar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
