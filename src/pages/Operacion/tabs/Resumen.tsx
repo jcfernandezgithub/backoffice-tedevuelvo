@@ -96,7 +96,11 @@ export function TabResumen() {
   );
   
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
-  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds();
+  // Reusa el caché filtrado por las fechas del FiltersBar (enviadas a listV2 como since/to).
+  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
 
   // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
   const getLastStatusChangeDate = (refund: any): string | null => {

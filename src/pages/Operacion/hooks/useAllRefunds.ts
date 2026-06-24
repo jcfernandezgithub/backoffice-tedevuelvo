@@ -3,18 +3,33 @@ import { refundAdminApi } from '@/services/refundAdminApi';
 import type { RefundRequest } from '@/types/refund';
 
 const STALE_TIME = 10 * 60 * 1000; // 10 minutos
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 500;
+
+export interface UseAllRefundsParams {
+  /** Fecha desde en formato YYYY-MM-DD (se envía sin transformar a listV2 como `since`). */
+  since?: string;
+  /** Fecha hasta en formato YYYY-MM-DD (se envía sin transformar a listV2 como `to`). */
+  to?: string;
+}
 
 /**
  * Hook compartido que carga TODOS los refunds una sola vez para toda la pantalla Operación.
  * Todos los tabs consumen este mismo caché — sin fetches duplicados.
+ *
+ * Acepta opcionalmente fechas (YYYY-MM-DD) que se reenvían tal cual al endpoint listV2
+ * (`since`/`to`). El backend usa DateTime.fromISO() y espera exactamente ese formato — no
+ * transformar a dd/MM/yyyy ni a ISO completo con hora.
  */
-export function useAllRefunds() {
+export function useAllRefunds(params: UseAllRefundsParams = {}) {
+  const { since, to } = params;
   return useQuery<RefundRequest[]>({
-    queryKey: ['operacion-all-refunds'],
+    queryKey: ['operacion-all-refunds', { since: since ?? null, to: to ?? null }],
     queryFn: async ({ signal }) => {
       // Primera página para conocer el total
-      const firstPage = await refundAdminApi.list({ pageSize: PAGE_SIZE, page: 1 }, signal);
+      const firstPage = await refundAdminApi.list(
+        { pageSize: PAGE_SIZE, page: 1, from: since, to },
+        signal
+      );
       const total = firstPage.total || 0;
       const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -29,7 +44,9 @@ export function useAllRefunds() {
           if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
           const batch = remainingPages.slice(i, i + BATCH_SIZE);
           const results = await Promise.all(
-            batch.map(page => refundAdminApi.list({ pageSize: PAGE_SIZE, page }, signal))
+            batch.map(page =>
+              refundAdminApi.list({ pageSize: PAGE_SIZE, page, from: since, to }, signal)
+            )
           );
           results.forEach(r => { allItems = allItems.concat(r.items || []); });
         }

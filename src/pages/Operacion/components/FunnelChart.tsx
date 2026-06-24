@@ -31,6 +31,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -122,7 +123,11 @@ export function FunnelChart({ data, title, isLoading }: FunnelChartProps) {
   const [selectedEtapa, setSelectedEtapa] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const { data: allRefunds = [] } = useAllRefunds();
+  const { filtros } = useFilters();
+  const { data: allRefunds = [] } = useAllRefunds({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
 
   const filteredRefunds = selectedEtapa
     ? allRefunds.filter(r => {

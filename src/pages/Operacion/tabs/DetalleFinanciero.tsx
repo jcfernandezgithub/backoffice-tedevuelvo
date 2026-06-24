@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useFilters } from '../hooks/useFilters';
 import {
   BarChart,
   Bar,
@@ -136,7 +137,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function TabDetalleFinanciero() {
   // ── Query compartido: reutiliza el caché de toda la pantalla Operación ───────
-  const { data: refunds = [], isLoading } = useAllRefunds();
+  const { filtros } = useFilters();
+  const { data: refunds = [], isLoading } = useAllRefunds({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
 
   // Construir datos mensuales a partir de las solicitudes pagadas
   const monthlyData = useMemo(() => {

@@ -121,7 +121,10 @@ function calcularTiempoTransicion(
 export function TabCuellosBotella() {
   const { filtros } = useFilters();
   const { data: funnelData, isLoading: loadingFunnel } = useFunnelData(filtros);
-  const { data: allRefundsRaw = [], isLoading: loadingRefunds } = useAllRefunds();
+  const { data: allRefundsRaw = [], isLoading: loadingRefunds } = useAllRefunds({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
 
   // Filtrar por fecha del último cambio al estado actual (no por createdAt)
   const allRefunds = useMemo(() => {
