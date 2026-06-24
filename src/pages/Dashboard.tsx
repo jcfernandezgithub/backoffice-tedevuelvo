@@ -415,7 +415,7 @@ export default function Dashboard() {
       }))
   }, [granularCounts, totalSolicitudes])
 
-  const isRefreshing = isFetchingRefunds || isFetchingMandates
+  const isRefreshing = isFetchingRefunds
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
@@ -642,7 +642,7 @@ export default function Dashboard() {
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {isQualifying && mandateStatuses && (
+                                  {isQualifying && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
