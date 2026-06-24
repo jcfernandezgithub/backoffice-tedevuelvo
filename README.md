@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 4.0.1
+## Versión 4.0.2
 
 ## Changelog
+
+### Versión 4.0.2 - 2026-06-24
+
+#### Corrección del estado del Mandato en listados y detalle
+- En `Refunds/List`, `Refunds/Detail` y los servicios masivos (`corteBatchService`, `certificadoBatchService`) el mandato ya no depende exclusivamente de `hasSignedPdf`. Ahora se considera **firmado** cuando se cumple cualquiera de estas condiciones provenientes de `listV2`/`search`:
+  - `signatureStatus === 'signed'`, o
+  - existe `signedPdfUrl`, `signaturePdfKey` o `signedPdfS3Key`, o
+  - `hasSignedPdf === true` (fallback legacy).
+- El enlace de firma utiliza `experianSignUrl` con fallback a `signUrl`.
+- Se agregaron los campos `signatureStatus`, `signatureSignedAt`, `signaturePdfKey`, `signedPdfS3Key`, `experianSignUrl`, `experianGroupId`, `experianDocumentId` y `signatureProvider` al tipo `RefundRequest`.
+- Esto resuelve casos donde solicitudes con mandato firmado aparecían como "Pendiente" porque el backend no poblaba `hasSignedPdf` en el payload de la lista.
 
 ### Versión 4.0.1 - 2026-06-21
 
