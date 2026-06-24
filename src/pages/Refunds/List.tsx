@@ -446,6 +446,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: nroPolizaFilter,
       nroCredito: nroCreditoFilter,
       institution: institutionFilter,
+      status: localFilters.status,
+      from: localFilters.from || DEFAULT_FROM,
+      to: localFilters.to || DEFAULT_TO,
+      mandate: mandateFilter,
     })
     
     // Actualizar URL params
@@ -522,6 +526,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: '',
       nroCredito: '',
       institution: 'all',
+      status: undefined as any,
+      from: '',
+      to: '',
+      mandate: 'all',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
