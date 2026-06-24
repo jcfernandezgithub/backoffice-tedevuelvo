@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useDetalleFinancieroRefunds, useDetalleFinancieroCashflow } from '../hooks/useDetalleFinancieroRefunds';
+import { useDetalleFinancieroRefunds } from '../hooks/useDetalleFinancieroRefunds';
 import {
   BarChart,
   Bar,
@@ -124,7 +124,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
       <div className="border-t pt-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Solicitudes</span>
+          <span>Solicitudes pagadas</span>
           <span className="font-semibold text-foreground">{d?.count ?? 0}</span>
         </div>
       </div>
@@ -132,149 +132,126 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// ─── Helper: agregación mensual a partir de un set de refunds ────────────────
-
-type MonthlyBuildOptions = {
-  onlyPaid?: boolean;
-  dateMode?: 'updated' | 'paid';
-};
-
-function getLatestRealAmount(r: any) {
-  const topLevelAmount = Number(r.realAmount || 0);
-  if (topLevelAmount > 0) return topLevelAmount;
-  const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => e.realAmount && e.realAmount > 0);
-  return Number(realAmountEntry?.realAmount || 0);
-}
-
-function buildMonthlyData(refunds: any[], options: MonthlyBuildOptions = {}) {
-  const scopedRefunds = options.onlyPaid
-    ? refunds.filter((r: any) => r.status === 'paid')
-    : refunds;
-  const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
-
-  scopedRefunds.forEach((r: any) => {
-    const paidEntry = r.statusHistory?.slice().reverse().find(
-      (e: any) => e.to?.toLowerCase() === 'paid'
-    );
-    const dateStr = options.dateMode === 'paid'
-      ? paidEntry?.at || r.updatedAt || r.createdAt
-      : r.updatedAt || paidEntry?.at || r.createdAt;
-    if (!dateStr) return;
-
-    const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
-    if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
-
-    byMonth[monthKey].monto += getLatestRealAmount(r);
-
-    const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
-    const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
-    byMonth[monthKey].prima += newMonthlyPremium * remainingInstallments;
-    byMonth[monthKey].count += 1;
-  });
-
-  const sorted = Object.entries(byMonth)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, vals]) => ({ monthKey: key, ...vals }));
-
-  return sorted.map((item, i) => {
-    const prev = sorted[i - 1];
-    const ticketPromedio = item.count > 0 ? item.monto / item.count : 0;
-    const primaPromedio = item.count > 0 ? item.prima / item.count : 0;
-    const prevTicket = prev && prev.count > 0 ? prev.monto / prev.count : 0;
-    const prevPrimaAvg = prev && prev.count > 0 ? prev.prima / prev.count : 0;
-
-    const montoPct = prev && prev.monto > 0 ? ((item.monto - prev.monto) / prev.monto) * 100 : null;
-    const primaPct = prev && prev.prima > 0 ? ((item.prima - prev.prima) / prev.prima) * 100 : null;
-    const ticketPct = prev && prevTicket > 0 ? ((ticketPromedio - prevTicket) / prevTicket) * 100 : null;
-    const primaAvgPct = prev && prevPrimaAvg > 0 ? ((primaPromedio - prevPrimaAvg) / prevPrimaAvg) * 100 : null;
-
-    return {
-      ...item,
-      ticketPromedio,
-      primaPromedio,
-      label: format(parseISO(`${item.monthKey}-01`), 'MMM yyyy', { locale: es }),
-      labelShort: format(parseISO(`${item.monthKey}-01`), 'MMM yy', { locale: es }),
-      montoPct,
-      primaPct,
-      ticketPct,
-      primaAvgPct,
-    };
-  });
-}
-
-function buildTotals(monthlyData: ReturnType<typeof buildMonthlyData>) {
-  const totalMonto = monthlyData.reduce((s, d) => s + d.monto, 0);
-  const totalPrima = monthlyData.reduce((s, d) => s + d.prima, 0);
-  const totalCount = monthlyData.reduce((s, d) => s + d.count, 0);
-  const ticketPromedioGlobal = totalCount > 0 ? totalMonto / totalCount : 0;
-  const primaPromedioGlobal = totalCount > 0 ? totalPrima / totalCount : 0;
-  const last = monthlyData[monthlyData.length - 1];
-  return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
-}
-
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export function TabDetalleFinanciero() {
-  // Dos universos paralelos:
-  //   - Cohorte: solicitudes CREADAS en el año (listV2 / createdAt)
-  //   - Universo completo: todo lo retornado por listV3, sin filtrar por estado en frontend
-  const { data: cohortRefunds = [], isLoading: loadingCohort } = useDetalleFinancieroRefunds();
-  const { data: cashflowRefunds = [], isLoading: loadingCashflow } = useDetalleFinancieroCashflow();
-  const isLoading = loadingCohort || loadingCashflow;
+  // ── Dataset año en curso (listV2 / createdAt). Caché propio, independiente
+  //    del rango de fechas del URL que usan los demás tabs de Operación.
+  const { data: refunds = [], isLoading } = useDetalleFinancieroRefunds();
   const currentYear = new Date().getFullYear();
 
-  const cohortMonthly = useMemo(() => buildMonthlyData(cohortRefunds, { onlyPaid: true, dateMode: 'paid' }), [cohortRefunds]);
-  const cashflowMonthly = useMemo(() => buildMonthlyData(cashflowRefunds, { dateMode: 'updated' }), [cashflowRefunds]);
-  const cashflowCurrentYearMonthly = useMemo(
-    () => cashflowMonthly.filter(row => row.monthKey.startsWith(`${currentYear}-`)),
-    [cashflowMonthly, currentYear]
-  );
-  const cohortTotals = useMemo(() => buildTotals(cohortMonthly), [cohortMonthly]);
-  const cashflowTotals = useMemo(() => buildTotals(cashflowCurrentYearMonthly), [cashflowCurrentYearMonthly]);
+  // Construir datos mensuales a partir de las solicitudes pagadas
+  const monthlyData = useMemo(() => {
+    const paidRefunds = refunds.filter((r: any) => r.status === 'paid');
 
-  // El gráfico de Plan de cumplimiento usa el universo completo del año retornado por listV3.
-  const monthlyData = cashflowMonthly;
-  const totals = cashflowTotals;
+    const byMonth: Record<string, { monto: number; prima: number; count: number }> = {};
+
+    paidRefunds.forEach((r: any) => {
+      // Usar createdAt para asignar al mes (la solicitud fue pagada, pero la fecha más relevante
+      // para el histórico es cuando se creó; ajustamos a cuando pasó a "paid" si está disponible)
+      const paidEntry = r.statusHistory?.slice().reverse().find(
+        (e: any) => e.to?.toLowerCase() === 'paid'
+      );
+      const dateStr = paidEntry?.at || r.createdAt;
+      if (!dateStr) return;
+
+      const monthKey = format(startOfMonth(parseISO(dateStr.split('T')[0])), 'yyyy-MM');
+      if (!byMonth[monthKey]) byMonth[monthKey] = { monto: 0, prima: 0, count: 0 };
+
+      // Monto real pagado al cliente
+      const realAmountEntry = r.statusHistory?.slice().reverse().find(
+        (e: any) => {
+          const s = e.to?.toLowerCase();
+          return (s === 'payment_scheduled' || s === 'paid') && e.realAmount;
+        }
+      );
+      byMonth[monthKey].monto += realAmountEntry?.realAmount || 0;
+
+      // Prima total recuperada
+      const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
+      const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
+      byMonth[monthKey].prima += newMonthlyPremium * remainingInstallments;
+      byMonth[monthKey].count += 1;
+    });
+
+    // Ordenar por fecha y calcular variaciones
+    const sorted = Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, vals]) => ({ monthKey: key, ...vals }));
+
+    return sorted.map((item, i) => {
+      const prev = sorted[i - 1];
+      const ticketPromedio = item.count > 0 ? item.monto / item.count : 0;
+      const primaPromedio = item.count > 0 ? item.prima / item.count : 0;
+      const prevTicket = prev && prev.count > 0 ? prev.monto / prev.count : 0;
+      const prevPrimaAvg = prev && prev.count > 0 ? prev.prima / prev.count : 0;
+
+      const montoPct = prev && prev.monto > 0 ? ((item.monto - prev.monto) / prev.monto) * 100 : null;
+      const primaPct = prev && prev.prima > 0 ? ((item.prima - prev.prima) / prev.prima) * 100 : null;
+      const ticketPct = prev && prevTicket > 0 ? ((ticketPromedio - prevTicket) / prevTicket) * 100 : null;
+      const primaAvgPct = prev && prevPrimaAvg > 0 ? ((primaPromedio - prevPrimaAvg) / prevPrimaAvg) * 100 : null;
+
+      return {
+        ...item,
+        ticketPromedio,
+        primaPromedio,
+        label: format(parseISO(`${item.monthKey}-01`), 'MMM yyyy', { locale: es }),
+        labelShort: format(parseISO(`${item.monthKey}-01`), 'MMM yy', { locale: es }),
+        montoPct,
+        primaPct,
+        ticketPct,
+        primaAvgPct,
+      };
+    });
+  }, [refunds]);
+
+  // Totales acumulados (todo el histórico)
+  const totals = useMemo(() => {
+    const totalMonto = monthlyData.reduce((s, d) => s + d.monto, 0);
+    const totalPrima = monthlyData.reduce((s, d) => s + d.prima, 0);
+    const totalCount = monthlyData.reduce((s, d) => s + d.count, 0);
+    const ticketPromedioGlobal = totalCount > 0 ? totalMonto / totalCount : 0;
+    const primaPromedioGlobal = totalCount > 0 ? totalPrima / totalCount : 0;
+
+    const last = monthlyData[monthlyData.length - 1];
+
+    return { totalMonto, totalPrima, totalCount, ticketPromedioGlobal, primaPromedioGlobal, last };
+  }, [monthlyData]);
 
   const handleExport = useCallback(() => {
     const timestamp = new Date().toISOString().slice(0, 10);
 
-    const monthlyToRows = (data: typeof monthlyData) =>
-      [...data].reverse().map(row => ({
-        'Mes': row.label,
-        'Solicitudes': row.count,
-        'Monto Total Pagado (CLP)': row.monto,
-        'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
-        'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
-        'Δ Ticket Promedio (%)': row.ticketPct !== null ? Number(row.ticketPct.toFixed(2)) : '',
-        'Prima Total Recuperada (CLP)': Math.round(row.prima),
-        'Δ Prima (%)': row.primaPct !== null ? Number(row.primaPct.toFixed(2)) : '',
-        'Prima Promedio (CLP)': Math.round(row.primaPromedio),
-        'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
-      }));
+    // ── Hoja 1: Detalle mensual ───────────────────────────────────────────────
+    const monthlyRows = [...monthlyData].reverse().map(row => ({
+      'Mes': row.label,
+      'Solicitudes Pagadas': row.count,
+      'Monto Total Pagado (CLP)': row.monto,
+      'Δ Monto (%)': row.montoPct !== null ? Number(row.montoPct.toFixed(2)) : '',
+      'Ticket Promedio (CLP)': Math.round(row.ticketPromedio),
+      'Δ Ticket Promedio (%)': row.ticketPct !== null ? Number(row.ticketPct.toFixed(2)) : '',
+      'Prima Total Recuperada (CLP)': Math.round(row.prima),
+      'Δ Prima (%)': row.primaPct !== null ? Number(row.primaPct.toFixed(2)) : '',
+      'Prima Promedio (CLP)': Math.round(row.primaPromedio),
+      'Δ Prima Promedio (%)': row.primaAvgPct !== null ? Number(row.primaAvgPct.toFixed(2)) : '',
+    }));
 
-    const totalsToRows = (label: string, t: typeof totals, monthCount: number) => [
-      { 'Métrica': `[${label}] Total solicitudes (${currentYear})`, 'Valor': t.totalCount },
-      { 'Métrica': `[${label}] Monto total pagado (${currentYear})`, 'Valor': t.totalMonto },
-      { 'Métrica': `[${label}] Ticket promedio global (${currentYear})`, 'Valor': Math.round(t.ticketPromedioGlobal) },
-      { 'Métrica': `[${label}] Prima total recuperada (${currentYear})`, 'Valor': Math.round(t.totalPrima) },
-      { 'Métrica': `[${label}] Prima promedio global (${currentYear})`, 'Valor': Math.round(t.primaPromedioGlobal) },
-      { 'Métrica': `[${label}] Meses con datos`, 'Valor': monthCount },
-      { 'Métrica': '', 'Valor': '' },
-    ];
-
+    // ── Hoja 2: Resumen de totales del año en curso ──────────────────────────
     const summaryRows = [
-      ...totalsToRows('Universo completo', cashflowTotals, cashflowMonthly.length),
-      ...totalsToRows('Cohorte creadas', cohortTotals, cohortMonthly.length),
+      { 'Métrica': `Total solicitudes pagadas (año ${currentYear})`, 'Valor': totals.totalCount },
+      { 'Métrica': `Monto total pagado a clientes (año ${currentYear})`, 'Valor': totals.totalMonto },
+      { 'Métrica': `Ticket promedio global (año ${currentYear})`, 'Valor': Math.round(totals.ticketPromedioGlobal) },
+      { 'Métrica': `Prima total recuperada (año ${currentYear})`, 'Valor': Math.round(totals.totalPrima) },
+      { 'Métrica': `Prima promedio global (año ${currentYear})`, 'Valor': Math.round(totals.primaPromedioGlobal) },
+      { 'Métrica': '', 'Valor': '' },
+      { 'Métrica': 'Meses con datos registrados', 'Valor': monthlyData.length },
       { 'Métrica': 'Fecha de exportación', 'Valor': new Date().toLocaleDateString('es-CL') },
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cashflowMonthly)), 'Universo - mensual');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyToRows(cohortMonthly)), 'Cohorte - mensual');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyRows), 'Detalle Mensual');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryRows), `Resumen ${currentYear}`);
     XLSX.writeFile(wb, `detalle-financiero-${currentYear}-${timestamp}.xlsx`);
-  }, [cashflowMonthly, cohortMonthly, cashflowTotals, cohortTotals, currentYear]);
+  }, [monthlyData, totals, currentYear]);
 
   if (isLoading) {
     return (
@@ -298,10 +275,10 @@ export function TabDetalleFinanciero() {
     <div className="space-y-6">
       {/* Encabezado */}
       <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Universo completo {currentYear}</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Detalle Financiero · Año {currentYear}</h2>
         <div className="flex-1 h-px bg-border" />
-        <Badge variant="outline" className="text-xs">Todo lo retornado por listV3</Badge>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0 && cohortMonthly.length === 0}>
+        <Badge variant="outline" className="text-xs">Solicitudes creadas en {currentYear}</Badge>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={monthlyData.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Exportar Excel
         </Button>
@@ -338,7 +315,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{formatCLP(totals.ticketPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
             {lastTicketVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastTicketVar.color}`}>
                 {lastTicketVar.icon}<span>{lastTicketVar.label} último mes</span>
@@ -376,7 +353,7 @@ export function TabDetalleFinanciero() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-violet-700 dark:text-violet-400">{formatCLP(totals.primaPromedioGlobal, true)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Por solicitud · año {currentYear}</p>
+            <p className="text-xs text-muted-foreground mt-1">Por solicitud pagada · año {currentYear}</p>
             {lastPrimaAvgVar && (
               <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${lastPrimaAvgVar.color}`}>
                 {lastPrimaAvgVar.icon}<span>{lastPrimaAvgVar.label} último mes</span>
@@ -394,7 +371,7 @@ export function TabDetalleFinanciero() {
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos financieros registrados</div>
+            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">No hay datos de pagos registrados</div>
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
@@ -432,7 +409,7 @@ export function TabDetalleFinanciero() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Plan de Cumplimiento · Prima Recuperada</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
-        <PlanCumplimientoChart monthlyData={cashflowCurrentYearMonthly} />
+        <PlanCumplimientoChart monthlyData={monthlyData} />
       </div>
 
       {/* Gráfico: Prima Recuperada por mes */}
@@ -440,7 +417,7 @@ export function TabDetalleFinanciero() {
 
         <CardHeader>
           <CardTitle className="text-base">Prima Total Recuperada · por Mes</CardTitle>
-          <CardDescription>Prima acumulada de todas las solicitudes retornadas por el servicio en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
+          <CardDescription>Prima acumulada de todas las solicitudes pagadas en el mes. Refleja el valor recuperado del seguro original.</CardDescription>
         </CardHeader>
         <CardContent>
           {monthlyData.length === 0 ? (
@@ -530,101 +507,6 @@ export function TabDetalleFinanciero() {
           </div>
         </CardContent>
       </Card>
-
-      {/* ── Sección 2: Cohorte (creadas en el año) ───────────────────────── */}
-      <div className="pt-4">
-        <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-            Cohorte · Creadas en {currentYear}
-          </h2>
-          <div className="flex-1 h-px bg-border" />
-          <Badge variant="outline" className="text-xs">
-            Solicitudes creadas y ya pagadas en {currentYear}
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="border-l-4 border-l-emerald-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Monto Pagado (cohorte)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.totalMonto, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{cohortTotals.totalCount} solicitudes</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-amber-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Promedio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.ticketPromedioGlobal, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Por solicitud cohorte</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-indigo-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Recuperada</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.totalPrima, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Creadas y pagadas en {currentYear}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-violet-500">
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Prima Promedio</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{formatCLP(cohortTotals.primaPromedioGlobal, true)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Por solicitud cohorte</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Cohorte mensual · pagos de solicitudes creadas en {currentYear}</CardTitle>
-            <CardDescription>
-              Cuenta sólo solicitudes cuyo <code>createdAt</code> cae en {currentYear} y ya están pagadas, agrupadas por el mes en que pasaron a "paid".
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            {cohortMonthly.length === 0 ? (
-              <div className="h-32 flex items-center justify-center text-muted-foreground text-sm">
-                No hay solicitudes de la cohorte {currentYear} pagadas aún
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      <th className="text-left px-4 py-3 font-medium text-muted-foreground">Mes</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Solic.</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Monto Pagado</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Ticket Prom.</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Recuperada</th>
-                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Prima Prom.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...cohortMonthly].reverse().map((row) => (
-                      <tr key={row.monthKey} className="border-b hover:bg-muted/30">
-                        <td className="px-4 py-3 capitalize">{row.label}</td>
-                        <td className="px-4 py-3 text-right tabular-nums">{row.count}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.monto)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-amber-700 dark:text-amber-400">{formatCLP(row.ticketPromedio)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums font-medium">{formatCLP(row.prima)}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-violet-700 dark:text-violet-400">{formatCLP(row.primaPromedio)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
