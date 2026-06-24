@@ -140,9 +140,10 @@ type MonthlyBuildOptions = {
 };
 
 function getLatestRealAmount(r: any) {
-  if (r.realAmount && r.realAmount > 0) return r.realAmount;
+  const topLevelAmount = Number(r.realAmount || 0);
+  if (topLevelAmount > 0) return topLevelAmount;
   const realAmountEntry = r.statusHistory?.slice().reverse().find((e: any) => e.realAmount && e.realAmount > 0);
-  return realAmountEntry?.realAmount || 0;
+  return Number(realAmountEntry?.realAmount || 0);
 }
 
 function buildMonthlyData(refunds: any[], options: MonthlyBuildOptions = {}) {
