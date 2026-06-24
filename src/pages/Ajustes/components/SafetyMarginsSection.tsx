@@ -47,8 +47,13 @@ export function SafetyMarginsSection() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return draft;
-    return draft.filter((m) => m.institution.toLowerCase().includes(q));
+    const base = q
+      ? draft.filter((m) => m.institution.toLowerCase().includes(q))
+      : draft;
+    // Ordenar por margen descendente, y alfabéticamente como desempate
+    return [...base].sort(
+      (a, b) => b.margin - a.margin || a.institution.localeCompare(b.institution)
+    );
   }, [draft, search]);
 
   const promedio =
