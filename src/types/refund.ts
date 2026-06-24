@@ -49,6 +49,14 @@ export interface RefundRequest {
   signedPdfUrl?: string
   signUrl?: string
   signedAt?: string
+  signatureStatus?: string
+  signatureSignedAt?: string
+  signaturePdfKey?: string
+  signedPdfS3Key?: string
+  experianSignUrl?: string
+  experianGroupId?: string
+  experianDocumentId?: string
+  signatureProvider?: string
   clientTokenHash?: string
   partnerId?: string | null
   partnerUserId?: string | null

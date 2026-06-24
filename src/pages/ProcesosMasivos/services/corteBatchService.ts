@@ -401,9 +401,15 @@ export async function processSingleRow(row: CsvRow, _opts: ProcessOptions = {}):
     kind,
   }
 
-  // 3. Signed mandate check: hasSignedPdf viene desde los datos de la solicitud/listV2.
-  // No consultar /experian/status por registro.
-  if (!refund.hasSignedPdf) {
+  // 3. Signed mandate check: derivado de los campos de firma de listV2/search.
+  const r3: any = refund
+  const isSigned3 =
+    r3.signatureStatus === 'signed' ||
+    !!r3.signedPdfUrl ||
+    !!r3.signaturePdfKey ||
+    !!r3.signedPdfS3Key ||
+    !!r3.hasSignedPdf
+  if (!isSigned3) {
     return { ...enrichedBase, status: 'skipped', reason: 'Mandato no firmado' }
   }
 

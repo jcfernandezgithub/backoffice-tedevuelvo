@@ -916,12 +916,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     return paginatedItems.map((r: any) => r.publicId).filter(Boolean)
   }, [paginatedItems, locallyFilteredItems, mandateFilter])
 
-  // hasSignedPdf ya viene en cada refund desde listV2 — sin fetch por ítem.
+  // Estado del mandato derivado de los campos de firma que vienen en listV2/search.
+  // Una solicitud se considera firmada si signatureStatus === 'signed' o
+  // existe signedPdfUrl/signaturePdfKey/signedPdfS3Key. signUrl proviene de experianSignUrl.
   const mandateStatuses = useMemo(() => {
     const map: Record<string, { hasSignedPdf: boolean; signUrl?: string }> = {}
     const source = mandateFilter !== 'all' ? locallyFilteredItems.slice(0, 200) : paginatedItems
     source.forEach((r: any) => {
-      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf, signUrl: r.signUrl }
+      if (!r.publicId) return
+      const signed =
+        r.signatureStatus === 'signed' ||
+        !!r.signedPdfUrl ||
+        !!r.signaturePdfKey ||
+        !!r.signedPdfS3Key ||
+        !!r.hasSignedPdf
+      map[r.publicId] = {
+        hasSignedPdf: signed,
+        signUrl: r.experianSignUrl || r.signUrl,
+      }
     })
     return map
   }, [paginatedItems, locallyFilteredItems, mandateFilter])

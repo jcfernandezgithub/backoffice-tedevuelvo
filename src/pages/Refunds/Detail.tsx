@@ -161,10 +161,19 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     enabled: !!getRefundDocumentsPublicId(refund),
   })
 
-  const mandateStatus = useMemo(() => ({
-    hasSignedPdf: !!refund?.hasSignedPdf,
-    signedPdfUrl: refund?.signedPdfUrl,
-  }), [refund?.hasSignedPdf, refund?.signedPdfUrl])
+  const mandateStatus = useMemo(() => {
+    const r: any = refund || {}
+    const signed =
+      r.signatureStatus === 'signed' ||
+      !!r.signedPdfUrl ||
+      !!r.signaturePdfKey ||
+      !!r.signedPdfS3Key ||
+      !!r.hasSignedPdf
+    return {
+      hasSignedPdf: signed,
+      signedPdfUrl: r.signedPdfUrl,
+    }
+  }, [refund])
 
   // Fetch partner name for origin display
   const { data: partnerName } = useQuery({
