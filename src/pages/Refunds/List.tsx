@@ -839,20 +839,40 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
       const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
       
-      result = result.filter((r: any) => 
-        statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
-      )
-
-      // Restricción adicional: si viene desde una caluga de Operación,
-      // el estado ACTUAL debe ser uno de los seleccionados.
-      if (currentStatusOnly) {
+      if (dashboardSnapshot) {
+        // Modo Dashboard: filtrar por createdAt en rango + estado actual + mandate/bank por campo directo
         const lcStatusList = statusList.map(s => s.toLowerCase())
-        result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
+        result = result.filter((r: any) => {
+          // createdAt en rango (igual que filterByLocalDate del Dashboard)
+          if (r.createdAt) {
+            const dateStr = String(r.createdAt).split('T')[0]
+            if (dateStr < fromDate || dateStr > toDate) return false
+          }
+          // estado actual coincide
+          return lcStatusList.includes((r.status?.toLowerCase() || ''))
+        })
+        // Filtro de mandato por campo directo (mismo criterio que el Dashboard)
+        if (mandateFilter === 'signed') {
+          result = result.filter((r: any) => r.hasSignedPdf === true)
+        } else if (mandateFilter === 'pending') {
+          result = result.filter((r: any) => r.hasSignedPdf !== true)
+        }
+      } else {
+        result = result.filter((r: any) => 
+          statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
+        )
+
+        // Restricción adicional: si viene desde una caluga de Operación,
+        // el estado ACTUAL debe ser uno de los seleccionados.
+        if (currentStatusOnly) {
+          const lcStatusList = statusList.map(s => s.toLowerCase())
+          result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
+        }
       }
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot, mandateFilter, localFilters.from, localFilters.to, localFilters.status])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
