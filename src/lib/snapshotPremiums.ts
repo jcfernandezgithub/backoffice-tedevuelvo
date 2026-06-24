@@ -24,6 +24,12 @@ const MAPEO_INSTITUCIONES: Record<string, string> = {
   ripley: 'BANCO RIPLEY', falabella: 'BANCO FALABELLA', consorcio: 'BANCO CONSORCIO',
   coopeuch: 'COOPEUCH', cencosud: 'BANCO CENCOSUD', forum: 'FORUM', tanner: 'TANNER',
   cooperativas: 'COOPERATIVAS',
+  'santander-consumer': 'SANTANDER CONSUMER',
+  'santander consumer': 'SANTANDER CONSUMER',
+  'chevrolet-sf': 'CHEVROLET SF', 'chevrolet sf': 'CHEVROLET SF',
+  marubeni: 'MARUBENI', internacional: 'BANCO INTERNACIONAL',
+  condell: 'BANCO CONSORCIO', financoop: 'COOPEUCH', ahorrocoop: 'COOPEUCH',
+  libercoop: 'COOPEUCH', capual: 'COOPEUCH', bancrece: 'COOPEUCH', islacoop: 'COOPEUCH',
 }
 
 function resolveAge(snapshot: any): number {

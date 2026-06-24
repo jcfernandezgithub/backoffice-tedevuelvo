@@ -205,6 +205,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     ripley: 'Banco Ripley', falabella: 'Falabella', consorcio: 'Consorcio',
     coopeuch: 'Coopeuch', cencosud: 'Cencosud', 'lider-bci': 'Lider BCI',
     forum: 'Forum', tanner: 'Tanner', cooperativas: 'Cooperativas',
+    'santander-consumer': 'Santander Consumer',
+    'santander consumer': 'Santander Consumer',
+    'chevrolet-sf': 'Chevrolet SF', 'chevrolet sf': 'Chevrolet SF',
+    marubeni: 'Marubeni', internacional: 'Internacional', condell: 'Condell',
+    financoop: 'Financoop', ahorrocoop: 'Ahorrocoop', libercoop: 'Libercoop',
+    capual: 'Capual', bancrece: 'Bancrece', islacoop: 'Islacoop',
   }
 
   // Normaliza institutionId: minúsculas, sin acentos, sin espacios alrededor de guiones,
