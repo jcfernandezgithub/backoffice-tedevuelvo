@@ -308,7 +308,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         ? mandateStatus
         : await publicFilesApi.getSignedPdfInfo(refund.publicId)
 
-      const url = signedPdfInfo.signedPdfUrl || signedPdfInfo.url
+      const url = signedPdfInfo.signedPdfUrl || ('url' in signedPdfInfo ? signedPdfInfo.url : undefined)
       if (url) {
         const decodedUrl = decodeURIComponent(url)
         window.open(decodedUrl, '_blank')
