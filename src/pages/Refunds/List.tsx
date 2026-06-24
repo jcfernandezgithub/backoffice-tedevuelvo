@@ -209,31 +209,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     nroPoliza: searchParams.get('nroPoliza') || '',
     nroCredito: searchParams.get('nroCredito') || '',
     institution: searchParams.get('institution') || 'all',
-    // Snapshot de filtros usados por el modo histórico (estados por fecha).
-    // Solo se actualizan al presionar "Buscar".
-    status: (searchParams.get('status') as RefundStatus | string) || undefined as any,
-    from: searchParams.get('from') || DEFAULT_FROM,
-    to: searchParams.get('to') || DEFAULT_TO,
-    mandate: searchParams.get('mandate') || 'all',
   })
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const initialAutoSearch = searchParams.get('autoSearch') === 'true'
   const [historicalStatusMode, setHistoricalStatusMode] = useState(initialAutoSearch)
-  // Marca si el usuario ya ejecutó al menos una búsqueda explícita (clic en "Buscar").
-  // En modo "Estado en fecha", mientras esté en false NO disparamos fetches
-  // (ni listV2 ni useAllRefunds) para evitar trabajo innecesario.
-  const [hasSearched, setHasSearched] = useState(initialAutoSearch)
   // Cuando viene desde una caluga de Operación, restringir el resultado a las
   // solicitudes que ACTUALMENTE están en ese estado Y entraron a él dentro del rango.
   // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
   // de solicitudes que ya avanzaron a otro estado).
   const currentStatusOnly = searchParams.get('currentStatusOnly') === 'true'
-  // Cuando viene desde una sub-caluga del Dashboard (Firmado/Pendiente, Con/Sin datos):
-  // replicamos exactamente la lógica del Dashboard: filtrar por createdAt en rango,
-  // estado actual = status param, y mandate/bank desde los campos r.hasSignedPdf / r.bankInfo
-  // (sin usar wasInStatusDuringRange ni el fetch de /experian/status).
-  const dashboardSnapshot = searchParams.get('dashboardSnapshot') === 'true'
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
@@ -261,11 +246,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     isLoading: isAllRefundsLoading,
     error: allRefundsError,
     refetch: refetchAllRefunds,
-  } = useAllRefunds({
-    // Solo cargar el dataset completo cuando el modo histórico esté activo
-    // Y el usuario haya presionado "Buscar" (o haya llegado vía autoSearch=true).
-    enabled: historicalStatusMode && hasSearched,
-  })
+  } = useAllRefunds()
 
   // Query para listado inicial (listV2)
   const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
@@ -273,7 +254,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
     staleTime: 30 * 1000,
-    // En modo "Estado en fecha" no se ejecuta listV2 hasta que el usuario presione Buscar
     enabled: !useSearchEndpoint && !historicalStatusMode,
   })
   
@@ -445,7 +425,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     
     setSearchFilters(newSearchFilters)
     setUseSearchEndpoint(!historicalStatusMode)
-    setHasSearched(true)
     
     // Guardar filtros locales aplicados (los que no soporta el servidor)
     setAppliedLocalFilters({
@@ -456,10 +435,6 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: nroPolizaFilter,
       nroCredito: nroCreditoFilter,
       institution: institutionFilter,
-      status: localFilters.status,
-      from: localFilters.from || DEFAULT_FROM,
-      to: localFilters.to || DEFAULT_TO,
-      mandate: mandateFilter,
     })
     
     // Actualizar URL params
@@ -536,14 +511,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       nroPoliza: '',
       nroCredito: '',
       institution: 'all',
-      status: undefined as any,
-      from: '',
-      to: '',
-      mandate: 'all',
     })
     setActiveOverdueFilter(null)
     setSearchParams(new URLSearchParams())
-    setHasSearched(false)
   }
   
   const handleOriginFilterChange = (value: string) => {
@@ -857,54 +827,27 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
 
     // durante el rango de fechas [from, to], sin importar su estado actual
-    if (historicalStatusMode && appliedLocalFilters.status) {
-      const fromDate = appliedLocalFilters.from || '2000-01-01'
-      const toDate = appliedLocalFilters.to || toLocalDateString(new Date())
-
-      // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
-      const statusList = (appliedLocalFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+    if (historicalStatusMode && localFilters.status) {
+      const fromDate = localFilters.from || '2000-01-01'
+      const toDate = localFilters.to || toLocalDateString(new Date())
       
-      if (dashboardSnapshot) {
-        // Modo Dashboard: filtrar por createdAt en rango + estado actual + mandate/bank por campo directo
+      // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
+      const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+      
+      result = result.filter((r: any) => 
+        statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
+      )
+
+      // Restricción adicional: si viene desde una caluga de Operación,
+      // el estado ACTUAL debe ser uno de los seleccionados.
+      if (currentStatusOnly) {
         const lcStatusList = statusList.map(s => s.toLowerCase())
-        result = result.filter((r: any) => {
-          // createdAt en rango (igual que filterByLocalDate del Dashboard)
-          if (r.createdAt) {
-            const dateStr = String(r.createdAt).split('T')[0]
-            if (dateStr < fromDate || dateStr > toDate) return false
-          }
-          // estado actual coincide
-          return lcStatusList.includes((r.status?.toLowerCase() || ''))
-        })
-        // Filtro de mandato por campo directo (mismo criterio que el Dashboard)
-        if (appliedLocalFilters.mandate === 'signed') {
-          result = result.filter((r: any) => r.hasSignedPdf === true)
-        } else if (appliedLocalFilters.mandate === 'pending') {
-          result = result.filter((r: any) => r.hasSignedPdf !== true)
-        }
-      } else {
-        result = result.filter((r: any) => 
-          statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
-        )
-
-        // Restricción adicional: si viene desde una caluga de Operación,
-        // el estado ACTUAL debe ser uno de los seleccionados.
-        if (currentStatusOnly) {
-          const lcStatusList = statusList.map(s => s.toLowerCase())
-          result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
-        }
-
-        // Filtro de mandato (snapshot) — usa hasSignedPdf si está disponible
-        if (appliedLocalFilters.mandate === 'signed') {
-          result = result.filter((r: any) => r.hasSignedPdf === true)
-        } else if (appliedLocalFilters.mandate === 'pending') {
-          result = result.filter((r: any) => r.hasSignedPdf !== true)
-        }
+        result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
       }
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, dashboardSnapshot])
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
@@ -1257,12 +1200,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 <Switch
                   id="historical-status"
                   checked={historicalStatusMode}
-                  onCheckedChange={(checked) => {
-                    setHistoricalStatusMode(checked)
-                    // Al activar el modo, exigir que el usuario presione "Buscar"
-                    // antes de cualquier fetch del dataset completo.
-                    setHasSearched(false)
-                  }}
+                  onCheckedChange={setHistoricalStatusMode}
                   disabled={!localFilters.to}
                 />
                 <label

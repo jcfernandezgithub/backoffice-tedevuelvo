@@ -110,26 +110,21 @@ class RefundAdminApiClient {
     }
   }
 
-  async list(
-    params: AdminQueryParams & { endpoint?: 'listV2' | 'listV3' },
-    signal?: AbortSignal
-  ): Promise<AdminListResponse> {
+  async list(params: AdminQueryParams, signal?: AbortSignal): Promise<AdminListResponse> {
     const query = new URLSearchParams()
-    const endpoint = params.endpoint || 'listV2'
-
-    // Mapear parámetros al endpoint listV2/listV3
+    
+    // Mapear parámetros al nuevo endpoint listV2
     query.append('page', String(params.page || 1))
     query.append('limit', String(params.pageSize || 20))
-
-    // Filtros adicionales soportados por el backend
+    
+    // Pasar filtros adicionales si el backend los soporta
     if (params.search) query.append('search', params.search)
     if (params.status) query.append('status', params.status.toUpperCase())
-    // IMPORTANTE: listV2/listV3 esperan since/to en formato ISO corto (YYYY-MM-DD), sin transformar
     if (params.from) query.append('since', params.from)
     if (params.to) query.append('to', params.to)
     if (params.sort) query.append('sort', params.sort)
 
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${endpoint}?${query}`, {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/listV2?${query}`, {
       headers: await this.getAuthHeaders(),
       signal,
     })
@@ -150,10 +145,7 @@ class RefundAdminApiClient {
     const items = (responseData.data || []).map((item: any) => ({
       ...item,
       id: item.id || item._id,
-      status: normalizeStatus(item.status),
-      // listV2/listV3 ahora retornan hasSignedPdf directamente en cada item;
-      // se preserva tal cual (boolean) para eliminar fan-outs a /experian/status
-      hasSignedPdf: typeof item.hasSignedPdf === 'boolean' ? item.hasSignedPdf : false,
+      status: normalizeStatus(item.status)
     }))
     
     const meta = responseData.meta || {}

@@ -53,8 +53,6 @@ export interface RefundRequest {
   bankInfo?: BankInfo
   cloned?: boolean
   siblingId?: string
-  /** Devuelto por listV2/listV3: indica si el mandato Experian está firmado. */
-  hasSignedPdf?: boolean
 }
 
 export interface RefundDocument {

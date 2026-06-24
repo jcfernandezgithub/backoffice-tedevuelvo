@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
+import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -157,6 +159,8 @@ const PIE_LABELS: Record<string, string> = {
   canceled: 'Cancelado',
 }
 
+const API_BASE = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -168,12 +172,8 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<Aggregation>('day')
 
-  // Fuente de datos: listV2 (filtra por createdAt en backend) acotado por el rango activo
-  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds({
-    fechaDesde: desde || undefined,
-    fechaHasta: hasta || undefined,
-    endpoint: 'listV2',
-  })
+  // Fuente de datos unificada (mismo caché que Operación)
+  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds()
 
   // Filtrado por fecha (memoizado)
   const filteredRefunds = useMemo(
@@ -196,18 +196,52 @@ export default function Dashboard() {
     return counts
   }, [filteredRefunds])
 
-  // Sub-métricas: qualifying (mandatos) — hasSignedPdf viene en cada refund (sin fan-out a /experian/status)
+  // Sub-métricas: qualifying (mandatos)
   const qualifyingRefunds = useMemo(
     () => filteredRefunds.filter((r: any) => r.status === 'qualifying'),
     [filteredRefunds]
   )
-  const qualifyingFirmados = useMemo(
-    () => qualifyingRefunds.filter((r: any) => r.hasSignedPdf === true).length,
+  const qualifyingPublicIds = useMemo(
+    () => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean),
     [qualifyingRefunds]
   )
+  const qualifyingIdsKey = useMemo(
+    () => [...qualifyingPublicIds].sort().join(','),
+    [qualifyingPublicIds]
+  )
+
+  const { data: mandateStatuses, isFetching: isFetchingMandates } = useQuery({
+    queryKey: ['dashboard', 'mandate-statuses', qualifyingIdsKey],
+    queryFn: async () => {
+      if (!qualifyingPublicIds.length) return {}
+      const token = authService.getAccessToken()
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+      const statuses: Record<string, any> = {}
+      const BATCH = 10
+      for (let i = 0; i < qualifyingPublicIds.length; i += BATCH) {
+        await Promise.all(
+          qualifyingPublicIds.slice(i, i + BATCH).map(async (publicId: string) => {
+            try {
+              const res = await fetch(`${API_BASE}/refund-requests/${publicId}/experian/status`, { headers })
+              if (res.ok) statuses[publicId] = await res.json()
+            } catch { /* silencioso */ }
+          })
+        )
+      }
+      return statuses
+    },
+    enabled: qualifyingPublicIds.length > 0,
+    staleTime: 10 * 60 * 1000,
+    retry: 2,
+  })
+
+  const qualifyingFirmados = useMemo(
+    () => qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
+    [qualifyingRefunds, mandateStatuses]
+  )
   const qualifyingPendientes = useMemo(
-    () => qualifyingRefunds.filter((r: any) => r.hasSignedPdf !== true).length,
-    [qualifyingRefunds]
+    () => qualifyingRefunds.filter((r: any) => !mandateStatuses?.[r.publicId]?.hasSignedPdf).length,
+    [qualifyingRefunds, mandateStatuses]
   )
 
   // Sub-métricas: payment_scheduled (datos bancarios)
@@ -411,7 +445,7 @@ export default function Dashboard() {
       }))
   }, [granularCounts, totalSolicitudes])
 
-  const isRefreshing = isFetchingRefunds
+  const isRefreshing = isFetchingRefunds || isFetchingMandates
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
@@ -638,18 +672,18 @@ export default function Dashboard() {
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {isQualifying && (
+                                  {isQualifying && mandateStatuses && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
-                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'signed', autoSearch: 'true', dashboardSnapshot: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'signed', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
                                       >
                                         <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">Firmado</Badge>
                                         <span className="text-xs font-semibold">{qualifyingFirmados}</span>
                                       </div>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
-                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'pending', autoSearch: 'true', dashboardSnapshot: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                        onClick={() => { const p = new URLSearchParams({ status: 'qualifying', mandate: 'pending', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
                                       >
                                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">Pendiente</Badge>
                                         <span className="text-xs font-semibold">{qualifyingPendientes}</span>
@@ -661,7 +695,7 @@ export default function Dashboard() {
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
-                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'ready', autoSearch: 'true', dashboardSnapshot: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'ready', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
                                       >
                                         <Badge className={`text-[10px] px-1.5 py-0 h-4 ${paymentWithBank > 0 ? 'bg-red-500 animate-pulse text-white' : 'bg-emerald-600 text-white'}`}>
                                           {paymentWithBank > 0 ? '⚠ Con datos' : 'Con datos'}
@@ -670,7 +704,7 @@ export default function Dashboard() {
                                       </div>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
-                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'pending', autoSearch: 'true', dashboardSnapshot: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
+                                        onClick={() => { const p = new URLSearchParams({ status: 'payment_scheduled', bank: 'pending', autoSearch: 'true', from: desde, to: hasta }); navigate(`/refunds?${p}`) }}
                                       >
                                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/15 text-amber-600 border-amber-500/30">Sin datos</Badge>
                                         <span className="text-xs font-semibold">{paymentWithoutBank}</span>

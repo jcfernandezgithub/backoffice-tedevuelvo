@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { reportsClient } from '../services/reportsClient';
-import { useOperacionRefunds as useAllRefunds } from './useOperacionRefunds';
+import { useAllRefunds } from './useAllRefunds';
 import type { FiltrosReporte, Granularidad } from '../types/reportTypes';
 
 const STALE_TIME = 10 * 60 * 1000; // 10 minutos (usado solo en useAlertas que sigue siendo async)

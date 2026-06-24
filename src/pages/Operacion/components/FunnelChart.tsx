@@ -30,7 +30,7 @@ import {
   TrendingDown,
   ExternalLink,
 } from 'lucide-react';
-import { useOperacionRefunds as useAllRefunds } from '../hooks/useOperacionRefunds';
+import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
