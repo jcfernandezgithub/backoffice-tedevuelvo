@@ -482,6 +482,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
       const payload: Record<string, any> = { ...rootPatch }
       if (Object.keys(snapshotPatch).length > 0) {
+        // Persistir el margen de seguridad vigente (consultado al servicio de
+        // instituciones al momento del recálculo). El detalle lo lee de aquí
+        // sin recalcular ni reconsultar el servicio.
+        if (typeof institutionMargin === 'number' && !Number.isNaN(institutionMargin)) {
+          snapshotPatch.safetyMarginPct = institutionMargin
+        }
         payload.calculationSnapshot = { ...snapshot, ...snapshotPatch }
       }
 
