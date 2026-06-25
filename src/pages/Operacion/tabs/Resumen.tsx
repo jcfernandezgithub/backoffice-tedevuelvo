@@ -524,7 +524,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Ingresadas */}
             {(() => {
               const submittedObjetivo = overdueByStage.submitted?.objetivo;
-              const breakdown = buildInstitutionBreakdown(submittedRefunds, 'submitted', submittedObjetivo);
+              const breakdown = c.entered.byInstitution;
               const topInstitutions = [...breakdown].sort((a, b) => b.count - a.count).slice(0, 3);
               const restCount = breakdown.length - topInstitutions.length;
               const maxCount = topInstitutions[0]?.count || 1;
@@ -547,10 +547,10 @@ export function TabResumen() {
                       onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
                     >
                       <span className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">
-                        {submittedRefunds.length}
+                        {c.entered.total}
                       </span>
                       <OverdueBadge
-                        count={overdueByStage.submitted?.count || 0}
+                        count={c.entered.overdue}
                         stageLabel="Ingresadas"
                         objetivo={submittedObjetivo}
                       />
@@ -639,8 +639,8 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</span>
-                  <OverdueBadge count={overdueByStage.approved?.count || 0} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
+                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{c.approved.total}</span>
+                  <OverdueBadge count={c.approved.overdue} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
                 </div>
               </CardContent>
             </Card>
@@ -659,13 +659,13 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{rejectedRefunds.length}</div>
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{c.rejected.total}</div>
               </CardContent>
             </Card>
 
             {/* Card: Pago Programado - con sub-filtros clickeables */}
             <Card className={`border-l-4 transition-all ${
-              paymentScheduledWithBank.length > 0
+              c.scheduledPayment.withBank > 0
                 ? 'border-l-red-500 bg-red-50/30 dark:bg-red-950/10 ring-1 ring-red-300 dark:ring-red-700'
                 : 'border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10'
             }`}>
@@ -675,42 +675,42 @@ export function TabResumen() {
                     Pago Programado
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {paymentScheduledWithBank.length > 0 && (
+                    {c.scheduledPayment.withBank > 0 && (
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                       </span>
                     )}
-                    <CalendarClock className={`h-5 w-5 ${paymentScheduledWithBank.length > 0 ? 'text-red-500' : 'text-cyan-500'}`} />
+                    <CalendarClock className={`h-5 w-5 ${c.scheduledPayment.withBank > 0 ? 'text-red-500' : 'text-cyan-500'}`} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
                   <span 
-                    className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
+                    className={`text-3xl font-bold cursor-pointer hover:underline ${c.scheduledPayment.withBank > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                   >
-                    {paymentScheduledRefunds.length}
+                    {c.scheduledPayment.total}
                   </span>
-                  <OverdueBadge count={overdueByStage.payment_scheduled?.count || 0} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
+                  <OverdueBadge count={c.scheduledPayment.overdue} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'ready' }))}
                   >
-                    <Badge variant="default" className={`text-xs ${paymentScheduledWithBank.length > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
-                      {paymentScheduledWithBank.length > 0 ? '⚠ Transferencia pendiente' : 'Con datos para transferencia'}
+                    <Badge variant="default" className={`text-xs ${c.scheduledPayment.withBank > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
+                      {c.scheduledPayment.withBank > 0 ? '⚠ Transferencia pendiente' : 'Con datos para transferencia'}
                     </Badge>
-                    <span className="font-semibold">{paymentScheduledWithBank.length}</span>
+                    <span className="font-semibold">{c.scheduledPayment.withBank}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'pending' }))}
                   >
                     <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos para transferencia</Badge>
-                    <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
+                    <span className="font-semibold">{c.scheduledPayment.withoutBank}</span>
                   </div>
                 </div>
               </CardContent>
@@ -731,8 +731,8 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</span>
-                  <OverdueBadge count={overdueByStage.paid?.count || 0} stageLabel="Pagadas" objetivo={overdueByStage.paid?.objetivo} />
+                  <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{c.paid.total}</span>
+                  <OverdueBadge count={c.paid.overdue} stageLabel="Pagadas" objetivo={overdueByStage.paid?.objetivo} />
                 </div>
               </CardContent>
             </Card>
