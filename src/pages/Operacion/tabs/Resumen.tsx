@@ -132,15 +132,19 @@ export function TabResumen() {
       entered: {
         total: metricTotal(countsData?.entered),
         overdue: entered.overdue ?? 0,
-        byInstitution: (entered.byInstitution ?? []).map((it) => {
-          const id = String(it.institutionId ?? it.institution ?? '');
-          return {
-            institutionId: id,
-            displayName: it.displayName || it.name || it.institution || id,
-            count: it.count ?? it.total ?? 0,
-            overdueCount: it.overdueCount ?? it.alert ?? 0,
-          };
-        }),
+        byInstitution: (entered.byInstitution ?? [])
+          .map((it) => {
+            const rawId = it.institutionId ?? it.institution ?? it.name ?? it.displayName;
+            const id = rawId != null ? String(rawId) : '';
+            const name = it.displayName ?? it.name ?? it.institution;
+            return {
+              institutionId: id,
+              displayName: name && String(name).trim() ? String(name) : id,
+              count: it.count ?? it.total ?? 0,
+              overdueCount: it.overdueCount ?? it.alert ?? 0,
+            };
+          })
+          .filter((it) => it.institutionId && it.displayName),
       },
       approved: {
         total: metricTotal(countsData?.approved),
