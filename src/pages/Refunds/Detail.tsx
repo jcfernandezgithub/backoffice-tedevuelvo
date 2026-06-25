@@ -1366,7 +1366,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             // institución financiera asociada a la solicitud. Si la sección de
             // ajustes se actualiza, este valor se reflejará al re-abrir la
             // solicitud (lectura síncrona desde localStorage).
-            const margenConfigurado = getSafetyMarginByInstitutionId(refund.institutionId)
+            const margenConfigurado = institutionMargin
             const margenDisplay = margenConfigurado
             const totalCalculado = round3(devolucionBruta * (1 - margenConfigurado / 100))
                             return (
