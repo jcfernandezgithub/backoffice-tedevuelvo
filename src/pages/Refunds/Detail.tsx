@@ -1364,8 +1364,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
             // (simulación o recálculo de confirmación). Si no está persistido,
             // la solicitud debe pasar por "Confirmación de datos pendientes"
             // para recalcular y guardarlo.
-            const snap: any = refund.calculationSnapshot || {}
-            const margenSnapshotRaw = snap.safetyMarginPct ?? snap.safetyMargin ?? snap.margenSeguridad
+            const snapForMargin: any = refund.calculationSnapshot || {}
+            const margenSnapshotRaw = snapForMargin.safetyMarginPct ?? snapForMargin.safetyMargin ?? snapForMargin.margenSeguridad
             const margenSnapshot = typeof margenSnapshotRaw === 'number' && !Number.isNaN(margenSnapshotRaw)
               ? margenSnapshotRaw
               : null
