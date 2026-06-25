@@ -431,7 +431,7 @@ export function TabResumen() {
         </TooltipProvider>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loadingRefunds || loadingMandates ? (
+        {loadingCounts ? (
           <>
             {Array.from({ length: 7 }).map((_, i) => (
               <Card key={i}>
@@ -462,7 +462,7 @@ export function TabResumen() {
                   className="text-3xl font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
                   onClick={() => navigate(buildRefundsUrl({ status: 'qualifying' }))}
                 >
-                  {qualifyingRefunds.length}
+                  {c.qualification.total}
                 </div>
                 <div className="flex gap-4 mt-3">
                   <div 
@@ -470,14 +470,14 @@ export function TabResumen() {
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'signed' }))}
                   >
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
-                    <span className="font-semibold">{qualifyingWithSignature.length}</span>
+                    <span className="font-semibold">{c.qualification.signed}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'pending' }))}
                   >
                     <Badge variant="secondary">Pendiente</Badge>
-                    <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
+                    <span className="font-semibold">{c.qualification.pending}</span>
                   </div>
                 </div>
               </CardContent>
@@ -486,7 +486,7 @@ export function TabResumen() {
             {/* Card: Documentos Recibidos */}
             <Card 
               className={`border-l-4 cursor-pointer transition-all ${
-                docsReceivedRefunds.length >= 1
+                c.documentsReceived.total >= 1
                   ? 'border-l-orange-500 bg-orange-50/40 dark:bg-orange-950/15 hover:shadow-lg ring-1 ring-orange-300 dark:ring-orange-700'
                   : 'border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 hover:shadow-md'
               }`}
@@ -498,25 +498,25 @@ export function TabResumen() {
                     Documentos Recibidos
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {docsReceivedRefunds.length >= 1 && (
+                    {c.documentsReceived.total >= 1 && (
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
                       </span>
                     )}
-                    <FileCheck2 className={`h-5 w-5 ${docsReceivedRefunds.length >= 1 ? 'text-orange-500' : 'text-violet-500'}`} />
+                    <FileCheck2 className={`h-5 w-5 ${c.documentsReceived.total >= 1 ? 'text-orange-500' : 'text-violet-500'}`} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
-                    {docsReceivedRefunds.length}
+                  <span className={`text-3xl font-bold ${c.documentsReceived.total >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
+                    {c.documentsReceived.total}
                   </span>
-                  <OverdueBadge count={overdueByStage.docs_received?.count || 0} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
+                  <OverdueBadge count={c.documentsReceived.overdue} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
                 </div>
-                <p className={`text-xs mt-1 font-medium ${docsReceivedRefunds.length >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                  {docsReceivedRefunds.length >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
+                <p className={`text-xs mt-1 font-medium ${c.documentsReceived.total >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                  {c.documentsReceived.total >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
                 </p>
               </CardContent>
             </Card>
