@@ -8,7 +8,8 @@ import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageC
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
-import { calcularDevolucion, INSTITUCIONES_DISPONIBLES, CalculationResult } from "@/lib/calculadoraUtils";
+import { calcularDevolucion, CalculationResult } from "@/lib/calculadoraUtils";
+import { usePublicInstitutions } from "@/hooks/useInstitutions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +71,10 @@ const generarMargenes = (margenTeDevuelvo: number) => {
 export default function CalculadoraPage() {
   const { user } = useAuth();
   const isCallcenter = user?.email?.trim().toLowerCase() === "admin@callcenter.cl";
+  const { data: institutions = [], isLoading: institutionsLoading } = usePublicInstitutions();
+  const institutionOptions = (institutions ?? [])
+    .filter((i) => i.active)
+    .sort((a, b) => a.label.localeCompare(b.label));
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
@@ -501,26 +506,26 @@ export default function CalculadoraPage() {
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                           <Command>
-                            <CommandInput placeholder="Buscar institución..." />
+                            <CommandInput placeholder={institutionsLoading ? "Cargando..." : "Buscar institución..."} />
                             <CommandList>
                               <CommandEmpty>No se encontró la institución.</CommandEmpty>
                               <CommandGroup>
-                                {INSTITUCIONES_DISPONIBLES.map((inst) => (
+                                {institutionOptions.map((inst) => (
                                   <CommandItem
-                                    key={inst}
-                                    value={inst}
+                                    key={inst.id}
+                                    value={inst.label}
                                     onSelect={() => {
-                                      field.onChange(inst);
+                                      field.onChange(inst.label);
                                       setOpenInstitution(false);
                                     }}
                                   >
                                     <Check
                                       className={cn(
                                         "mr-2 h-4 w-4",
-                                        field.value === inst ? "opacity-100" : "opacity-0"
+                                        field.value === inst.label ? "opacity-100" : "opacity-0"
                                       )}
                                     />
-                                    {inst}
+                                    {inst.label}
                                   </CommandItem>
                                 ))}
                               </CommandGroup>
