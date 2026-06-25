@@ -70,13 +70,15 @@ export const institutionsService = {
   },
 
   async listAdmin(): Promise<Institution[]> {
-    const res = await authenticatedFetch('/admin/institutions');
+    const res = await fetch(`${API_BASE_URL}/public/institutions`);
     const data = await parseJsonOrThrow(res, 'cargar instituciones');
-    return (Array.isArray(data) ? data : []).map(normalize);
+    const list = (Array.isArray(data) ? data : []).map(normalize);
+    setCachedInstitutions(list);
+    return list;
   },
 
   async create(payload: InstitutionPayload): Promise<Institution> {
-    const res = await authenticatedFetch('/admin/institutions', {
+    const res = await authenticatedFetch('/public/institutions', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -84,7 +86,7 @@ export const institutionsService = {
   },
 
   async update(id: string, payload: Partial<InstitutionPayload>): Promise<Institution> {
-    const res = await authenticatedFetch(`/admin/institutions/${id}`, {
+    const res = await authenticatedFetch(`/public/institutions/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
@@ -92,7 +94,7 @@ export const institutionsService = {
   },
 
   async remove(id: string): Promise<void> {
-    const res = await authenticatedFetch(`/admin/institutions/${id}`, {
+    const res = await authenticatedFetch(`/public/institutions/${id}`, {
       method: 'DELETE',
     });
     if (!res.ok && res.status !== 204) {
