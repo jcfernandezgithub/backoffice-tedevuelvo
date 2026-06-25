@@ -54,7 +54,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'instituciones',
     label: 'Instituciones financieras',
-    description: 'CRUD, margen y visibilidad',
+    description: 'Margen y visibilidad',
     icon: Building2,
     group: 'Cálculos',
     component: <InstitutionsSection />,
