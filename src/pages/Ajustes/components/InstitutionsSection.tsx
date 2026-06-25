@@ -83,7 +83,6 @@ export function InstitutionsSection() {
     isError,
     refetch,
     createInstitution,
-    updateInstitution,
     updateInstitutionAsync,
     deleteInstitution,
     isCreating,
