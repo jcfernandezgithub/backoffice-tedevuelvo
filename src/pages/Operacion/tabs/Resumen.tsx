@@ -366,11 +366,11 @@ export function TabResumen() {
                     {/* Desglose compacto */}
                     <div className="hidden sm:flex items-center gap-2">
                       {[
-                        { label: 'Docs', count: docsReceivedRefunds.length },
-                        { label: 'Ingresadas', count: submittedRefunds.length },
-                        { label: 'Aprobadas', count: approvedRefunds.length },
-                        { label: 'Pago Prog.', count: paymentScheduledRefunds.length },
-                        { label: 'Pagadas', count: paidRefunds.length },
+                        { label: 'Docs', count: c.documentsReceived.total },
+                        { label: 'Ingresadas', count: c.entered.total },
+                        { label: 'Aprobadas', count: c.approved.total },
+                        { label: 'Pago Prog.', count: c.scheduledPayment.total },
+                        { label: 'Pagadas', count: c.paid.total },
                       ].map(({ label, count }) => (
                         <div key={label} className="flex flex-col items-center px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
                           <span className="text-white font-bold text-lg leading-none">{count}</span>
@@ -386,7 +386,7 @@ export function TabResumen() {
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-4xl leading-none tabular-nums">
-                        {procesoOperativoTotal.toLocaleString('es-CL')}
+                        {procesoOperativoTotalCounts.toLocaleString('es-CL')}
                       </div>
                       <div className="text-white/60 text-xs mt-1 underline underline-offset-2">solicitudes</div>
                     </div>
