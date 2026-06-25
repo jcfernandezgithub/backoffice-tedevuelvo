@@ -375,6 +375,60 @@ class RefundAdminApiClient {
 
     return response.json()
   }
+
+  async getDashboardCounts(params: { since?: string; to?: string } = {}): Promise<DashboardCountsResponse> {
+    const query = new URLSearchParams()
+    if (params.since) query.append('since', params.since)
+    if (params.to) query.append('to', params.to)
+
+    const qs = query.toString()
+    const url = `${API_BASE_URL}/refund-requests/admin/dashboard-counts${qs ? `?${qs}` : ''}`
+
+    const response = await fetch(url, {
+      headers: await this.getAuthHeaders(),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cargar dashboard counts' }))
+      throw new Error(error.message || 'Error al cargar dashboard counts')
+    }
+
+    return response.json()
+  }
+}
+
+// Tipos flexibles para la respuesta del endpoint dashboard-counts.
+// Cada métrica puede llegar como número simple o como objeto con desglose.
+export interface DashboardMetric {
+  total?: number
+  signed?: number
+  pending?: number
+  withBank?: number
+  withoutBank?: number
+  overdue?: number
+  byInstitution?: Array<{
+    institutionId: string
+    displayName?: string
+    name?: string
+    count: number
+    overdueCount?: number
+  }>
+}
+
+export type DashboardMetricValue = number | DashboardMetric
+
+export interface DashboardCountsResponse {
+  qualification: DashboardMetricValue
+  documentsReceived: DashboardMetricValue
+  entered: DashboardMetricValue
+  approved: DashboardMetricValue
+  rejected: DashboardMetricValue
+  scheduledPayment: DashboardMetricValue
+  paid: DashboardMetricValue
 }
 
 export const refundAdminApi = new RefundAdminApiClient()
