@@ -393,7 +393,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         // Aplicar el margen de seguridad configurado para la institución
         // (Ajustes → Margen de Seguridad). `calcularDevolucion` retorna la
         // devolución bruta sin margen (REFUND_MARGIN_PERCENTAGE = 0).
-        const margenPct = getSafetyMarginByInstitutionId(refund.institutionId)
+        const margenPct = institutionMargin
         const ahorroTotalConMargen = Math.max(
           0,
           Math.round(result.ahorroTotal * (1 - margenPct / 100)),
@@ -404,7 +404,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : 'Error en el cálculo.' }
     }
-  }, [form, refund.institutionId, overridePrimas, overrideAhorros])
+  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin])
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
