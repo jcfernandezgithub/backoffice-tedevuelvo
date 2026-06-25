@@ -103,6 +103,69 @@ export function TabResumen() {
     to: filtros.fechaHasta,
   });
 
+  // ── Conteos del dashboard desde el endpoint dedicado ─────────────────────────
+  // Las calugas SOLO leen de este endpoint — no hay cálculos del lado cliente.
+  const { data: countsData, isLoading: loadingCounts } = useDashboardCounts({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
+
+  const c = useMemo(() => {
+    const qualification = metricObj(countsData?.qualification);
+    const documentsReceived = metricObj(countsData?.documentsReceived);
+    const entered = metricObj(countsData?.entered);
+    const approved = metricObj(countsData?.approved);
+    const rejected = metricObj(countsData?.rejected);
+    const scheduledPayment = metricObj(countsData?.scheduledPayment);
+    const paid = metricObj(countsData?.paid);
+    return {
+      qualification: {
+        total: metricTotal(countsData?.qualification),
+        signed: qualification.signed ?? 0,
+        pending: qualification.pending ?? 0,
+        overdue: qualification.overdue ?? 0,
+      },
+      documentsReceived: {
+        total: metricTotal(countsData?.documentsReceived),
+        overdue: documentsReceived.overdue ?? 0,
+      },
+      entered: {
+        total: metricTotal(countsData?.entered),
+        overdue: entered.overdue ?? 0,
+        byInstitution: (entered.byInstitution ?? []).map((it) => ({
+          institutionId: String(it.institutionId),
+          displayName: it.displayName || it.name || String(it.institutionId),
+          count: it.count ?? 0,
+          overdueCount: it.overdueCount ?? 0,
+        })),
+      },
+      approved: {
+        total: metricTotal(countsData?.approved),
+        overdue: approved.overdue ?? 0,
+      },
+      rejected: {
+        total: metricTotal(countsData?.rejected),
+      },
+      scheduledPayment: {
+        total: metricTotal(countsData?.scheduledPayment),
+        withBank: scheduledPayment.withBank ?? 0,
+        withoutBank: scheduledPayment.withoutBank ?? 0,
+        overdue: scheduledPayment.overdue ?? 0,
+      },
+      paid: {
+        total: metricTotal(countsData?.paid),
+        overdue: paid.overdue ?? 0,
+      },
+    };
+  }, [countsData]);
+
+  const procesoOperativoTotalCounts =
+    c.documentsReceived.total +
+    c.entered.total +
+    c.approved.total +
+    c.scheduledPayment.total +
+    c.paid.total;
+
   // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
   const getLastStatusChangeDate = (refund: any): string | null => {
     const history = refund.statusHistory;
