@@ -45,10 +45,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const HIGH_RISK_THRESHOLD = 15;
+const CONFIRM_PHRASE = 'actualizar';
 
 type Filter = 'all' | 'active' | 'inactive';
+
+type PendingUpdate =
+  | {
+      kind: 'margin';
+      inst: Institution;
+      newValue: number;
+    }
+  | {
+      kind: 'visibility';
+      inst: Institution;
+      newValue: boolean;
+    }
+  | {
+      kind: 'edit';
+      inst: Institution;
+      payload: InstitutionPayload;
+    };
 
 export function InstitutionsSection() {
   const {
@@ -69,37 +95,25 @@ export function InstitutionsSection() {
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Institution | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Institution | null>(null);
+  const [pending, setPending] = useState<PendingUpdate | null>(null);
+  const [confirmText, setConfirmText] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+  // Token para forzar re-render de inputs cuando cancelamos un cambio (rollback visual)
+  const [resetToken, setResetToken] = useState(0);
 
-  // Debounce de cambios al margen por fila
-  const debounceTimers = useRef<Record<string, number>>({});
-  const handleMarginChange = (inst: Institution, raw: string) => {
+  const requestMarginChange = (inst: Institution, raw: string) => {
     const num = parseFloat(raw);
-    if (isNaN(num) || num < 0 || num > 100) return;
-    if (num === inst.margen_seguridad) return;
-    if (debounceTimers.current[inst.id]) {
-      window.clearTimeout(debounceTimers.current[inst.id]);
+    if (isNaN(num) || num < 0 || num > 100) {
+      setResetToken((t) => t + 1);
+      return;
     }
-    debounceTimers.current[inst.id] = window.setTimeout(() => {
-      updateInstitution(
-        { id: inst.id, payload: { margen_seguridad: num } },
-        {
-          onSuccess: () => toast.success(`${inst.label}: margen ${num}%`),
-          onError: (e) => toast.error('No se pudo actualizar el margen', { description: String(e) }),
-        },
-      );
-    }, 600);
+    if (num === inst.margen_seguridad) return;
+    setPending({ kind: 'margin', inst, newValue: num });
   };
 
-  const handleToggleActive = (inst: Institution, active: boolean) => {
-    updateInstitution(
-      { id: inst.id, payload: { active } },
-      {
-        onSuccess: () =>
-          toast.success(`${inst.label}: ${active ? 'visible' : 'oculta'}`),
-        onError: (e) =>
-          toast.error('No se pudo cambiar la visibilidad', { description: String(e) }),
-      },
-    );
+  const requestToggleActive = (inst: Institution, active: boolean) => {
+    if (active === inst.active) return;
+    setPending({ kind: 'visibility', inst, newValue: active });
   };
 
   const handleCreate = async (payload: InstitutionPayload) => {
@@ -114,13 +128,7 @@ export function InstitutionsSection() {
 
   const handleEdit = async (payload: InstitutionPayload) => {
     if (!editTarget) return;
-    try {
-      await updateInstitutionAsync({ id: editTarget.id, payload });
-      toast.success('Institución actualizada');
-      setEditTarget(null);
-    } catch (e) {
-      toast.error('No se pudo actualizar', { description: String(e) });
-    }
+    setPending({ kind: 'edit', inst: editTarget, payload });
   };
 
   const handleDelete = async () => {
@@ -133,6 +141,115 @@ export function InstitutionsSection() {
       toast.error('No se pudo eliminar', { description: String(e) });
     }
   };
+
+  const cancelPending = () => {
+    setPending(null);
+    setConfirmText('');
+    setResetToken((t) => t + 1);
+  };
+
+  const applyPending = async () => {
+    if (!pending) return;
+    const phraseOk = confirmText.trim().toLowerCase() === CONFIRM_PHRASE;
+    if (!phraseOk) return;
+    setIsApplying(true);
+    try {
+      if (pending.kind === 'margin') {
+        await updateInstitutionAsync({
+          id: pending.inst.id,
+          payload: { margen_seguridad: pending.newValue },
+        });
+        toast.success(`${pending.inst.label}: margen ${pending.newValue}%`);
+      } else if (pending.kind === 'visibility') {
+        await updateInstitutionAsync({
+          id: pending.inst.id,
+          payload: { active: pending.newValue },
+        });
+        toast.success(
+          `${pending.inst.label}: ${pending.newValue ? 'visible' : 'oculta'}`,
+        );
+      } else {
+        await updateInstitutionAsync({
+          id: pending.inst.id,
+          payload: pending.payload,
+        });
+        toast.success('Institución actualizada');
+        setEditTarget(null);
+      }
+      setPending(null);
+      setConfirmText('');
+    } catch (e) {
+      toast.error('No se pudo actualizar', { description: String(e) });
+      setResetToken((t) => t + 1);
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const pendingSummary = () => {
+    if (!pending) return null;
+    if (pending.kind === 'margin') {
+      return {
+        title: 'Confirmar cambio de margen',
+        rows: [
+          ['Institución', pending.inst.label],
+          [
+            'Margen actual',
+            `${pending.inst.margen_seguridad}%`,
+          ],
+          ['Nuevo margen', `${pending.newValue}%`],
+        ] as [string, string][],
+      };
+    }
+    if (pending.kind === 'visibility') {
+      return {
+        title: 'Confirmar cambio de visibilidad',
+        rows: [
+          ['Institución', pending.inst.label],
+          [
+            'Estado actual',
+            pending.inst.active ? 'Visible' : 'Oculta',
+          ],
+          [
+            'Nuevo estado',
+            pending.newValue ? 'Visible' : 'Oculta',
+          ],
+        ] as [string, string][],
+      };
+    }
+    const diffs: [string, string][] = [];
+    const fields: (keyof InstitutionPayload)[] = [
+      'label',
+      'value',
+      'grupo',
+      'margen_seguridad',
+      'active',
+    ];
+    const labels: Record<string, string> = {
+      label: 'Nombre',
+      value: 'Slug',
+      grupo: 'Grupo',
+      margen_seguridad: 'Margen',
+      active: 'Visible',
+    };
+    fields.forEach((f) => {
+      const prev = (pending.inst as any)[f];
+      const next = (pending.payload as any)[f];
+      if (prev !== next) {
+        const fmt = (v: any) =>
+          typeof v === 'boolean' ? (v ? 'Sí' : 'No') : String(v);
+        diffs.push([labels[f], `${fmt(prev)} → ${fmt(next)}`]);
+      }
+    });
+    return {
+      title: 'Confirmar edición de institución',
+      rows: diffs.length
+        ? diffs
+        : ([['Sin cambios', '—']] as [string, string][]),
+    };
+  };
+  const summary = pendingSummary();
+  const phraseOk = confirmText.trim().toLowerCase() === CONFIRM_PHRASE;
 
   const filtered = useMemo(() => {
     const list = data ?? [];
@@ -264,12 +381,13 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Input
                       id={`margin-${row.id}`}
+                      key={`margin-${row.id}-${row.margen_seguridad}-${resetToken}`}
                       type="number"
                       min={0}
                       max={100}
                       step={0.5}
                       defaultValue={row.margen_seguridad}
-                      onBlur={(e) => handleMarginChange(row, e.target.value)}
+                      onBlur={(e) => requestMarginChange(row, e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                       }}
@@ -281,8 +399,9 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-2 shrink-0 md:w-[120px] md:justify-center">
                     <Switch
                       id={`visible-${row.id}`}
+                      key={`visible-${row.id}-${row.active}-${resetToken}`}
                       checked={row.active}
-                      onCheckedChange={(v) => handleToggleActive(row, v)}
+                      onCheckedChange={(v) => requestToggleActive(row, v)}
                       aria-label={`Visible en calculadora: ${row.label}`}
                     />
                     <Label
@@ -383,6 +502,95 @@ export function InstitutionsSection() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!pending}
+        onOpenChange={(o) => {
+          if (!o && !isApplying) cancelPending();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              </div>
+              <DialogTitle>{summary?.title ?? 'Confirmar cambio'}</DialogTitle>
+            </div>
+            <DialogDescription>
+              Este cambio impacta directamente a la calculadora y a los cálculos
+              de devolución. Revisa el detalle y escribe{' '}
+              <span className="font-semibold text-foreground">
+                "{CONFIRM_PHRASE}"
+              </span>{' '}
+              para confirmar.
+            </DialogDescription>
+          </DialogHeader>
+
+          {summary && (
+            <div className="rounded-lg border bg-muted/40 divide-y text-sm">
+              {summary.rows.map(([k, v]) => (
+                <div
+                  key={k}
+                  className="flex items-center justify-between px-3 py-2"
+                >
+                  <span className="text-muted-foreground">{k}</span>
+                  <span className="font-medium text-foreground text-right">
+                    {v}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm-phrase" className="text-xs">
+              Escribe{' '}
+              <code className="bg-muted px-1 py-0.5 rounded text-[11px]">
+                {CONFIRM_PHRASE}
+              </code>{' '}
+              para confirmar
+            </Label>
+            <Input
+              id="confirm-phrase"
+              autoFocus
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && phraseOk && !isApplying) {
+                  e.preventDefault();
+                  applyPending();
+                }
+              }}
+              placeholder={CONFIRM_PHRASE}
+              className={
+                phraseOk
+                  ? 'border-emerald-500 focus-visible:ring-emerald-500'
+                  : ''
+              }
+              disabled={isApplying}
+            />
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={cancelPending}
+              disabled={isApplying}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={applyPending}
+              disabled={!phraseOk || isApplying}
+              className="gap-2"
+            >
+              {isApplying && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirmar actualización
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
