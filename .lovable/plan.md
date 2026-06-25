@@ -1,115 +1,102 @@
-
 ## Objetivo
+Reemplazar las instituciones financieras hardcoded + márgenes en `localStorage` por el nuevo backend (`/public/institutions` y `/admin/institutions`), y agregar CRUD admin completo en Ajustes.
 
-Reemplazar los certificados de cobertura de desgravamen actuales (Pólizas 342/344 + genérico antiguo) por una **única Póliza 347** basada en los PDFs `Pol347_GENERICO.pdf` y `Pol347_BCO_CHILE.pdf`, con copia literal del layout y textos legales, y aplicando la nueva matriz de Planes/Tasas.
-
-## Reglas de negocio confirmadas
-
-**Tramos por monto del crédito (selección de Plan):**
-- Plan 1 → ≤ $20.000.000
-- Plan 2 → $20.000.001 – $60.000.000
-- Plan 3 → $60.000.001 – $100.000.000
-
-**Tasas TBM (mensual por mil) por Plan y tramo de edad:**
-
-| Plan | 18–55 años | 56–64 años |
-|------|-----------|-----------|
-| Plan 1 | 0,3400 ‰ | 0,4400 ‰ |
-| Plan 2 | 0,4400 ‰ | 0,4400 ‰ |
-| Plan 3 | 0,4400 ‰ | 0,5000 ‰ |
-
-**Topes y validaciones (ya aplicados en `calculadoraUtils.ts` en la versión anterior):**
-- Monto máx: $100M | Edad mín 18 / máx contratación 64 / máx cobertura <72
-- Cuotas totales 3–80
-- Estos NO se tocan: ya están aplicados.
-
-**Aplica tanto al certificado genérico como al de Banco de Chile** (mismas tasas y planes).
-
-## Alcance
-
-### A. Backups (rollback rápido)
-1. `bancoChilePdfGenerator.ts` → `bancoChilePdfGenerator.backup.ts` (copia exacta).
-2. Extraer la lógica del PDF genérico actual de `GenerateCertificateDialog.tsx` a un nuevo `genericPdfGenerator.backup.ts` con la implementación tal cual hoy.
-
-Para revertir: cambiar 1 import en `GenerateCertificateDialog.tsx` y 1 import en sus consumidores.
-
-### B. Nuevos generadores (Póliza 347)
-
-Crear:
-- `src/pages/Refunds/components/pdfGenerators/pol347Config.ts` — config compartida (rates, plan tiers, helpers `getPlanByAmount`, `getTBM`, `getPrimaUnica`, `getCapitalMaximo`).
-- `src/pages/Refunds/components/pdfGenerators/genericPol347Generator.ts` — copia literal de `Pol347_GENERICO.pdf` (10 páginas).
-- Reescribir `bancoChilePdfGenerator.ts` con copia literal de `Pol347_BCO_CHILE.pdf` (10 páginas), exportando una función única `generateBancoChilePol347PDF` (ya no Prime/Standard).
-
-**Copia literal**: cada página será una réplica visual del PDF de referencia — tablas, márgenes, fuentes, casillas, posición de firmas/sellos, textos legales palabra por palabra. Se usará el screenshot de cada página parseada como referencia visual durante el desarrollo.
-
-### C. Integración en `GenerateCertificateDialog.tsx`
-
-- Borrar la implementación inline del PDF genérico actual (~2000 líneas) y reemplazarla por una llamada a `generateGenericPol347PDF(refund, formData, firmas)`.
-- Reemplazar las llamadas a `generateBancoChilePrimePDF` / `generateBancoChileStandardPDF` por `generateBancoChilePol347PDF` (única).
-- Eliminar la rama `isPrime` (ya no aplica: el plan se decide por monto, no por umbral 20M).
-- El preview mantiene su flujo actual (form → preview → descarga + upload).
-
-### D. Datos dinámicos a inyectar (idénticos a hoy, sin inventar)
-
-De `refund` y `refund.calculationSnapshot`:
-- Nombre, RUT, fecha nacimiento, edad
-- Saldo insoluto (`confirmedAverageInsuredBalance` ?? `averageInsuredBalance` ?? `remainingBalance` ?? `estimatedAmountCLP`)
-- Cuotas pendientes (`confirmedRemainingInstallments` ?? `remainingInstallments`)
-- Fechas crédito, número operación
-
-De `formData`:
-- Folio, dirección/nº/depto/ciudad/comuna, celular, sexo, autoriza email
-- Beneficiario nombre + RUT (Banco de Chile fija "Banco de Chile" / 97.004.000-5 según el PDF; en el genérico es editable)
-
-Calculados:
-- **Plan** (1/2/3) según monto (saldo insoluto)
-- **TBM** según Plan + edad
-- **Prima Única** = `saldoInsoluto × (TBM / 1000) × cuotasPendientes`
-
-### E. UI a actualizar
-
-- En el formulario de `GenerateCertificateDialog`: si actualmente muestra "Prime / Standard" o "Póliza 342/344", reemplazar por "Plan 1/2/3 — Póliza 347" (label informativo, no editable).
-- Actualizar nombre del archivo subido: `Cert_Cobertura_Desgravamen_Pol347_<RUT>_<Folio>.pdf`.
-
-### F. QA visual obligatorio
-
-Después de generar cada PDF nuevo:
-1. Renderizar con datos de prueba (1 caso por plan: $15M, $40M, $85M).
-2. `pdftoppm` cada PDF → inspeccionar página por página.
-3. Comparar contra screenshots de las páginas originales del PDF de referencia.
-4. Iterar hasta que no haya texto cortado, tablas mal alineadas, casillas fuera de lugar ni textos resumidos/parafraseados.
-
-## Archivos afectados
+## Arquitectura
 
 ```text
-NUEVOS:
-  src/pages/Refunds/components/pdfGenerators/pol347Config.ts
-  src/pages/Refunds/components/pdfGenerators/genericPol347Generator.ts
-  src/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator.backup.ts
-  src/pages/Refunds/components/pdfGenerators/genericPdfGenerator.backup.ts
+backend
+  GET  /public/institutions          → calculadora / selects (sin token)
+  GET  /admin/institutions           → pantalla Ajustes (con token)
+  GET  /admin/institutions/:id
+  POST /admin/institutions
+  PATCH /admin/institutions/:id      → editar campos / soft-disable (active:false)
+  DELETE /admin/institutions/:id     → solo botón "eliminar definitivo"
 
-MODIFICADOS:
-  src/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator.ts (reescritura completa)
-  src/pages/Refunds/components/GenerateCertificateDialog.tsx (extracción de generador genérico inline + cambios de integración)
+frontend
+  src/services/institutionsService.ts   ← nuevo, fetch + authenticatedFetch
+  src/hooks/usePublicInstitutions.ts    ← React Query, cache 5 min, usado por
+                                          Calculadora y combos
+  src/hooks/useAdminInstitutions.ts     ← React Query admin (lista + mutations)
+  src/pages/Ajustes/components/
+     SafetyMarginsSection.tsx           ← se renombra mentalmente a
+                                          "Instituciones financieras", se
+                                          reescribe sobre el endpoint admin
 ```
 
-`calculadoraUtils.ts` y la calculadora **NO se tocan**: las nuevas tasas TBM viven en los generadores PDF, no en la simulación de devolución (que ya quedó actualizada en pasos previos con los rangos del Plan 3).
+## Servicio (`institutionsService.ts`)
 
-## Detalles técnicos
+```ts
+type Institution = {
+  id: string;
+  value: string;       // slug usado por refunds/snapshots
+  label: string;       // texto visible
+  grupo: string;
+  margen_seguridad: number;
+  active: boolean;
+};
 
-- jsPDF (ya está en el proyecto) para generación.
-- Las firmas (`firmaAugustarImg`, `firmaTdvImg`, `firmaCngImg`) se mantienen tal cual.
-- Los logos de AuguStar de los PDFs nuevos se extraerán del parseo (`parsed-documents://.../page_X_image_1_v2.jpg`) y se copiarán a `src/assets/` para embeber en cada página.
-- Mantener `isBancoChile(institutionId)` como router entre generador genérico vs Banco de Chile.
+listPublic(): GET /public/institutions          // sin auth, fetch nativo
+listAdmin(): authenticatedFetch GET /admin/...
+getAdmin(id)
+createAdmin(payload)
+updateAdmin(id, payload)   // PATCH
+deleteAdmin(id)            // DELETE definitivo
+```
 
-## Riesgos / consideraciones
+`API_BASE_URL` se reutiliza del constante en `apiClient.ts` (exportarla).
 
-- 10 páginas × 2 generadores = mucho código. Se hará página por página con QA intermedio.
-- Si un dato del PDF nuevo no existe en el sistema (ej. algún campo del beneficiario en variantes raras), te aviso antes de inventar y dejo placeholder vacío.
-- La memoria de proyecto sobre Pólizas 342/344 y rates antiguas de Banco Chile quedará obsoleta: actualizo `mem://features/banco-chile-custom-certificate`, `mem://data-structure/banco-chile-desgravamen-rates` y `mem://features/certificate/generic-specs-v2` al final.
+## Hooks
 
-## Tiempo estimado
+- `usePublicInstitutions()` → `useQuery(['institutions','public'])`, staleTime 5 min. Devuelve `{ data, isLoading }`. Filtra `active === true` y ordena por `label`.
+- `useAdminInstitutions()` → query + `createMutation`, `updateMutation`, `deleteMutation`, `toggleActiveMutation` (helper sobre update). Invalida ambas queries (`public` y `admin`) tras cada mutación.
+- Helpers para reemplazar los actuales (`getSafetyMarginByInstitutionId`, `isInstitutionVisibleInCalculator`): leen desde la query cache; si no hay cache aún, retornan defaults (10%, visible) para no romper cálculos antiguos. Se exportan desde `useSafetyMargins.ts` redirigidos al nuevo módulo para no romper imports existentes.
 
-Trabajo intenso. Voy a hacerlo por bloques (backups → config compartido → genérico páginas 1-5 → QA → genérico páginas 6-10 → QA → Banco Chile páginas 1-5 → QA → Banco Chile páginas 6-10 → QA final → integración → memoria).
+## Pantalla Ajustes – Instituciones financieras
 
-¿Aprobás el plan y arranco?
+Reescritura de `SafetyMarginsSection.tsx` manteniendo el estilo actual (cards con gradiente, switch sí/no, búsqueda, KPIs):
+
+Header
+- Título "Instituciones financieras" + descripción.
+- Botón `+ Nueva institución` (abre dialog de creación).
+
+Toolbar
+- Buscador por `label` / `value` / `grupo`.
+- Tabs/filtro: Todas · Activas · Inactivas.
+- KPIs: Total · Visibles en calculadora (`active === true`) · Margen promedio.
+
+Lista (una card por institución)
+- Columna izquierda: nombre (`label`), subtítulo `grupo · value`.
+- Input numérico `margen_seguridad` (0–100, step 0.5).
+- Switch `Visible en calculadora` ↔ campo `active` del backend.
+- Menú "⋯": Editar (label / value / grupo) · Eliminar definitivamente.
+- Cambios de margen y de switch son optimistic: se envían con PATCH al soltar el input (debounce 600 ms) o al togglear el switch. Toast de éxito/error y rollback en error.
+
+Dialog de creación / edición
+- Campos: `label`, `value` (slug, validado `^[a-z0-9-]+$`), `grupo`, `margen_seguridad`, `active`.
+- Reutiliza `react-hook-form` + `zod`.
+
+Eliminación definitiva
+- `ConfirmDialog` con texto "eliminar" para evitar accidentes.
+
+Sin dialog masivo de "guardar cambios" como hoy: las acciones son individuales y atómicas vs backend.
+
+## Migración de consumidores
+
+- `INSTITUCIONES_DISPONIBLES` en `calculadoraUtils.ts` deja de exportar lista hardcoded; en su lugar `Calculadora` usa `usePublicInstitutions()` para poblar el select (mapea `value` → snapshot, `label` → texto). Mientras carga, el select muestra skeleton.
+- `getSafetyMarginByInstitutionId` se reimplementa leyendo la cache de la query pública (con fallback a 10%).
+- `useSafetyMargins` queda como wrapper deprecado que delega en el nuevo hook para no romper imports actuales (`EditSnapshotDialog`, etc.).
+
+## Plan de archivos
+1. `src/services/institutionsService.ts` (nuevo)
+2. `src/hooks/useInstitutions.ts` (nuevo, public + admin + helpers)
+3. `src/pages/Ajustes/components/InstitutionsSection.tsx` (nuevo, reemplaza `SafetyMarginsSection`)
+4. `src/pages/Ajustes/components/InstitutionFormDialog.tsx` (nuevo)
+5. `src/pages/Ajustes/index.tsx` (swap import)
+6. `src/lib/calculadoraUtils.ts` (quitar `INSTITUCIONES_DISPONIBLES` hardcoded o dejar como fallback)
+7. `src/pages/Calculadora/index.tsx` (consumir hook)
+8. `src/hooks/useSafetyMargins.ts` (re-export shim → nuevos helpers)
+
+## Pendientes de confirmar
+1. ¿`value` y `grupo` deben ser editables en la UI o solo `label`, `margen_seguridad` y `active`? Cambiar `value` rompe snapshots existentes.
+2. ¿Permito eliminación definitiva (`DELETE`) o oculto ese botón y dejo solo el toggle activo/inactivo?
+3. ¿La calculadora pública debe seguir mostrando instituciones aunque la API falle (cae a la lista hardcoded actual) o muestro estado de error?
