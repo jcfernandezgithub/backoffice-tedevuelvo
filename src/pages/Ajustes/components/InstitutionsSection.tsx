@@ -34,8 +34,17 @@ import {
   Loader2,
   AlertTriangle,
 } from 'lucide-react';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { InstitutionFormDialog } from './InstitutionFormDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const HIGH_RISK_THRESHOLD = 15;
 
@@ -346,20 +355,34 @@ export function InstitutionsSection() {
         onSubmit={handleEdit}
       />
 
-      <ConfirmDialog
+      <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Eliminar institución"
-        description={
-          deleteTarget
-            ? `Vas a eliminar definitivamente "${deleteTarget.label}". Esta acción no se puede deshacer. Si solo quieres ocultarla en la calculadora, usa el switch "Visible".`
-            : ''
-        }
-        confirmLabel="Eliminar"
-        variant="destructive"
-        onConfirm={handleDelete}
-        loading={isDeleting}
-      />
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar institución</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `Vas a eliminar definitivamente "${deleteTarget.label}". Esta acción no se puede deshacer. Si solo quieres ocultarla en la calculadora, usa el switch "Visible".`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

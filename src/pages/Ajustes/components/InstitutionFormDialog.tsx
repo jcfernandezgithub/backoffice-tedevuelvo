@@ -83,7 +83,7 @@ export function InstitutionFormDialog({
   }, [open, initial, form]);
 
   const handleSubmit = form.handleSubmit(async (values) => {
-    await onSubmit(values);
+    await onSubmit(values as InstitutionPayload);
   });
 
   const errors = form.formState.errors;
