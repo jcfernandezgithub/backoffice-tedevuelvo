@@ -345,7 +345,11 @@ export function InstitutionsSection() {
       ) : (
         <div className="grid gap-2">
           {filtered.map((row) => {
-            const isHighRisk = row.margen_seguridad >= HIGH_RISK_THRESHOLD;
+            const draft = drafts[row.id];
+            const isDirty = !!draft;
+            const draftMargin = draft?.margen_seguridad ?? row.margen_seguridad;
+            const draftActive = draft?.active ?? row.active;
+            const isHighRisk = draftMargin >= HIGH_RISK_THRESHOLD;
             const Icon = isHighRisk ? ShieldAlert : ShieldCheck;
             const accent = isHighRisk
               ? 'from-amber-500 to-orange-600'
@@ -353,7 +357,11 @@ export function InstitutionsSection() {
             return (
               <div
                 key={row.id}
-                className="flex items-center gap-4 rounded-xl border border-border/60 overflow-hidden"
+                className={`flex items-center gap-4 rounded-xl border overflow-hidden transition-colors ${
+                  isDirty
+                    ? 'border-amber-500/60 bg-amber-500/[0.03]'
+                    : 'border-border/60'
+                }`}
               >
                 <div className={`w-1.5 self-stretch bg-gradient-to-b ${accent} shrink-0`} />
                 <div className="flex flex-wrap md:flex-nowrap items-center gap-3 flex-1 py-2.5 pr-3">
@@ -368,10 +376,15 @@ export function InstitutionsSection() {
                       >
                         {row.label}
                       </Label>
-                      {!row.active && (
+                      {!draftActive && (
                         <Badge variant="outline" className="text-[10px] gap-1">
                           <EyeOff className="h-3 w-3" />
                           Inactiva
+                        </Badge>
+                      )}
+                      {isDirty && (
+                        <Badge className="text-[10px] gap-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
+                          Sin guardar
                         </Badge>
                       )}
                     </div>
@@ -388,17 +401,19 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Input
                       id={`margin-${row.id}`}
-                      key={`margin-${row.id}-${row.margen_seguridad}-${resetToken}`}
                       type="number"
                       min={0}
                       max={100}
                       step={0.5}
-                      defaultValue={row.margen_seguridad}
-                      onBlur={(e) => requestMarginChange(row, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      }}
-                      className="w-20 text-center font-semibold"
+                      value={draftMargin}
+                      onChange={(e) =>
+                        setDraftMargin(row.id, e.target.value, row.margen_seguridad)
+                      }
+                      className={`w-20 text-center font-semibold ${
+                        draft?.margen_seguridad !== undefined
+                          ? 'border-amber-500 focus-visible:ring-amber-500'
+                          : ''
+                      }`}
                     />
                     <span className="text-sm text-muted-foreground w-3">%</span>
                   </div>
@@ -406,17 +421,39 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-2 shrink-0 md:w-[120px] md:justify-center">
                     <Switch
                       id={`visible-${row.id}`}
-                      key={`visible-${row.id}-${row.active}-${resetToken}`}
-                      checked={row.active}
-                      onCheckedChange={(v) => requestToggleActive(row, v)}
+                      checked={draftActive}
+                      onCheckedChange={(v) => setDraftActive(row.id, v, row.active)}
                       aria-label={`Visible en calculadora: ${row.label}`}
                     />
                     <Label
                       htmlFor={`visible-${row.id}`}
                       className="text-xs text-muted-foreground cursor-pointer select-none w-6"
                     >
-                      {row.active ? 'Sí' : 'No'}
+                      {draftActive ? 'Sí' : 'No'}
                     </Label>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isDirty && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => discardRowDraft(row.id)}
+                        className="h-8 gap-1 text-muted-foreground hover:text-foreground"
+                        title="Descartar cambios"
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => requestSaveRow(row)}
+                      disabled={!isDirty}
+                      className="h-8 gap-1.5"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Guardar
+                    </Button>
                   </div>
 
                   <DropdownMenu>
