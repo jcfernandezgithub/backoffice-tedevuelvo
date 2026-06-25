@@ -410,12 +410,19 @@ export interface DashboardMetric {
   withBank?: number
   withoutBank?: number
   overdue?: number
+  // Alias usados por el backend actual
+  actionRequired?: number
+  transferPending?: number
+  missingTransferData?: number
   byInstitution?: Array<{
-    institutionId: string
+    institutionId?: string
+    institution?: string
     displayName?: string
     name?: string
-    count: number
+    count?: number
+    total?: number
     overdueCount?: number
+    alert?: number
   }>
 }
 

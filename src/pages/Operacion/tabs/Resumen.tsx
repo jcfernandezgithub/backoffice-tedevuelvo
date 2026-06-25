@@ -132,12 +132,15 @@ export function TabResumen() {
       entered: {
         total: metricTotal(countsData?.entered),
         overdue: entered.overdue ?? 0,
-        byInstitution: (entered.byInstitution ?? []).map((it) => ({
-          institutionId: String(it.institutionId),
-          displayName: it.displayName || it.name || String(it.institutionId),
-          count: it.count ?? 0,
-          overdueCount: it.overdueCount ?? 0,
-        })),
+        byInstitution: (entered.byInstitution ?? []).map((it) => {
+          const id = String(it.institutionId ?? it.institution ?? '');
+          return {
+            institutionId: id,
+            displayName: it.displayName || it.name || it.institution || id,
+            count: it.count ?? it.total ?? 0,
+            overdueCount: it.overdueCount ?? it.alert ?? 0,
+          };
+        }),
       },
       approved: {
         total: metricTotal(countsData?.approved),
@@ -148,8 +151,8 @@ export function TabResumen() {
       },
       scheduledPayment: {
         total: metricTotal(countsData?.scheduledPayment),
-        withBank: scheduledPayment.withBank ?? 0,
-        withoutBank: scheduledPayment.withoutBank ?? 0,
+        withBank: scheduledPayment.withBank ?? scheduledPayment.transferPending ?? 0,
+        withoutBank: scheduledPayment.withoutBank ?? scheduledPayment.missingTransferData ?? 0,
         overdue: scheduledPayment.overdue ?? 0,
       },
       paid: {
