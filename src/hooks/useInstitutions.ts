@@ -117,3 +117,26 @@ export function isInstitutionActive(
   const inst = findByInstitutionKey(institutionKey);
   return inst?.active ?? true;
 }
+
+// ─── Hooks reactivos ───────────────────────────────────────────────────────
+
+/**
+ * Garantiza que la lista pública de instituciones esté cargada y devuelve el
+ * margen de seguridad asociado a la institución. Reactiva: cuando el servicio
+ * responde, el componente se re-renderiza con el valor correcto.
+ */
+export function useInstitutionMargin(
+  institutionKey: string | undefined | null,
+): number {
+  const { data } = usePublicInstitutions();
+  if (!institutionKey) return 10;
+  const k = institutionKey.toLowerCase().trim();
+  const list = data ?? getCachedInstitutions();
+  const inst = list.find(
+    (i) =>
+      i.value.toLowerCase().trim() === k ||
+      i.label.toLowerCase().trim() === k ||
+      i.id.toLowerCase().trim() === k,
+  );
+  return inst?.margen_seguridad ?? 10;
+}

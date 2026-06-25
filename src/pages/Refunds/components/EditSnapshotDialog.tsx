@@ -8,6 +8,7 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
 import { calcularDevolucion } from '@/lib/calculadoraUtils'
 import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
+import { useInstitutionMargin } from '@/hooks/useInstitutions'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
@@ -196,6 +197,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const latestSavedAtRef = useRef<number | null>(null)
   const queryClient = useQueryClient()
   const snapshot = refund.calculationSnapshot || {}
+  // Margen de seguridad reactivo desde GET /public/institutions
+  const institutionMargin = useInstitutionMargin(refund.institutionId)
 
   // Map institutionId to calculator-compatible bank name
   const INSTITUTION_TO_CALC: Record<string, string> = {
@@ -390,7 +393,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         // Aplicar el margen de seguridad configurado para la institución
         // (Ajustes → Margen de Seguridad). `calcularDevolucion` retorna la
         // devolución bruta sin margen (REFUND_MARGIN_PERCENTAGE = 0).
-        const margenPct = getSafetyMarginByInstitutionId(refund.institutionId)
+        const margenPct = institutionMargin
         const ahorroTotalConMargen = Math.max(
           0,
           Math.round(result.ahorroTotal * (1 - margenPct / 100)),
@@ -401,7 +404,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : 'Error en el cálculo.' }
     }
-  }, [form, refund.institutionId, overridePrimas, overrideAhorros])
+  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin])
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
