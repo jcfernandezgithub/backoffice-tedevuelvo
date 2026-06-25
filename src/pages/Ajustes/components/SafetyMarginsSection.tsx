@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { RotateCcw, Save, ShieldAlert, ShieldCheck, Search } from 'lucide-react';
+import { RotateCcw, Save, ShieldAlert, ShieldCheck, Search, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,20 @@ export function SafetyMarginsSection() {
     setDraft((prev) =>
       prev.map((m) => (m.institution === institution ? { ...m, margin: num } : m))
     );
+    setIsDirty(true);
+  };
+
+  const handleVisibilityChange = (institution: string, visible: boolean) => {
+    setDraft((prev) =>
+      prev.map((m) =>
+        m.institution === institution ? { ...m, visibleInCalculator: visible } : m
+      )
+    );
+    setIsDirty(true);
+  };
+
+  const setAllVisibility = (visible: boolean) => {
+    setDraft((prev) => prev.map((m) => ({ ...m, visibleInCalculator: visible })));
     setIsDirty(true);
   };
 
@@ -75,18 +90,47 @@ export function SafetyMarginsSection() {
       ? Math.round((draft.reduce((s, m) => s + m.margin, 0) / draft.length) * 10) / 10
       : 0;
 
+  const visiblesCount = draft.filter((m) => m.visibleInCalculator).length;
+
   // Diferencias entre draft y valores persistidos (para el preview del dialog)
   const diffs = useMemo(
     () =>
       draft
         .map((d) => {
           const current = margins.find((m) => m.institution === d.institution);
-          return current && current.margin !== d.margin
-            ? { institution: d.institution, from: current.margin, to: d.margin }
-            : null;
+          if (!current) return null;
+          const marginChanged = current.margin !== d.margin;
+          const visibilityChanged =
+            current.visibleInCalculator !== d.visibleInCalculator;
+          if (!marginChanged && !visibilityChanged) return null;
+          return {
+            institution: d.institution,
+            marginChanged,
+            from: current.margin,
+            to: d.margin,
+            visibilityChanged,
+            visibleFrom: current.visibleInCalculator,
+            visibleTo: d.visibleInCalculator,
+          };
         })
-        .filter((x): x is { institution: string; from: number; to: number } => !!x)
-        .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from)),
+        .filter(
+          (
+            x,
+          ): x is {
+            institution: string;
+            marginChanged: boolean;
+            from: number;
+            to: number;
+            visibilityChanged: boolean;
+            visibleFrom: boolean;
+            visibleTo: boolean;
+          } => !!x,
+        )
+        .sort(
+          (a, b) =>
+            Math.abs(b.to - b.from) - Math.abs(a.to - a.from) ||
+            a.institution.localeCompare(b.institution),
+        ),
     [draft, margins]
   );
 
@@ -106,7 +150,8 @@ export function SafetyMarginsSection() {
         <p className="text-sm text-muted-foreground mt-1">
           Porcentaje de resguardo aplicado sobre la devolución bruta para cada
           institución financiera. Instituciones con mayor riesgo usan márgenes más
-          altos.
+          altos. También puedes definir qué instituciones se muestran en la
+          calculadora de TeDevuelvo.
         </p>
       </div>
 
@@ -120,14 +165,44 @@ export function SafetyMarginsSection() {
             className="pl-9"
           />
         </div>
-        {isDirty && (
-          <Badge
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
             variant="outline"
-            className="bg-amber-50 border-amber-300 text-amber-700"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setAllVisibility(true)}
+            title="Mostrar todas las instituciones en la calculadora"
           >
-            Cambios sin guardar
-          </Badge>
-        )}
+            <Eye className="h-3.5 w-3.5" />
+            Mostrar todas
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setAllVisibility(false)}
+            title="Ocultar todas las instituciones en la calculadora"
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+            Ocultar todas
+          </Button>
+          {isDirty && (
+            <Badge
+              variant="outline"
+              className="bg-amber-50 border-amber-300 text-amber-700"
+            >
+              Cambios sin guardar
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="hidden md:grid grid-cols-[1fr_140px_180px] gap-3 px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <span>Institución</span>
+        <span className="text-center">Margen</span>
+        <span className="text-center">Visible en calculadora</span>
       </div>
 
       <div className="grid gap-2">
@@ -150,7 +225,7 @@ export function SafetyMarginsSection() {
               <div
                 className={`w-1.5 self-stretch bg-gradient-to-b ${accent} shrink-0`}
               />
-              <div className="flex items-center gap-3 flex-1 py-2.5 pr-4">
+              <div className="flex flex-wrap md:flex-nowrap items-center gap-3 flex-1 py-2.5 pr-4">
                 <div
                   className={`p-2 rounded-lg bg-gradient-to-br ${accent} shrink-0`}
                 >
@@ -163,13 +238,21 @@ export function SafetyMarginsSection() {
                   >
                     {row.institution}
                   </Label>
-                  {changed && (
-                    <p className="text-xs text-muted-foreground">
-                      Valor por defecto: {def}%
-                    </p>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {changed && (
+                      <p className="text-xs text-muted-foreground">
+                        Default: {def}%
+                      </p>
+                    )}
+                    {!row.visibleInCalculator && (
+                      <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                        <EyeOff className="h-3 w-3" />
+                        Oculta en calculadora
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 md:w-[140px] md:justify-center">
                   <Input
                     id={`margin-${row.institution}`}
                     type="number"
@@ -194,6 +277,22 @@ export function SafetyMarginsSection() {
                     </button>
                   )}
                 </div>
+                <div className="flex items-center gap-2 shrink-0 md:w-[180px] md:justify-center">
+                  <Switch
+                    id={`visible-${row.institution}`}
+                    checked={row.visibleInCalculator}
+                    onCheckedChange={(v) =>
+                      handleVisibilityChange(row.institution, v)
+                    }
+                    aria-label={`Visible en calculadora: ${row.institution}`}
+                  />
+                  <Label
+                    htmlFor={`visible-${row.institution}`}
+                    className="text-xs text-muted-foreground cursor-pointer select-none w-6"
+                  >
+                    {row.visibleInCalculator ? 'Sí' : 'No'}
+                  </Label>
+                </div>
               </div>
             </div>
           );
@@ -208,12 +307,27 @@ export function SafetyMarginsSection() {
 
       <Separator />
 
-      <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck className="h-4 w-4" />
-          <span>Margen promedio configurado</span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ShieldCheck className="h-4 w-4" />
+            <span>Margen promedio</span>
+          </div>
+          <span className="font-bold text-foreground text-lg">{promedio}%</span>
         </div>
-        <span className="font-bold text-foreground text-lg">{promedio}%</span>
+        <div className="flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Eye className="h-4 w-4" />
+            <span>Visibles en calculadora</span>
+          </div>
+          <span className="font-bold text-foreground text-lg">
+            {visiblesCount}
+            <span className="text-sm text-muted-foreground font-normal">
+              {' '}
+              / {draft.length}
+            </span>
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -251,25 +365,45 @@ export function SafetyMarginsSection() {
               </div>
               <ul className="divide-y divide-border/60">
                 {diffs.map((d) => {
-                  const up = d.to > d.from;
                   return (
                     <li
                       key={d.institution}
                       className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
                     >
                       <span className="truncate font-medium">{d.institution}</span>
-                      <span className="flex items-center gap-2 shrink-0 font-mono text-xs">
-                        <span className="text-muted-foreground">{d.from}%</span>
-                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        <span
-                          className={
-                            up
-                              ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                              : 'text-emerald-600 dark:text-emerald-400 font-semibold'
-                          }
-                        >
-                          {d.to}%
-                        </span>
+                      <span className="flex items-center gap-3 shrink-0 font-mono text-xs">
+                        {d.marginChanged && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">{d.from}%</span>
+                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                            <span
+                              className={
+                                d.to > d.from
+                                  ? 'text-amber-600 dark:text-amber-400 font-semibold'
+                                  : 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                              }
+                            >
+                              {d.to}%
+                            </span>
+                          </span>
+                        )}
+                        {d.visibilityChanged && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-muted-foreground">
+                              {d.visibleFrom ? 'Sí' : 'No'}
+                            </span>
+                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                            <span
+                              className={
+                                d.visibleTo
+                                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                                  : 'text-amber-600 dark:text-amber-400 font-semibold'
+                              }
+                            >
+                              {d.visibleTo ? 'Visible' : 'Oculta'}
+                            </span>
+                          </span>
+                        )}
                       </span>
                     </li>
                   );
