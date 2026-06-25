@@ -4,6 +4,7 @@ import { INSTITUCIONES_DISPONIBLES } from '@/lib/calculadoraUtils';
 export interface SafetyMargin {
   institution: string;
   margin: number; // %
+  visibleInCalculator: boolean;
 }
 
 const HIGH_RISK = new Set([
@@ -17,6 +18,7 @@ export const DEFAULT_SAFETY_MARGINS: SafetyMargin[] = INSTITUCIONES_DISPONIBLES.
   (institution) => ({
     institution,
     margin: HIGH_RISK.has(institution) ? 20 : 10,
+    visibleInCalculator: true,
   })
 );
 
@@ -30,7 +32,16 @@ function loadFromStorage(): SafetyMargin[] {
     // Asegurar que todas las instituciones del default estén
     return DEFAULT_SAFETY_MARGINS.map((def) => {
       const saved = parsed.find((p) => p.institution === def.institution);
-      return saved ? { ...def, margin: saved.margin } : def;
+      return saved
+        ? {
+            ...def,
+            margin: saved.margin,
+            visibleInCalculator:
+              typeof saved.visibleInCalculator === 'boolean'
+                ? saved.visibleInCalculator
+                : true,
+          }
+        : def;
     });
   } catch {
     return DEFAULT_SAFETY_MARGINS;
@@ -110,4 +121,16 @@ export function getSafetyMarginByInstitutionId(
   const label = INSTITUTION_ID_TO_LABEL[key];
   if (label) return getSafetyMarginFor(label);
   return getSafetyMarginFor(institutionId);
+}
+
+/** ¿La institución se muestra en la calculadora de TeDevuelvo? */
+export function isInstitutionVisibleInCalculator(
+  institution: string | undefined | null,
+): boolean {
+  if (!institution) return true;
+  const all = loadFromStorage();
+  const found = all.find(
+    (m) => m.institution.toLowerCase().trim() === institution.toLowerCase().trim()
+  );
+  return found?.visibleInCalculator ?? true;
 }
