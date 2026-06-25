@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { useAdminInstitutions } from '@/hooks/useInstitutions';
 import type { Institution, InstitutionPayload } from '@/services/institutionsService';
 import { Input } from '@/components/ui/input';
