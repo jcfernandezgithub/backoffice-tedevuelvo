@@ -33,6 +33,8 @@ import {
   Building2,
   Loader2,
   AlertTriangle,
+  Save,
+  Undo2,
 } from 'lucide-react';
 import { InstitutionFormDialog } from './InstitutionFormDialog';
 import {
@@ -59,22 +61,14 @@ const CONFIRM_PHRASE = 'actualizar';
 
 type Filter = 'all' | 'active' | 'inactive';
 
-type PendingUpdate =
-  | {
-      kind: 'margin';
-      inst: Institution;
-      newValue: number;
-    }
-  | {
-      kind: 'visibility';
-      inst: Institution;
-      newValue: boolean;
-    }
-  | {
-      kind: 'edit';
-      inst: Institution;
-      payload: InstitutionPayload;
-    };
+type RowDraft = { margen_seguridad?: number; active?: boolean };
+
+type PendingUpdate = {
+  kind: 'edit';
+  inst: Institution;
+  payload: InstitutionPayload;
+  clearDraftId?: string;
+};
 
 export function InstitutionsSection() {
   const {
@@ -97,22 +91,74 @@ export function InstitutionsSection() {
   const [pending, setPending] = useState<PendingUpdate | null>(null);
   const [confirmText, setConfirmText] = useState('');
   const [isApplying, setIsApplying] = useState(false);
-  // Token para forzar re-render de inputs cuando cancelamos un cambio (rollback visual)
-  const [resetToken, setResetToken] = useState(0);
+  // Borradores locales por fila (id → cambios sin guardar)
+  const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
 
-  const requestMarginChange = (inst: Institution, raw: string) => {
+  const setDraftMargin = (id: string, raw: string, original: number) => {
     const num = parseFloat(raw);
-    if (isNaN(num) || num < 0 || num > 100) {
-      setResetToken((t) => t + 1);
-      return;
-    }
-    if (num === inst.margen_seguridad) return;
-    setPending({ kind: 'margin', inst, newValue: num });
+    setDrafts((prev) => {
+      const next = { ...prev };
+      const row = { ...(next[id] ?? {}) };
+      if (isNaN(num)) {
+        delete row.margen_seguridad;
+      } else if (num === original) {
+        delete row.margen_seguridad;
+      } else {
+        row.margen_seguridad = num;
+      }
+      if (row.margen_seguridad === undefined && row.active === undefined) {
+        delete next[id];
+      } else {
+        next[id] = row;
+      }
+      return next;
+    });
   };
 
-  const requestToggleActive = (inst: Institution, active: boolean) => {
-    if (active === inst.active) return;
-    setPending({ kind: 'visibility', inst, newValue: active });
+  const setDraftActive = (id: string, value: boolean, original: boolean) => {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      const row = { ...(next[id] ?? {}) };
+      if (value === original) {
+        delete row.active;
+      } else {
+        row.active = value;
+      }
+      if (row.margen_seguridad === undefined && row.active === undefined) {
+        delete next[id];
+      } else {
+        next[id] = row;
+      }
+      return next;
+    });
+  };
+
+  const discardRowDraft = (id: string) => {
+    setDrafts((prev) => {
+      const { [id]: _drop, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const requestSaveRow = (inst: Institution) => {
+    const draft = drafts[inst.id];
+    if (!draft) return;
+    const newMargin =
+      draft.margen_seguridad !== undefined &&
+      !isNaN(draft.margen_seguridad) &&
+      draft.margen_seguridad >= 0 &&
+      draft.margen_seguridad <= 100
+        ? draft.margen_seguridad
+        : inst.margen_seguridad;
+    const newActive = draft.active ?? inst.active;
+    const payload: InstitutionPayload = {
+      label: inst.label,
+      value: inst.value,
+      grupo: inst.grupo,
+      margen_seguridad: newMargin,
+      active: newActive,
+    };
+    setPending({ kind: 'edit', inst, payload, clearDraftId: inst.id });
   };
 
   const handleCreate = async (payload: InstitutionPayload) => {
@@ -144,7 +190,6 @@ export function InstitutionsSection() {
   const cancelPending = () => {
     setPending(null);
     setConfirmText('');
-    setResetToken((t) => t + 1);
   };
 
   const applyPending = async () => {
@@ -153,33 +198,19 @@ export function InstitutionsSection() {
     if (!phraseOk) return;
     setIsApplying(true);
     try {
-      if (pending.kind === 'margin') {
-        await updateInstitutionAsync({
-          id: pending.inst.id,
-          payload: { margen_seguridad: pending.newValue },
-        });
-        toast.success(`${pending.inst.label}: margen ${pending.newValue}%`);
-      } else if (pending.kind === 'visibility') {
-        await updateInstitutionAsync({
-          id: pending.inst.id,
-          payload: { active: pending.newValue },
-        });
-        toast.success(
-          `${pending.inst.label}: ${pending.newValue ? 'visible' : 'oculta'}`,
-        );
-      } else {
-        await updateInstitutionAsync({
-          id: pending.inst.id,
-          payload: pending.payload,
-        });
-        toast.success('Institución actualizada');
+      await updateInstitutionAsync({
+        id: pending.inst.id,
+        payload: pending.payload,
+      });
+      toast.success(`${pending.inst.label} actualizada`);
+      if (pending.clearDraftId) discardRowDraft(pending.clearDraftId);
+      if (editTarget && editTarget.id === pending.inst.id) {
         setEditTarget(null);
       }
       setPending(null);
       setConfirmText('');
     } catch (e) {
       toast.error('No se pudo actualizar', { description: String(e) });
-      setResetToken((t) => t + 1);
     } finally {
       setIsApplying(false);
     }
@@ -187,35 +218,6 @@ export function InstitutionsSection() {
 
   const pendingSummary = () => {
     if (!pending) return null;
-    if (pending.kind === 'margin') {
-      return {
-        title: 'Confirmar cambio de margen',
-        rows: [
-          ['Institución', pending.inst.label],
-          [
-            'Margen actual',
-            `${pending.inst.margen_seguridad}%`,
-          ],
-          ['Nuevo margen', `${pending.newValue}%`],
-        ] as [string, string][],
-      };
-    }
-    if (pending.kind === 'visibility') {
-      return {
-        title: 'Confirmar cambio de visibilidad',
-        rows: [
-          ['Institución', pending.inst.label],
-          [
-            'Estado actual',
-            pending.inst.active ? 'Visible' : 'Oculta',
-          ],
-          [
-            'Nuevo estado',
-            pending.newValue ? 'Visible' : 'Oculta',
-          ],
-        ] as [string, string][],
-      };
-    }
     const diffs: [string, string][] = [];
     const fields: (keyof InstitutionPayload)[] = [
       'label',
@@ -236,14 +238,20 @@ export function InstitutionsSection() {
       const next = (pending.payload as any)[f];
       if (prev !== next) {
         const fmt = (v: any) =>
-          typeof v === 'boolean' ? (v ? 'Sí' : 'No') : String(v);
+          typeof v === 'boolean'
+            ? v
+              ? 'Sí'
+              : 'No'
+            : f === 'margen_seguridad'
+              ? `${v}%`
+              : String(v);
         diffs.push([labels[f], `${fmt(prev)} → ${fmt(next)}`]);
       }
     });
     return {
-      title: 'Confirmar edición de institución',
+      title: `Confirmar cambios en ${pending.inst.label}`,
       rows: diffs.length
-        ? diffs
+        ? ([['Institución', pending.inst.label], ...diffs] as [string, string][])
         : ([['Sin cambios', '—']] as [string, string][]),
     };
   };
@@ -337,7 +345,11 @@ export function InstitutionsSection() {
       ) : (
         <div className="grid gap-2">
           {filtered.map((row) => {
-            const isHighRisk = row.margen_seguridad >= HIGH_RISK_THRESHOLD;
+            const draft = drafts[row.id];
+            const isDirty = !!draft;
+            const draftMargin = draft?.margen_seguridad ?? row.margen_seguridad;
+            const draftActive = draft?.active ?? row.active;
+            const isHighRisk = draftMargin >= HIGH_RISK_THRESHOLD;
             const Icon = isHighRisk ? ShieldAlert : ShieldCheck;
             const accent = isHighRisk
               ? 'from-amber-500 to-orange-600'
@@ -345,7 +357,11 @@ export function InstitutionsSection() {
             return (
               <div
                 key={row.id}
-                className="flex items-center gap-4 rounded-xl border border-border/60 overflow-hidden"
+                className={`flex items-center gap-4 rounded-xl border overflow-hidden transition-colors ${
+                  isDirty
+                    ? 'border-amber-500/60 bg-amber-500/[0.03]'
+                    : 'border-border/60'
+                }`}
               >
                 <div className={`w-1.5 self-stretch bg-gradient-to-b ${accent} shrink-0`} />
                 <div className="flex flex-wrap md:flex-nowrap items-center gap-3 flex-1 py-2.5 pr-3">
@@ -360,10 +376,15 @@ export function InstitutionsSection() {
                       >
                         {row.label}
                       </Label>
-                      {!row.active && (
+                      {!draftActive && (
                         <Badge variant="outline" className="text-[10px] gap-1">
                           <EyeOff className="h-3 w-3" />
                           Inactiva
+                        </Badge>
+                      )}
+                      {isDirty && (
+                        <Badge className="text-[10px] gap-1 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20">
+                          Sin guardar
                         </Badge>
                       )}
                     </div>
@@ -380,17 +401,19 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Input
                       id={`margin-${row.id}`}
-                      key={`margin-${row.id}-${row.margen_seguridad}-${resetToken}`}
                       type="number"
                       min={0}
                       max={100}
                       step={0.5}
-                      defaultValue={row.margen_seguridad}
-                      onBlur={(e) => requestMarginChange(row, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      }}
-                      className="w-20 text-center font-semibold"
+                      value={draftMargin}
+                      onChange={(e) =>
+                        setDraftMargin(row.id, e.target.value, row.margen_seguridad)
+                      }
+                      className={`w-20 text-center font-semibold ${
+                        draft?.margen_seguridad !== undefined
+                          ? 'border-amber-500 focus-visible:ring-amber-500'
+                          : ''
+                      }`}
                     />
                     <span className="text-sm text-muted-foreground w-3">%</span>
                   </div>
@@ -398,17 +421,39 @@ export function InstitutionsSection() {
                   <div className="flex items-center gap-2 shrink-0 md:w-[120px] md:justify-center">
                     <Switch
                       id={`visible-${row.id}`}
-                      key={`visible-${row.id}-${row.active}-${resetToken}`}
-                      checked={row.active}
-                      onCheckedChange={(v) => requestToggleActive(row, v)}
+                      checked={draftActive}
+                      onCheckedChange={(v) => setDraftActive(row.id, v, row.active)}
                       aria-label={`Visible en calculadora: ${row.label}`}
                     />
                     <Label
                       htmlFor={`visible-${row.id}`}
                       className="text-xs text-muted-foreground cursor-pointer select-none w-6"
                     >
-                      {row.active ? 'Sí' : 'No'}
+                      {draftActive ? 'Sí' : 'No'}
                     </Label>
+                  </div>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isDirty && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => discardRowDraft(row.id)}
+                        className="h-8 gap-1 text-muted-foreground hover:text-foreground"
+                        title="Descartar cambios"
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => requestSaveRow(row)}
+                      disabled={!isDirty}
+                      className="h-8 gap-1.5"
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      Guardar
+                    </Button>
                   </div>
 
                   <DropdownMenu>
