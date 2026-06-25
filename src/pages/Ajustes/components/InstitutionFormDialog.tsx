@@ -117,17 +117,12 @@ export function InstitutionFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="inst-value">
-                Identificador (slug)
-                {isEdit && (
-                  <span className="ml-1 text-[10px] text-amber-600">
-                    cambiar puede romper solicitudes existentes
-                  </span>
-                )}
-              </Label>
+              <Label htmlFor="inst-value">Identificador</Label>
               <Input
                 id="inst-value"
                 placeholder="santander"
+                readOnly={isEdit}
+                disabled={isEdit}
                 {...form.register('value')}
               />
               {errors.value && (
