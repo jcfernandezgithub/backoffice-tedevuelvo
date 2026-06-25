@@ -1359,16 +1359,16 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const primaTotalBanco = round3(currentPremium * remaining)
                             const primaTotalTDV = round3(newPremium * remaining)
                             const devolucionBruta = round3(primaTotalBanco - primaTotalTDV)
-            // Margen derivado dinámicamente a partir de la devolución real
-            // almacenada en el snapshot (totalSaving). Evita asumir 10% fijo
-            // ya que cada institución/solicitud puede tener un margen distinto.
-            // Margen configurado en Ajustes → Margen de Seguridad, según la
-            // institución financiera asociada a la solicitud. Si la sección de
-            // ajustes se actualiza, este valor se reflejará al re-abrir la
-            // solicitud (lectura síncrona desde localStorage).
-            const margenConfigurado = institutionMargin
-            const margenDisplay = margenConfigurado
-            const totalCalculado = round3(devolucionBruta * (1 - margenConfigurado / 100))
+            // El margen NO se recalcula ni se consulta al servicio en la
+            // visualización: se respeta el que quedó congelado en el snapshot
+            // (simulación o recálculo de confirmación). Si no está persistido,
+            // la solicitud debe pasar por "Confirmación de datos pendientes"
+            // para recalcular y guardarlo.
+            const snap: any = refund.calculationSnapshot || {}
+            const margenSnapshotRaw = snap.safetyMarginPct ?? snap.safetyMargin ?? snap.margenSeguridad
+            const margenSnapshot = typeof margenSnapshotRaw === 'number' && !Number.isNaN(margenSnapshotRaw)
+              ? margenSnapshotRaw
+              : null
                             return (
                               <div className="col-span-2 mt-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1407,18 +1407,25 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     </div>
                                   </div>
                                   {/* Step 3: Apply margin */}
-                                  <div className="space-y-1">
-                  <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenDisplay}%)</p>
-                                    <div className="p-2 rounded bg-background border text-xs">
-                      <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenConfigurado) / 100).toFixed(4)}</p>
-                                      <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalCalculado)} CLP</p>
-                                      {Math.abs(totalCalculado - totalSaving) > 1 && (
-                                        <p className="text-[10px] text-muted-foreground mt-1 italic">
-                                          Valor almacenado en el snapshot: ${formatCLPNumber(totalSaving)} CLP — fue generado con un margen distinto al configurado actualmente.
-                                        </p>
-                                      )}
+                                  {margenSnapshot !== null ? (
+                                    <div className="space-y-1">
+                                      <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen ({margenSnapshot}%)</p>
+                                      <div className="p-2 rounded bg-background border text-xs">
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(devolucionBruta)} × {((100 - margenSnapshot) / 100).toFixed(4)}</p>
+                                        <p className="font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">= ${formatCLPNumber(totalSaving)} CLP</p>
+                                      </div>
                                     </div>
-                                  </div>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <p className="text-[11px] text-muted-foreground font-medium">Paso 3: Aplicar margen</p>
+                                      <div className="p-2 rounded border border-amber-400/50 bg-amber-50/60 dark:bg-amber-950/20 text-xs">
+                                        <p className="text-amber-700 dark:text-amber-300 font-medium">Margen no almacenado en el snapshot</p>
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                          Esta solicitud debe pasar por "Confirmación de datos pendientes" para recalcular y persistir el margen vigente. La visualización no recalcula valores.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )
