@@ -2,9 +2,13 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/state/AuthContext'
 import { Menu } from 'lucide-react'
+import { usePublicInstitutions } from '@/hooks/useInstitutions'
 
 export function TopBar() {
   const { user, logout } = useAuth()
+  // Mantiene la cache de instituciones públicas tibia para que los helpers
+  // sincrónicos (`getSafetyMarginByInstitutionId`) tengan datos disponibles.
+  usePublicInstitutions()
   return (
     <header className="h-14 flex items-center justify-between border-b bg-background px-3">
       <div className="flex items-center gap-2">
