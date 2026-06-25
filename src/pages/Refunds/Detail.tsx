@@ -202,8 +202,6 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     staleTime: 30 * 60 * 1000,
   })
 
-  const institutionMargin = useInstitutionMargin((refund as any)?.institutionId)
-
   const updateMutation = useMutation({
     mutationFn: (dto: AdminUpdateStatusDto) => refundAdminApi.updateStatus(id!, dto),
     onSuccess: () => {
