@@ -404,11 +404,11 @@ export function TabResumen() {
               </p>
               <div className="space-y-1.5 text-xs">
                 {[
-                  { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: docsReceivedRefunds.length },
-                  { label: 'Ingresadas', desc: 'En evaluación bancaria', count: submittedRefunds.length },
-                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: approvedRefunds.length },
-                  { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: paymentScheduledRefunds.length },
-                  { label: 'Pagadas', desc: 'Devolución completada', count: paidRefunds.length },
+                  { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: c.documentsReceived.total },
+                  { label: 'Ingresadas', desc: 'En evaluación bancaria', count: c.entered.total },
+                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: c.approved.total },
+                  { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: c.scheduledPayment.total },
+                  { label: 'Pagadas', desc: 'Devolución completada', count: c.paid.total },
                 ].map(({ label, desc, count }) => (
                   <div key={label} className="flex items-center justify-between gap-3">
                     <div>
@@ -420,7 +420,7 @@ export function TabResumen() {
                 ))}
                 <div className="border-t border-border mt-2 pt-2 flex items-center justify-between font-bold">
                   <span>Total Proceso Operativo</span>
-                  <span className="text-primary">{procesoOperativoTotal}</span>
+                  <span className="text-primary">{procesoOperativoTotalCounts}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground/60 mt-3 italic">
