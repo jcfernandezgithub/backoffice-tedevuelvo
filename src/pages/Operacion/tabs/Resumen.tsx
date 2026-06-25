@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
+import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -101,6 +102,69 @@ export function TabResumen() {
     since: filtros.fechaDesde,
     to: filtros.fechaHasta,
   });
+
+  // ── Conteos del dashboard desde el endpoint dedicado ─────────────────────────
+  // Las calugas SOLO leen de este endpoint — no hay cálculos del lado cliente.
+  const { data: countsData, isLoading: loadingCounts } = useDashboardCounts({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
+
+  const c = useMemo(() => {
+    const qualification = metricObj(countsData?.qualification);
+    const documentsReceived = metricObj(countsData?.documentsReceived);
+    const entered = metricObj(countsData?.entered);
+    const approved = metricObj(countsData?.approved);
+    const rejected = metricObj(countsData?.rejected);
+    const scheduledPayment = metricObj(countsData?.scheduledPayment);
+    const paid = metricObj(countsData?.paid);
+    return {
+      qualification: {
+        total: metricTotal(countsData?.qualification),
+        signed: qualification.signed ?? 0,
+        pending: qualification.pending ?? 0,
+        overdue: qualification.overdue ?? 0,
+      },
+      documentsReceived: {
+        total: metricTotal(countsData?.documentsReceived),
+        overdue: documentsReceived.overdue ?? 0,
+      },
+      entered: {
+        total: metricTotal(countsData?.entered),
+        overdue: entered.overdue ?? 0,
+        byInstitution: (entered.byInstitution ?? []).map((it) => ({
+          institutionId: String(it.institutionId),
+          displayName: it.displayName || it.name || String(it.institutionId),
+          count: it.count ?? 0,
+          overdueCount: it.overdueCount ?? 0,
+        })),
+      },
+      approved: {
+        total: metricTotal(countsData?.approved),
+        overdue: approved.overdue ?? 0,
+      },
+      rejected: {
+        total: metricTotal(countsData?.rejected),
+      },
+      scheduledPayment: {
+        total: metricTotal(countsData?.scheduledPayment),
+        withBank: scheduledPayment.withBank ?? 0,
+        withoutBank: scheduledPayment.withoutBank ?? 0,
+        overdue: scheduledPayment.overdue ?? 0,
+      },
+      paid: {
+        total: metricTotal(countsData?.paid),
+        overdue: paid.overdue ?? 0,
+      },
+    };
+  }, [countsData]);
+
+  const procesoOperativoTotalCounts =
+    c.documentsReceived.total +
+    c.entered.total +
+    c.approved.total +
+    c.scheduledPayment.total +
+    c.paid.total;
 
   // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
   const getLastStatusChangeDate = (refund: any): string | null => {
@@ -302,11 +366,11 @@ export function TabResumen() {
                     {/* Desglose compacto */}
                     <div className="hidden sm:flex items-center gap-2">
                       {[
-                        { label: 'Docs', count: docsReceivedRefunds.length },
-                        { label: 'Ingresadas', count: submittedRefunds.length },
-                        { label: 'Aprobadas', count: approvedRefunds.length },
-                        { label: 'Pago Prog.', count: paymentScheduledRefunds.length },
-                        { label: 'Pagadas', count: paidRefunds.length },
+                        { label: 'Docs', count: c.documentsReceived.total },
+                        { label: 'Ingresadas', count: c.entered.total },
+                        { label: 'Aprobadas', count: c.approved.total },
+                        { label: 'Pago Prog.', count: c.scheduledPayment.total },
+                        { label: 'Pagadas', count: c.paid.total },
                       ].map(({ label, count }) => (
                         <div key={label} className="flex flex-col items-center px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
                           <span className="text-white font-bold text-lg leading-none">{count}</span>
@@ -322,7 +386,7 @@ export function TabResumen() {
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-4xl leading-none tabular-nums">
-                        {procesoOperativoTotal.toLocaleString('es-CL')}
+                        {procesoOperativoTotalCounts.toLocaleString('es-CL')}
                       </div>
                       <div className="text-white/60 text-xs mt-1 underline underline-offset-2">solicitudes</div>
                     </div>
@@ -340,11 +404,11 @@ export function TabResumen() {
               </p>
               <div className="space-y-1.5 text-xs">
                 {[
-                  { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: docsReceivedRefunds.length },
-                  { label: 'Ingresadas', desc: 'En evaluación bancaria', count: submittedRefunds.length },
-                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: approvedRefunds.length },
-                  { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: paymentScheduledRefunds.length },
-                  { label: 'Pagadas', desc: 'Devolución completada', count: paidRefunds.length },
+                  { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: c.documentsReceived.total },
+                  { label: 'Ingresadas', desc: 'En evaluación bancaria', count: c.entered.total },
+                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: c.approved.total },
+                  { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: c.scheduledPayment.total },
+                  { label: 'Pagadas', desc: 'Devolución completada', count: c.paid.total },
                 ].map(({ label, desc, count }) => (
                   <div key={label} className="flex items-center justify-between gap-3">
                     <div>
@@ -356,7 +420,7 @@ export function TabResumen() {
                 ))}
                 <div className="border-t border-border mt-2 pt-2 flex items-center justify-between font-bold">
                   <span>Total Proceso Operativo</span>
-                  <span className="text-primary">{procesoOperativoTotal}</span>
+                  <span className="text-primary">{procesoOperativoTotalCounts}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground/60 mt-3 italic">
@@ -367,7 +431,7 @@ export function TabResumen() {
         </TooltipProvider>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {loadingRefunds || loadingMandates ? (
+        {loadingCounts ? (
           <>
             {Array.from({ length: 7 }).map((_, i) => (
               <Card key={i}>
@@ -398,7 +462,7 @@ export function TabResumen() {
                   className="text-3xl font-bold text-amber-700 dark:text-amber-400 cursor-pointer hover:underline"
                   onClick={() => navigate(buildRefundsUrl({ status: 'qualifying' }))}
                 >
-                  {qualifyingRefunds.length}
+                  {c.qualification.total}
                 </div>
                 <div className="flex gap-4 mt-3">
                   <div 
@@ -406,14 +470,14 @@ export function TabResumen() {
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'signed' }))}
                   >
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
-                    <span className="font-semibold">{qualifyingWithSignature.length}</span>
+                    <span className="font-semibold">{c.qualification.signed}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'pending' }))}
                   >
                     <Badge variant="secondary">Pendiente</Badge>
-                    <span className="font-semibold">{qualifyingWithoutSignature.length}</span>
+                    <span className="font-semibold">{c.qualification.pending}</span>
                   </div>
                 </div>
               </CardContent>
@@ -422,7 +486,7 @@ export function TabResumen() {
             {/* Card: Documentos Recibidos */}
             <Card 
               className={`border-l-4 cursor-pointer transition-all ${
-                docsReceivedRefunds.length >= 1
+                c.documentsReceived.total >= 1
                   ? 'border-l-orange-500 bg-orange-50/40 dark:bg-orange-950/15 hover:shadow-lg ring-1 ring-orange-300 dark:ring-orange-700'
                   : 'border-l-violet-500 bg-violet-50/30 dark:bg-violet-950/10 hover:shadow-md'
               }`}
@@ -434,25 +498,25 @@ export function TabResumen() {
                     Documentos Recibidos
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {docsReceivedRefunds.length >= 1 && (
+                    {c.documentsReceived.total >= 1 && (
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500" />
                       </span>
                     )}
-                    <FileCheck2 className={`h-5 w-5 ${docsReceivedRefunds.length >= 1 ? 'text-orange-500' : 'text-violet-500'}`} />
+                    <FileCheck2 className={`h-5 w-5 ${c.documentsReceived.total >= 1 ? 'text-orange-500' : 'text-violet-500'}`} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className={`text-3xl font-bold ${docsReceivedRefunds.length >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
-                    {docsReceivedRefunds.length}
+                  <span className={`text-3xl font-bold ${c.documentsReceived.total >= 1 ? 'text-orange-700 dark:text-orange-400' : 'text-violet-700 dark:text-violet-400'}`}>
+                    {c.documentsReceived.total}
                   </span>
-                  <OverdueBadge count={overdueByStage.docs_received?.count || 0} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
+                  <OverdueBadge count={c.documentsReceived.overdue} stageLabel="Docs Recibidos" objetivo={overdueByStage.docs_received?.objetivo} />
                 </div>
-                <p className={`text-xs mt-1 font-medium ${docsReceivedRefunds.length >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                  {docsReceivedRefunds.length >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
+                <p className={`text-xs mt-1 font-medium ${c.documentsReceived.total >= 1 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                  {c.documentsReceived.total >= 1 ? '⚠ Acción requerida · Ingresar al banco' : 'Listos para ingresar al banco'}
                 </p>
               </CardContent>
             </Card>
@@ -460,7 +524,7 @@ export function TabResumen() {
             {/* Card: Solicitudes Ingresadas */}
             {(() => {
               const submittedObjetivo = overdueByStage.submitted?.objetivo;
-              const breakdown = buildInstitutionBreakdown(submittedRefunds, 'submitted', submittedObjetivo);
+              const breakdown = c.entered.byInstitution;
               const topInstitutions = [...breakdown].sort((a, b) => b.count - a.count).slice(0, 3);
               const restCount = breakdown.length - topInstitutions.length;
               const maxCount = topInstitutions[0]?.count || 1;
@@ -483,10 +547,10 @@ export function TabResumen() {
                       onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
                     >
                       <span className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">
-                        {submittedRefunds.length}
+                        {c.entered.total}
                       </span>
                       <OverdueBadge
-                        count={overdueByStage.submitted?.count || 0}
+                        count={c.entered.overdue}
                         stageLabel="Ingresadas"
                         objetivo={submittedObjetivo}
                       />
@@ -575,8 +639,8 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{approvedRefunds.length}</span>
-                  <OverdueBadge count={overdueByStage.approved?.count || 0} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
+                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{c.approved.total}</span>
+                  <OverdueBadge count={c.approved.overdue} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
                 </div>
               </CardContent>
             </Card>
@@ -595,13 +659,13 @@ export function TabResumen() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{rejectedRefunds.length}</div>
+                <div className="text-3xl font-bold text-red-600 dark:text-red-400">{c.rejected.total}</div>
               </CardContent>
             </Card>
 
             {/* Card: Pago Programado - con sub-filtros clickeables */}
             <Card className={`border-l-4 transition-all ${
-              paymentScheduledWithBank.length > 0
+              c.scheduledPayment.withBank > 0
                 ? 'border-l-red-500 bg-red-50/30 dark:bg-red-950/10 ring-1 ring-red-300 dark:ring-red-700'
                 : 'border-l-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/10'
             }`}>
@@ -611,42 +675,42 @@ export function TabResumen() {
                     Pago Programado
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {paymentScheduledWithBank.length > 0 && (
+                    {c.scheduledPayment.withBank > 0 && (
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                       </span>
                     )}
-                    <CalendarClock className={`h-5 w-5 ${paymentScheduledWithBank.length > 0 ? 'text-red-500' : 'text-cyan-500'}`} />
+                    <CalendarClock className={`h-5 w-5 ${c.scheduledPayment.withBank > 0 ? 'text-red-500' : 'text-cyan-500'}`} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
                   <span 
-                    className={`text-3xl font-bold cursor-pointer hover:underline ${paymentScheduledWithBank.length > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
+                    className={`text-3xl font-bold cursor-pointer hover:underline ${c.scheduledPayment.withBank > 0 ? 'text-red-700 dark:text-red-400' : 'text-cyan-700 dark:text-cyan-400'}`}
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                   >
-                    {paymentScheduledRefunds.length}
+                    {c.scheduledPayment.total}
                   </span>
-                  <OverdueBadge count={overdueByStage.payment_scheduled?.count || 0} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
+                  <OverdueBadge count={c.scheduledPayment.overdue} stageLabel="Pago Programado" objetivo={overdueByStage.payment_scheduled?.objetivo} />
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'ready' }))}
                   >
-                    <Badge variant="default" className={`text-xs ${paymentScheduledWithBank.length > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
-                      {paymentScheduledWithBank.length > 0 ? '⚠ Transferencia pendiente' : 'Con datos para transferencia'}
+                    <Badge variant="default" className={`text-xs ${c.scheduledPayment.withBank > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
+                      {c.scheduledPayment.withBank > 0 ? '⚠ Transferencia pendiente' : 'Con datos para transferencia'}
                     </Badge>
-                    <span className="font-semibold">{paymentScheduledWithBank.length}</span>
+                    <span className="font-semibold">{c.scheduledPayment.withBank}</span>
                   </div>
                   <div 
                     className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'pending' }))}
                   >
                     <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos para transferencia</Badge>
-                    <span className="font-semibold">{paymentScheduledWithoutBank.length}</span>
+                    <span className="font-semibold">{c.scheduledPayment.withoutBank}</span>
                   </div>
                 </div>
               </CardContent>
@@ -667,8 +731,8 @@ export function TabResumen() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{paidRefunds.length}</span>
-                  <OverdueBadge count={overdueByStage.paid?.count || 0} stageLabel="Pagadas" objetivo={overdueByStage.paid?.objetivo} />
+                  <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">{c.paid.total}</span>
+                  <OverdueBadge count={c.paid.overdue} stageLabel="Pagadas" objetivo={overdueByStage.paid?.objetivo} />
                 </div>
               </CardContent>
             </Card>
