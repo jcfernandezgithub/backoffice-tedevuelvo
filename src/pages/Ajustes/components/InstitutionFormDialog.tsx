@@ -21,8 +21,7 @@ const schema = z.object({
   value: z
     .string()
     .min(2, 'Mínimo 2 caracteres')
-    .max(60)
-    .regex(/^[a-z0-9-]+$/, 'Solo minúsculas, números y guiones'),
+    .max(60),
   grupo: z.string().min(1, 'Requerido').max(80),
   margen_seguridad: z
     .number({ invalid_type_error: 'Debe ser numérico' })
