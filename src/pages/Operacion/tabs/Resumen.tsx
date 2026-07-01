@@ -370,18 +370,23 @@ export function TabResumen() {
   }, 0);
   console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
-  // Distribución por estado desde el endpoint /dashboard/status-distribution
+  // Distribución por estado desde el endpoint /dashboard/status-distribution.
+  // Se normalizan etiquetas (ej. DATOS_SIN_SIMULACION → "Sin Simulación") y se
+  // ordena descendente para una lectura más natural en el gráfico de barras.
   const distribucionEstado = useMemo(() => {
     const items = statusDistData?.items ?? [];
     return items
       .map((it) => ({
-        categoria: it.label,
+        categoria: STATUS_FRIENDLY_LABEL[it.status] || it.label,
         status: it.status,
         valor: it.count,
         porcentaje: it.percentage,
+        monto: it.estimatedAmount,
       }))
-      .filter((item) => item.valor > 0);
+      .filter((item) => item.valor > 0)
+      .sort((a, b) => b.valor - a.valor);
   }, [statusDistData]);
+  const distribucionTotal = statusDistData?.total ?? 0;
 
   return (
     <div className="space-y-6">
