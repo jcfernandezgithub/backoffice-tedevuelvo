@@ -10,6 +10,7 @@ import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
 import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
+import { useRequestsTimeseries, useStatusDistribution } from '../hooks/useDashboardCharts';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -86,16 +87,16 @@ export function TabResumen() {
     return `/refunds?${searchParams.toString()}`;
   };
 
-  const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
-    filtros,
-    granularidad,
-    'cantidad'
-  );
-  const { data: serieMontos, isLoading: loadingMontos } = useSerieTemporal(
-    filtros,
-    granularidad,
-    'montoRecuperado'
-  );
+  // ── Gráficos alimentados por endpoints del Dashboard (filtran por updatedAt) ─
+  const { data: timeseriesData, isLoading: loadingTimeseries } = useRequestsTimeseries({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+    granularity: granularidad,
+  });
+  const { data: statusDistData, isLoading: loadingStatusDist } = useStatusDistribution({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
   
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   // Reusa el caché filtrado por las fechas del FiltersBar (enviadas a listV2 como since/to).
