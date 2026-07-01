@@ -36,25 +36,89 @@ import { InstitutionBreakdownSheet, buildInstitutionBreakdown } from '../compone
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
+  'Sin Simulación': 'hsl(215, 16%, 65%)',      // slate-400
+  'Simulada': 'hsl(199, 89%, 60%)',            // sky-500
+  'Solicitada': 'hsl(217, 91%, 68%)',          // blue-400
   'En Calificación': 'hsl(43, 96%, 56%)',      // amber-500
+  'Documentos Pendientes': 'hsl(31, 91%, 62%)',// orange-500
+  'Documentos Recibidos': 'hsl(271, 91%, 65%)',// violet-500
   'Docs Recibidos': 'hsl(271, 91%, 65%)',      // violet-500
+  'Ingresada': 'hsl(239, 84%, 67%)',           // indigo-500
   'Ingresadas': 'hsl(239, 84%, 67%)',          // indigo-500
+  'Aprobada': 'hsl(142, 71%, 45%)',            // green-500
   'Aprobadas': 'hsl(142, 71%, 45%)',           // green-500
+  'Rechazada': 'hsl(0, 84%, 60%)',             // red-500
   'Rechazadas': 'hsl(0, 84%, 60%)',            // red-500
   'Pago Programado': 'hsl(187, 92%, 69%)',     // cyan-400
+  'Pagada Cliente': 'hsl(160, 84%, 39%)',      // emerald-600
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
+  'Cancelada': 'hsl(0, 0%, 55%)',              // gray
 };
 
 // Fallback por status enum (por si el label difiere del esperado)
 const ESTADO_COLORS_BY_STATUS: Record<string, string> = {
+  datos_sin_simulacion: 'hsl(215, 16%, 65%)',
+  simulated: 'hsl(199, 89%, 60%)',
+  requested: 'hsl(217, 91%, 68%)',
   qualifying: 'hsl(43, 96%, 56%)',
+  docs_pending: 'hsl(31, 91%, 62%)',
   docs_received: 'hsl(271, 91%, 65%)',
   submitted: 'hsl(239, 84%, 67%)',
   approved: 'hsl(142, 71%, 45%)',
   rejected: 'hsl(0, 84%, 60%)',
   payment_scheduled: 'hsl(187, 92%, 69%)',
   paid: 'hsl(160, 84%, 39%)',
+  canceled: 'hsl(0, 0%, 55%)',
 };
+
+// Etiquetas amigables cuando el API entrega el enum crudo
+const STATUS_FRIENDLY_LABEL: Record<string, string> = {
+  DATOS_SIN_SIMULACION: 'Sin Simulación',
+};
+
+/** Tooltip enriquecido para el gráfico de distribución por estado. */
+function StatusDistTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]?.payload;
+  if (!p) return null;
+  const color =
+    ESTADO_COLORS[p.categoria] || ESTADO_COLORS_BY_STATUS[p.status] || '#8884d8';
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg min-w-[200px]">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
+        <span className="font-semibold text-sm">{p.categoria}</span>
+      </div>
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Cantidad</span>
+          <span className="font-semibold tabular-nums">
+            {p.valor.toLocaleString('es-CL')}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Participación</span>
+          <span className="font-semibold tabular-nums">
+            {p.porcentaje?.toFixed(1) ?? '0.0'}%
+          </span>
+        </div>
+        {typeof p.monto === 'number' && p.monto > 0 && (
+          <div className="flex items-center justify-between gap-4 pt-1 border-t">
+            <span className="text-muted-foreground">Monto estimado</span>
+            <span className="font-semibold tabular-nums">
+              {new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP',
+                notation: 'compact',
+                maximumFractionDigits: 1,
+              }).format(p.monto)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
 function OverdueBadge({ count, stageLabel, objetivo }: { count: number; stageLabel: string; objetivo?: number }) {
@@ -277,11 +341,17 @@ export function TabResumen() {
     return map;
   }, [overdueStages, stageObjectives]);
 
-  // Mapear buckets del API al formato que espera TimeSeriesChart ({fecha, valor})
+  // Mapear serie del API al formato de TimeSeriesChart, exponiendo las 3 métricas
+  // para que el modo `combined` renderice barras (cantidad) + líneas (montos).
   const timeseriesChartData = (timeseriesData?.series ?? []).map((b) => ({
-    fecha: b.bucketLabel || b.bucketStart,
+    fecha: b.bucketStart,
+    bucketLabel: b.bucketLabel,
     valor: b.count,
+    count: b.count,
+    estimatedAmount: b.estimatedAmount,
+    paidAmount: b.paidAmount,
   }));
+  const timeseriesTotals = timeseriesData?.totals;
 
   // Todas las calugas respetan el filtro de fechas
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
@@ -344,18 +414,23 @@ export function TabResumen() {
   }, 0);
   console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
-  // Distribución por estado desde el endpoint /dashboard/status-distribution
+  // Distribución por estado desde el endpoint /dashboard/status-distribution.
+  // Se normalizan etiquetas (ej. DATOS_SIN_SIMULACION → "Sin Simulación") y se
+  // ordena descendente para una lectura más natural en el gráfico de barras.
   const distribucionEstado = useMemo(() => {
     const items = statusDistData?.items ?? [];
     return items
       .map((it) => ({
-        categoria: it.label,
+        categoria: STATUS_FRIENDLY_LABEL[it.status] || it.label,
         status: it.status,
         valor: it.count,
         porcentaje: it.percentage,
+        monto: it.estimatedAmount,
       }))
-      .filter((item) => item.valor > 0);
+      .filter((item) => item.valor > 0)
+      .sort((a, b) => b.valor - a.valor);
   }, [statusDistData]);
+  const distribucionTotal = statusDistData?.total ?? 0;
 
   return (
     <div className="space-y-6">
@@ -915,7 +990,36 @@ export function TabResumen() {
         {/* Gráfico combinado de solicitudes y montos */}
         <Card>
           <CardHeader>
-            <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
+                {timeseriesTotals && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-2 rounded-sm bg-primary/60" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {(timeseriesTotals.count ?? 0).toLocaleString('es-CL')}
+                      </span>
+                      solicitudes
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-0.5 bg-blue-500" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', notation: 'compact', maximumFractionDigits: 1 }).format(timeseriesTotals.estimatedAmount ?? 0)}
+                      </span>
+                      estimado
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-0.5 bg-emerald-500" />
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', notation: 'compact', maximumFractionDigits: 1 }).format(timeseriesTotals.paidAmount ?? 0)}
+                      </span>
+                      pagado
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingTimeseries ? (
@@ -934,8 +1038,18 @@ export function TabResumen() {
 
         {/* Distribución por estado */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Distribución por Estado</CardTitle>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>Distribución por Estado</CardTitle>
+              {distribucionTotal > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {distribucionTotal.toLocaleString('es-CL')}
+                  </span>{' '}
+                  solicitudes en {distribucionEstado.length} estado{distribucionEstado.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
             <ToggleGroup type="single" value={chartType} onValueChange={(value) => value && setChartType(value as 'pie' | 'bar')}>
               <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-8 w-8 p-0">
                 <PieChartIcon className="h-4 w-4" />
@@ -949,16 +1063,18 @@ export function TabResumen() {
             {loadingStatusDist ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 {chartType === 'pie' ? (
                   <PieChart>
                     <Pie
                       data={distribucionEstado}
                       cx="50%"
-                      cy="50%"
+                      cy="45%"
                       labelLine={false}
-                      label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
-                      outerRadius={80}
+                      label={({ porcentaje }) => (porcentaje >= 3 ? `${porcentaje.toFixed(1)}%` : '')}
+                      outerRadius={95}
+                      innerRadius={45}
+                      paddingAngle={2}
                       fill="#8884d8"
                       dataKey="valor"
                       nameKey="categoria"
@@ -967,29 +1083,38 @@ export function TabResumen() {
                         <Cell 
                           key={`cell-${index}`} 
                           fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
+                          stroke="hsl(var(--background))"
+                          strokeWidth={2}
                         />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
+                    <Tooltip content={<StatusDistTooltip />} />
+                    <Legend
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                      formatter={(value: string) => (
+                        <span className="text-muted-foreground">{value}</span>
+                      )}
                     />
-                    <Legend />
                   </PieChart>
                 ) : (
-                  <BarChart data={distribucionEstado} layout="vertical" margin={{ left: 20 }}>
+                  <BarChart data={distribucionEstado} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <XAxis
+                      type="number"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v) => new Intl.NumberFormat('es-CL', { notation: 'compact' }).format(v)}
+                    />
                     <YAxis 
                       type="category" 
                       dataKey="categoria" 
                       stroke="hsl(var(--muted-foreground))" 
                       fontSize={11}
-                      width={100}
+                      width={130}
                     />
-                    <Tooltip 
-                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
-                    />
-                    <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                    <Tooltip content={<StatusDistTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+                    <Bar dataKey="valor" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--muted-foreground))', formatter: (v: number) => v.toLocaleString('es-CL') }}>
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
