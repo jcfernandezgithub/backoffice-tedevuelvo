@@ -117,11 +117,17 @@ export function TabResumen() {
     to: filtros.fechaHasta,
   });
 
-  const finToPayAmount = pickNumber(financialSummary, ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
-  const finToPayCount = pickNumber(financialSummary, ['scheduledCount', 'scheduledPaymentCount']);
-  const finPaidAmount = pickNumber(financialSummary, ['totalPaid', 'paidAmount']);
-  const finPaidCount = pickNumber(financialSummary, ['paidCount']);
-  const finPremium = pickNumber(financialSummary, ['totalPremium', 'emittedPremium', 'premiumAmount']);
+  // La respuesta viene como { totalToPayClients: { amount, count, description }, ... }
+  // Mantenemos fallbacks a los nombres planos anteriores por compatibilidad.
+  const fs: any = financialSummary || {};
+  const finToPayAmount = Number(fs.totalToPayClients?.amount ?? fs.totalToPay ?? fs.scheduledPaymentAmount ?? fs.toPayAmount ?? 0);
+  const finToPayCount = Number(fs.totalToPayClients?.count ?? fs.scheduledCount ?? fs.scheduledPaymentCount ?? 0);
+  const finToPayDescription: string | undefined = fs.totalToPayClients?.description;
+  const finPaidAmount = Number(fs.totalPaidClients?.amount ?? fs.totalPaid ?? fs.paidAmount ?? 0);
+  const finPaidCount = Number(fs.totalPaidClients?.count ?? fs.paidCount ?? 0);
+  const finPaidDescription: string | undefined = fs.totalPaidClients?.description;
+  const finPremium = Number(fs.totalIssuedPremium?.amount ?? fs.totalPremium ?? fs.emittedPremium ?? fs.premiumAmount ?? 0);
+  const finPremiumDescription: string | undefined = fs.totalIssuedPremium?.description;
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
@@ -795,7 +801,7 @@ export function TabResumen() {
                       }).format(finToPayAmount)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {finToPayCount} solicitud{finToPayCount !== 1 ? 'es' : ''} en pago programado
+                      {finToPayDescription ?? `${finToPayCount} solicitud${finToPayCount !== 1 ? 'es' : ''} en pago programado`}
                     </p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
@@ -821,7 +827,9 @@ export function TabResumen() {
                         maximumFractionDigits: 0
                       }).format(finPaidAmount)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Basado en {finPaidCount} solicitudes pagadas</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finPaidDescription ?? `Basado en ${finPaidCount} solicitudes pagadas`}
+                    </p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
                     <Banknote className="h-7 w-7 text-green-700 dark:text-green-400" />
@@ -846,7 +854,9 @@ export function TabResumen() {
                         maximumFractionDigits: 0
                       }).format(finPremium)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Prima mensual × cuotas restantes</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finPremiumDescription ?? 'Prima mensual × cuotas restantes'}
+                    </p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
                     <Banknote className="h-7 w-7 text-violet-700 dark:text-violet-400" />
