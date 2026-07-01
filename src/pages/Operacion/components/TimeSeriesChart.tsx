@@ -17,8 +17,17 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { TimeSeriesPoint, Granularidad } from '../types/reportTypes';
 
+// Punto extendido opcional: cuando el consumidor pasa `count`, `estimatedAmount`
+// y `paidAmount`, el modo `combined` muestra 3 métricas simultáneas con doble eje Y.
+export interface TimeSeriesExtendedPoint extends TimeSeriesPoint {
+  count?: number;
+  estimatedAmount?: number;
+  paidAmount?: number;
+  bucketLabel?: string; // etiqueta pre-formateada desde el API (ej: "jun 1")
+}
+
 interface TimeSeriesChartProps {
-  data?: TimeSeriesPoint[];
+  data?: TimeSeriesExtendedPoint[];
   title: string;
   granularidad: Granularidad;
   onGranularidadChange: (value: Granularidad) => void;
@@ -62,7 +71,7 @@ export function TimeSeriesChart({
         case 'day':
           return format(date, 'd MMM', { locale: es });
         case 'week':
-          return format(date, 'MMM', { locale: es });
+          return format(date, "d 'de' MMM", { locale: es });
         case 'month':
           return format(date, 'MMM yyyy', { locale: es });
         default:
@@ -73,8 +82,65 @@ export function TimeSeriesChart({
     }
   };
 
+  const formatMoney = (v: number) =>
+    new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(v);
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const point = payload[0]?.payload ?? {};
+      const hasExtended =
+        typeof point.count === 'number' ||
+        typeof point.estimatedAmount === 'number' ||
+        typeof point.paidAmount === 'number';
+      if (hasExtended) {
+        return (
+          <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg min-w-[200px]">
+            <p className="font-semibold text-sm mb-2 text-foreground">
+              {point.bucketLabel || formatXAxisLabel(label)}
+            </p>
+            <div className="space-y-1.5 text-xs">
+              {typeof point.count === 'number' && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-sm bg-primary/60" />
+                    Solicitudes
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {point.count.toLocaleString('es-CL')}
+                  </span>
+                </div>
+              )}
+              {typeof point.estimatedAmount === 'number' && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-0.5 bg-blue-500" />
+                    Monto estimado
+                  </span>
+                  <span className="font-semibold tabular-nums">
+                    {formatMoney(point.estimatedAmount)}
+                  </span>
+                </div>
+              )}
+              {typeof point.paidAmount === 'number' && (
+                <div className="flex items-center justify-between gap-4">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <span className="w-2 h-0.5 bg-emerald-500" />
+                    Monto pagado
+                  </span>
+                  <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {formatMoney(point.paidAmount)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="bg-background border rounded-lg p-3 shadow-lg">
           <p className="font-semibold">{formatXAxisLabel(label)}</p>
@@ -98,8 +164,15 @@ export function TimeSeriesChart({
 
     const chartData = data.map(point => ({
       ...point,
-      fechaFormateada: formatXAxisLabel(point.fecha)
+      // Prefiere la etiqueta ya formateada por el API si está disponible
+      fechaFormateada: point.bucketLabel || formatXAxisLabel(point.fecha),
     }));
+
+    const hasExtended = chartData.some(
+      p =>
+        typeof p.estimatedAmount === 'number' ||
+        typeof p.paidAmount === 'number',
+    );
 
     const commonProps = {
       data: chartData,
@@ -129,6 +202,40 @@ export function TimeSeriesChart({
         );
       
       case 'combined':
+        // Modo enriquecido: barras = cantidad (eje izq), líneas = montos (eje der)
+        if (hasExtended) {
+          return (
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart {...commonProps} margin={{ top: 10, right: 20, left: 10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="fechaFormateada"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  yAxisId="left"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickFormatter={(v) => new Intl.NumberFormat('es-CL', { notation: 'compact' }).format(v)}
+                  label={{ value: 'Solicitudes', angle: -90, position: 'insideLeft', style: { fontSize: 10, fill: 'hsl(var(--muted-foreground))' } }}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={11}
+                  tickFormatter={formatMoney}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+                <Bar yAxisId="left" dataKey="count" fill="hsl(var(--primary))" opacity={0.35} radius={[3, 3, 0, 0]} name="Solicitudes" />
+                <Line yAxisId="right" type="monotone" dataKey="estimatedAmount" stroke="hsl(217, 91%, 60%)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} name="Monto estimado" />
+                <Line yAxisId="right" type="monotone" dataKey="paidAmount" stroke="hsl(160, 84%, 39%)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} name="Monto pagado" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          );
+        }
         return (
           <ResponsiveContainer width="100%" height={300}>
             <ComposedChart {...commonProps}>
