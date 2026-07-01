@@ -912,11 +912,11 @@ export function TabResumen() {
             <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingSerie || loadingMontos ? (
+            {loadingTimeseries ? (
               <Skeleton className="h-64 w-full" />
             ) : (
               <TimeSeriesChart
-                data={combinedSeriesData.map(d => ({ fecha: d.fecha, valor: d.solicitudes }))}
+                data={timeseriesChartData}
                 title=""
                 granularidad={granularidad}
                 onGranularidadChange={setGranularidad}
