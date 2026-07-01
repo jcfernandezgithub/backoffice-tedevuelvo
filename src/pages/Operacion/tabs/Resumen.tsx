@@ -734,8 +734,9 @@ export function TabResumen() {
           <div className="flex-1 h-px bg-border" />
         </div>
         {loadingFinancial ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+
               <Card key={i}>
                 <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
                 <CardContent><Skeleton className="h-10 w-full" /></CardContent>
