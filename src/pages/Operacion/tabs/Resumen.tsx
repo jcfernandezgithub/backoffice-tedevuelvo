@@ -946,7 +946,36 @@ export function TabResumen() {
         {/* Gráfico combinado de solicitudes y montos */}
         <Card>
           <CardHeader>
-            <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
+                {timeseriesTotals && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-2 rounded-sm bg-primary/60" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {(timeseriesTotals.count ?? 0).toLocaleString('es-CL')}
+                      </span>
+                      solicitudes
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-0.5 bg-blue-500" />
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', notation: 'compact', maximumFractionDigits: 1 }).format(timeseriesTotals.estimatedAmount ?? 0)}
+                      </span>
+                      estimado
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span className="w-2 h-0.5 bg-emerald-500" />
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                        {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', notation: 'compact', maximumFractionDigits: 1 }).format(timeseriesTotals.paidAmount ?? 0)}
+                      </span>
+                      pagado
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {loadingTimeseries ? (
@@ -965,8 +994,18 @@ export function TabResumen() {
 
         {/* Distribución por estado */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Distribución por Estado</CardTitle>
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <CardTitle>Distribución por Estado</CardTitle>
+              {distribucionTotal > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {distribucionTotal.toLocaleString('es-CL')}
+                  </span>{' '}
+                  solicitudes en {distribucionEstado.length} estado{distribucionEstado.length !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
             <ToggleGroup type="single" value={chartType} onValueChange={(value) => value && setChartType(value as 'pie' | 'bar')}>
               <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-8 w-8 p-0">
                 <PieChartIcon className="h-4 w-4" />
@@ -980,16 +1019,18 @@ export function TabResumen() {
             {loadingStatusDist ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 {chartType === 'pie' ? (
                   <PieChart>
                     <Pie
                       data={distribucionEstado}
                       cx="50%"
-                      cy="50%"
+                      cy="45%"
                       labelLine={false}
-                      label={({ categoria, porcentaje }) => `${porcentaje.toFixed(1)}%`}
-                      outerRadius={80}
+                      label={({ porcentaje }) => (porcentaje >= 3 ? `${porcentaje.toFixed(1)}%` : '')}
+                      outerRadius={95}
+                      innerRadius={45}
+                      paddingAngle={2}
                       fill="#8884d8"
                       dataKey="valor"
                       nameKey="categoria"
@@ -998,29 +1039,38 @@ export function TabResumen() {
                         <Cell 
                           key={`cell-${index}`} 
                           fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
+                          stroke="hsl(var(--background))"
+                          strokeWidth={2}
                         />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
+                    <Tooltip content={<StatusDistTooltip />} />
+                    <Legend
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                      formatter={(value: string) => (
+                        <span className="text-muted-foreground">{value}</span>
+                      )}
                     />
-                    <Legend />
                   </PieChart>
                 ) : (
-                  <BarChart data={distribucionEstado} layout="vertical" margin={{ left: 20 }}>
+                  <BarChart data={distribucionEstado} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <XAxis
+                      type="number"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={11}
+                      tickFormatter={(v) => new Intl.NumberFormat('es-CL', { notation: 'compact' }).format(v)}
+                    />
                     <YAxis 
                       type="category" 
                       dataKey="categoria" 
                       stroke="hsl(var(--muted-foreground))" 
                       fontSize={11}
-                      width={100}
+                      width={130}
                     />
-                    <Tooltip 
-                      formatter={(value: number) => [value.toLocaleString('es-CL'), 'Cantidad']}
-                    />
-                    <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                    <Tooltip content={<StatusDistTooltip />} cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} />
+                    <Bar dataKey="valor" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'hsl(var(--muted-foreground))', formatter: (v: number) => v.toLocaleString('es-CL') }}>
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
