@@ -200,6 +200,10 @@ export function TabResumen() {
   const finScheduledPremiumCount = Number(fs.totalScheduledPremium?.count ?? fs.totalScheduledPremiumCount ?? 0);
   const finScheduledPremiumDescription: string | undefined = fs.totalScheduledPremium?.description;
   const finScheduledPremiumTitle: string = fs.totalScheduledPremium?.title ?? 'Monto Total Primas';
+  const finSubmittedSavingAmount = Number(fs.totalSubmittedSaving?.amount ?? fs.totalSubmittedSavingAmount ?? 0);
+  const finSubmittedSavingCount = Number(fs.totalSubmittedSaving?.count ?? fs.totalSubmittedSavingCount ?? 0);
+  const finSubmittedSavingDescription: string | undefined = fs.totalSubmittedSaving?.description;
+  const finSubmittedSavingTitle: string = fs.totalSubmittedSaving?.title ?? 'Monto Total Solicitado';
   const finPaidAmount = Number(fs.totalPaidClients?.amount ?? fs.totalPaid ?? fs.paidAmount ?? 0);
   const finPaidCount = Number(fs.totalPaidClients?.count ?? fs.paidCount ?? 0);
   const finPaidDescription: string | undefined = fs.totalPaidClients?.description;
