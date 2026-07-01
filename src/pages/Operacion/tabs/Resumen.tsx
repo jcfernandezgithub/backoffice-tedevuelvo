@@ -10,6 +10,7 @@ import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
 import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
+import { useRequestsTimeseries, useStatusDistribution } from '../hooks/useDashboardCharts';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -42,6 +43,17 @@ const ESTADO_COLORS: Record<string, string> = {
   'Rechazadas': 'hsl(0, 84%, 60%)',            // red-500
   'Pago Programado': 'hsl(187, 92%, 69%)',     // cyan-400
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
+};
+
+// Fallback por status enum (por si el label difiere del esperado)
+const ESTADO_COLORS_BY_STATUS: Record<string, string> = {
+  qualifying: 'hsl(43, 96%, 56%)',
+  docs_received: 'hsl(271, 91%, 65%)',
+  submitted: 'hsl(239, 84%, 67%)',
+  approved: 'hsl(142, 71%, 45%)',
+  rejected: 'hsl(0, 84%, 60%)',
+  payment_scheduled: 'hsl(187, 92%, 69%)',
+  paid: 'hsl(160, 84%, 39%)',
 };
 
 /** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
@@ -86,16 +98,16 @@ export function TabResumen() {
     return `/refunds?${searchParams.toString()}`;
   };
 
-  const { data: serieSolicitudes, isLoading: loadingSerie } = useSerieTemporal(
-    filtros,
-    granularidad,
-    'cantidad'
-  );
-  const { data: serieMontos, isLoading: loadingMontos } = useSerieTemporal(
-    filtros,
-    granularidad,
-    'montoRecuperado'
-  );
+  // ── Gráficos alimentados por endpoints del Dashboard (filtran por updatedAt) ─
+  const { data: timeseriesData, isLoading: loadingTimeseries } = useRequestsTimeseries({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+    granularity: granularidad,
+  });
+  const { data: statusDistData, isLoading: loadingStatusDist } = useStatusDistribution({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
   
   // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
   // Reusa el caché filtrado por las fechas del FiltersBar (enviadas a listV2 como since/to).
@@ -265,11 +277,11 @@ export function TabResumen() {
     return map;
   }, [overdueStages, stageObjectives]);
 
-  const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
-    fecha: punto.fecha,
-    solicitudes: punto.valor,
-    montos: serieMontos?.[index]?.valor || 0,
-  })) || [];
+  // Mapear buckets del API al formato que espera TimeSeriesChart ({fecha, valor})
+  const timeseriesChartData = (timeseriesData?.buckets ?? []).map((b) => ({
+    fecha: b.bucketStart,
+    valor: b.count,
+  }));
 
   // Todas las calugas respetan el filtro de fechas
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
@@ -332,23 +344,18 @@ export function TabResumen() {
   }, 0);
   console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
-  // Datos para el gráfico de torta basados en las mismas categorías de las calugas
+  // Distribución por estado desde el endpoint /dashboard/status-distribution
   const distribucionEstado = useMemo(() => {
-    const total = qualifyingRefunds.length + docsReceivedRefunds.length + submittedRefunds.length + approvedRefunds.length + 
-                  rejectedRefunds.length + paymentScheduledRefunds.length + paidRefunds.length;
-    
-    if (total === 0) return [];
-    
-    return [
-      { categoria: 'En Calificación', valor: qualifyingRefunds.length, porcentaje: (qualifyingRefunds.length / total) * 100 },
-      { categoria: 'Docs Recibidos', valor: docsReceivedRefunds.length, porcentaje: (docsReceivedRefunds.length / total) * 100 },
-      { categoria: 'Ingresadas', valor: submittedRefunds.length, porcentaje: (submittedRefunds.length / total) * 100 },
-      { categoria: 'Aprobadas', valor: approvedRefunds.length, porcentaje: (approvedRefunds.length / total) * 100 },
-      { categoria: 'Rechazadas', valor: rejectedRefunds.length, porcentaje: (rejectedRefunds.length / total) * 100 },
-      { categoria: 'Pago Programado', valor: paymentScheduledRefunds.length, porcentaje: (paymentScheduledRefunds.length / total) * 100 },
-      { categoria: 'Pagadas', valor: paidRefunds.length, porcentaje: (paidRefunds.length / total) * 100 },
-    ].filter(item => item.valor > 0);
-  }, [qualifyingRefunds, docsReceivedRefunds, submittedRefunds, approvedRefunds, rejectedRefunds, paymentScheduledRefunds, paidRefunds]);
+    const items = statusDistData?.items ?? [];
+    return items
+      .map((it) => ({
+        categoria: it.label,
+        status: it.status,
+        valor: it.count,
+        porcentaje: it.percentage,
+      }))
+      .filter((item) => item.valor > 0);
+  }, [statusDistData]);
 
   return (
     <div className="space-y-6">
@@ -911,11 +918,11 @@ export function TabResumen() {
             <CardTitle>Evolución de Solicitudes y Montos</CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingSerie || loadingMontos ? (
+            {loadingTimeseries ? (
               <Skeleton className="h-64 w-full" />
             ) : (
               <TimeSeriesChart
-                data={combinedSeriesData.map(d => ({ fecha: d.fecha, valor: d.solicitudes }))}
+                data={timeseriesChartData}
                 title=""
                 granularidad={granularidad}
                 onGranularidadChange={setGranularidad}
@@ -939,7 +946,7 @@ export function TabResumen() {
             </ToggleGroup>
           </CardHeader>
           <CardContent>
-            {loadingRefunds ? (
+            {loadingStatusDist ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -959,7 +966,7 @@ export function TabResumen() {
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                          fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
                         />
                       ))}
                     </Pie>
@@ -986,7 +993,7 @@ export function TabResumen() {
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                          fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
                         />
                       ))}
                     </Bar>

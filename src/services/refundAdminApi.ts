@@ -423,6 +423,45 @@ class RefundAdminApiClient {
 
     return response.json()
   }
+
+  async getRequestsTimeseries(params: {
+    since?: string
+    to?: string
+    granularity?: 'day' | 'week' | 'month'
+  } = {}): Promise<RequestsTimeseriesResponse> {
+    const query = new URLSearchParams()
+    if (params.since) query.append('since', params.since)
+    if (params.to) query.append('to', params.to)
+    if (params.granularity) query.append('granularity', params.granularity)
+
+    const qs = query.toString()
+    const url = `${API_BASE_URL}/dashboard/requests-timeseries${qs ? `?${qs}` : ''}`
+
+    const response = await fetch(url, { headers: await this.getAuthHeaders() })
+    if (response.status === 401) throw new Error('UNAUTHORIZED')
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cargar requests-timeseries' }))
+      throw new Error(error.message || 'Error al cargar requests-timeseries')
+    }
+    return response.json()
+  }
+
+  async getStatusDistribution(params: { since?: string; to?: string } = {}): Promise<StatusDistributionResponse> {
+    const query = new URLSearchParams()
+    if (params.since) query.append('since', params.since)
+    if (params.to) query.append('to', params.to)
+
+    const qs = query.toString()
+    const url = `${API_BASE_URL}/dashboard/status-distribution${qs ? `?${qs}` : ''}`
+
+    const response = await fetch(url, { headers: await this.getAuthHeaders() })
+    if (response.status === 401) throw new Error('UNAUTHORIZED')
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cargar status-distribution' }))
+      throw new Error(error.message || 'Error al cargar status-distribution')
+    }
+    return response.json()
+  }
 }
 
 // Tipos flexibles para la respuesta del endpoint dashboard-counts.
@@ -499,3 +538,39 @@ export interface FinancialSummaryResponse {
 }
 
 export const refundAdminApi = new RefundAdminApiClient()
+
+// ── Respuesta de /api/v1/dashboard/requests-timeseries ───────────────────────
+export interface RequestsTimeseriesBucket {
+  bucket: string
+  bucketStart: string
+  bucketLabel: string
+  count: number
+  estimatedAmount: number
+  paidAmount: number
+}
+
+export interface RequestsTimeseriesResponse {
+  granularity: 'day' | 'week' | 'month'
+  since?: string
+  to?: string
+  totals?: {
+    count?: number
+    estimatedAmount?: number
+    paidAmount?: number
+  }
+  buckets: RequestsTimeseriesBucket[]
+}
+
+// ── Respuesta de /api/v1/dashboard/status-distribution ───────────────────────
+export interface StatusDistributionItem {
+  status: string
+  label: string
+  count: number
+  percentage: number
+  estimatedAmount: number
+}
+
+export interface StatusDistributionResponse {
+  total: number
+  items: StatusDistributionItem[]
+}
