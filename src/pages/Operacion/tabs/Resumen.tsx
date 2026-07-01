@@ -117,11 +117,15 @@ export function TabResumen() {
     to: filtros.fechaHasta,
   });
 
-  const finToPayAmount = pickNumber(financialSummary, ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
-  const finToPayCount = pickNumber(financialSummary, ['scheduledCount', 'scheduledPaymentCount']);
-  const finPaidAmount = pickNumber(financialSummary, ['totalPaid', 'paidAmount']);
-  const finPaidCount = pickNumber(financialSummary, ['paidCount']);
-  const finPremium = pickNumber(financialSummary, ['totalPremium', 'emittedPremium', 'premiumAmount']);
+  const finToPayAmount = getMetricAmount(financialSummary, 'totalToPayClients', ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
+  const finToPayCount = getMetricCount(financialSummary, 'totalToPayClients', ['scheduledCount', 'scheduledPaymentCount']);
+  const finPaidAmount = getMetricAmount(financialSummary, 'totalPaidClients', ['totalPaid', 'paidAmount']);
+  const finPaidCount = getMetricCount(financialSummary, 'totalPaidClients', ['paidCount']);
+  const finPremium = getMetricAmount(financialSummary, 'totalIssuedPremium', ['totalPremium', 'emittedPremium', 'premiumAmount']);
+
+  const finToPayDescription = getMetricDescription(financialSummary, 'totalToPayClients');
+  const finPaidDescription = getMetricDescription(financialSummary, 'totalPaidClients');
+  const finPremiumDescription = getMetricDescription(financialSummary, 'totalIssuedPremium');
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
