@@ -76,6 +76,50 @@ const STATUS_FRIENDLY_LABEL: Record<string, string> = {
   DATOS_SIN_SIMULACION: 'Sin Simulación',
 };
 
+/** Tooltip enriquecido para el gráfico de distribución por estado. */
+function StatusDistTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]?.payload;
+  if (!p) return null;
+  const color =
+    ESTADO_COLORS[p.categoria] || ESTADO_COLORS_BY_STATUS[p.status] || '#8884d8';
+  return (
+    <div className="bg-background/95 backdrop-blur-sm border rounded-lg p-3 shadow-lg min-w-[200px]">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
+        <span className="font-semibold text-sm">{p.categoria}</span>
+      </div>
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Cantidad</span>
+          <span className="font-semibold tabular-nums">
+            {p.valor.toLocaleString('es-CL')}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">Participación</span>
+          <span className="font-semibold tabular-nums">
+            {p.porcentaje?.toFixed(1) ?? '0.0'}%
+          </span>
+        </div>
+        {typeof p.monto === 'number' && p.monto > 0 && (
+          <div className="flex items-center justify-between gap-4 pt-1 border-t">
+            <span className="text-muted-foreground">Monto estimado</span>
+            <span className="font-semibold tabular-nums">
+              {new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP',
+                notation: 'compact',
+                maximumFractionDigits: 1,
+              }).format(p.monto)}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
 function OverdueBadge({ count, stageLabel, objetivo }: { count: number; stageLabel: string; objetivo?: number }) {
   if (!count) return null;
