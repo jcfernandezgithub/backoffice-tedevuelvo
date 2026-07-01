@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
-import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
+import { useFinancialSummary, getMetricAmount, getMetricCount, getMetricDescription } from '../hooks/useFinancialSummary';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -117,11 +117,15 @@ export function TabResumen() {
     to: filtros.fechaHasta,
   });
 
-  const finToPayAmount = pickNumber(financialSummary, ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
-  const finToPayCount = pickNumber(financialSummary, ['scheduledCount', 'scheduledPaymentCount']);
-  const finPaidAmount = pickNumber(financialSummary, ['totalPaid', 'paidAmount']);
-  const finPaidCount = pickNumber(financialSummary, ['paidCount']);
-  const finPremium = pickNumber(financialSummary, ['totalPremium', 'emittedPremium', 'premiumAmount']);
+  const finToPayAmount = getMetricAmount(financialSummary, 'totalToPayClients', ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
+  const finToPayCount = getMetricCount(financialSummary, 'totalToPayClients', ['scheduledCount', 'scheduledPaymentCount']);
+  const finPaidAmount = getMetricAmount(financialSummary, 'totalPaidClients', ['totalPaid', 'paidAmount']);
+  const finPaidCount = getMetricCount(financialSummary, 'totalPaidClients', ['paidCount']);
+  const finPremium = getMetricAmount(financialSummary, 'totalIssuedPremium', ['totalPremium', 'emittedPremium', 'premiumAmount']);
+
+  const finToPayDescription = getMetricDescription(financialSummary, 'totalToPayClients');
+  const finPaidDescription = getMetricDescription(financialSummary, 'totalPaidClients');
+  const finPremiumDescription = getMetricDescription(financialSummary, 'totalIssuedPremium');
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
@@ -795,7 +799,7 @@ export function TabResumen() {
                       }).format(finToPayAmount)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {finToPayCount} solicitud{finToPayCount !== 1 ? 'es' : ''} en pago programado
+                      {finToPayDescription || `${finToPayCount} solicitud${finToPayCount !== 1 ? 'es' : ''} en pago programado`}
                     </p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
@@ -821,7 +825,7 @@ export function TabResumen() {
                         maximumFractionDigits: 0
                       }).format(finPaidAmount)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Basado en {finPaidCount} solicitudes pagadas</p>
+                    <p className="text-xs text-muted-foreground mt-1">{finPaidDescription || `Basado en ${finPaidCount} solicitudes pagadas`}</p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
                     <Banknote className="h-7 w-7 text-green-700 dark:text-green-400" />
@@ -846,7 +850,7 @@ export function TabResumen() {
                         maximumFractionDigits: 0
                       }).format(finPremium)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Prima mensual × cuotas restantes</p>
+                    <p className="text-xs text-muted-foreground mt-1">{finPremiumDescription || 'Prima mensual × cuotas restantes'}</p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
                     <Banknote className="h-7 w-7 text-violet-700 dark:text-violet-400" />

@@ -462,22 +462,35 @@ export interface DashboardCountsResponse {
   paid: DashboardMetricValue
 }
 
+export interface FinancialSummaryMetric {
+  title?: string
+  amount?: number
+  count?: number
+  description?: string
+}
+
 // Respuesta del endpoint /api/v1/dashboard/financial-summary.
-// Soportamos varios nombres de campos para tolerar ligeras variaciones del backend.
+// Soportamos tanto el formato anidado (cada métrica es un objeto) como el formato
+// plano legacy para tolerar ligeras variaciones del backend.
 export interface FinancialSummaryResponse {
-  // Monto total a pagar (solicitudes en pago programado)
+  // Formato anidado actual del endpoint
+  totalToPayClients?: FinancialSummaryMetric
+  totalPaidClients?: FinancialSummaryMetric
+  totalIssuedPremium?: FinancialSummaryMetric
+
+  // Monto total a pagar (solicitudes en pago programado) — formato plano legacy
   totalToPay?: number
   scheduledPaymentAmount?: number
   toPayAmount?: number
   scheduledCount?: number
   scheduledPaymentCount?: number
 
-  // Monto total pagado a clientes
+  // Monto total pagado a clientes — formato plano legacy
   totalPaid?: number
   paidAmount?: number
   paidCount?: number
 
-  // Prima total emitida
+  // Prima total emitida — formato plano legacy
   totalPremium?: number
   emittedPremium?: number
   premiumAmount?: number
