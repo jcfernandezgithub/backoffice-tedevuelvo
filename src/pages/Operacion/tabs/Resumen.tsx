@@ -204,6 +204,11 @@ export function TabResumen() {
   const finSubmittedSavingCount = Number(fs.totalSubmittedSaving?.count ?? fs.totalSubmittedSavingCount ?? 0);
   const finSubmittedSavingDescription: string | undefined = fs.totalSubmittedSaving?.description;
   const finSubmittedSavingTitle: string = fs.totalSubmittedSaving?.title ?? 'Monto Total Solicitado';
+  const finSubmittedPremiumAmount = Number(fs.totalSubmittedPremium?.amount ?? fs.totalSubmittedPremiumAmount ?? 0);
+  const finSubmittedPremiumCount = Number(fs.totalSubmittedPremium?.count ?? fs.totalSubmittedPremiumCount ?? 0);
+  const finSubmittedPremiumDescription: string | undefined = fs.totalSubmittedPremium?.description;
+  const finSubmittedPremiumTitle: string = fs.totalSubmittedPremium?.title ?? 'Monto Total Estimado de Primas por Emitir';
+
   const finPaidAmount = Number(fs.totalPaidClients?.amount ?? fs.totalPaid ?? fs.paidAmount ?? 0);
   const finPaidCount = Number(fs.totalPaidClients?.count ?? fs.paidCount ?? 0);
   const finPaidDescription: string | undefined = fs.totalPaidClients?.description;
