@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
+import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -109,6 +110,18 @@ export function TabResumen() {
     since: filtros.fechaDesde,
     to: filtros.fechaHasta,
   });
+
+  // ── Resumen Financiero: alimentado exclusivamente por /v2/dashboard/financial-summary ──
+  const { data: financialSummary, isLoading: loadingFinancial } = useFinancialSummary({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
+
+  const finToPayAmount = pickNumber(financialSummary, ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
+  const finToPayCount = pickNumber(financialSummary, ['scheduledCount', 'scheduledPaymentCount']);
+  const finPaidAmount = pickNumber(financialSummary, ['totalPaid', 'paidAmount']);
+  const finPaidCount = pickNumber(financialSummary, ['paidCount']);
+  const finPremium = pickNumber(financialSummary, ['totalPremium', 'emittedPremium', 'premiumAmount']);
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
@@ -754,7 +767,7 @@ export function TabResumen() {
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Resumen Financiero</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
-        {loadingRefunds ? (
+        {loadingFinancial ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Card key={i}>
@@ -779,10 +792,10 @@ export function TabResumen() {
                         style: 'currency',
                         currency: 'CLP',
                         maximumFractionDigits: 0
-                      }).format(totalToPayAmount)}
+                      }).format(finToPayAmount)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {paymentScheduledRefunds.length} solicitud{paymentScheduledRefunds.length !== 1 ? 'es' : ''} en pago programado
+                      {finToPayCount} solicitud{finToPayCount !== 1 ? 'es' : ''} en pago programado
                     </p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
@@ -806,9 +819,9 @@ export function TabResumen() {
                         style: 'currency',
                         currency: 'CLP',
                         maximumFractionDigits: 0
-                      }).format(totalPaidAmount)}
+                      }).format(finPaidAmount)}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">Basado en {paidRefunds.length} solicitudes pagadas</p>
+                    <p className="text-xs text-muted-foreground mt-1">Basado en {finPaidCount} solicitudes pagadas</p>
                   </div>
                   <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
                     <Banknote className="h-7 w-7 text-green-700 dark:text-green-400" />
@@ -831,7 +844,7 @@ export function TabResumen() {
                         style: 'currency',
                         currency: 'CLP',
                         maximumFractionDigits: 0
-                      }).format(totalPaidPremium)}
+                      }).format(finPremium)}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">Prima mensual × cuotas restantes</p>
                   </div>

@@ -399,6 +399,31 @@ class RefundAdminApiClient {
 
     return response.json()
   }
+
+  async getFinancialSummary(params: { since?: string; to?: string } = {}): Promise<FinancialSummaryResponse> {
+    const query = new URLSearchParams()
+    if (params.since) query.append('since', params.since)
+    if (params.to) query.append('to', params.to)
+
+    const qs = query.toString()
+    // Nota: este endpoint vive bajo /api/v2, no /api/v1
+    const url = `https://tedevuelvo-app-be.onrender.com/api/v2/dashboard/financial-summary${qs ? `?${qs}` : ''}`
+
+    const response = await fetch(url, {
+      headers: await this.getAuthHeaders(),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al cargar financial-summary' }))
+      throw new Error(error.message || 'Error al cargar financial-summary')
+    }
+
+    return response.json()
+  }
 }
 
 // Tipos flexibles para la respuesta del endpoint dashboard-counts.
@@ -436,6 +461,30 @@ export interface DashboardCountsResponse {
   rejected: DashboardMetricValue
   scheduledPayment: DashboardMetricValue
   paid: DashboardMetricValue
+}
+
+// Respuesta del endpoint /api/v2/dashboard/financial-summary.
+// Soportamos varios nombres de campos para tolerar ligeras variaciones del backend.
+export interface FinancialSummaryResponse {
+  // Monto total a pagar (solicitudes en pago programado)
+  totalToPay?: number
+  scheduledPaymentAmount?: number
+  toPayAmount?: number
+  scheduledCount?: number
+  scheduledPaymentCount?: number
+
+  // Monto total pagado a clientes
+  totalPaid?: number
+  paidAmount?: number
+  paidCount?: number
+
+  // Prima total emitida
+  totalPremium?: number
+  emittedPremium?: number
+  premiumAmount?: number
+
+  // Permite campos adicionales que retorne el backend sin romper el tipado
+  [key: string]: any
 }
 
 export const refundAdminApi = new RefundAdminApiClient()
