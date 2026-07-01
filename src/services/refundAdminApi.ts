@@ -467,18 +467,30 @@ export interface DashboardCountsResponse {
 export interface FinancialSummaryResponse {
   // Monto total a pagar (solicitudes en pago programado)
   totalToPay?: number
+  totalToPayAmount?: number
   scheduledPaymentAmount?: number
   toPayAmount?: number
+  totalToPayCount?: number
   scheduledCount?: number
   scheduledPaymentCount?: number
 
+  // Monto total primas (solicitudes en pago programado)
+  totalScheduledPremium?: number | { amount?: number; count?: number; description?: string; title?: string }
+  totalScheduledPremiumAmount?: number
+  totalScheduledPremiumCount?: number
+
   // Monto total pagado a clientes
   totalPaid?: number
+  totalPaidAmount?: number
   paidAmount?: number
+  totalPaidCount?: number
   paidCount?: number
 
   // Prima total emitida
   totalPremium?: number
+  totalIssuedPremium?: number | { amount?: number; count?: number; description?: string; title?: string }
+  totalIssuedPremiumAmount?: number
+  totalIssuedPremiumCount?: number
   emittedPremium?: number
   premiumAmount?: number
 
