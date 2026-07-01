@@ -344,23 +344,18 @@ export function TabResumen() {
   }, 0);
   console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
-  // Datos para el gráfico de torta basados en las mismas categorías de las calugas
+  // Distribución por estado desde el endpoint /dashboard/status-distribution
   const distribucionEstado = useMemo(() => {
-    const total = qualifyingRefunds.length + docsReceivedRefunds.length + submittedRefunds.length + approvedRefunds.length + 
-                  rejectedRefunds.length + paymentScheduledRefunds.length + paidRefunds.length;
-    
-    if (total === 0) return [];
-    
-    return [
-      { categoria: 'En Calificación', valor: qualifyingRefunds.length, porcentaje: (qualifyingRefunds.length / total) * 100 },
-      { categoria: 'Docs Recibidos', valor: docsReceivedRefunds.length, porcentaje: (docsReceivedRefunds.length / total) * 100 },
-      { categoria: 'Ingresadas', valor: submittedRefunds.length, porcentaje: (submittedRefunds.length / total) * 100 },
-      { categoria: 'Aprobadas', valor: approvedRefunds.length, porcentaje: (approvedRefunds.length / total) * 100 },
-      { categoria: 'Rechazadas', valor: rejectedRefunds.length, porcentaje: (rejectedRefunds.length / total) * 100 },
-      { categoria: 'Pago Programado', valor: paymentScheduledRefunds.length, porcentaje: (paymentScheduledRefunds.length / total) * 100 },
-      { categoria: 'Pagadas', valor: paidRefunds.length, porcentaje: (paidRefunds.length / total) * 100 },
-    ].filter(item => item.valor > 0);
-  }, [qualifyingRefunds, docsReceivedRefunds, submittedRefunds, approvedRefunds, rejectedRefunds, paymentScheduledRefunds, paidRefunds]);
+    const items = statusDistData?.items ?? [];
+    return items
+      .map((it) => ({
+        categoria: it.label,
+        status: it.status,
+        valor: it.count,
+        porcentaje: it.percentage,
+      }))
+      .filter((item) => item.valor > 0);
+  }, [statusDistData]);
 
   return (
     <div className="space-y-6">
