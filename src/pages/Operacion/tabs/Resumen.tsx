@@ -744,7 +744,8 @@ export function TabResumen() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+
             {/* Monto Total Solicitado (Solicitudes Ingresadas / Submitted) */}
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-950/20 border-indigo-200 dark:border-indigo-800"
