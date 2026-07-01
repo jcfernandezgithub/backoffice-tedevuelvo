@@ -272,70 +272,17 @@ export function TabResumen() {
     c.scheduledPayment.total +
     c.paid.total;
 
-  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
-  const getLastStatusChangeDate = (refund: any): string | null => {
-    const history = refund.statusHistory;
-    if (!history?.length) return null;
-    // Recorrer de más reciente a más antiguo
-    const lastChange = [...history].reverse().find(
-      (entry: any) => entry.to === refund.status && entry.from !== entry.to
-    );
-    if (lastChange?.at) {
-      // Extraer fecha local sin depender de timezone del navegador
-      const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
-      return match ? match[1] : lastChange.at.split('T')[0];
-    }
-    return null;
-  };
-
-  // Filtrar refunds: la solicitud aparece si la fecha en que entró a su estado actual
-  // cae dentro del rango de fechas del filtro
-  const filteredRefunds = useMemo(() => {
-    return allRefunds.filter((r: any) => {
-      const statusDate = getLastStatusChangeDate(r);
-      if (!statusDate) return false;
-      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
-      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
-      return true;
-    });
-  }, [allRefunds, filtros.fechaDesde, filtros.fechaHasta]);
-
-  // ── Mejora: solo consultar mandatos de solicitudes en estado "qualifying" ────
-  // Son las únicas que necesitan el dato de firma para los KPIs de este tab.
-  const qualifyingPublicIds = useMemo(() =>
-    filteredRefunds
-      .filter((r: any) => r.status === 'qualifying')
-      .map((r: any) => r.publicId)
-      .filter(Boolean),
-    [filteredRefunds]
-  );
-
-  // Usamos un hash estable de los IDs para evitar re-fetches por reordenamiento
-  const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds]);
-
-  // hasSignedPdf viene en cada refund desde listV2 — sin fetch por ítem.
-  const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {};
-    filteredRefunds
-      .filter((r: any) => r.status === 'qualifying')
-      .forEach((r: any) => {
-        if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf };
-      });
-    return map;
-  }, [filteredRefunds]);
-  const loadingMandates = false;
-
-  // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
-  const { overdueStages } = useOverdueData(filteredRefunds);
+  // Mapa de objetivos por etapa (para el badge de tiempo excedido y el sheet).
+  // El conteo excedido lo aporta el propio endpoint counts en el futuro; aquí
+  // sólo necesitamos el "objetivo" configurado para cada etapa.
   const stageObjectives = readStageObjectives();
   const overdueByStage = useMemo(() => {
-    const map: Record<string, { count: number; objetivo: number }> = {};
-    overdueStages.forEach(s => {
-      const obj = stageObjectives.find(o => o.key === s.stageKey);
-      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    const map: Record<string, { objetivo: number }> = {};
+    stageObjectives.forEach((o) => {
+      map[o.key] = { objetivo: o.objetivo || 0 };
     });
     return map;
-  }, [overdueStages, stageObjectives]);
+  }, [stageObjectives]);
 
   // Mapear serie del API al formato de TimeSeriesChart, exponiendo las 3 métricas
   // para que el modo `combined` renderice barras (cantidad) + líneas (montos).
@@ -348,67 +295,6 @@ export function TabResumen() {
     paidAmount: b.paidAmount,
   }));
   const timeseriesTotals = timeseriesData?.totals;
-
-  // Todas las calugas respetan el filtro de fechas
-  const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
-  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
-    mandateStatuses?.[r.publicId]?.hasSignedPdf === true
-  );
-  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => 
-    !mandateStatuses?.[r.publicId]?.hasSignedPdf
-  );
-
-  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
-  const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
-  const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
-  const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
-
-  const paymentScheduledRefunds = filteredRefunds.filter((r: any) => r.status === 'payment_scheduled');
-  const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
-  const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
-
-  // Filtrar solicitudes en estado "Pagado" y calcular montos
-  // Pagados SÍ respeta el filtro de fecha (es un KPI histórico/financiero)
-  const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
-
-  // ── Proceso Operativo: solicitudes "en vuelo" con potencial de venta ─────────
-  // Docs Recibidos + Ingresadas + Aprobadas + Pago Programado + Pagadas
-  const procesoOperativoRefunds = [
-    ...docsReceivedRefunds,
-    ...submittedRefunds,
-    ...approvedRefunds,
-    ...paymentScheduledRefunds,
-    ...paidRefunds,
-  ];
-  const procesoOperativoTotal = procesoOperativoRefunds.length;
-  const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => {
-    // Buscar realAmount en statusHistory (payment_scheduled o paid)
-    const realAmountEntry = r.statusHistory?.slice().reverse().find(
-      (entry: any) => {
-        const toStatus = entry.to?.toLowerCase();
-        return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount;
-      }
-    );
-    return sum + (realAmountEntry?.realAmount || 0);
-  }, 0);
-  // Monto total a pagar a clientes: solicitudes en "Pago Programado"
-  // Usa realAmount del último cambio a payment_scheduled si existe, sino estimatedAmountCLP
-  const totalToPayAmount = paymentScheduledRefunds.reduce((sum: number, r: any) => {
-    const realAmountEntry = r.statusHistory?.slice().reverse().find(
-      (entry: any) => entry.to?.toLowerCase() === 'payment_scheduled' && entry.realAmount
-    );
-    const amount = realAmountEntry?.realAmount || r.estimatedAmountCLP || 0;
-    return sum + amount;
-  }, 0);
-
-  const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => {
-    const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
-    const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
-    const primaPorSolicitud = newMonthlyPremium * remainingInstallments;
-    console.log('Prima calculada:', { publicId: r.publicId, newMonthlyPremium, remainingInstallments, primaPorSolicitud });
-    return sum + primaPorSolicitud;
-  }, 0);
-  console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
   // Distribución por estado desde el endpoint /dashboard/status-distribution.
   // Se normalizan etiquetas (ej. DATOS_SIN_SIMULACION → "Sin Simulación") y se
