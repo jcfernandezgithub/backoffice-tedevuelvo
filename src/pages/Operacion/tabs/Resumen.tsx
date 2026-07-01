@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
-import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
+import { useFinancialSummary, getMetricAmount, getMetricCount, getMetricDescription } from '../hooks/useFinancialSummary';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
