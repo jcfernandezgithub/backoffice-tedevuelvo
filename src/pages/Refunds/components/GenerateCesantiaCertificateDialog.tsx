@@ -92,6 +92,39 @@ const getTodayFormatted = () => {
   return `${day}/${month}/${year}`
 }
 
+// Misma lógica que el certificado de desgravamen: usar la fecha de
+// transición a "submitted" como inicio de vigencia y sumar las cuotas
+// pendientes para obtener la fecha de término.
+const getCoverageDatesFromSubmitted = (refund: RefundRequest): { fechaInicio: string; fechaFin: string } => {
+  const history = refund.statusHistory || []
+  const submittedEntry = [...history].reverse().find((h: any) => h.to === 'submitted')
+  if (!submittedEntry?.at) return { fechaInicio: '', fechaFin: '' }
+
+  const start = new Date(submittedEntry.at)
+  if (isNaN(start.getTime())) return { fechaInicio: '', fechaFin: '' }
+
+  const remaining =
+    refund.calculationSnapshot?.confirmedRemainingInstallments ||
+    refund.calculationSnapshot?.remainingInstallments ||
+    0
+
+  const fmt = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0')
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const yy = d.getFullYear()
+    return `${dd}/${mm}/${yy}`
+  }
+
+  const fechaInicio = fmt(start)
+  let fechaFin = ''
+  if (typeof remaining === 'number' && remaining > 0) {
+    const end = new Date(start)
+    end.setMonth(end.getMonth() + remaining)
+    fechaFin = fmt(end)
+  }
+  return { fechaInicio, fechaFin }
+}
+
 // Tasa única (0,094% para todos los tramos según nueva póliza 0020123902)
 const TASA_CESANTIA_BRUTA = 0.094
 const getTasaCesantia = (_montoCredito: number): number => TASA_CESANTIA_BRUTA
