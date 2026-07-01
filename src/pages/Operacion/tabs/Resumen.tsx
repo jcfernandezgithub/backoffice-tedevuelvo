@@ -123,14 +123,19 @@ export function TabResumen() {
   const finToPayAmount = Number(fs.totalToPayClients?.amount ?? fs.totalToPay ?? fs.scheduledPaymentAmount ?? fs.toPayAmount ?? 0);
   const finToPayCount = Number(fs.totalToPayClients?.count ?? fs.scheduledCount ?? fs.scheduledPaymentCount ?? 0);
   const finToPayDescription: string | undefined = fs.totalToPayClients?.description;
+  const finToPayTitle: string = fs.totalToPayClients?.title ?? 'Monto Total a Pagar a Clientes';
   const finScheduledPremiumAmount = Number(fs.totalScheduledPremium?.amount ?? fs.totalScheduledPremiumAmount ?? 0);
   const finScheduledPremiumCount = Number(fs.totalScheduledPremium?.count ?? fs.totalScheduledPremiumCount ?? 0);
   const finScheduledPremiumDescription: string | undefined = fs.totalScheduledPremium?.description;
+  const finScheduledPremiumTitle: string = fs.totalScheduledPremium?.title ?? 'Monto Total Primas';
   const finPaidAmount = Number(fs.totalPaidClients?.amount ?? fs.totalPaid ?? fs.paidAmount ?? 0);
   const finPaidCount = Number(fs.totalPaidClients?.count ?? fs.paidCount ?? 0);
   const finPaidDescription: string | undefined = fs.totalPaidClients?.description;
+  const finPaidTitle: string = fs.totalPaidClients?.title ?? 'Monto Total Pagado a Clientes';
   const finPremium = Number(fs.totalIssuedPremium?.amount ?? fs.totalPremium ?? fs.emittedPremium ?? fs.premiumAmount ?? 0);
   const finPremiumDescription: string | undefined = fs.totalIssuedPremium?.description;
+  const finPremiumTitle: string = fs.totalIssuedPremium?.title ?? 'Prima Total Emitida';
+
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
