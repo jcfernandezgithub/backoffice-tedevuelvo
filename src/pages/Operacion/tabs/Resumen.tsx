@@ -734,7 +734,7 @@ export function TabResumen() {
           <div className="flex-1 h-px bg-border" />
         </div>
         {loadingFinancial ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
 
               <Card key={i}>
@@ -744,7 +744,8 @@ export function TabResumen() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
 
             {/* Monto Total Solicitado (Solicitudes Ingresadas / Submitted) */}
             <Card
@@ -754,7 +755,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finSubmittedSavingTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedSavingTitle}</p>
                     <p className="text-3xl font-bold text-indigo-800 dark:text-indigo-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
@@ -781,7 +782,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finSubmittedPremiumTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedPremiumTitle}</p>
                     <p className="text-3xl font-bold text-sky-800 dark:text-sky-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
@@ -809,7 +810,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finToPayTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finToPayTitle}</p>
                     <p className="text-3xl font-bold text-cyan-800 dark:text-cyan-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
@@ -836,7 +837,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finScheduledPremiumTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finScheduledPremiumTitle}</p>
                     <p className="text-3xl font-bold text-blue-800 dark:text-blue-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
@@ -863,7 +864,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finPaidTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPaidTitle}</p>
                     <p className="text-3xl font-bold text-green-800 dark:text-green-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
@@ -890,7 +891,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">{finPremiumTitle}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPremiumTitle}</p>
                     <p className="text-3xl font-bold text-violet-800 dark:text-violet-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
