@@ -36,24 +36,44 @@ import { InstitutionBreakdownSheet, buildInstitutionBreakdown } from '../compone
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
+  'Sin Simulación': 'hsl(215, 16%, 65%)',      // slate-400
+  'Simulada': 'hsl(199, 89%, 60%)',            // sky-500
+  'Solicitada': 'hsl(217, 91%, 68%)',          // blue-400
   'En Calificación': 'hsl(43, 96%, 56%)',      // amber-500
+  'Documentos Pendientes': 'hsl(31, 91%, 62%)',// orange-500
+  'Documentos Recibidos': 'hsl(271, 91%, 65%)',// violet-500
   'Docs Recibidos': 'hsl(271, 91%, 65%)',      // violet-500
+  'Ingresada': 'hsl(239, 84%, 67%)',           // indigo-500
   'Ingresadas': 'hsl(239, 84%, 67%)',          // indigo-500
+  'Aprobada': 'hsl(142, 71%, 45%)',            // green-500
   'Aprobadas': 'hsl(142, 71%, 45%)',           // green-500
+  'Rechazada': 'hsl(0, 84%, 60%)',             // red-500
   'Rechazadas': 'hsl(0, 84%, 60%)',            // red-500
   'Pago Programado': 'hsl(187, 92%, 69%)',     // cyan-400
+  'Pagada Cliente': 'hsl(160, 84%, 39%)',      // emerald-600
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
+  'Cancelada': 'hsl(0, 0%, 55%)',              // gray
 };
 
 // Fallback por status enum (por si el label difiere del esperado)
 const ESTADO_COLORS_BY_STATUS: Record<string, string> = {
+  datos_sin_simulacion: 'hsl(215, 16%, 65%)',
+  simulated: 'hsl(199, 89%, 60%)',
+  requested: 'hsl(217, 91%, 68%)',
   qualifying: 'hsl(43, 96%, 56%)',
+  docs_pending: 'hsl(31, 91%, 62%)',
   docs_received: 'hsl(271, 91%, 65%)',
   submitted: 'hsl(239, 84%, 67%)',
   approved: 'hsl(142, 71%, 45%)',
   rejected: 'hsl(0, 84%, 60%)',
   payment_scheduled: 'hsl(187, 92%, 69%)',
   paid: 'hsl(160, 84%, 39%)',
+  canceled: 'hsl(0, 0%, 55%)',
+};
+
+// Etiquetas amigables cuando el API entrega el enum crudo
+const STATUS_FRIENDLY_LABEL: Record<string, string> = {
+  DATOS_SIN_SIMULACION: 'Sin Simulación',
 };
 
 /** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
