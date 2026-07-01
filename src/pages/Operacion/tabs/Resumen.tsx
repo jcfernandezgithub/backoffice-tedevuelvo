@@ -45,6 +45,17 @@ const ESTADO_COLORS: Record<string, string> = {
   'Pagadas': 'hsl(160, 84%, 39%)',             // emerald-600
 };
 
+// Fallback por status enum (por si el label difiere del esperado)
+const ESTADO_COLORS_BY_STATUS: Record<string, string> = {
+  qualifying: 'hsl(43, 96%, 56%)',
+  docs_received: 'hsl(271, 91%, 65%)',
+  submitted: 'hsl(239, 84%, 67%)',
+  approved: 'hsl(142, 71%, 45%)',
+  rejected: 'hsl(0, 84%, 60%)',
+  payment_scheduled: 'hsl(187, 92%, 69%)',
+  paid: 'hsl(160, 84%, 39%)',
+};
+
 /** Badge compacto de alerta de tiempo excedido para las calugas del pipeline */
 function OverdueBadge({ count, stageLabel, objetivo }: { count: number; stageLabel: string; objetivo?: number }) {
   if (!count) return null;
