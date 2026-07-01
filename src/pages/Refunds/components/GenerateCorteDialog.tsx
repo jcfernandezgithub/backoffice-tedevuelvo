@@ -265,13 +265,14 @@ function openPrintWindow(content: string) {
 }
 
 // Helper: genera un PDF blob con jsPDF para subir al servidor (formato genérico)
-function generateCortePdfBlob(
+async function generateCortePdfBlob(
   refund: RefundRequest,
   formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string },
   hasPolicyNumber: boolean,
-): Blob {
+): Promise<Blob> {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 15
   let y = 20
 
@@ -311,6 +312,41 @@ function generateCortePdfBlob(
   doc.text('Cristian Andrés Nieto Gavilán', pageWidth / 2, y, { align: 'center' }); y += 5
   doc.setFont('helvetica', 'normal')
   doc.text(`p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}`, pageWidth / 2, y, { align: 'center' })
+
+  // Adjuntar 3 páginas: cédula legalizada, certificado notarial, certificado conservador
+  const addImagePage = (imgSrc: string, altText: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        doc.addPage()
+        const imgRatio = img.width / img.height
+        const pageRatio = (pageWidth - 20) / (pageHeight - 20)
+        let imgW: number, imgH: number
+        if (imgRatio > pageRatio) {
+          imgW = pageWidth - 20
+          imgH = imgW / imgRatio
+        } else {
+          imgH = pageHeight - 20
+          imgW = imgH * imgRatio
+        }
+        const x = (pageWidth - imgW) / 2
+        const yPos = (pageHeight - imgH) / 2
+        doc.addImage(img, 'JPEG', x, yPos, imgW, imgH)
+        resolve()
+      }
+      img.onerror = () => {
+        doc.addPage()
+        doc.setFontSize(12)
+        doc.text(altText, pageWidth / 2, pageHeight / 2, { align: 'center' })
+        resolve()
+      }
+      img.src = imgSrc
+    })
+  }
+
+  await addImagePage(corteCedulaImg, 'Cédula de Identidad Legalizada')
+  await addImagePage(corteNotarialImg, 'Certificado Notarial')
+  await addImagePage(corteConservadorImg, 'Certificado Conservador de Bienes Raíces')
 
   return doc.output('blob')
 }
@@ -790,7 +826,7 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
   const handleUploadToClient = async () => {
     setIsUploading(true)
     try {
-      const pdfBlob = generateCortePdfBlob(refund, formData, hasPolicyNumber)
+      const pdfBlob = await generateCortePdfBlob(refund, formData, hasPolicyNumber)
       await uploadCorteToClient(getRefundDocumentsPublicId(refund), pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
