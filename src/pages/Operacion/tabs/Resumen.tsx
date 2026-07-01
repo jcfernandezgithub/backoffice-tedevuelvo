@@ -297,11 +297,17 @@ export function TabResumen() {
     return map;
   }, [overdueStages, stageObjectives]);
 
-  // Mapear buckets del API al formato que espera TimeSeriesChart ({fecha, valor})
+  // Mapear serie del API al formato de TimeSeriesChart, exponiendo las 3 métricas
+  // para que el modo `combined` renderice barras (cantidad) + líneas (montos).
   const timeseriesChartData = (timeseriesData?.series ?? []).map((b) => ({
-    fecha: b.bucketLabel || b.bucketStart,
+    fecha: b.bucketStart,
+    bucketLabel: b.bucketLabel,
     valor: b.count,
+    count: b.count,
+    estimatedAmount: b.estimatedAmount,
+    paidAmount: b.paidAmount,
   }));
+  const timeseriesTotals = timeseriesData?.totals;
 
   // Todas las calugas respetan el filtro de fechas
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
