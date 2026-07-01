@@ -854,7 +854,7 @@ export function TabResumen() {
               <CardContent className="pt-6 pb-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Monto Total Pagado a Clientes</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{finPaidTitle}</p>
                     <p className="text-3xl font-bold text-green-800 dark:text-green-300">
                       {new Intl.NumberFormat('es-CL', {
                         style: 'currency',
