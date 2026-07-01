@@ -342,27 +342,27 @@ export function TabResumen() {
                   backgroundSize: '28px 28px',
                 }} />
 
-                <div className="relative flex items-center justify-between px-6 py-4 gap-6">
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between px-4 py-4 sm:px-6 gap-4 md:gap-6">
                   {/* Lado izquierdo: icono + título */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-bold text-base leading-none">En Proceso Operativo</p>
+                        <p className="text-white font-bold text-sm sm:text-base leading-none">En Proceso Operativo</p>
                         <Info className="h-3.5 w-3.5 text-white/60" />
                       </div>
-                      <p className="text-white/70 text-xs mt-1">
+                      <p className="text-white/70 text-[11px] sm:text-xs mt-1 truncate">
                         Docs Recibidos · Ingresadas · Aprobadas · Pago Programado · Pagadas
                       </p>
                     </div>
                   </div>
 
                   {/* Lado derecho: desglose + número principal */}
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center justify-between md:justify-end gap-4 sm:gap-6 flex-wrap md:flex-nowrap">
                     {/* Desglose compacto */}
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className="hidden md:flex items-center gap-2 flex-wrap">
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
@@ -375,15 +375,15 @@ export function TabResumen() {
                           <span className="text-white/65 text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
                         </div>
                       ))}
-                      <div className="w-px h-8 bg-white/25 mx-2" />
+                      <div className="w-px h-8 bg-white/25 mx-1" />
                     </div>
 
                     {/* Total grande */}
                     <div
-                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
                     >
-                      <div className="text-white font-black text-4xl leading-none tabular-nums">
+                      <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">
                         {procesoOperativoTotalCounts.toLocaleString('es-CL')}
                       </div>
                       <div className="text-white/60 text-xs mt-1 underline underline-offset-2">solicitudes</div>
