@@ -1022,17 +1022,20 @@ export function TabResumen() {
         onOpenChange={setSubmittedBreakdownOpen}
         title="Solicitudes Ingresadas — Desglose por Institución"
         description="Identifica qué institución no ha hecho la gestión"
-        items={buildInstitutionBreakdown(
-          submittedRefunds,
-          'submitted',
-          overdueByStage.submitted?.objetivo,
-        )}
+        items={(c.entered.byInstitution ?? []).map((inst) => ({
+          institutionId: inst.institutionId,
+          displayName: inst.displayName,
+          count: inst.count,
+          avgDaysInStage: 0,
+          overdueCount: inst.overdueCount ?? 0,
+        }))}
         baseUrlParams={{
           status: 'submitted',
           ...(filtros.fechaDesde ? { from: filtros.fechaDesde } : {}),
           ...(filtros.fechaHasta ? { to: filtros.fechaHasta } : {}),
         }}
         stageObjectiveDays={overdueByStage.submitted?.objetivo}
+        hideAvgDays
       />
     </div>
   );
