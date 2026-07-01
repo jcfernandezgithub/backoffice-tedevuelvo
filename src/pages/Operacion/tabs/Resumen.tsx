@@ -739,6 +739,33 @@ export function TabResumen() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {/* Monto Total Solicitado (Solicitudes Ingresadas / Submitted) */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-950/20 border-indigo-200 dark:border-indigo-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{finSubmittedSavingTitle}</p>
+                    <p className="text-3xl font-bold text-indigo-800 dark:text-indigo-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(finSubmittedSavingAmount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finSubmittedSavingDescription ?? `${finSubmittedSavingCount} solicitud${finSubmittedSavingCount !== 1 ? 'es' : ''} ingresada${finSubmittedSavingCount !== 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                    <FileInput className="h-7 w-7 text-indigo-700 dark:text-indigo-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Monto Total a Pagar a Clientes (Pago Programado) */}
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20 border-cyan-200 dark:border-cyan-800"
