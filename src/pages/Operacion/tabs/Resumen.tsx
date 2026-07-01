@@ -773,7 +773,35 @@ export function TabResumen() {
               </CardContent>
             </Card>
 
+            {/* Monto Total Estimado de Primas por Emitir (Solicitudes Ingresadas / Submitted) */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20 border-sky-200 dark:border-sky-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{finSubmittedPremiumTitle}</p>
+                    <p className="text-3xl font-bold text-sky-800 dark:text-sky-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(finSubmittedPremiumAmount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finSubmittedPremiumDescription ?? `${finSubmittedPremiumCount} solicitud${finSubmittedPremiumCount !== 1 ? 'es' : ''} ingresada${finSubmittedPremiumCount !== 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                    <Banknote className="h-7 w-7 text-sky-700 dark:text-sky-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Monto Total a Pagar a Clientes (Pago Programado) */}
+
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20 border-cyan-200 dark:border-cyan-800"
               onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
