@@ -946,7 +946,7 @@ export function TabResumen() {
             </ToggleGroup>
           </CardHeader>
           <CardContent>
-            {loadingRefunds ? (
+            {loadingStatusDist ? (
               <Skeleton className="h-64 w-full" />
             ) : distribucionEstado?.length ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -966,7 +966,7 @@ export function TabResumen() {
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                          fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
                         />
                       ))}
                     </Pie>
@@ -993,7 +993,7 @@ export function TabResumen() {
                       {distribucionEstado.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={ESTADO_COLORS[entry.categoria] || '#8884d8'}
+                          fill={ESTADO_COLORS[entry.categoria] || ESTADO_COLORS_BY_STATUS[entry.status] || '#8884d8'}
                         />
                       ))}
                     </Bar>
