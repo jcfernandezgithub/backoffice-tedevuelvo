@@ -463,4 +463,28 @@ export interface DashboardCountsResponse {
   paid: DashboardMetricValue
 }
 
+// Respuesta del endpoint /api/v2/dashboard/financial-summary.
+// Soportamos varios nombres de campos para tolerar ligeras variaciones del backend.
+export interface FinancialSummaryResponse {
+  // Monto total a pagar (solicitudes en pago programado)
+  totalToPay?: number
+  scheduledPaymentAmount?: number
+  toPayAmount?: number
+  scheduledCount?: number
+  scheduledPaymentCount?: number
+
+  // Monto total pagado a clientes
+  totalPaid?: number
+  paidAmount?: number
+  paidCount?: number
+
+  // Prima total emitida
+  totalPremium?: number
+  emittedPremium?: number
+  premiumAmount?: number
+
+  // Permite campos adicionales que retorne el backend sin romper el tipado
+  [key: string]: any
+}
+
 export const refundAdminApi = new RefundAdminApiClient()
