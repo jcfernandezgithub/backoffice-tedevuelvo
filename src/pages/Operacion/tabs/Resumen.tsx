@@ -7,11 +7,9 @@ import { useFilters } from '../hooks/useFilters';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
-import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
 import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
 import { useRequestsTimeseries, useStatusDistribution } from '../hooks/useDashboardCharts';
-import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -32,7 +30,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { InstitutionBreakdownSheet, buildInstitutionBreakdown } from '../components/InstitutionBreakdownSheet';
+import { InstitutionBreakdownSheet } from '../components/InstitutionBreakdownSheet';
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
@@ -172,13 +170,11 @@ export function TabResumen() {
     since: filtros.fechaDesde,
     to: filtros.fechaHasta,
   });
-  
-  // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
-  // Reusa el caché filtrado por las fechas del FiltersBar (enviadas a listV2 como since/to).
-  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds({
-    since: filtros.fechaDesde,
-    to: filtros.fechaHasta,
-  });
+
+  // NOTA: Esta pestaña ya no consume /admin/listV2. Todas las cifras se
+  // alimentan directamente de los endpoints agregados del dashboard:
+  //   • /dashboard/counts, /dashboard/financial-summary,
+  //   • /dashboard/requests-timeseries, /dashboard/status-distribution.
 
   // ── Conteos del dashboard desde el endpoint dedicado ─────────────────────────
   // Las calugas SOLO leen de este endpoint — no hay cálculos del lado cliente.
@@ -276,70 +272,17 @@ export function TabResumen() {
     c.scheduledPayment.total +
     c.paid.total;
 
-  // Helper: obtener la fecha en que la solicitud entró a su estado ACTUAL
-  const getLastStatusChangeDate = (refund: any): string | null => {
-    const history = refund.statusHistory;
-    if (!history?.length) return null;
-    // Recorrer de más reciente a más antiguo
-    const lastChange = [...history].reverse().find(
-      (entry: any) => entry.to === refund.status && entry.from !== entry.to
-    );
-    if (lastChange?.at) {
-      // Extraer fecha local sin depender de timezone del navegador
-      const match = lastChange.at.match(/^(\d{4}-\d{2}-\d{2})/);
-      return match ? match[1] : lastChange.at.split('T')[0];
-    }
-    return null;
-  };
-
-  // Filtrar refunds: la solicitud aparece si la fecha en que entró a su estado actual
-  // cae dentro del rango de fechas del filtro
-  const filteredRefunds = useMemo(() => {
-    return allRefunds.filter((r: any) => {
-      const statusDate = getLastStatusChangeDate(r);
-      if (!statusDate) return false;
-      if (filtros.fechaDesde && statusDate < filtros.fechaDesde) return false;
-      if (filtros.fechaHasta && statusDate > filtros.fechaHasta) return false;
-      return true;
-    });
-  }, [allRefunds, filtros.fechaDesde, filtros.fechaHasta]);
-
-  // ── Mejora: solo consultar mandatos de solicitudes en estado "qualifying" ────
-  // Son las únicas que necesitan el dato de firma para los KPIs de este tab.
-  const qualifyingPublicIds = useMemo(() =>
-    filteredRefunds
-      .filter((r: any) => r.status === 'qualifying')
-      .map((r: any) => r.publicId)
-      .filter(Boolean),
-    [filteredRefunds]
-  );
-
-  // Usamos un hash estable de los IDs para evitar re-fetches por reordenamiento
-  const qualifyingIdsKey = useMemo(() => [...qualifyingPublicIds].sort().join(','), [qualifyingPublicIds]);
-
-  // hasSignedPdf viene en cada refund desde listV2 — sin fetch por ítem.
-  const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {};
-    filteredRefunds
-      .filter((r: any) => r.status === 'qualifying')
-      .forEach((r: any) => {
-        if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf };
-      });
-    return map;
-  }, [filteredRefunds]);
-  const loadingMandates = false;
-
-  // Detectar solicitudes con tiempo excedido — usa filteredRefunds para consistencia con las calugas
-  const { overdueStages } = useOverdueData(filteredRefunds);
+  // Mapa de objetivos por etapa (para el badge de tiempo excedido y el sheet).
+  // El conteo excedido lo aporta el propio endpoint counts en el futuro; aquí
+  // sólo necesitamos el "objetivo" configurado para cada etapa.
   const stageObjectives = readStageObjectives();
   const overdueByStage = useMemo(() => {
-    const map: Record<string, { count: number; objetivo: number }> = {};
-    overdueStages.forEach(s => {
-      const obj = stageObjectives.find(o => o.key === s.stageKey);
-      map[s.stageKey] = { count: s.overdueCount, objetivo: obj?.objetivo || 0 };
+    const map: Record<string, { objetivo: number }> = {};
+    stageObjectives.forEach((o) => {
+      map[o.key] = { objetivo: o.objetivo || 0 };
     });
     return map;
-  }, [overdueStages, stageObjectives]);
+  }, [stageObjectives]);
 
   // Mapear serie del API al formato de TimeSeriesChart, exponiendo las 3 métricas
   // para que el modo `combined` renderice barras (cantidad) + líneas (montos).
@@ -352,67 +295,6 @@ export function TabResumen() {
     paidAmount: b.paidAmount,
   }));
   const timeseriesTotals = timeseriesData?.totals;
-
-  // Todas las calugas respetan el filtro de fechas
-  const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
-  const qualifyingWithSignature = qualifyingRefunds.filter((r: any) => 
-    mandateStatuses?.[r.publicId]?.hasSignedPdf === true
-  );
-  const qualifyingWithoutSignature = qualifyingRefunds.filter((r: any) => 
-    !mandateStatuses?.[r.publicId]?.hasSignedPdf
-  );
-
-  const docsReceivedRefunds = filteredRefunds.filter((r: any) => r.status === 'docs_received');
-  const submittedRefunds = filteredRefunds.filter((r: any) => r.status === 'submitted');
-  const approvedRefunds = filteredRefunds.filter((r: any) => r.status === 'approved');
-  const rejectedRefunds = filteredRefunds.filter((r: any) => r.status === 'rejected');
-
-  const paymentScheduledRefunds = filteredRefunds.filter((r: any) => r.status === 'payment_scheduled');
-  const paymentScheduledWithBank = paymentScheduledRefunds.filter((r: any) => r.bankInfo);
-  const paymentScheduledWithoutBank = paymentScheduledRefunds.filter((r: any) => !r.bankInfo);
-
-  // Filtrar solicitudes en estado "Pagado" y calcular montos
-  // Pagados SÍ respeta el filtro de fecha (es un KPI histórico/financiero)
-  const paidRefunds = filteredRefunds.filter((r: any) => r.status === 'paid');
-
-  // ── Proceso Operativo: solicitudes "en vuelo" con potencial de venta ─────────
-  // Docs Recibidos + Ingresadas + Aprobadas + Pago Programado + Pagadas
-  const procesoOperativoRefunds = [
-    ...docsReceivedRefunds,
-    ...submittedRefunds,
-    ...approvedRefunds,
-    ...paymentScheduledRefunds,
-    ...paidRefunds,
-  ];
-  const procesoOperativoTotal = procesoOperativoRefunds.length;
-  const totalPaidAmount = paidRefunds.reduce((sum: number, r: any) => {
-    // Buscar realAmount en statusHistory (payment_scheduled o paid)
-    const realAmountEntry = r.statusHistory?.slice().reverse().find(
-      (entry: any) => {
-        const toStatus = entry.to?.toLowerCase();
-        return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount;
-      }
-    );
-    return sum + (realAmountEntry?.realAmount || 0);
-  }, 0);
-  // Monto total a pagar a clientes: solicitudes en "Pago Programado"
-  // Usa realAmount del último cambio a payment_scheduled si existe, sino estimatedAmountCLP
-  const totalToPayAmount = paymentScheduledRefunds.reduce((sum: number, r: any) => {
-    const realAmountEntry = r.statusHistory?.slice().reverse().find(
-      (entry: any) => entry.to?.toLowerCase() === 'payment_scheduled' && entry.realAmount
-    );
-    const amount = realAmountEntry?.realAmount || r.estimatedAmountCLP || 0;
-    return sum + amount;
-  }, 0);
-
-  const totalPaidPremium = paidRefunds.reduce((sum: number, r: any) => {
-    const newMonthlyPremium = r.calculationSnapshot?.newMonthlyPremium || 0;
-    const remainingInstallments = r.calculationSnapshot?.remainingInstallments || 0;
-    const primaPorSolicitud = newMonthlyPremium * remainingInstallments;
-    console.log('Prima calculada:', { publicId: r.publicId, newMonthlyPremium, remainingInstallments, primaPorSolicitud });
-    return sum + primaPorSolicitud;
-  }, 0);
-  console.log('Total Prima (Pagados):', totalPaidPremium, 'Cantidad pagadas:', paidRefunds.length);
 
   // Distribución por estado desde el endpoint /dashboard/status-distribution.
   // Se normalizan etiquetas (ej. DATOS_SIN_SIMULACION → "Sin Simulación") y se
@@ -460,27 +342,27 @@ export function TabResumen() {
                   backgroundSize: '28px 28px',
                 }} />
 
-                <div className="relative flex items-center justify-between px-6 py-4 gap-6">
+                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between px-4 py-4 sm:px-6 gap-4 md:gap-6">
                   {/* Lado izquierdo: icono + título */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-white font-bold text-base leading-none">En Proceso Operativo</p>
+                        <p className="text-white font-bold text-sm sm:text-base leading-none">En Proceso Operativo</p>
                         <Info className="h-3.5 w-3.5 text-white/60" />
                       </div>
-                      <p className="text-white/70 text-xs mt-1">
+                      <p className="text-white/70 text-[11px] sm:text-xs mt-1 truncate">
                         Docs Recibidos · Ingresadas · Aprobadas · Pago Programado · Pagadas
                       </p>
                     </div>
                   </div>
 
                   {/* Lado derecho: desglose + número principal */}
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center justify-between md:justify-end gap-4 sm:gap-6 flex-wrap md:flex-nowrap">
                     {/* Desglose compacto */}
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className="hidden md:flex items-center gap-2 flex-wrap">
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
@@ -493,15 +375,15 @@ export function TabResumen() {
                           <span className="text-white/65 text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
                         </div>
                       ))}
-                      <div className="w-px h-8 bg-white/25 mx-2" />
+                      <div className="w-px h-8 bg-white/25 mx-1" />
                     </div>
 
                     {/* Total grande */}
                     <div
-                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
                     >
-                      <div className="text-white font-black text-4xl leading-none tabular-nums">
+                      <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">
                         {procesoOperativoTotalCounts.toLocaleString('es-CL')}
                       </div>
                       <div className="text-white/60 text-xs mt-1 underline underline-offset-2">solicitudes</div>
@@ -739,27 +621,6 @@ export function TabResumen() {
                 </Card>
               );
             })()}
-
-            {/* Card: Solicitudes Aprobadas */}
-            <Card 
-              className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'approved' }))}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Solicitudes Aprobadas
-                  </CardTitle>
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{c.approved.total}</span>
-                  <OverdueBadge count={c.approved.overdue} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Card: Solicitudes Rechazadas */}
             <Card 
@@ -1140,17 +1001,20 @@ export function TabResumen() {
         onOpenChange={setSubmittedBreakdownOpen}
         title="Solicitudes Ingresadas — Desglose por Institución"
         description="Identifica qué institución no ha hecho la gestión"
-        items={buildInstitutionBreakdown(
-          submittedRefunds,
-          'submitted',
-          overdueByStage.submitted?.objetivo,
-        )}
+        items={(c.entered.byInstitution ?? []).map((inst) => ({
+          institutionId: inst.institutionId,
+          displayName: inst.displayName,
+          count: inst.count,
+          avgDaysInStage: 0,
+          overdueCount: inst.overdueCount ?? 0,
+        }))}
         baseUrlParams={{
           status: 'submitted',
           ...(filtros.fechaDesde ? { from: filtros.fechaDesde } : {}),
           ...(filtros.fechaHasta ? { to: filtros.fechaHasta } : {}),
         }}
         stageObjectiveDays={overdueByStage.submitted?.objetivo}
+        hideAvgDays
       />
     </div>
   );

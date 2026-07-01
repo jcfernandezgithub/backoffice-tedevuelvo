@@ -42,6 +42,8 @@ interface Props {
   baseUrlParams: Record<string, string>;
   /** Días objetivo para resaltar avgDays > objetivo */
   stageObjectiveDays?: number;
+  /** Oculta la columna "Días promedio" cuando el dato no proviene de refunds crudos. */
+  hideAvgDays?: boolean;
 }
 
 type SortKey = 'count' | 'avgDays' | 'overdue';
@@ -54,9 +56,10 @@ export function InstitutionBreakdownSheet({
   items,
   baseUrlParams,
   stageObjectiveDays,
+  hideAvgDays = false,
 }: Props) {
   const navigate = useNavigate();
-  const [sortKey, setSortKey] = useState<SortKey>('overdue');
+  const [sortKey, setSortKey] = useState<SortKey>(hideAvgDays ? 'count' : 'overdue');
 
   const sorted = useMemo(() => {
     const copy = [...items];
@@ -113,7 +116,9 @@ export function InstitutionBreakdownSheet({
           >
             <ToggleGroupItem value="overdue" className="text-xs">Más excedidas</ToggleGroupItem>
             <ToggleGroupItem value="count" className="text-xs">Cantidad</ToggleGroupItem>
-            <ToggleGroupItem value="avgDays" className="text-xs">Días promedio</ToggleGroupItem>
+            {!hideAvgDays && (
+              <ToggleGroupItem value="avgDays" className="text-xs">Días promedio</ToggleGroupItem>
+            )}
           </ToggleGroup>
         </div>
 
@@ -123,7 +128,7 @@ export function InstitutionBreakdownSheet({
               <TableRow>
                 <TableHead>Institución</TableHead>
                 <TableHead className="text-right">Cantidad</TableHead>
-                <TableHead className="text-right">Días prom.</TableHead>
+                {!hideAvgDays && <TableHead className="text-right">Días prom.</TableHead>}
                 <TableHead className="text-right">Excedidas</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
@@ -131,7 +136,7 @@ export function InstitutionBreakdownSheet({
             <TableBody>
               {sorted.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={hideAvgDays ? 4 : 5} className="text-center text-muted-foreground py-8">
                     No hay solicitudes para mostrar
                   </TableCell>
                 </TableRow>
@@ -149,13 +154,15 @@ export function InstitutionBreakdownSheet({
                       <TableCell className="text-right tabular-nums font-semibold">
                         {item.count}
                       </TableCell>
-                      <TableCell
-                        className={`text-right tabular-nums ${
-                          isAvgOverObjective ? 'text-destructive font-semibold' : ''
-                        }`}
-                      >
-                        {item.avgDaysInStage.toFixed(1)}
-                      </TableCell>
+                      {!hideAvgDays && (
+                        <TableCell
+                          className={`text-right tabular-nums ${
+                            isAvgOverObjective ? 'text-destructive font-semibold' : ''
+                          }`}
+                        >
+                          {item.avgDaysInStage.toFixed(1)}
+                        </TableCell>
+                      )}
                       <TableCell className="text-right">
                         {item.overdueCount > 0 ? (
                           <Badge variant="destructive" className="gap-1">
@@ -187,7 +194,7 @@ export function InstitutionBreakdownSheet({
           </Table>
         </div>
 
-        {stageObjectiveDays && (
+        {stageObjectiveDays && !hideAvgDays && (
           <p className="text-xs text-muted-foreground mt-3">
             Tiempo objetivo de la etapa: <strong>{stageObjectiveDays} días</strong>. Los promedios
             que lo superan se resaltan en rojo.
