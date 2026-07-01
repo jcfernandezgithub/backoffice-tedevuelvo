@@ -71,6 +71,17 @@ function generateGenericPDF(
     ? `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
     : `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
 
+  const attachedPages = `
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteCedulaImg}" alt="Cédula de Identidad Legalizada" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteNotarialImg}" alt="Certificado Notarial" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteConservadorImg}" alt="Certificado Conservador de Bienes Raíces" style="max-width: 100%; max-height: 95vh;" />
+    </div>`
+
   const content = `
     <html>
       <head>
@@ -132,6 +143,7 @@ function generateGenericPDF(
           <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán</p>
           <p style="margin: 5px 0;">p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}</p>
         </div>
+        ${attachedPages}
       </body>
     </html>
   `
