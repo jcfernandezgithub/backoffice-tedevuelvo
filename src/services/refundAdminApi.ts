@@ -406,8 +406,7 @@ class RefundAdminApiClient {
     if (params.to) query.append('to', params.to)
 
     const qs = query.toString()
-    // Nota: este endpoint vive bajo /api/v2, no /api/v1
-    const url = `https://tedevuelvo-app-be.onrender.com/api/v2/dashboard/financial-summary${qs ? `?${qs}` : ''}`
+    const url = `${API_BASE_URL}/dashboard/financial-summary${qs ? `?${qs}` : ''}`
 
     const response = await fetch(url, {
       headers: await this.getAuthHeaders(),
