@@ -874,6 +874,20 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
           <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
           <p>p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
         </div>
+        <div className="mt-8 border-t pt-6 space-y-6">
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Cédula Legalizada —</h4>
+            <img src={corteCedulaImg} alt="Cédula de Identidad Legalizada" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Certificado Notarial —</h4>
+            <img src={corteNotarialImg} alt="Certificado Notarial" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Certificado Conservador —</h4>
+            <img src={corteConservadorImg} alt="Certificado Conservador" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+        </div>
       </div>
       <div className="flex gap-2">
         <Button variant="outline" onClick={onEdit} className="flex-1">Editar</Button>
