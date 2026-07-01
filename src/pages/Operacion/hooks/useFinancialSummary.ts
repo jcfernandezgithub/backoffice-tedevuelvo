@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { refundAdminApi, type FinancialSummaryResponse } from '@/services/refundAdminApi'
 
 /**
- * Hook que consume GET /api/v2/dashboard/financial-summary.
+ * Hook que consume GET /api/v1/dashboard/financial-summary.
  * Alimenta las calugas de "Resumen Financiero" (Monto a Pagar, Monto Pagado, Prima Total).
  */
 export function useFinancialSummary(params: { since?: string; to?: string }) {

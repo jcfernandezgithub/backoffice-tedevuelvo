@@ -462,7 +462,7 @@ export interface DashboardCountsResponse {
   paid: DashboardMetricValue
 }
 
-// Respuesta del endpoint /api/v2/dashboard/financial-summary.
+// Respuesta del endpoint /api/v1/dashboard/financial-summary.
 // Soportamos varios nombres de campos para tolerar ligeras variaciones del backend.
 export interface FinancialSummaryResponse {
   // Monto total a pagar (solicitudes en pago programado)
