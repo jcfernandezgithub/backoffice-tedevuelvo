@@ -71,6 +71,17 @@ function generateGenericPDF(
     ? `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong> asociada a la Póliza N° <strong>${formData.policyNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
     : `que corresponde a la operación de crédito N°<strong>${formData.creditNumber}</strong>, todo ello conforme a lo dispuesto en el artículo 537 del Código de Comercio.`
 
+  const attachedPages = `
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteCedulaImg}" alt="Cédula de Identidad Legalizada" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteNotarialImg}" alt="Certificado Notarial" style="max-width: 100%; max-height: 95vh;" />
+    </div>
+    <div style="page-break-before: always; text-align: center;">
+      <img src="${corteConservadorImg}" alt="Certificado Conservador de Bienes Raíces" style="max-width: 100%; max-height: 95vh;" />
+    </div>`
+
   const content = `
     <html>
       <head>
@@ -132,6 +143,7 @@ function generateGenericPDF(
           <p style="margin: 5px 0;">Cristian Andrés Nieto Gavilán</p>
           <p style="margin: 5px 0;">p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}</p>
         </div>
+        ${attachedPages}
       </body>
     </html>
   `
@@ -253,13 +265,14 @@ function openPrintWindow(content: string) {
 }
 
 // Helper: genera un PDF blob con jsPDF para subir al servidor (formato genérico)
-function generateCortePdfBlob(
+async function generateCortePdfBlob(
   refund: RefundRequest,
   formData: { creditNumber: string; policyNumber: string; bankName: string; companyName: string },
   hasPolicyNumber: boolean,
-): Blob {
+): Promise<Blob> {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 15
   let y = 20
 
@@ -299,6 +312,41 @@ function generateCortePdfBlob(
   doc.text('Cristian Andrés Nieto Gavilán', pageWidth / 2, y, { align: 'center' }); y += 5
   doc.setFont('helvetica', 'normal')
   doc.text(`p.p TDV SERVICIOS SPA RUT: ${FIXED_ACCOUNT_DATA.accountHolderRut}`, pageWidth / 2, y, { align: 'center' })
+
+  // Adjuntar 3 páginas: cédula legalizada, certificado notarial, certificado conservador
+  const addImagePage = (imgSrc: string, altText: string): Promise<void> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        doc.addPage()
+        const imgRatio = img.width / img.height
+        const pageRatio = (pageWidth - 20) / (pageHeight - 20)
+        let imgW: number, imgH: number
+        if (imgRatio > pageRatio) {
+          imgW = pageWidth - 20
+          imgH = imgW / imgRatio
+        } else {
+          imgH = pageHeight - 20
+          imgW = imgH * imgRatio
+        }
+        const x = (pageWidth - imgW) / 2
+        const yPos = (pageHeight - imgH) / 2
+        doc.addImage(img, 'JPEG', x, yPos, imgW, imgH)
+        resolve()
+      }
+      img.onerror = () => {
+        doc.addPage()
+        doc.setFontSize(12)
+        doc.text(altText, pageWidth / 2, pageHeight / 2, { align: 'center' })
+        resolve()
+      }
+      img.src = imgSrc
+    })
+  }
+
+  await addImagePage(corteCedulaImg, 'Cédula de Identidad Legalizada')
+  await addImagePage(corteNotarialImg, 'Certificado Notarial')
+  await addImagePage(corteConservadorImg, 'Certificado Conservador de Bienes Raíces')
 
   return doc.output('blob')
 }
@@ -778,7 +826,7 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
   const handleUploadToClient = async () => {
     setIsUploading(true)
     try {
-      const pdfBlob = generateCortePdfBlob(refund, formData, hasPolicyNumber)
+      const pdfBlob = await generateCortePdfBlob(refund, formData, hasPolicyNumber)
       await uploadCorteToClient(getRefundDocumentsPublicId(refund), pdfBlob, queryClient, getInsuranceType(refund.calculationSnapshot))
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' })
@@ -825,6 +873,20 @@ function GenericPreview({ refund, formData, hasPolicyNumber, onEdit, onDownload 
           <img src={firmaImg} alt="Firma" className="w-40 h-auto mx-auto mb-2" />
           <p className="font-semibold">Cristian Andrés Nieto Gavilán</p>
           <p>p.p TDV SERVICIOS SPA RUT: {FIXED_ACCOUNT_DATA.accountHolderRut}</p>
+        </div>
+        <div className="mt-8 border-t pt-6 space-y-6">
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Cédula Legalizada —</h4>
+            <img src={corteCedulaImg} alt="Cédula de Identidad Legalizada" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Certificado Notarial —</h4>
+            <img src={corteNotarialImg} alt="Certificado Notarial" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
+          <div className="text-center">
+            <h4 className="font-bold mb-3 text-sm tracking-wide">— Página anexa: Certificado Conservador —</h4>
+            <img src={corteConservadorImg} alt="Certificado Conservador" className="max-h-64 w-auto border rounded mx-auto" />
+          </div>
         </div>
       </div>
       <div className="flex gap-2">
