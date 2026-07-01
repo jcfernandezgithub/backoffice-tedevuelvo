@@ -523,6 +523,12 @@ export interface FinancialSummaryResponse {
   totalSubmittedSavingAmount?: number
   totalSubmittedSavingCount?: number
 
+  // Monto total estimado de primas por emitir (solicitudes ingresadas/submitted)
+  totalSubmittedPremium?: number | { amount?: number; count?: number; description?: string; title?: string }
+  totalSubmittedPremiumAmount?: number
+  totalSubmittedPremiumCount?: number
+
+
   // Monto total pagado a clientes
   totalPaid?: number
   totalPaidAmount?: number
