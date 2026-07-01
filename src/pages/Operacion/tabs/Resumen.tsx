@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSerieTemporal } from '../hooks/useReportsData';
 import { useAllRefunds } from '../hooks/useAllRefunds';
 import { useDashboardCounts, metricTotal, metricObj } from '../hooks/useDashboardCounts';
+import { useFinancialSummary, pickNumber } from '../hooks/useFinancialSummary';
 import { useOverdueData } from '@/pages/Refunds/components/OverdueAlertsBanner';
 import { readStageObjectives } from '@/hooks/useStageObjectives';
 import type { Granularidad } from '../types/reportTypes';
@@ -109,6 +110,18 @@ export function TabResumen() {
     since: filtros.fechaDesde,
     to: filtros.fechaHasta,
   });
+
+  // ── Resumen Financiero: alimentado exclusivamente por /v2/dashboard/financial-summary ──
+  const { data: financialSummary, isLoading: loadingFinancial } = useFinancialSummary({
+    since: filtros.fechaDesde,
+    to: filtros.fechaHasta,
+  });
+
+  const finToPayAmount = pickNumber(financialSummary, ['totalToPay', 'scheduledPaymentAmount', 'toPayAmount']);
+  const finToPayCount = pickNumber(financialSummary, ['scheduledCount', 'scheduledPaymentCount']);
+  const finPaidAmount = pickNumber(financialSummary, ['totalPaid', 'paidAmount']);
+  const finPaidCount = pickNumber(financialSummary, ['paidCount']);
+  const finPremium = pickNumber(financialSummary, ['totalPremium', 'emittedPremium', 'premiumAmount']);
 
   const c = useMemo(() => {
     const qualification = metricObj(countsData?.qualification);
