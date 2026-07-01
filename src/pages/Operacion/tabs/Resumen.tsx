@@ -170,13 +170,11 @@ export function TabResumen() {
     since: filtros.fechaDesde,
     to: filtros.fechaHasta,
   });
-  
-  // ── Query compartido: un solo fetch para toda la pantalla Operación ──────────
-  // Reusa el caché filtrado por las fechas del FiltersBar (enviadas a listV2 como since/to).
-  const { data: allRefunds = [], isLoading: loadingRefunds } = useAllRefunds({
-    since: filtros.fechaDesde,
-    to: filtros.fechaHasta,
-  });
+
+  // NOTA: Esta pestaña ya no consume /admin/listV2. Todas las cifras se
+  // alimentan directamente de los endpoints agregados del dashboard:
+  //   • /dashboard/counts, /dashboard/financial-summary,
+  //   • /dashboard/requests-timeseries, /dashboard/status-distribution.
 
   // ── Conteos del dashboard desde el endpoint dedicado ─────────────────────────
   // Las calugas SOLO leen de este endpoint — no hay cálculos del lado cliente.
