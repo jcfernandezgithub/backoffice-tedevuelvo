@@ -204,6 +204,11 @@ export function TabResumen() {
   const finSubmittedSavingCount = Number(fs.totalSubmittedSaving?.count ?? fs.totalSubmittedSavingCount ?? 0);
   const finSubmittedSavingDescription: string | undefined = fs.totalSubmittedSaving?.description;
   const finSubmittedSavingTitle: string = fs.totalSubmittedSaving?.title ?? 'Monto Total Solicitado';
+  const finSubmittedPremiumAmount = Number(fs.totalSubmittedPremium?.amount ?? fs.totalSubmittedPremiumAmount ?? 0);
+  const finSubmittedPremiumCount = Number(fs.totalSubmittedPremium?.count ?? fs.totalSubmittedPremiumCount ?? 0);
+  const finSubmittedPremiumDescription: string | undefined = fs.totalSubmittedPremium?.description;
+  const finSubmittedPremiumTitle: string = fs.totalSubmittedPremium?.title ?? 'Monto Total Estimado de Primas por Emitir';
+
   const finPaidAmount = Number(fs.totalPaidClients?.amount ?? fs.totalPaid ?? fs.paidAmount ?? 0);
   const finPaidCount = Number(fs.totalPaidClients?.count ?? fs.paidCount ?? 0);
   const finPaidDescription: string | undefined = fs.totalPaidClients?.description;
@@ -729,8 +734,9 @@ export function TabResumen() {
           <div className="flex-1 h-px bg-border" />
         </div>
         {loadingFinancial ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+
               <Card key={i}>
                 <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
                 <CardContent><Skeleton className="h-10 w-full" /></CardContent>
@@ -738,7 +744,8 @@ export function TabResumen() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+
             {/* Monto Total Solicitado (Solicitudes Ingresadas / Submitted) */}
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-950/20 border-indigo-200 dark:border-indigo-800"
@@ -766,7 +773,35 @@ export function TabResumen() {
               </CardContent>
             </Card>
 
+            {/* Monto Total Estimado de Primas por Emitir (Solicitudes Ingresadas / Submitted) */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20 border-sky-200 dark:border-sky-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">{finSubmittedPremiumTitle}</p>
+                    <p className="text-3xl font-bold text-sky-800 dark:text-sky-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(finSubmittedPremiumAmount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finSubmittedPremiumDescription ?? `${finSubmittedPremiumCount} solicitud${finSubmittedPremiumCount !== 1 ? 'es' : ''} ingresada${finSubmittedPremiumCount !== 1 ? 's' : ''}`}
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                    <Banknote className="h-7 w-7 text-sky-700 dark:text-sky-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Monto Total a Pagar a Clientes (Pago Programado) */}
+
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20 border-cyan-200 dark:border-cyan-800"
               onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
