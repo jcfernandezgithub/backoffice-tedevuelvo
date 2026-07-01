@@ -179,9 +179,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     nombreEjecutivo: '',
     oficina: '',
     fonoEjecutivo: '',
-    nroOperacion: '',
-    inicioVigencia: getTodayFormatted(),
-    terminoVigencia: '',
+    nroOperacion: refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : '',
+    inicioVigencia: getCoverageDatesFromSubmitted(refund).fechaInicio || getTodayFormatted(),
+    terminoVigencia: getCoverageDatesFromSubmitted(refund).fechaFin,
     montoCredito: (
       refund.calculationSnapshot?.confirmedAverageInsuredBalance ||
       refund.calculationSnapshot?.averageInsuredBalance ||
@@ -244,6 +244,21 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
+
+  // Sincroniza Nro Operación e Inicio/Término de Vigencia cada vez que se abre el diálogo
+  useEffect(() => {
+    if (open) {
+      const snapNroCredito = refund.calculationSnapshot?.nroCredito ? String(refund.calculationSnapshot.nroCredito) : ''
+      const coverageDates = getCoverageDatesFromSubmitted(refund)
+      setFormData(prev => ({
+        ...prev,
+        nroOperacion: prev.nroOperacion || snapNroCredito,
+        inicioVigencia: coverageDates.fechaInicio || prev.inicioVigencia || getTodayFormatted(),
+        terminoVigencia: prev.terminoVigencia || coverageDates.fechaFin,
+      }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, refund])
 
   const handleBackToEdit = () => {
     setStep('form')
