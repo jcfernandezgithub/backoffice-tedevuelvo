@@ -518,6 +518,11 @@ export interface FinancialSummaryResponse {
   totalScheduledPremiumAmount?: number
   totalScheduledPremiumCount?: number
 
+  // Monto total solicitado (devolución estimada de solicitudes ingresadas/submitted)
+  totalSubmittedSaving?: number | { amount?: number; count?: number; description?: string; title?: string }
+  totalSubmittedSavingAmount?: number
+  totalSubmittedSavingCount?: number
+
   // Monto total pagado a clientes
   totalPaid?: number
   totalPaidAmount?: number
