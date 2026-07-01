@@ -278,8 +278,8 @@ export function TabResumen() {
   }, [overdueStages, stageObjectives]);
 
   // Mapear buckets del API al formato que espera TimeSeriesChart ({fecha, valor})
-  const timeseriesChartData = (timeseriesData?.buckets ?? []).map((b) => ({
-    fecha: b.bucketStart,
+  const timeseriesChartData = (timeseriesData?.series ?? []).map((b) => ({
+    fecha: b.bucketLabel || b.bucketStart,
     valor: b.count,
   }));
 
