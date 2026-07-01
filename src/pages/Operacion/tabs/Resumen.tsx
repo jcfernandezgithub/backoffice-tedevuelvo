@@ -728,187 +728,229 @@ export function TabResumen() {
       </div>
 
       {/* Resumen Financiero */}
-      <div>
+      <div className="space-y-6">
         <div className="flex items-center gap-2 mb-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Resumen Financiero</h2>
           <div className="flex-1 h-px bg-border" />
         </div>
-        {loadingFinancial ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
 
+        {loadingFinancial ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
               <Card key={i}>
-                <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
-                <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+                <div className="p-4 pb-0">
+                  <Skeleton className="h-5 w-2/3 mb-4" />
+                </div>
+                <div className="p-4 pt-0 space-y-3">
+                  <Card>
+                    <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
+                    <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
+                    <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+                  </Card>
+                </div>
               </Card>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-
-            {/* Monto Total Solicitado (Solicitudes Ingresadas / Submitted) */}
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-indigo-50 to-slate-50 dark:from-indigo-950/30 dark:to-slate-950/20 border-indigo-200 dark:border-indigo-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedSavingTitle}</p>
-                    <p className="text-3xl font-bold text-indigo-800 dark:text-indigo-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finSubmittedSavingAmount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finSubmittedSavingDescription ?? `${finSubmittedSavingCount} solicitud${finSubmittedSavingCount !== 1 ? 'es' : ''} ingresada${finSubmittedSavingCount !== 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                  <div className="h-14 w-14 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                    <FileInput className="h-7 w-7 text-indigo-700 dark:text-indigo-400" />
-                  </div>
+            {/* Grupo 1: Solicitudes Ingresadas (estimado) */}
+            <div className="rounded-xl border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-b from-indigo-50/50 to-slate-50/30 dark:from-indigo-950/20 dark:to-slate-950/10 p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                  <FileInput className="h-4 w-4 text-indigo-700 dark:text-indigo-400" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Monto Total Estimado de Primas por Emitir (Solicitudes Ingresadas / Submitted) */}
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20 border-sky-200 dark:border-sky-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedPremiumTitle}</p>
-                    <p className="text-3xl font-bold text-sky-800 dark:text-sky-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finSubmittedPremiumAmount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finSubmittedPremiumDescription ?? `${finSubmittedPremiumCount} solicitud${finSubmittedPremiumCount !== 1 ? 'es' : ''} ingresada${finSubmittedPremiumCount !== 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                  <div className="h-14 w-14 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
-                    <Banknote className="h-7 w-7 text-sky-700 dark:text-sky-400" />
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Solicitudes Ingresadas</p>
+                  <p className="text-xs text-muted-foreground">Estimación inicial del período</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Monto Total a Pagar a Clientes (Pago Programado) */}
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-indigo-200/80 dark:border-indigo-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedSavingTitle}</p>
+                      <p className="text-2xl font-bold text-indigo-800 dark:text-indigo-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finSubmittedSavingAmount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finSubmittedSavingDescription ?? `${finSubmittedSavingCount} solicitud${finSubmittedSavingCount !== 1 ? 'es' : ''} ingresada${finSubmittedSavingCount !== 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                      <FileInput className="h-6 w-6 text-indigo-700 dark:text-indigo-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20 border-cyan-200 dark:border-cyan-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finToPayTitle}</p>
-                    <p className="text-3xl font-bold text-cyan-800 dark:text-cyan-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finToPayAmount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finToPayDescription ?? `${finToPayCount} solicitud${finToPayCount !== 1 ? 'es' : ''} en pago programado`}
-                    </p>
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-sky-200/80 dark:border-sky-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finSubmittedPremiumTitle}</p>
+                      <p className="text-2xl font-bold text-sky-800 dark:text-sky-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finSubmittedPremiumAmount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finSubmittedPremiumDescription ?? `${finSubmittedPremiumCount} solicitud${finSubmittedPremiumCount !== 1 ? 'es' : ''} ingresada${finSubmittedPremiumCount !== 1 ? 's' : ''}`}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center">
+                      <Banknote className="h-6 w-6 text-sky-700 dark:text-sky-400" />
+                    </div>
                   </div>
-                  <div className="h-14 w-14 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
-                    <CalendarClock className="h-7 w-7 text-cyan-700 dark:text-cyan-400" />
-                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Grupo 2: Solicitudes en Pago Programado (a pagar) */}
+            <div className="rounded-xl border border-cyan-200/60 dark:border-cyan-800/40 bg-gradient-to-b from-cyan-50/50 to-sky-50/30 dark:from-cyan-950/20 dark:to-sky-950/10 p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center">
+                  <CalendarClock className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Monto Total Primas */}
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finScheduledPremiumTitle}</p>
-                    <p className="text-3xl font-bold text-blue-800 dark:text-blue-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finScheduledPremiumAmount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finScheduledPremiumDescription ?? `${finScheduledPremiumCount} solicitud${finScheduledPremiumCount !== 1 ? 'es' : ''} en pago programado`}
-                    </p>
-                  </div>
-                  <div className="h-14 w-14 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                    <Banknote className="h-7 w-7 text-blue-700 dark:text-blue-400" />
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Solicitudes en Pago Programado</p>
+                  <p className="text-xs text-muted-foreground">Montos pendientes de transferencia</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Monto Total Pagado */}
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/20 border-green-200 dark:border-green-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPaidTitle}</p>
-                    <p className="text-3xl font-bold text-green-800 dark:text-green-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finPaidAmount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finPaidDescription ?? `Basado en ${finPaidCount} solicitudes pagadas`}
-                    </p>
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-cyan-200/80 dark:border-cyan-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finToPayTitle}</p>
+                      <p className="text-2xl font-bold text-cyan-800 dark:text-cyan-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finToPayAmount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finToPayDescription ?? `${finToPayCount} solicitud${finToPayCount !== 1 ? 'es' : ''} en pago programado`}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
+                      <CalendarClock className="h-6 w-6 text-cyan-700 dark:text-cyan-400" />
+                    </div>
                   </div>
-                  <div className="h-14 w-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                    <Banknote className="h-7 w-7 text-green-700 dark:text-green-400" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Prima Total */}
-            <Card
-              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20 border-violet-200 dark:border-violet-800"
-              onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
-            >
-              <CardContent className="pt-6 pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPremiumTitle}</p>
-                    <p className="text-3xl font-bold text-violet-800 dark:text-violet-300">
-                      {new Intl.NumberFormat('es-CL', {
-                        style: 'currency',
-                        currency: 'CLP',
-                        maximumFractionDigits: 0
-                      }).format(finPremium)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {finPremiumDescription ?? 'Prima mensual × cuotas restantes'}
-                    </p>
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-blue-200/80 dark:border-blue-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finScheduledPremiumTitle}</p>
+                      <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finScheduledPremiumAmount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finScheduledPremiumDescription ?? `${finScheduledPremiumCount} solicitud${finScheduledPremiumCount !== 1 ? 'es' : ''} en pago programado`}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                      <Banknote className="h-6 w-6 text-blue-700 dark:text-blue-400" />
+                    </div>
                   </div>
-                  <div className="h-14 w-14 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
-                    <Banknote className="h-7 w-7 text-violet-700 dark:text-violet-400" />
-                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Grupo 3: Solicitudes Pagadas (gestionadas) */}
+            <div className="rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 bg-gradient-to-b from-green-50/50 to-emerald-50/30 dark:from-green-950/20 dark:to-emerald-950/10 p-4 space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-8 w-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Solicitudes Pagadas</p>
+                  <p className="text-xs text-muted-foreground">Devoluciones ya gestionadas</p>
+                </div>
+              </div>
+
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-green-200/80 dark:border-green-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPaidTitle}</p>
+                      <p className="text-2xl font-bold text-green-800 dark:text-green-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finPaidAmount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finPaidDescription ?? `Basado en ${finPaidCount} solicitudes pagadas`}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                      <Banknote className="h-6 w-6 text-green-700 dark:text-green-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border-violet-200/80 dark:border-violet-800/50"
+                onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
+              >
+                <CardContent className="pt-5 pb-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1 line-clamp-2 leading-tight">{finPremiumTitle}</p>
+                      <p className="text-2xl font-bold text-violet-800 dark:text-violet-300">
+                        {new Intl.NumberFormat('es-CL', {
+                          style: 'currency',
+                          currency: 'CLP',
+                          maximumFractionDigits: 0
+                        }).format(finPremium)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {finPremiumDescription ?? 'Prima mensual × cuotas restantes'}
+                      </p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+                      <Banknote className="h-6 w-6 text-violet-700 dark:text-violet-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>
