@@ -30,7 +30,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { InstitutionBreakdownSheet, buildInstitutionBreakdown } from '../components/InstitutionBreakdownSheet';
+import { InstitutionBreakdownSheet } from '../components/InstitutionBreakdownSheet';
 
 // Colores que coinciden con las calugas KPI
 const ESTADO_COLORS: Record<string, string> = {
@@ -621,27 +621,6 @@ export function TabResumen() {
                 </Card>
               );
             })()}
-
-            {/* Card: Solicitudes Aprobadas */}
-            <Card 
-              className="border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(buildRefundsUrl({ status: 'approved' }))}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    Solicitudes Aprobadas
-                  </CardTitle>
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-green-700 dark:text-green-400">{c.approved.total}</span>
-                  <OverdueBadge count={c.approved.overdue} stageLabel="Aprobadas" objetivo={overdueByStage.approved?.objetivo} />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Card: Solicitudes Rechazadas */}
             <Card 
