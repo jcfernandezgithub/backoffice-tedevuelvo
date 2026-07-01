@@ -777,8 +777,8 @@ export function TabResumen() {
           <div className="flex-1 h-px bg-border" />
         </div>
         {loadingFinancial ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
                 <CardHeader className="pb-2"><Skeleton className="h-4 w-3/4" /></CardHeader>
                 <CardContent><Skeleton className="h-10 w-full" /></CardContent>
@@ -786,7 +786,7 @@ export function TabResumen() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Monto Total a Pagar a Clientes (Pago Programado) */}
             <Card
               className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950/30 dark:to-sky-950/20 border-cyan-200 dark:border-cyan-800"
@@ -809,6 +809,33 @@ export function TabResumen() {
                   </div>
                   <div className="h-14 w-14 rounded-full bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
                     <CalendarClock className="h-7 w-7 text-cyan-700 dark:text-cyan-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Monto Total Primas */}
+            <Card
+              className="cursor-pointer hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800"
+              onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
+            >
+              <CardContent className="pt-6 pb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Monto Total Primas</p>
+                    <p className="text-3xl font-bold text-blue-800 dark:text-blue-300">
+                      {new Intl.NumberFormat('es-CL', {
+                        style: 'currency',
+                        currency: 'CLP',
+                        maximumFractionDigits: 0
+                      }).format(finScheduledPremiumAmount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {finScheduledPremiumDescription ?? `${finScheduledPremiumCount} solicitud${finScheduledPremiumCount !== 1 ? 'es' : ''} en pago programado`}
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                    <Banknote className="h-7 w-7 text-blue-700 dark:text-blue-400" />
                   </div>
                 </div>
               </CardContent>
