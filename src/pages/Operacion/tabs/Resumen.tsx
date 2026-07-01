@@ -266,11 +266,11 @@ export function TabResumen() {
     return map;
   }, [overdueStages, stageObjectives]);
 
-  const combinedSeriesData = serieSolicitudes?.map((punto, index) => ({
-    fecha: punto.fecha,
-    solicitudes: punto.valor,
-    montos: serieMontos?.[index]?.valor || 0,
-  })) || [];
+  // Mapear buckets del API al formato que espera TimeSeriesChart ({fecha, valor})
+  const timeseriesChartData = (timeseriesData?.buckets ?? []).map((b) => ({
+    fecha: b.bucketStart,
+    valor: b.count,
+  }));
 
   // Todas las calugas respetan el filtro de fechas
   const qualifyingRefunds = filteredRefunds.filter((r: any) => r.status === 'qualifying');
