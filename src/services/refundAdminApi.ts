@@ -558,7 +558,7 @@ export interface RequestsTimeseriesResponse {
     estimatedAmount?: number
     paidAmount?: number
   }
-  buckets: RequestsTimeseriesBucket[]
+  series: RequestsTimeseriesBucket[]
 }
 
 // ── Respuesta de /api/v1/dashboard/status-distribution ───────────────────────
