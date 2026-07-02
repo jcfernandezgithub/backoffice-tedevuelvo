@@ -276,7 +276,6 @@ export function TabResumen() {
   const procesoOperativoTotalCounts =
     c.documentsReceived.total +
     c.entered.total +
-    c.approved.total +
     c.scheduledPayment.total +
     c.paid.total;
 
@@ -362,7 +361,7 @@ export function TabResumen() {
                         <Info className="h-3.5 w-3.5 text-white/60" />
                       </div>
                       <p className="text-white/70 text-[11px] sm:text-xs mt-1 truncate">
-                        Docs Recibidos · Ingresadas · Aprobadas · Pago Programado · Pagadas
+                        Docs Recibidos · Ingresadas · Pago Programado · Pagadas
                       </p>
                     </div>
                   </div>
@@ -374,7 +373,6 @@ export function TabResumen() {
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
-                        { label: 'Aprobadas', count: c.approved.total },
                         { label: 'Pago Prog.', count: c.scheduledPayment.total },
                         { label: 'Pagadas', count: c.paid.total },
                       ].map(({ label, count }) => (
@@ -389,7 +387,7 @@ export function TabResumen() {
                     {/* Total grande */}
                     <div
                       className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
-                      onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,approved,payment_scheduled,paid' }))}
+                      onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">
                         {procesoOperativoTotalCounts.toLocaleString('es-CL')}
@@ -412,7 +410,6 @@ export function TabResumen() {
                 {[
                   { label: 'Documentos Recibidos', desc: 'Listos para ingresar al banco', count: c.documentsReceived.total },
                   { label: 'Ingresadas', desc: 'En evaluación bancaria', count: c.entered.total },
-                  { label: 'Aprobadas', desc: 'Banco aprobó la devolución', count: c.approved.total },
                   { label: 'Pago Programado', desc: 'Con fecha de transferencia asignada', count: c.scheduledPayment.total },
                   { label: 'Pagadas', desc: 'Devolución completada', count: c.paid.total },
                 ].map(({ label, desc, count }) => (
