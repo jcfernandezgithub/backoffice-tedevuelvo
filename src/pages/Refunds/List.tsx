@@ -1005,16 +1005,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
-  // Usar paginación del servidor, pero en modo histórico/overdue el total es local
-  const totalFiltered = (historicalStatusMode || activeOverdueFilter) ? overdueFilteredItems.length : normalizedData.total
-  const totalPages = (historicalStatusMode || activeOverdueFilter)
+  // Usar paginación del servidor, pero en modo histórico/overdue/multi-status el total es local
+  const localPaginationMode = historicalStatusMode || activeOverdueFilter || multiStatusMode
+  const totalFiltered = localPaginationMode ? overdueFilteredItems.length : normalizedData.total
+  const totalPages = localPaginationMode
     ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
-  const hasNextPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage < totalPages : normalizedData.hasNext
-  const hasPrevPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage > 1 : normalizedData.hasPrev
+  const hasNextPage = localPaginationMode ? historicalPage < totalPages : normalizedData.hasNext
+  const hasPrevPage = localPaginationMode ? historicalPage > 1 : normalizedData.hasPrev
 
-  const currentPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage : normalizedData.page
-  const startIndex = (currentPage - 1) * ((historicalStatusMode || activeOverdueFilter) ? historicalPageSize : normalizedData.pageSize)
+  const currentPage = localPaginationMode ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * (localPaginationMode ? historicalPageSize : normalizedData.pageSize)
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
