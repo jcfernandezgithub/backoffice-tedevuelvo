@@ -259,6 +259,54 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const { data: searchData, isLoading: isSearchLoading, error: searchError, refetch: refetchSearch } = useQuery({
     queryKey: ['refunds-search', searchFilters],
     queryFn: async () => {
+      // Multi-status: el backend no acepta listas de estados. Disparamos una búsqueda
+      // por cada estado (paginando todas sus páginas) y mergeamos los resultados.
+      const statusList = (searchFilters as any)._statusList as string[] | undefined
+      if (statusList && statusList.length > 1) {
+        const baseFilters = { ...searchFilters } as any
+        delete baseFilters._statusList
+        delete baseFilters.status
+
+        const fetchAllForStatus = async (st: string) => {
+          const first = await refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page: 1, limit: 100 })
+          if (first.total <= 100) return first.items
+          const totalPages = Math.ceil(first.total / 100)
+          const rest = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+          let items = [...first.items]
+          const BATCH = 5
+          for (let i = 0; i < rest.length; i += BATCH) {
+            const batch = rest.slice(i, i + BATCH)
+            const results = await Promise.all(
+              batch.map(page => refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page, limit: 100 }))
+            )
+            results.forEach(r => { items = items.concat(r.items) })
+          }
+          return items
+        }
+
+        const perStatus = await Promise.all(statusList.map(fetchAllForStatus))
+        const merged: any[] = []
+        const seen = new Set<string>()
+        for (const arr of perStatus) {
+          for (const r of arr) {
+            const key = (r as any).id || (r as any).publicId
+            if (key && !seen.has(key)) {
+              seen.add(key)
+              merged.push(r)
+            }
+          }
+        }
+        return {
+          items: merged,
+          total: merged.length,
+          page: 1,
+          pageSize: merged.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      }
+
       // En modo histórico, paginar para obtener todos los resultados (max 100 por página)
       if (searchFilters.limit === 100 && historicalStatusMode) {
         // Primera petición para obtener el total
