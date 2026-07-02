@@ -408,12 +408,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // y filtrar localmente por el estado que tenían en la fecha seleccionada
       // Si el status contiene múltiples valores separados por coma (ej: desde las calugas
       // de Operación "En Proceso Operativo"), el backend no acepta listas — omitimos el
-      // filtro server-side y aplicamos el filtro localmente sobre la lista paginada.
+      // filtro server-side y disparamos N búsquedas en paralelo (una por estado) desde
+      // el queryFn (ver `_statusList`).
       status: historicalStatusMode
         ? undefined
         : (localFilters.status && !String(localFilters.status).includes(',')
             ? localFilters.status
             : undefined),
+      // Marcador consumido por el queryFn para gatillar el modo multi-status.
+      ...(localFilters.status && String(localFilters.status).includes(',')
+        ? { _statusList: String(localFilters.status).split(',').map(s => s.trim()).filter(Boolean) } as any
+        : {}),
       sort: 'recent', // Por defecto más recientes
       // En modo histórico usamos searchByUpdatedAt: from/to filtran por updatedAt en backend.
       from: localFilters.from || undefined,
