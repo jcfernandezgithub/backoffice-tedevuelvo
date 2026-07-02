@@ -259,6 +259,54 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const { data: searchData, isLoading: isSearchLoading, error: searchError, refetch: refetchSearch } = useQuery({
     queryKey: ['refunds-search', searchFilters],
     queryFn: async () => {
+      // Multi-status: el backend no acepta listas de estados. Disparamos una búsqueda
+      // por cada estado (paginando todas sus páginas) y mergeamos los resultados.
+      const statusList = (searchFilters as any)._statusList as string[] | undefined
+      if (statusList && statusList.length > 1) {
+        const baseFilters = { ...searchFilters } as any
+        delete baseFilters._statusList
+        delete baseFilters.status
+
+        const fetchAllForStatus = async (st: string) => {
+          const first = await refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page: 1, limit: 100 })
+          if (first.total <= 100) return first.items
+          const totalPages = Math.ceil(first.total / 100)
+          const rest = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+          let items = [...first.items]
+          const BATCH = 5
+          for (let i = 0; i < rest.length; i += BATCH) {
+            const batch = rest.slice(i, i + BATCH)
+            const results = await Promise.all(
+              batch.map(page => refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page, limit: 100 }))
+            )
+            results.forEach(r => { items = items.concat(r.items) })
+          }
+          return items
+        }
+
+        const perStatus = await Promise.all(statusList.map(fetchAllForStatus))
+        const merged: any[] = []
+        const seen = new Set<string>()
+        for (const arr of perStatus) {
+          for (const r of arr) {
+            const key = (r as any).id || (r as any).publicId
+            if (key && !seen.has(key)) {
+              seen.add(key)
+              merged.push(r)
+            }
+          }
+        }
+        return {
+          items: merged,
+          total: merged.length,
+          page: 1,
+          pageSize: merged.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      }
+
       // En modo histórico, paginar para obtener todos los resultados (max 100 por página)
       if (searchFilters.limit === 100 && historicalStatusMode) {
         // Primera petición para obtener el total
@@ -408,12 +456,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // y filtrar localmente por el estado que tenían en la fecha seleccionada
       // Si el status contiene múltiples valores separados por coma (ej: desde las calugas
       // de Operación "En Proceso Operativo"), el backend no acepta listas — omitimos el
-      // filtro server-side y aplicamos el filtro localmente sobre la lista paginada.
+      // filtro server-side y disparamos N búsquedas en paralelo (una por estado) desde
+      // el queryFn (ver `_statusList`).
       status: historicalStatusMode
         ? undefined
         : (localFilters.status && !String(localFilters.status).includes(',')
             ? localFilters.status
             : undefined),
+      // Marcador consumido por el queryFn para gatillar el modo multi-status.
+      ...(localFilters.status && String(localFilters.status).includes(',')
+        ? { _statusList: String(localFilters.status).split(',').map(s => s.trim()).filter(Boolean) } as any
+        : {}),
       sort: 'recent', // Por defecto más recientes
       // En modo histórico usamos searchByUpdatedAt: from/to filtran por updatedAt en backend.
       from: localFilters.from || undefined,
@@ -876,14 +929,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setHistoricalPage(1)
   }, [overdueFilteredItems.length])
 
-  // En modo histórico, paginar localmente; en modo normal, usar datos del servidor
+  // Detectar modo multi-status (status con comas => se pagina localmente)
+  const multiStatusMode = !!(localFilters.status && String(localFilters.status).includes(','))
+
+  // En modo histórico/multi-status, paginar localmente; en modo normal, usar datos del servidor
   const paginatedItems = useMemo(() => {
-    if (historicalStatusMode || activeOverdueFilter) {
+    if (historicalStatusMode || activeOverdueFilter || multiStatusMode) {
       const start = (historicalPage - 1) * historicalPageSize
       return overdueFilteredItems.slice(start, start + historicalPageSize)
     }
     return overdueFilteredItems
-  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
+  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, multiStatusMode, historicalPage, historicalPageSize])
 
   // Ordenamiento client-side aplicado sobre la página/lista visible
   const sortedPaginatedItems = useMemo(() => {
@@ -949,16 +1005,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
-  // Usar paginación del servidor, pero en modo histórico/overdue el total es local
-  const totalFiltered = (historicalStatusMode || activeOverdueFilter) ? overdueFilteredItems.length : normalizedData.total
-  const totalPages = (historicalStatusMode || activeOverdueFilter)
+  // Usar paginación del servidor, pero en modo histórico/overdue/multi-status el total es local
+  const localPaginationMode = historicalStatusMode || activeOverdueFilter || multiStatusMode
+  const totalFiltered = localPaginationMode ? overdueFilteredItems.length : normalizedData.total
+  const totalPages = localPaginationMode
     ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
     : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
-  const hasNextPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage < totalPages : normalizedData.hasNext
-  const hasPrevPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage > 1 : normalizedData.hasPrev
+  const hasNextPage = localPaginationMode ? historicalPage < totalPages : normalizedData.hasNext
+  const hasPrevPage = localPaginationMode ? historicalPage > 1 : normalizedData.hasPrev
 
-  const currentPage = (historicalStatusMode || activeOverdueFilter) ? historicalPage : normalizedData.page
-  const startIndex = (currentPage - 1) * ((historicalStatusMode || activeOverdueFilter) ? historicalPageSize : normalizedData.pageSize)
+  const currentPage = localPaginationMode ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * (localPaginationMode ? historicalPageSize : normalizedData.pageSize)
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
