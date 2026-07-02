@@ -57,6 +57,14 @@ class RefundAdminApiClient {
   }
 
   async search(params: SearchParams): Promise<AdminListResponse> {
+    return this.searchInternal(params, 'search')
+  }
+
+  async searchByUpdatedAt(params: SearchParams): Promise<AdminListResponse> {
+    return this.searchInternal(params, 'search-by-updated-at')
+  }
+
+  private async searchInternal(params: SearchParams, endpoint: 'search' | 'search-by-updated-at'): Promise<AdminListResponse> {
     const query = new URLSearchParams()
     
     if (params.q) query.append('q', params.q)
@@ -75,7 +83,7 @@ class RefundAdminApiClient {
     if (params.hasBankInfo !== undefined) query.append('hasBankInfo', String(params.hasBankInfo))
     if (params.partnerId) query.append('partnerId', params.partnerId)
 
-    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/search?${query}`, {
+    const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${endpoint}?${query}`, {
       headers: await this.getAuthHeaders(),
     })
 
