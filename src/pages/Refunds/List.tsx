@@ -929,14 +929,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setHistoricalPage(1)
   }, [overdueFilteredItems.length])
 
-  // En modo histórico, paginar localmente; en modo normal, usar datos del servidor
+  // Detectar modo multi-status (status con comas => se pagina localmente)
+  const multiStatusMode = !!(localFilters.status && String(localFilters.status).includes(','))
+
+  // En modo histórico/multi-status, paginar localmente; en modo normal, usar datos del servidor
   const paginatedItems = useMemo(() => {
-    if (historicalStatusMode || activeOverdueFilter) {
+    if (historicalStatusMode || activeOverdueFilter || multiStatusMode) {
       const start = (historicalPage - 1) * historicalPageSize
       return overdueFilteredItems.slice(start, start + historicalPageSize)
     }
     return overdueFilteredItems
-  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, historicalPage, historicalPageSize])
+  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, multiStatusMode, historicalPage, historicalPageSize])
 
   // Ordenamiento client-side aplicado sobre la página/lista visible
   const sortedPaginatedItems = useMemo(() => {
