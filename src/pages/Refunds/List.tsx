@@ -264,7 +264,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // En modo histórico, paginar para obtener todos los resultados (max 100 por página)
       if (searchFilters.limit === 100 && historicalStatusMode) {
         // Primera petición para obtener el total
-        const firstPage = await refundAdminApi.search({ ...searchFilters, page: 1, limit: 100 })
+        const firstPage = await refundAdminApi.searchByUpdatedAt({ ...searchFilters, page: 1, limit: 100 })
         if (firstPage.total <= 100) return firstPage
         
         // Calcular páginas restantes y obtener en paralelo (lotes de 5)
@@ -276,14 +276,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
           const batch = remainingPages.slice(i, i + BATCH_SIZE)
           const results = await Promise.all(
-            batch.map(page => refundAdminApi.search({ ...searchFilters, page, limit: 100 }))
+            batch.map(page => refundAdminApi.searchByUpdatedAt({ ...searchFilters, page, limit: 100 }))
           )
           results.forEach(r => allItems = allItems.concat(r.items))
         }
         
         return { ...firstPage, items: allItems, total: firstPage.total, page: 1, pageSize: allItems.length, totalPages: 1, hasNext: false, hasPrev: false }
       }
-      return refundAdminApi.search(searchFilters)
+      return refundAdminApi.searchByUpdatedAt(searchFilters)
     },
     retry: false,
     staleTime: 30 * 1000,
@@ -579,7 +579,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // Fetch paralelo de todas las páginas (similar a ExportToExcelDialog)
       const PAGE_SIZE = 100
       const fetchFn = useSearchEndpoint 
-        ? (page: number) => refundAdminApi.search({ ...searchFilters, page, limit: PAGE_SIZE })
+        ? (page: number) => refundAdminApi.searchByUpdatedAt({ ...searchFilters, page, limit: PAGE_SIZE })
         : (page: number) => refundAdminApi.list({ ...filters, page, pageSize: PAGE_SIZE })
 
       const firstPage = await fetchFn(1)
