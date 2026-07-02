@@ -5,7 +5,6 @@ import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { authService } from '@/services/authService'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
-import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
 import { OverdueAlertsBanner, OverdueRowIndicator, useOverdueData } from './components/OverdueAlertsBanner'
 import { Button } from '@/components/ui/button'
@@ -240,13 +239,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
   const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
 
-  // Fuente compartida con Dashboard/Operación para modo histórico
-  const {
-    data: allRefunds = [],
-    isLoading: isAllRefundsLoading,
-    error: allRefundsError,
-    refetch: refetchAllRefunds,
-  } = useAllRefunds()
+  // En modo histórico también usamos el endpoint de búsqueda por updatedAt
+  // (mismos filtros, misma respuesta que /search pero filtrando por updatedAt)
 
   // Query para listado inicial (listV2)
   const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
@@ -287,12 +281,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     },
     retry: false,
     staleTime: 30 * 1000,
-    enabled: useSearchEndpoint && !historicalStatusMode,
+    enabled: useSearchEndpoint || historicalStatusMode,
   })
 
   const historicalData = useMemo(() => {
     // Omitir solicitudes canceladas del cálculo Call Center
-    const filtered = allRefunds.filter((r: any) => r.status?.toLowerCase() !== 'canceled')
+    const items = searchData?.items ?? []
+    const filtered = items.filter((r: any) => r.status?.toLowerCase() !== 'canceled')
     return {
       total: filtered.length,
       page: 1,
@@ -302,13 +297,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       hasPrev: false,
       items: filtered,
     }
-  }, [allRefunds])
+  }, [searchData])
   
   // Unificar datos según el endpoint/modo usado
   const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
-  const isLoading = historicalStatusMode ? isAllRefundsLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
-  const error = historicalStatusMode ? allRefundsError : (useSearchEndpoint ? searchError : listError)
-  const refetch = historicalStatusMode ? refetchAllRefunds : (useSearchEndpoint ? refetchSearch : refetchList)
+  const isLoading = historicalStatusMode ? isSearchLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
+  const error = historicalStatusMode ? searchError : (useSearchEndpoint ? searchError : listError)
+  const refetch = historicalStatusMode ? refetchSearch : (useSearchEndpoint ? refetchSearch : refetchList)
 
   // Fetch partners para mostrar nombres de alianzas
   const { data: partnersData } = useQuery({
@@ -409,10 +404,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       // y filtrar localmente por el estado que tenían en la fecha seleccionada
       status: historicalStatusMode ? undefined : (localFilters.status || undefined),
       sort: 'recent', // Por defecto más recientes
-      // En modo histórico, NO enviamos from/to al servidor porque filtra por fecha de creación.
-      // Necesitamos traer TODAS las solicitudes y filtrar localmente por statusHistory.
-      from: historicalStatusMode ? undefined : (localFilters.from || undefined),
-      to: historicalStatusMode ? undefined : (localFilters.to || undefined),
+      // En modo histórico usamos searchByUpdatedAt: from/to filtran por updatedAt en backend.
+      from: localFilters.from || undefined,
+      to: localFilters.to || undefined,
       page: 1,
       // En modo histórico pedimos más resultados ya que filtraremos localmente
       limit: historicalStatusMode ? 100 : (filters.pageSize || 20),
@@ -424,7 +418,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     setSearchFilters(newSearchFilters)
-    setUseSearchEndpoint(!historicalStatusMode)
+    setUseSearchEndpoint(true)
     
     // Guardar filtros locales aplicados (los que no soporta el servidor)
     setAppliedLocalFilters({
