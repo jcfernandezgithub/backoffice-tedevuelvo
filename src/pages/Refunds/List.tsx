@@ -406,14 +406,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       q: localFilters.search || undefined,
       // En modo histórico, NO enviamos el status al servidor para traer todas las solicitudes
       // y filtrar localmente por el estado que tenían en la fecha seleccionada
-      status: historicalStatusMode ? undefined : (localFilters.status || undefined),
+      // Si el status contiene múltiples valores separados por coma (ej: desde las calugas
+      // de Operación "En Proceso Operativo"), el backend no acepta listas — omitimos el
+      // filtro server-side y aplicamos el filtro localmente sobre la lista paginada.
+      status: historicalStatusMode
+        ? undefined
+        : (localFilters.status && !String(localFilters.status).includes(',')
+            ? localFilters.status
+            : undefined),
       sort: 'recent', // Por defecto más recientes
       // En modo histórico usamos searchByUpdatedAt: from/to filtran por updatedAt en backend.
       from: localFilters.from || undefined,
       to: localFilters.to || undefined,
       page: 1,
       // En modo histórico pedimos más resultados ya que filtraremos localmente
-      limit: historicalStatusMode ? 100 : (filters.pageSize || 20),
+      limit: historicalStatusMode || (localFilters.status && String(localFilters.status).includes(','))
+        ? 100
+        : (filters.pageSize || 20),
       signatureStatus: signatureStatusValue,
       insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
       isPartner: isPartnerValue,
