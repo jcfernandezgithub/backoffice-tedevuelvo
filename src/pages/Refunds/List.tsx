@@ -212,7 +212,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const initialAutoSearch = searchParams.get('autoSearch') === 'true'
-  const [historicalStatusMode, setHistoricalStatusMode] = useState(initialAutoSearch)
+  // Solo activar modo histórico si se pide explícitamente con historical=true.
+  // autoSearch por sí solo ya no lo enciende (las calugas de Operación quieren
+  // búsqueda normal por rango de fechas).
+  const initialHistorical = searchParams.get('historical') === 'true'
+  const [historicalStatusMode, setHistoricalStatusMode] = useState(initialHistorical)
   // Cuando viene desde una caluga de Operación, restringir el resultado a las
   // solicitudes que ACTUALMENTE están en ese estado Y entraron a él dentro del rango.
   // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
