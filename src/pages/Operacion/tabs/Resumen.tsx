@@ -350,43 +350,53 @@ export function TabResumen() {
                 }} />
 
                 <div className="relative flex flex-col md:flex-row md:items-center md:justify-between px-4 py-4 sm:px-6 gap-4 md:gap-6">
-                  {/* Lado izquierdo: icono + título */}
-                  <div className="flex items-center gap-3">
+                  {/* Header móvil: icono + título + número principal */}
+                  <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="text-white font-bold text-sm sm:text-base leading-none">En Proceso Operativo</p>
                         <Info className="h-3.5 w-3.5 text-white/60" />
                       </div>
                       <p className="text-white/70 text-[11px] sm:text-xs mt-1 truncate">
-                        Docs Recibidos · Ingresadas · Pago Programado · Pagadas
+                        Docs · Ingresadas · Pago Prog. · Pagadas
                       </p>
+                    </div>
+                    {/* Total visible en mobile al lado del título */}
+                    <div
+                      className="md:hidden text-right flex-shrink-0 cursor-pointer"
+                      onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
+                    >
+                      <div className="text-white font-black text-2xl leading-none tabular-nums">
+                        {procesoOperativoTotalCounts.toLocaleString('es-CL')}
+                      </div>
+                      <div className="text-white/60 text-[10px] mt-0.5 underline underline-offset-2">solicitudes</div>
                     </div>
                   </div>
 
                   {/* Lado derecho: desglose + número principal */}
-                  <div className="flex items-center justify-between md:justify-end gap-4 sm:gap-6 flex-wrap md:flex-nowrap">
-                    {/* Desglose compacto */}
-                    <div className="hidden md:flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6 flex-wrap md:flex-nowrap w-full md:w-auto">
+                    {/* Desglose compacto (visible siempre, adapta tamaño) */}
+                    <div className="grid grid-cols-4 md:flex md:items-center gap-1.5 sm:gap-2 w-full md:w-auto">
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
                         { label: 'Pago Prog.', count: c.scheduledPayment.total },
                         { label: 'Pagadas', count: c.paid.total },
                       ].map(({ label, count }) => (
-                        <div key={label} className="flex flex-col items-center px-2.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
-                          <span className="text-white font-bold text-lg leading-none">{count}</span>
+                        <div key={label} className="flex flex-col items-center px-2 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
+                          <span className="text-white font-bold text-base sm:text-lg leading-none tabular-nums">{count}</span>
                           <span className="text-white/65 text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
                         </div>
                       ))}
-                      <div className="w-px h-8 bg-white/25 mx-1" />
+                      <div className="hidden md:block w-px h-8 bg-white/25 mx-1" />
                     </div>
 
-                    {/* Total grande */}
+                    {/* Total grande (sólo desktop; en mobile va al lado del título) */}
                     <div
-                      className="text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
+                      className="hidden md:block text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">

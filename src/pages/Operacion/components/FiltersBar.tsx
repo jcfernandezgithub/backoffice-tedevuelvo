@@ -139,18 +139,18 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
 
   return (
     <Card className="mb-6">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros de Reportes
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="truncate">Filtros de Reportes</span>
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm">
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar
+                  <span className="hidden sm:inline">Exportar</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-48">
@@ -185,11 +185,11 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
         {/* Rango de fechas - siempre visible */}
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-muted-foreground">Fecha:</span>
+          <span className="text-sm text-muted-foreground block">Fecha:</span>
+          <div className="flex items-center gap-2 overflow-x-auto -mx-1 px-1 pb-1 scrollbar-none sm:flex-wrap">
             <Button
               variant={activeQuickFilter === 'mesactual' ? 'default' : 'outline'}
               size="sm"
@@ -198,7 +198,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const primerDia = toLocalDateString(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
                 handleDateRangeChange(primerDia, toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 flex-shrink-0"
             >
               Mes actual
             </Button>
@@ -209,7 +209,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const hoy = toLocalDateString(new Date());
                 handleDateRangeChange(hoy, hoy);
               }}
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 flex-shrink-0"
             >
               Hoy
             </Button>
@@ -222,7 +222,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const ayerStr = toLocalDateString(ayer);
                 handleDateRangeChange(ayerStr, ayerStr);
               }}
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 flex-shrink-0"
             >
               Ayer
             </Button>
@@ -235,7 +235,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 semanaAtras.setDate(hoy.getDate() - 7);
                 handleDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 flex-shrink-0"
             >
               Última semana
             </Button>
@@ -248,17 +248,17 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 mesAtras.setMonth(hoy.getMonth() - 1);
                 handleDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2"
+              className="h-7 text-xs px-2 flex-shrink-0"
             >
               Último mes
             </Button>
             {hasDateFilter && !activeQuickFilter && (
-              <Badge variant="secondary" className="h-7 flex items-center gap-1">
+              <Badge variant="secondary" className="h-7 flex items-center gap-1 flex-shrink-0">
                 Rango personalizado
               </Badge>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div>
               <Label className="text-sm text-muted-foreground">Desde</Label>
               <Input
@@ -432,11 +432,11 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
         )}
 
         {/* Botones de acción */}
-        <div className="flex items-center gap-2 pt-4">
-          <Button onClick={aplicarFiltros}>
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 pt-4">
+          <Button onClick={aplicarFiltros} className="w-full sm:w-auto">
             Aplicar filtros
           </Button>
-          <Button variant="outline" onClick={limpiar}>
+          <Button variant="outline" onClick={limpiar} className="w-full sm:w-auto">
             Limpiar
           </Button>
         </div>
