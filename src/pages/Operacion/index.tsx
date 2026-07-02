@@ -59,12 +59,12 @@ export default function Operacion() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Operación</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Operación</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Análisis completo de solicitudes, tendencias y métricas operacionales
           </p>
         </div>
@@ -77,14 +77,16 @@ export default function Operacion() {
       {/* Tabs principales */}
       <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
-            <TabsTrigger value="resumen">Resumen</TabsTrigger>
-            <TabsTrigger value="detalle-financiero">Detalle Financiero</TabsTrigger>
-            <TabsTrigger value="tendencias">Tendencias</TabsTrigger>
-            <TabsTrigger value="cuellos">Cuellos de botella</TabsTrigger>
-            <TabsTrigger value="segmentos">Segmentos</TabsTrigger>
-            <TabsTrigger value="alertas">Alertas</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
+            <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6 md:max-w-4xl">
+              <TabsTrigger value="resumen" className="whitespace-nowrap">Resumen</TabsTrigger>
+              <TabsTrigger value="detalle-financiero" className="whitespace-nowrap">Detalle Financiero</TabsTrigger>
+              <TabsTrigger value="tendencias" className="whitespace-nowrap">Tendencias</TabsTrigger>
+              <TabsTrigger value="cuellos" className="whitespace-nowrap">Cuellos de botella</TabsTrigger>
+              <TabsTrigger value="segmentos" className="whitespace-nowrap">Segmentos</TabsTrigger>
+              <TabsTrigger value="alertas" className="whitespace-nowrap">Alertas</TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="resumen" className="space-y-6">
