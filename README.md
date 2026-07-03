@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 4.0.2
+## Versión 4.1.0
 
 ## Changelog
+
+### Versión 4.1.0 - 2026-07-03
+
+#### Operación: vista optimizada para mobile y pipeline operativo
+- Se reestructuró la página `/operacion` para ofrecer una experiencia óptima en dispositivos móviles.
+- La pestaña **Resumen** adapta sus KPI cards a pantallas pequeñas: el total se muestra junto al título y el desglose se visualiza en un grid compacto sin scroll.
+- La barra de filtros reduce su altura en mobile, oculta etiquetas en botones rápidos y apila los rangos de fecha para evitar desbordamiento.
+- Se eliminó la columna **"Aprobadas"** del pipeline operativo, ya que el estado `approved` no se utiliza en el flujo de Operación.
+- Se agregó la utilidad CSS `.scrollbar-none` para ocultar scrollbars en navegadores modernos.
+
+#### Nuevo desglose por entidades financieras
+- Se agregó `InstitutionBreakdownSheet` en la pestaña **Resumen** de Operación para visualizar el detalle de solicitudes agrupadas por institución financiera.
+- Permite ordenar por cantidad de solicitudes, días promedio y solicitudes excedidas.
+- Cada institución navega directamente al listado de refunds filtrado por institución y estado.
+- Se incluye la opción `hideAvgDays` para ocultar la columna de días promedio cuando el origen de datos no lo permite.
+
+#### Fix: Certificados de cobertura y cartas de corte
+- **Certificado de Cesantía**: ahora calcula la fecha de inicio de vigencia a partir de la transición al estado `submitted` ("Ingresada") y el término sumando las cuotas pendientes confirmadas, igual que el certificado de desgravamen.
+- **Certificado de Cesantía**: el campo "Nro. Operación" se precarga automáticamente con el `nroCredito` del snapshot de cálculo.
+- **Cartas de corte genéricas**: el PDF generado y la previsualización ahora incluyen tres páginas anexas: cédula de identidad legalizada, certificado notarial y certificado conservador de bienes raíces.
+- **Cartas de corte genéricas**: `generateCortePdfBlob` se convirtió a función asíncrona para esperar la carga de las imágenes anexas antes de generar el blob que se sube al cliente.
 
 ### Versión 4.0.2 - 2026-06-24
 
