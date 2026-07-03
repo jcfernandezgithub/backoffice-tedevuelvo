@@ -25,6 +25,11 @@
 - **Cartas de corte genéricas**: el PDF generado y la previsualización ahora incluyen tres páginas anexas: cédula de identidad legalizada, certificado notarial y certificado conservador de bienes raíces.
 - **Cartas de corte genéricas**: `generateCortePdfBlob` se convirtió a función asíncrona para esperar la carga de las imágenes anexas antes de generar el blob que se sube al cliente.
 
+#### Solicitudes: sin filtro de fecha por defecto
+- La página `/refunds` (accesible desde **Solicitudes** en el sidebar) ya no aplica un rango de fechas por defecto al cargar.
+- Los campos **Desde** y **Hasta** inician vacíos, permitiendo ver el listado completo de solicitudes hasta que el usuario decida aplicar un filtro temporal.
+- El botón **Limpiar Filtros** mantiene el comportamiento de dejar ambos campos de fecha en blanco.
+
 ### Versión 4.0.2 - 2026-06-24
 
 #### Corrección del estado del Mandato en listados y detalle
