@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -10,8 +11,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Loader2, RotateCw, AlertTriangle, Building2, Wallet, Calendar } from 'lucide-react'
+import {
+  Loader2,
+  RotateCw,
+  AlertTriangle,
+  Building2,
+  Wallet,
+  Calendar,
+  Link2,
+  CheckCircle2,
+} from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
+import { cartolaLinksService } from './services/cartolaLinksService'
+import {
+  LinkRefundsDialog,
+  type CartolaMovementRef,
+} from './components/LinkRefundsDialog'
 
 function toNumber(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -43,6 +58,20 @@ function fmtDate(v: unknown): string {
   return s
 }
 
+// Suscripción global al store de links para re-render reactivo.
+function subscribeLinks(cb: () => void) {
+  const handler = () => cb()
+  window.addEventListener('cartola-links-changed', handler)
+  window.addEventListener('storage', handler)
+  return () => {
+    window.removeEventListener('cartola-links-changed', handler)
+    window.removeEventListener('storage', handler)
+  }
+}
+function getLinksSnapshot() {
+  return JSON.stringify(cartolaLinksService.all())
+}
+
 export default function ConciliacionPage() {
   const query = useQuery({
     queryKey: ['cartola', 'xml'],
@@ -60,6 +89,51 @@ export default function ConciliacionPage() {
   }, [cartola])
 
   const errorMsg = query.error instanceof Error ? query.error.message : null
+
+  // Reactividad al store de links
+  const linksSnapshot = useSyncExternalStore(subscribeLinks, getLinksSnapshot, getLinksSnapshot)
+  const linksByMov = useMemo(() => {
+    try {
+      return JSON.parse(linksSnapshot) as ReturnType<typeof cartolaLinksService.all>
+    } catch {
+      return {}
+    }
+  }, [linksSnapshot])
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
+
+  const openLinkDialog = (m: CartolaMovimiento) => {
+    const doc = String(m.documento_numero ?? '').trim()
+    if (!doc) return
+    setSelected({
+      documentoNumero: doc,
+      descripcion: String(m.descripcion ?? ''),
+      abono: toNumber(m.abono) ?? 0,
+      fecha: fmtDate(m.fecha_movimiento),
+    })
+    setDialogOpen(true)
+  }
+
+  // KPI global de conciliación de abonos
+  const abonoStats = useMemo(() => {
+    let totalAbonos = 0
+    let abonosCount = 0
+    let conciliado = 0
+    let movsConciliados = 0
+    for (const m of movimientos) {
+      const abono = toNumber(m.abono) ?? 0
+      if (abono > 0) {
+        totalAbonos += abono
+        abonosCount += 1
+        const links = linksByMov[String(m.documento_numero ?? '')] ?? []
+        const applied = links.reduce((s, l) => s + l.amountApplied, 0)
+        conciliado += applied
+        if (applied > 0) movsConciliados += 1
+      }
+    }
+    return { totalAbonos, abonosCount, conciliado, movsConciliados }
+  }, [movimientos, linksByMov])
 
   return (
     <div className="container max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -87,7 +161,7 @@ export default function ConciliacionPage() {
 
       {/* Resumen de cuenta */}
       {cartola && !query.isFetching && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-md border p-4 bg-muted/20">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 rounded-md border p-4 bg-muted/20">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
               <Building2 className="h-3.5 w-3.5" /> Empresa
@@ -115,6 +189,17 @@ export default function ConciliacionPage() {
             </div>
             <div className="font-semibold text-base">{fmtCLP(cartola.monto_disponible, { showZero: true })}</div>
           </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+              <Link2 className="h-3.5 w-3.5" /> Conciliado
+            </div>
+            <div className="font-semibold text-base text-emerald-700">
+              {fmtCLP(abonoStats.conciliado, { showZero: true })}
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {abonoStats.movsConciliados} de {abonoStats.abonosCount} abonos
+            </div>
+          </div>
         </div>
       )}
 
@@ -123,6 +208,7 @@ export default function ConciliacionPage() {
           <CardTitle>Movimientos bancarios</CardTitle>
           <CardDescription>
             Cargos, abonos y saldo diario obtenidos desde el XML de la cartola.
+            Cada abono puede asociarse a una o varias solicitudes en pago programado.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,23 +239,33 @@ export default function ConciliacionPage() {
                     <TableHead className="text-right whitespace-nowrap">Cargo</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Abono</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Saldo diario</TableHead>
+                    <TableHead className="whitespace-nowrap">Conciliación</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {movimientos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
                         La cartola no contiene movimientos.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    movimientos.map((m, i) => (
-                      <TableRow key={i}>
+                    movimientos.map((m, i) => {
+                      const doc = String(m.documento_numero ?? '').trim()
+                      const abono = toNumber(m.abono) ?? 0
+                      const links = doc ? linksByMov[doc] ?? [] : []
+                      const applied = links.reduce((s, l) => s + l.amountApplied, 0)
+                      const remaining = Math.max(0, abono - applied)
+                      const canLink = abono > 0 && !!doc
+                      const isFull = canLink && remaining <= 0.5 && applied > 0
+                      const isPartial = canLink && applied > 0 && !isFull
+                      return (
+                      <TableRow key={doc || i} className={isFull ? 'bg-emerald-50/40' : isPartial ? 'bg-amber-50/40' : undefined}>
                         <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
                         <TableCell className="text-sm">
                           <div>{m.descripcion || '—'}</div>
                           {m.documento_numero && (
-                            <div className="text-xs text-muted-foreground">Doc. {m.documento_numero}</div>
+                            <div className="text-xs text-muted-foreground font-mono">Doc. {m.documento_numero}</div>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-medium text-red-600 tabular-nums">
@@ -181,8 +277,39 @@ export default function ConciliacionPage() {
                         <TableCell className="text-right font-medium tabular-nums">
                           {fmtCLP(m.saldo_diario, { showZero: true })}
                         </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {!canLink ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {isFull ? (
+                                <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  {links.length} solicitud{links.length === 1 ? '' : 'es'}
+                                </Badge>
+                              ) : isPartial ? (
+                                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
+                                  Parcial · {links.length}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-muted-foreground">
+                                  Sin conciliar
+                                </Badge>
+                              )}
+                              <Button
+                                size="sm"
+                                variant={applied > 0 ? 'outline' : 'default'}
+                                className="h-7 px-2 text-xs"
+                                onClick={() => openLinkDialog(m)}
+                              >
+                                <Link2 className="h-3.5 w-3.5 mr-1" />
+                                {applied > 0 ? 'Ver / editar' : 'Conciliar'}
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
                       </TableRow>
-                    ))
+                    )})
                   )}
                 </TableBody>
               </Table>
@@ -190,6 +317,12 @@ export default function ConciliacionPage() {
           )}
         </CardContent>
       </Card>
+
+      <LinkRefundsDialog
+        movement={selected}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   )
 }
