@@ -192,7 +192,3 @@ export default function ConciliacionPage() {
       </Card>
     </div>
   )
-}
-
-// Legacy mock conciliación (reemplazada por cartola real)
-function _LegacyConciliacion() {
