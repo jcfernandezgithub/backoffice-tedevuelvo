@@ -236,19 +236,24 @@ export default function ConciliacionPage() {
             Cartola descargada automáticamente desde el portal bancario.
           </p>
         </div>
-        <Button onClick={() => query.refetch()} variant="outline" disabled={query.isFetching}>
-          {query.isFetching ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Actualizando…
-            </>
-          ) : (
-            <>
-              <RotateCw className="h-4 w-4 mr-2" />
-              Actualizar cartola
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-start md:items-end gap-1.5">
+          <Button onClick={() => query.refetch()} variant="outline" disabled={query.isFetching}>
+            {query.isFetching ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Actualizando…
+              </>
+            ) : (
+              <>
+                <RotateCw className="h-4 w-4 mr-2" />
+                Actualizar cartola
+              </>
+            )}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {formatLastUpdated(lastUpdatedAt)}
+          </span>
+        </div>
       </div>
 
       {/* Resumen de cuenta */}
