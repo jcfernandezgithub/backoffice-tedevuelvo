@@ -48,6 +48,7 @@ import { conciliacionService } from './services/conciliacionService'
 import { usePendingRefunds } from './hooks/usePendingRefunds'
 import { MovementStatusBadge } from './components/MovementStatusBadge'
 import { MatchDialog } from './components/MatchDialog'
+import { CartolaBancariaCard } from './components/CartolaBancariaCard'
 import { formatCurrency } from '@/lib/formatters'
 import { toast } from '@/hooks/use-toast'
 import type { BankMovement } from './types'
@@ -211,7 +212,10 @@ export default function ConciliacionPage() {
           </Card>
         </div>
 
-        {/* Movements */}
+        {/* Cartola bancaria real (XML) */}
+        <CartolaBancariaCard />
+
+        {/* Movements (mock / conciliación manual) */}
         <Card>
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
