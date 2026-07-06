@@ -170,6 +170,18 @@ export default function ConciliacionPage() {
 
   const errorMsg = query.error instanceof Error ? query.error.message : null
 
+  useEffect(() => {
+    if (query.isSuccess && query.data?.data) {
+      const now = new Date().toISOString()
+      try {
+        localStorage.setItem(LAST_UPDATED_KEY, now)
+      } catch {
+        /* noop */
+      }
+      setLastUpdatedAt(now)
+    }
+  }, [query.isSuccess, query.data])
+
   // Reactividad al store de links
   const linksSnapshot = useSyncExternalStore(subscribeLinks, getLinksSnapshot, getLinksSnapshot)
   const linksByMov = useMemo(() => {
