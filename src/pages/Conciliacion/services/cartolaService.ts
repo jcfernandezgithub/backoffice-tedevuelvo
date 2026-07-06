@@ -1,11 +1,14 @@
-import { authenticatedFetch } from '@/services/apiClient'
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
 
 export interface CartolaMovimiento {
-  fecha?: string
+  fecha_movimiento?: string
   descripcion?: string
   cargo?: string | number | null
   abono?: string | number | null
   saldo_diario?: string | number | null
+  sucursal?: string
+  documento_numero?: string
+  monto?: string | number
   [key: string]: unknown
 }
 
@@ -30,8 +33,9 @@ export interface CartolaResponse {
 }
 
 export async function downloadCartolaXml(): Promise<CartolaResponse> {
-  const res = await authenticatedFetch('/bank/download-xml-cartola', {
+  const res = await fetch(`${API_BASE_URL}/bank/download-xml-cartola`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
   })
   if (!res.ok) {

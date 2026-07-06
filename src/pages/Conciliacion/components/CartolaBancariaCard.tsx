@@ -44,6 +44,9 @@ function fmtSaldo(v: unknown): string {
 function fmtDate(v: unknown): string {
   if (!v) return '—'
   const s = String(v)
+  // DD-MM-YYYY (formato del backend)
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})/)
+  if (dmy) return `${dmy[1]}/${dmy[2]}/${dmy[3]}`
   // ISO YYYY-MM-DD
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`
@@ -185,8 +188,13 @@ export function CartolaBancariaCard() {
                   ) : (
                     movimientos.map((m, i) => (
                       <TableRow key={i}>
-                        <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha)}</TableCell>
-                        <TableCell className="text-sm">{m.descripcion || '—'}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
+                        <TableCell className="text-sm">
+                          <div>{m.descripcion || '—'}</div>
+                          {m.documento_numero && (
+                            <div className="text-xs text-muted-foreground">Doc. {m.documento_numero}</div>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right font-medium text-red-600 tabular-nums">
                           {fmtCLP(m.cargo)}
                         </TableCell>
