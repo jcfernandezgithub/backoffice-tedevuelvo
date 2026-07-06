@@ -132,6 +132,13 @@ export default function ConciliacionPage() {
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | undefined>()
   const [dateTo, setDateTo] = useState<Date | undefined>()
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(LAST_UPDATED_KEY)
+    } catch {
+      return null
+    }
+  })
 
   const filteredAbonos = useMemo(() => {
     const q = search.trim().toLowerCase()
