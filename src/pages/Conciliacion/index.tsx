@@ -77,7 +77,22 @@ function parseMovDate(v: unknown): Date | null {
   return null
 }
 
-// Suscripción global al store de links para re-render reactivo.
+const LAST_UPDATED_KEY = 'cartola-last-updated-at'
+
+function formatLastUpdated(iso: string | null): string {
+  if (!iso) return 'Sin actualizar'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return 'Sin actualizar'
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffMins = Math.round(diffMs / 60_000)
+  if (diffMins < 1) return 'Actualizado hace un momento'
+  if (diffMins < 60) return `Actualizado hace ${diffMins} min${diffMins === 1 ? '' : 's'}`
+  const diffHours = Math.round(diffMins / 60)
+  if (diffHours < 24) return `Actualizado hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`
+  return `Actualizado el ${format(d, 'dd/MM/yyyy HH:mm', { locale: es })}`
+}
+
 function subscribeLinks(cb: () => void) {
   const handler = () => cb()
   window.addEventListener('cartola-links-changed', handler)
