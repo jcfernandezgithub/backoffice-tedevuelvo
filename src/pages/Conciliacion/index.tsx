@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -77,7 +77,22 @@ function parseMovDate(v: unknown): Date | null {
   return null
 }
 
-// Suscripción global al store de links para re-render reactivo.
+const LAST_UPDATED_KEY = 'cartola-last-updated-at'
+
+function formatLastUpdated(iso: string | null): string {
+  if (!iso) return 'Sin actualizar'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return 'Sin actualizar'
+  const now = new Date()
+  const diffMs = now.getTime() - d.getTime()
+  const diffMins = Math.round(diffMs / 60_000)
+  if (diffMins < 1) return 'Actualizado hace un momento'
+  if (diffMins < 60) return `Actualizado hace ${diffMins} min${diffMins === 1 ? '' : 's'}`
+  const diffHours = Math.round(diffMins / 60)
+  if (diffHours < 24) return `Actualizado hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`
+  return `Actualizado el ${format(d, 'dd/MM/yyyy HH:mm', { locale: es })}`
+}
+
 function subscribeLinks(cb: () => void) {
   const handler = () => cb()
   window.addEventListener('cartola-links-changed', handler)
@@ -117,6 +132,13 @@ export default function ConciliacionPage() {
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | undefined>()
   const [dateTo, setDateTo] = useState<Date | undefined>()
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(LAST_UPDATED_KEY)
+    } catch {
+      return null
+    }
+  })
 
   const filteredAbonos = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -147,6 +169,18 @@ export default function ConciliacionPage() {
   }
 
   const errorMsg = query.error instanceof Error ? query.error.message : null
+
+  useEffect(() => {
+    if (query.isSuccess && query.data?.data) {
+      const now = new Date().toISOString()
+      try {
+        localStorage.setItem(LAST_UPDATED_KEY, now)
+      } catch {
+        /* noop */
+      }
+      setLastUpdatedAt(now)
+    }
+  }, [query.isSuccess, query.data])
 
   // Reactividad al store de links
   const linksSnapshot = useSyncExternalStore(subscribeLinks, getLinksSnapshot, getLinksSnapshot)
@@ -202,19 +236,24 @@ export default function ConciliacionPage() {
             Cartola descargada automáticamente desde el portal bancario.
           </p>
         </div>
-        <Button onClick={() => query.refetch()} variant="outline" disabled={query.isFetching}>
-          {query.isFetching ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Actualizando…
-            </>
-          ) : (
-            <>
-              <RotateCw className="h-4 w-4 mr-2" />
-              Actualizar cartola
-            </>
-          )}
-        </Button>
+        <div className="flex flex-col items-start md:items-end gap-1.5">
+          <Button onClick={() => query.refetch()} variant="outline" disabled={query.isFetching}>
+            {query.isFetching ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Actualizando…
+              </>
+            ) : (
+              <>
+                <RotateCw className="h-4 w-4 mr-2" />
+                Actualizar cartola
+              </>
+            )}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {formatLastUpdated(lastUpdatedAt)}
+          </span>
+        </div>
       </div>
 
       {/* Resumen de cuenta */}
