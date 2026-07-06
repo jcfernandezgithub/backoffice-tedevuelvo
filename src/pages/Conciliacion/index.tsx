@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Calendar as CalendarUI } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 import {
   Table,
   TableBody,
@@ -20,6 +24,8 @@ import {
   Calendar,
   Link2,
   CheckCircle2,
+  Search,
+  X,
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
@@ -27,6 +33,8 @@ import {
   LinkRefundsDialog,
   type CartolaMovementRef,
 } from './components/LinkRefundsDialog'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 function toNumber(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -58,6 +66,17 @@ function fmtDate(v: unknown): string {
   return s
 }
 
+// Convierte DD-MM-YYYY (o ISO) a Date sin sesgo de zona horaria.
+function parseMovDate(v: unknown): Date | null {
+  if (!v) return null
+  const s = String(v)
+  const dmy = s.match(/^(\d{2})-(\d{2})-(\d{4})/)
+  if (dmy) return new Date(Number(dmy[3]), Number(dmy[2]) - 1, Number(dmy[1]))
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]))
+  return null
+}
+
 // Suscripción global al store de links para re-render reactivo.
 function subscribeLinks(cb: () => void) {
   const handler = () => cb()
@@ -87,6 +106,45 @@ export default function ConciliacionPage() {
     if (!raw) return []
     return Array.isArray(raw) ? raw : [raw]
   }, [cartola])
+
+  // Solo abonos (ignoramos cargos)
+  const abonos = useMemo(
+    () => movimientos.filter((m) => (toNumber(m.abono) ?? 0) > 0),
+    [movimientos],
+  )
+
+  // Filtros
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState<Date | undefined>()
+  const [dateTo, setDateTo] = useState<Date | undefined>()
+
+  const filteredAbonos = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const fromMs = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate()).getTime() : null
+    const toMs = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59).getTime() : null
+    return abonos.filter((m) => {
+      if (q) {
+        const desc = String(m.descripcion ?? '').toLowerCase()
+        const doc = String(m.documento_numero ?? '').toLowerCase()
+        if (!desc.includes(q) && !doc.includes(q)) return false
+      }
+      if (fromMs || toMs) {
+        const d = parseMovDate(m.fecha_movimiento)
+        if (!d) return false
+        const t = d.getTime()
+        if (fromMs && t < fromMs) return false
+        if (toMs && t > toMs) return false
+      }
+      return true
+    })
+  }, [abonos, search, dateFrom, dateTo])
+
+  const hasFilters = !!search || !!dateFrom || !!dateTo
+  const clearFilters = () => {
+    setSearch('')
+    setDateFrom(undefined)
+    setDateTo(undefined)
+  }
 
   const errorMsg = query.error instanceof Error ? query.error.message : null
 
@@ -121,7 +179,7 @@ export default function ConciliacionPage() {
     let abonosCount = 0
     let conciliado = 0
     let movsConciliados = 0
-    for (const m of movimientos) {
+    for (const m of abonos) {
       const abono = toNumber(m.abono) ?? 0
       if (abono > 0) {
         totalAbonos += abono
@@ -133,7 +191,7 @@ export default function ConciliacionPage() {
       }
     }
     return { totalAbonos, abonosCount, conciliado, movsConciliados }
-  }, [movimientos, linksByMov])
+  }, [abonos, linksByMov])
 
   return (
     <div className="container max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -207,8 +265,8 @@ export default function ConciliacionPage() {
         <CardHeader>
           <CardTitle>Movimientos bancarios</CardTitle>
           <CardDescription>
-            Cargos, abonos y saldo diario obtenidos desde el XML de la cartola.
-            Cada abono puede asociarse a una o varias solicitudes en pago programado.
+            Abonos obtenidos desde el XML de la cartola. Cada abono puede
+            asociarse a una o varias solicitudes en pago programado.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -230,27 +288,98 @@ export default function ConciliacionPage() {
               </div>
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
+            <div className="space-y-3">
+              {/* Barra de filtros */}
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar por descripción o documento…"
+                    className="pl-9"
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'justify-start text-left font-normal md:w-[180px]',
+                        !dateFrom && 'text-muted-foreground',
+                      )}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {dateFrom ? format(dateFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                      locale={es}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'justify-start text-left font-normal md:w-[180px]',
+                        !dateTo && 'text-muted-foreground',
+                      )}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      {dateTo ? format(dateTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarUI
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                      locale={es}
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+                {hasFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" /> Limpiar
+                  </Button>
+                )}
+                <div className="text-xs text-muted-foreground md:ml-auto">
+                  {filteredAbonos.length} de {abonos.length} abonos
+                </div>
+              </div>
+
+              <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Fecha</TableHead>
                     <TableHead>Descripción</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Cargo</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Abono</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Saldo diario</TableHead>
                     <TableHead className="whitespace-nowrap">Conciliación</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {movimientos.length === 0 ? (
+                  {filteredAbonos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-8">
-                        La cartola no contiene movimientos.
+                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                        {abonos.length === 0
+                          ? 'La cartola no contiene abonos.'
+                          : 'No hay abonos que coincidan con los filtros.'}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    movimientos.map((m, i) => {
+                    filteredAbonos.map((m, i) => {
                       const doc = String(m.documento_numero ?? '').trim()
                       const abono = toNumber(m.abono) ?? 0
                       const links = doc ? linksByMov[doc] ?? [] : []
@@ -267,9 +396,6 @@ export default function ConciliacionPage() {
                           {m.documento_numero && (
                             <div className="text-xs text-muted-foreground font-mono">Doc. {m.documento_numero}</div>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium text-red-600 tabular-nums">
-                          {fmtCLP(m.cargo)}
                         </TableCell>
                         <TableCell className="text-right font-medium text-emerald-600 tabular-nums">
                           {fmtCLP(m.abono)}
@@ -313,6 +439,7 @@ export default function ConciliacionPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
