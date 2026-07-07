@@ -53,7 +53,9 @@
 - Se agregaron los campos `signatureStatus`, `signatureSignedAt`, `signaturePdfKey`, `signedPdfS3Key`, `experianSignUrl`, `experianGroupId`, `experianDocumentId` y `signatureProvider` al tipo `RefundRequest`.
 - Esto resuelve casos donde solicitudes con mandato firmado aparecían como "Pendiente" porque el backend no poblaba `hasSignedPdf` en el payload de la lista.
 
-### Versión 4.0.1 - 2026-06-21
+### Versión 4.0.2 - 2026-06-24
+
+
 
 #### Eliminación de avalancha de llamadas a `experian/status`
 - Se removieron las consultas masivas e individuales al endpoint `GET/PATCH /refund-requests/{publicId}/experian/status` en Dashboard, Operación (Resumen), Solicitudes, Refunds (List y Detail) y en los servicios de Procesos Masivos (`corteBatchService`, `certificadoBatchService`).
