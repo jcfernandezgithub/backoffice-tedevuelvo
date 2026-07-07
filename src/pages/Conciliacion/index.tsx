@@ -509,9 +509,6 @@ export default function ConciliacionPage() {
                         <TableCell className="text-right font-medium text-emerald-600 tabular-nums">
                           {fmtCLP(m.abono)}
                         </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">
-                          {fmtCLP(m.saldo_diario, { showZero: true })}
-                        </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {!canLink ? (
                             <span className="text-xs text-muted-foreground">—</span>
