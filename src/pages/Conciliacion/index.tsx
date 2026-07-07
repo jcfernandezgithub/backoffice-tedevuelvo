@@ -474,14 +474,13 @@ export default function ConciliacionPage() {
                     <TableHead className="whitespace-nowrap">Fecha</TableHead>
                     <TableHead>Descripción</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Abono</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Saldo diario</TableHead>
                     <TableHead className="whitespace-nowrap">Conciliación</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAbonos.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-8">
                         {abonos.length === 0
                           ? 'La cartola no contiene abonos.'
                           : 'No hay abonos que coincidan con los filtros.'}
@@ -509,9 +508,6 @@ export default function ConciliacionPage() {
                         </TableCell>
                         <TableCell className="text-right font-medium text-emerald-600 tabular-nums">
                           {fmtCLP(m.abono)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium tabular-nums">
-                          {fmtCLP(m.saldo_diario, { showZero: true })}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           {!canLink ? (
