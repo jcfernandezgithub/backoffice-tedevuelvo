@@ -77,6 +77,15 @@ function parseMovDate(v: unknown): Date | null {
   return null
 }
 
+function sameDate(a?: Date, b?: Date): boolean {
+  if (!a || !b) return false
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
 function formatLastUpdated(iso: string | null): string {
@@ -100,15 +109,18 @@ export default function ConciliacionPage() {
     () => new Date(today.getFullYear(), today.getMonth(), 1),
     [today],
   )
-  const [cartolaFrom, setCartolaFrom] = useState<Date | undefined>(monthStart)
-  const [cartolaTo, setCartolaTo] = useState<Date | undefined>(today)
+  const [draftFrom, setDraftFrom] = useState<Date | undefined>(monthStart)
+  const [draftTo, setDraftTo] = useState<Date | undefined>(today)
+  const [committedFrom, setCommittedFrom] = useState<Date | undefined>(monthStart)
+  const [committedTo, setCommittedTo] = useState<Date | undefined>(today)
 
   const toIsoDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-  const rangeReady = !!cartolaFrom && !!cartolaTo
-  const rangeFromIso = cartolaFrom ? toIsoDate(cartolaFrom) : ''
-  const rangeToIso = cartolaTo ? toIsoDate(cartolaTo) : ''
+  const rangeReady = !!committedFrom && !!committedTo
+  const rangeFromIso = committedFrom ? toIsoDate(committedFrom) : ''
+  const rangeToIso = committedTo ? toIsoDate(committedTo) : ''
+  const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
   const query = useQuery({
     queryKey: ['cartola', 'xml', rangeFromIso, rangeToIso],
@@ -207,6 +219,16 @@ export default function ConciliacionPage() {
     qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
   }
 
+  const handleUpdateCartola = () => {
+    if (!draftFrom || !draftTo) return
+    if (datesChanged) {
+      setCommittedFrom(draftFrom)
+      setCommittedTo(draftTo)
+    } else {
+      query.refetch()
+    }
+  }
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
 
@@ -261,19 +283,19 @@ export default function ConciliacionPage() {
                   disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
-                    !cartolaFrom && 'text-muted-foreground',
+                    !draftFrom && 'text-muted-foreground',
                     query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {cartolaFrom ? format(cartolaFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
+                  {draftFrom ? format(draftFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CalendarUI
                   mode="single"
-                  selected={cartolaFrom}
-                  onSelect={setCartolaFrom}
+                  selected={draftFrom}
+                  onSelect={setDraftFrom}
                   initialFocus
                   locale={es}
                   className="p-3 pointer-events-auto"
@@ -287,19 +309,19 @@ export default function ConciliacionPage() {
                   disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
-                    !cartolaTo && 'text-muted-foreground',
+                    !draftTo && 'text-muted-foreground',
                     query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {cartolaTo ? format(cartolaTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
+                  {draftTo ? format(draftTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CalendarUI
                   mode="single"
-                  selected={cartolaTo}
-                  onSelect={setCartolaTo}
+                  selected={draftTo}
+                  onSelect={setDraftTo}
                   initialFocus
                   locale={es}
                   className="p-3 pointer-events-auto"
@@ -307,9 +329,9 @@ export default function ConciliacionPage() {
               </PopoverContent>
             </Popover>
             <Button
-              onClick={() => query.refetch()}
-              variant="outline"
-              disabled={query.isFetching || !rangeReady}
+              onClick={handleUpdateCartola}
+              variant={datesChanged ? 'default' : 'outline'}
+              disabled={query.isFetching || !draftFrom || !draftTo}
             >
               {query.isFetching ? (
                 <>
@@ -319,7 +341,7 @@ export default function ConciliacionPage() {
               ) : (
                 <>
                   <RotateCw className="h-4 w-4 mr-2" />
-                  Actualizar cartola
+                  {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
                 </>
               )}
             </Button>
