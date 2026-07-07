@@ -47,6 +47,7 @@ export function usePendingRefunds() {
         // este hook solo expone el saldo total a asignar.
         const reconciledAmount = 0
         const remainingAmount = Math.max(0, realAmount - reconciledAmount)
+        const nroCredito = String((r as any)?.calculationSnapshot?.nroCredito ?? '').trim()
         return {
           id: r.id,
           publicId: r.publicId,
@@ -57,6 +58,7 @@ export function usePendingRefunds() {
           remainingAmount,
           isFullyReconciled: realAmount > 0 && remainingAmount <= 0.5,
           scheduledAt: r.updatedAt,
+          nroCredito,
         } as PendingRefund
       })
     },
