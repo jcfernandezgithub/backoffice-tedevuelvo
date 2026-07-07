@@ -323,26 +323,44 @@ export default function CalculadoraPage() {
       doc.setTextColor(40);
       doc.text("Cesantia - Montos calculados:", 20, y);
       y += 6;
-      
+
+      // Reconstruimos montos intermedios equivalentes a los de desgravamen
+      // para presentar la misma estructura en el PDF.
+      const ces = resultado.cesantia;
+      const saldoCes = ces.saldoInsoluto || formDataSnapshot.saldoInsoluto || formDataSnapshot.montoCredito;
+      const cuotasPend = ces.cuotasPendientes || formDataSnapshot.cuotasPendientes;
+      const primaMensualBancoCes = Math.round(saldoCes * ces.tasaBanco);
+      const primaMensualPrefCes = Math.round(saldoCes * ces.tasaPreferencial);
+      const seguroRestanteBancoCes = ces.primaRestanteBanco || ces.primaBanco;
+      const seguroRestantePrefCes = ces.primaRestantePreferencial || ces.primaPreferencial;
+
       doc.setFontSize(9);
       doc.setTextColor(80);
-      doc.text(`Prima restante banco: ${formatCurrency(resultado.cesantia.primaRestanteBanco || resultado.cesantia.primaBanco)}`, 25, y); y += 5;
-      doc.text(`Prima restante preferencial: ${formatCurrency(resultado.cesantia.primaRestantePreferencial || resultado.cesantia.primaPreferencial)}`, 25, y); y += 6;
-      
+      doc.text("Banco:", 25, y); y += 5;
+      doc.text(`  Prima mensual: ${formatCurrency(primaMensualBancoCes)}`, 25, y); y += 5;
+      doc.text(`  Seguro restante: ${formatCurrency(seguroRestanteBancoCes)}`, 25, y); y += 6;
+
+      doc.text("Preferencial:", 25, y); y += 5;
+      doc.text(`  Saldo insoluto: ${formatCurrency(saldoCes)}`, 25, y); y += 5;
+      doc.text(`  Prima mensual: ${formatCurrency(primaMensualPrefCes)}`, 25, y); y += 5;
+      doc.text(`  Seguro restante: ${formatCurrency(seguroRestantePrefCes)}`, 25, y); y += 6;
+
       doc.setTextColor(41, 98, 255);
       doc.text(`Devolucion cesantia: ${formatCurrency(cesantiaDevolucionFinal)}`, 25, y); y += 8;
 
       if (!isCallcenter) {
         doc.setTextColor(80);
-        doc.text(`Tramo: ${resultado.cesantia.tramoUsado}`, 25, y); y += 5;
-        doc.text(`Tasa banco: ${(resultado.cesantia.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-        doc.text(`Tasa preferencial: ${(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa banco: ${(ces.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa preferencial: ${(ces.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Cuotas pendientes: ${cuotasPend}`, 25, y); y += 5;
+        doc.text(`Tramo: ${ces.tramoUsado}`, 25, y); y += 5;
 
         y += 3;
         doc.setFontSize(8);
         doc.setTextColor(100);
-        doc.text("Formula: Prima restante = Monto x Tasa mensual x Cuotas pendientes", 25, y); y += 4;
-        doc.text("Devolucion = Prima banco - Prima preferencial", 25, y);
+        doc.text("Formula: Prima mensual = Saldo insoluto x Tasa mensual", 25, y); y += 4;
+        doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
+        doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
         y += 10;
       } else {
         y += 6;
