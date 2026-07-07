@@ -66,6 +66,8 @@
 ### Versión 4.0.0 - 2026-06-20
 
 
+
+
 #### Detalle de solicitud: margen derivado dinámicamente
 - En el desglose "Ahorro total (devolución al cliente)" del detalle de solicitud, el porcentaje de margen del **Paso 3** ya no se asume fijo en 10%. Ahora se calcula a partir de la devolución real ofrecida (`totalSaving` del snapshot) versus la devolución bruta: `margen = (1 − totalSaving / devoluciónBruta) × 100`.
 - El valor mostrado se redondea al entero más cercano para mejor lectura.
