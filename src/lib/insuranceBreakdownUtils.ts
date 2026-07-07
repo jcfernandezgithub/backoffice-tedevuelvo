@@ -79,6 +79,14 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
 
   if (!totalAmount || !remainingInstallments) return null
 
+  // La cesantía se calcula sobre el SALDO INSOLUTO (averageInsuredBalance),
+  // igual que en la calculadora y el certificado. Si no está disponible,
+  // caemos a totalAmount para evitar romper snapshots antiguos.
+  const saldoInsoluto =
+    snapshot.confirmedAverageInsuredBalance ||
+    snapshot.averageInsuredBalance ||
+    totalAmount
+
   // --- Desgravamen (from snapshot) ---
   const desgPrimaBanco = currentMonthlyPremium || 0
   const desgPrimaTDV = newMonthlyPremium || 0
@@ -86,7 +94,7 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
 
   // --- Cesantía (on-the-fly) ---
   const bankKey = INSTITUTION_MAP[(institutionId || '').toLowerCase()] || (institutionId || '').toUpperCase()
-  const tramo = getTramo(totalAmount)
+  const tramo = getTramo(saldoInsoluto)
 
   let cesantiaTasaBanco = 0
   let cesantiaTasaTDV = 0
@@ -101,8 +109,8 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
   if (tdvTramo) cesantiaTasaTDV = tdvTramo.tasa_mensual
 
-  const cesantiaPrimaBanco = Math.round(totalAmount * cesantiaTasaBanco)
-  const cesantiaPrimaTDV = Math.round(totalAmount * cesantiaTasaTDV)
+  const cesantiaPrimaBanco = Math.round(saldoInsoluto * cesantiaTasaBanco)
+  const cesantiaPrimaTDV = Math.round(saldoInsoluto * cesantiaTasaTDV)
   const cesantiaDevolucion = (cesantiaPrimaBanco - cesantiaPrimaTDV) * remainingInstallments
 
   const totalDevolucion = desgDevolucion + cesantiaDevolucion
