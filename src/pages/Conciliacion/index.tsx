@@ -20,12 +20,12 @@ import {
   RotateCw,
   AlertTriangle,
   Building2,
-  Wallet,
   Calendar,
   Link2,
   CheckCircle2,
   Search,
   X,
+
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
