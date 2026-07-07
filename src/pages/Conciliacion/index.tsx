@@ -219,6 +219,16 @@ export default function ConciliacionPage() {
     qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
   }
 
+  const handleUpdateCartola = () => {
+    if (!draftFrom || !draftTo) return
+    if (datesChanged) {
+      setCommittedFrom(draftFrom)
+      setCommittedTo(draftTo)
+    } else {
+      query.refetch()
+    }
+  }
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
 
