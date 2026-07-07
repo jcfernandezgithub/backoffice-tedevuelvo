@@ -258,9 +258,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !cartolaFrom && 'text-muted-foreground',
+                    query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -282,9 +284,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !cartolaTo && 'text-muted-foreground',
+                    query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -380,12 +384,24 @@ export default function ConciliacionPage() {
         </CardHeader>
         <CardContent>
           {query.isLoading || query.isFetching ? (
-            <div className="flex flex-col items-center justify-center gap-3 py-16 border border-dashed rounded-md">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <div className="text-sm text-muted-foreground text-center max-w-sm">
-                Descargando cartola desde el portal bancario.
-                <br />
-                Esto puede tardar hasta 30 segundos.
+            <div className="flex flex-col items-center justify-center gap-5 py-16 px-6 rounded-lg border border-dashed bg-muted/20">
+              <div className="relative h-16 w-16">
+                <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              </div>
+              <div className="text-center max-w-md space-y-2">
+                <h3 className="text-lg font-semibold">Conectando con el portal bancario</h3>
+                <p className="text-sm text-muted-foreground">
+                  Estamos consultando y extrayendo los movimientos de la cartola. Este proceso puede tardar unos segundos; por favor, no cierres ni cambies el rango de fechas mientras termina.
+                </p>
+              </div>
+              <div className="w-full max-w-xs space-y-2">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div className="h-full w-2/3 rounded-full bg-primary animate-pulse" />
+                </div>
+                <p className="text-xs text-center text-muted-foreground">Tiempo estimado: hasta 30 segundos</p>
               </div>
             </div>
           ) : errorMsg ? (
