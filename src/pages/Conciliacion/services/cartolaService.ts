@@ -29,11 +29,19 @@ export interface CartolaResponse {
   ok: boolean
   filename?: string
   filePath?: string
+  from?: string
+  to?: string
   data: CartolaData
 }
 
-export async function downloadCartolaXml(): Promise<CartolaResponse> {
-  const res = await fetch(`${API_BASE_URL}/bank/download-xml-cartola`, {
+export interface CartolaRange {
+  from: string
+  to: string
+}
+
+export async function downloadCartolaXml(range: CartolaRange): Promise<CartolaResponse> {
+  const qs = new URLSearchParams({ from: range.from, to: range.to }).toString()
+  const res = await fetch(`${API_BASE_URL}/bank/download-xml-cartola?${qs}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({}),
