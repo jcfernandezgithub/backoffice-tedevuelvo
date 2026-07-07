@@ -28,9 +28,21 @@
 #### Solicitudes: sin filtro de fecha por defecto
 - La página `/refunds` (accesible desde **Solicitudes** en el sidebar) ya no aplica un rango de fechas por defecto al cargar.
 - Los campos **Desde** y **Hasta** inician vacíos, permitiendo ver el listado completo de solicitudes hasta que el usuario decida aplicar un filtro temporal.
-- El botón **Limpiar Filtros** mantiene el comportamiento de dejar ambos campos de fecha en blanco.
 
-### Versión 4.0.2 - 2026-06-24
+#### Conciliación: UX mejorada y resumen simplificado
+- Se eliminó el campo **Saldo diario** del resumen de cuenta porque no era relevante para la reconciliación.
+- Se eliminó el bloque **Monto disponible** del resumen (mostraba `$0` permanentemente) y se redujo el grid de `grid-cols-5` a `grid-cols-4`.
+- Mientras se ejecuta el servicio de búsqueda de movimientos, el calendario de fechas se bloquea para evitar cambios durante el scrapping.
+- Se agregó un mensaje de espera claro y atractivo que indica al usuario que se está ejecutando un proceso de scrapping que puede durar varios segundos.
+- La selección de fechas ya no dispara la búsqueda automáticamente: el botón **Actualizar cartola** cambia a **Aplicar rango** cuando se modifican las fechas, y solo al confirmar se ejecuta el servicio.
+- Si las fechas no cambian, el botón permite forzar una recarga manual de la cartola.
+
+#### Sidebar y login: redirección por rol
+- Se quitó el tag **"En desarrollo"** de la opción **Conciliación** en el sidebar; ahora se muestra como módulo en producción.
+- Se agregó el tag **"En desarrollo"** a la opción **Dashboard** en el sidebar.
+- Al iniciar sesión, el usuario `admin@callcenter.cl` se redirige directamente a `/gestion-callcenter`.
+- El resto de los usuarios (incluido el administrador) se redirige directamente a `/operacion` después del login.
+
 
 #### Corrección del estado del Mandato en listados y detalle
 - En `Refunds/List`, `Refunds/Detail` y los servicios masivos (`corteBatchService`, `certificadoBatchService`) el mandato ya no depende exclusivamente de `hasSignedPdf`. Ahora se considera **firmado** cuando se cumple cualquiera de estas condiciones provenientes de `listV2`/`search`:
