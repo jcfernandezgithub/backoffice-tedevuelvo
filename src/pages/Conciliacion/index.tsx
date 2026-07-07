@@ -273,19 +273,19 @@ export default function ConciliacionPage() {
                   disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
-                    !cartolaFrom && 'text-muted-foreground',
+                    !draftFrom && 'text-muted-foreground',
                     query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {cartolaFrom ? format(cartolaFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
+                  {draftFrom ? format(draftFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CalendarUI
                   mode="single"
-                  selected={cartolaFrom}
-                  onSelect={setCartolaFrom}
+                  selected={draftFrom}
+                  onSelect={setDraftFrom}
                   initialFocus
                   locale={es}
                   className="p-3 pointer-events-auto"
@@ -299,19 +299,19 @@ export default function ConciliacionPage() {
                   disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
-                    !cartolaTo && 'text-muted-foreground',
+                    !draftTo && 'text-muted-foreground',
                     query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
-                  {cartolaTo ? format(cartolaTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
+                  {draftTo ? format(draftTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <CalendarUI
                   mode="single"
-                  selected={cartolaTo}
-                  onSelect={setCartolaTo}
+                  selected={draftTo}
+                  onSelect={setDraftTo}
                   initialFocus
                   locale={es}
                   className="p-3 pointer-events-auto"
