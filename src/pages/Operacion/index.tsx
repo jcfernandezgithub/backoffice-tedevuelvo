@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Wrench } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { FiltersBar } from './components/FiltersBar';
 import { TabResumen } from './tabs/Resumen';
 import { TabDetalleFinanciero } from './tabs/DetalleFinanciero';
@@ -12,6 +19,15 @@ import { TabSegmentos } from './tabs/Segmentos';
 import { TabAlertas } from './tabs/Alertas';
 import { exportCSV, exportXLSX } from '@/services/reportesService';
 import { useToast } from '@/hooks/use-toast';
+
+const tabs = [
+  { value: 'resumen', label: 'Resumen', disabled: false },
+  { value: 'detalle-financiero', label: 'Detalle Financiero', disabled: true },
+  { value: 'tendencias', label: 'Tendencias', disabled: true },
+  { value: 'cuellos', label: 'Cuellos de botella', disabled: true },
+  { value: 'segmentos', label: 'Segmentos', disabled: true },
+  { value: 'alertas', label: 'Alertas', disabled: true },
+];
 
 export default function Operacion() {
   const [tabActivo, setTabActivo] = useState('resumen');
