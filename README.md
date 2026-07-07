@@ -43,7 +43,6 @@
 - Al iniciar sesión, el usuario `admin@callcenter.cl` se redirige directamente a `/gestion-callcenter`.
 - El resto de los usuarios (incluido el administrador) se redirige directamente a `/operacion` después del login.
 
-
 ### Versión 4.0.2 - 2026-06-24
 
 #### Corrección del estado del Mandato en listados y detalle
