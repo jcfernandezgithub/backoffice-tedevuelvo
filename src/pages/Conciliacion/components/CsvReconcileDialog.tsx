@@ -597,7 +597,8 @@ function StatusFilter({
   value: CsvRowStatus | 'all'
   onChange: (v: CsvRowStatus | 'all') => void
 }) {
-  const opts: Array<{ v: CsvRowStatus | 'all'; label: string; count: number }> = [
+  type Opt = { v: CsvRowStatus | 'all'; label: string; count: number }
+  const opts: Opt[] = ([
     { v: 'all', label: 'Todas', count: totals.total },
     { v: 'reconciled', label: STATUS_LABELS.reconciled, count: totals.reconciled },
     { v: 'valid', label: STATUS_LABELS.valid, count: totals.valid },
@@ -608,7 +609,7 @@ function StatusFilter({
     { v: 'linked_to_other_movement', label: STATUS_LABELS.linked_to_other_movement, count: totals.linked_to_other_movement },
     { v: 'format_error', label: STATUS_LABELS.format_error, count: totals.format_error },
     { v: 'apply_error', label: STATUS_LABELS.apply_error, count: totals.apply_error },
-  ].filter((o) => o.v === 'all' || o.count > 0)
+  ] as Opt[]).filter((o) => o.v === 'all' || o.count > 0)
   return (
     <div className="flex flex-wrap gap-1">
       {opts.map((o) => (
