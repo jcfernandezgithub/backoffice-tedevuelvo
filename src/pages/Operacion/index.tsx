@@ -116,7 +116,7 @@ export default function Operacion() {
                   return tab.disabled ? (
                     <Tooltip key={tab.value}>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex w-full h-full">{trigger}</span>
+                        <span className="inline-flex w-full h-full cursor-not-allowed">{trigger}</span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p>Sección en mantenimiento</p>
