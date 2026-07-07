@@ -354,7 +354,7 @@ export default function ConciliacionPage() {
 
       {/* Resumen de cuenta */}
       {cartola && !query.isFetching && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 rounded-md border p-4 bg-muted/20">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-md border p-4 bg-muted/20">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
               <Building2 className="h-3.5 w-3.5" /> Empresa
@@ -378,12 +378,6 @@ export default function ConciliacionPage() {
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
-              <Wallet className="h-3.5 w-3.5" /> Monto disponible
-            </div>
-            <div className="font-semibold text-base">{fmtCLP(cartola.monto_disponible, { showZero: true })}</div>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
               <Link2 className="h-3.5 w-3.5" /> Conciliado
             </div>
             <div className="font-semibold text-base text-emerald-700">
@@ -395,6 +389,7 @@ export default function ConciliacionPage() {
           </div>
         </div>
       )}
+
 
       <Card>
         <CardHeader>
