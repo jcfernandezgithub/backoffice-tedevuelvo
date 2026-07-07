@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -93,20 +93,8 @@ function formatLastUpdated(iso: string | null): string {
   return `Actualizado el ${format(d, 'dd/MM/yyyy HH:mm', { locale: es })}`
 }
 
-function subscribeLinks(cb: () => void) {
-  const handler = () => cb()
-  window.addEventListener('cartola-links-changed', handler)
-  window.addEventListener('storage', handler)
-  return () => {
-    window.removeEventListener('cartola-links-changed', handler)
-    window.removeEventListener('storage', handler)
-  }
-}
-function getLinksSnapshot() {
-  return JSON.stringify(cartolaLinksService.all())
-}
-
 export default function ConciliacionPage() {
+  const qc = useQueryClient()
   const query = useQuery({
     queryKey: ['cartola', 'xml'],
     queryFn: downloadCartolaXml,
@@ -182,15 +170,26 @@ export default function ConciliacionPage() {
     }
   }, [query.isSuccess, query.data])
 
-  // Reactividad al store de links
-  const linksSnapshot = useSyncExternalStore(subscribeLinks, getLinksSnapshot, getLinksSnapshot)
-  const linksByMov = useMemo(() => {
-    try {
-      return JSON.parse(linksSnapshot) as ReturnType<typeof cartolaLinksService.all>
-    } catch {
-      return {}
-    }
-  }, [linksSnapshot])
+  // Bulk: estado de conciliación de todos los documentos visibles.
+  const documentoNumeros = useMemo(
+    () =>
+      abonos
+        .map((m) => String(m.documento_numero ?? '').trim())
+        .filter((d) => d.length > 0),
+    [abonos],
+  )
+
+  const bulkQuery = useQuery({
+    queryKey: ['cartola-reconciliation', 'bulk', documentoNumeros],
+    queryFn: () => cartolaLinksService.getBulk(documentoNumeros),
+    enabled: documentoNumeros.length > 0,
+    staleTime: 30_000,
+  })
+  const bulkMap = bulkQuery.data ?? {}
+
+  const refreshReconciliation = () => {
+    qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+  }
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
@@ -218,14 +217,15 @@ export default function ConciliacionPage() {
       if (abono > 0) {
         totalAbonos += abono
         abonosCount += 1
-        const links = linksByMov[String(m.documento_numero ?? '')] ?? []
-        const applied = links.reduce((s, l) => s + l.amountApplied, 0)
+        const doc = String(m.documento_numero ?? '')
+        const summary = bulkMap[doc]
+        const applied = summary?.totalApplied ?? 0
         conciliado += applied
         if (applied > 0) movsConciliados += 1
       }
     }
     return { totalAbonos, abonosCount, conciliado, movsConciliados }
-  }, [abonos, linksByMov])
+  }, [abonos, bulkMap])
 
   return (
     <div className="container max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -421,8 +421,9 @@ export default function ConciliacionPage() {
                     filteredAbonos.map((m, i) => {
                       const doc = String(m.documento_numero ?? '').trim()
                       const abono = toNumber(m.abono) ?? 0
-                      const links = doc ? linksByMov[doc] ?? [] : []
-                      const applied = links.reduce((s, l) => s + l.amountApplied, 0)
+                      const summary = doc ? bulkMap[doc] : undefined
+                      const applied = summary?.totalApplied ?? 0
+                      const count = summary?.count ?? 0
                       const remaining = Math.max(0, abono - applied)
                       const canLink = abono > 0 && !!doc
                       const isFull = canLink && remaining <= 0.5 && applied > 0
@@ -450,11 +451,11 @@ export default function ConciliacionPage() {
                               {isFull ? (
                                 <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                                   <CheckCircle2 className="h-3 w-3" />
-                                  {links.length} solicitud{links.length === 1 ? '' : 'es'}
+                                  {count} solicitud{count === 1 ? '' : 'es'}
                                 </Badge>
                               ) : isPartial ? (
                                 <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
-                                  Parcial · {links.length}
+                                  Parcial · {count}
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-muted-foreground">
@@ -488,6 +489,7 @@ export default function ConciliacionPage() {
         movement={selected}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onApplied={refreshReconciliation}
       />
     </div>
   )
