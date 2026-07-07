@@ -77,6 +77,15 @@ function parseMovDate(v: unknown): Date | null {
   return null
 }
 
+function sameDate(a?: Date, b?: Date): boolean {
+  if (!a || !b) return false
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
 function formatLastUpdated(iso: string | null): string {
