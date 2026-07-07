@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.0
+## Versión 4.1.1
 
 ## Changelog
+
+### Versión 4.1.1 - 2026-07-07
+
+#### Corrección de cálculo de montos en solicitudes AMBOS (desgravamen + cesantía)
+- Se ajustó el cálculo de la prima de cesantía en el desglose de solicitudes **AMBOS** para usar el **saldo insoluto** (`averageInsuredBalance`) en lugar del monto total del crédito.
+- Esto alinea los valores mostrados con la **simulación** y la **calculadora**, corrigiendo montos inflados en solicitudes que aún no firman mandato.
+- Se aplicó el **margen de seguridad** a la devolución individual de cada seguro, reflejando el monto real ofrecido al cliente.
 
 ### Versión 4.1.0 - 2026-07-03
 
