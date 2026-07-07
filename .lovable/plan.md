@@ -1,102 +1,91 @@
-## Objetivo
-Reemplazar las instituciones financieras hardcoded + márgenes en `localStorage` por el nuevo backend (`/public/institutions` y `/admin/institutions`), y agregar CRUD admin completo en Ajustes.
+## Contexto revisado
 
-## Arquitectura
+- **Página**: `src/pages/Conciliacion/index.tsx` lista los abonos del XML de la cartola. Cada fila abre `LinkRefundsDialog` (conciliación manual) mediante el botón **Conciliar / Ver·editar**.
+- **Servicio**: `cartolaLinksService` (`/bank/reconciliation`) ya soporta:
+  - `applyMatches(documentoNumero, [{ publicId, amountApplied }])`
+  - `getByMovement(documentoNumero)` / `getBulk(...)` / `removeLink(id)`
+- **Solicitudes**: se obtienen vía `refundAdminApi.search`. El "número de operación" del CSV corresponde a `calculationSnapshot.nroCredito` de cada solicitud (mismo campo usado en corte, cesantía, listados y wizard masivo). El backend expone `search` pero **no un lookup exacto por `nroCredito`**, por lo que la coincidencia se resolverá cargando el universo de solicitudes en estado *Pago programado* (misma estrategia que ya usa `usePendingRefunds`) e indexando por `nroCredito` en el cliente.
+- **Modelo de link**: cada asociación guarda `refundId (publicId)` + `amountApplied`. No hay campos de "respaldo" (rut/nombre/póliza/monto CSV) hoy; los guardaremos como metadatos locales en el resultado del proceso y en un historial en `localStorage` (no hay endpoint aún — se deja preparado para migrar).
 
-```text
-backend
-  GET  /public/institutions          → calculadora / selects (sin token)
-  GET  /admin/institutions           → pantalla Ajustes (con token)
-  GET  /admin/institutions/:id
-  POST /admin/institutions
-  PATCH /admin/institutions/:id      → editar campos / soft-disable (active:false)
-  DELETE /admin/institutions/:id     → solo botón "eliminar definitivo"
+## Alcance de esta iteración (frontend)
 
-frontend
-  src/services/institutionsService.ts   ← nuevo, fetch + authenticatedFetch
-  src/hooks/usePublicInstitutions.ts    ← React Query, cache 5 min, usado por
-                                          Calculadora y combos
-  src/hooks/useAdminInstitutions.ts     ← React Query admin (lista + mutations)
-  src/pages/Ajustes/components/
-     SafetyMarginsSection.tsx           ← se renombra mentalmente a
-                                          "Instituciones financieras", se
-                                          reescribe sobre el endpoint admin
-```
+No se modifica la conciliación manual existente. Se agrega el flujo CSV como una acción adicional por movimiento, reutilizando el mismo endpoint `POST /bank/reconciliation` (una llamada por movimiento con todos los matches válidos), lo que mantiene la operación atómica del lado servidor.
 
-## Servicio (`institutionsService.ts`)
+## Cambios
 
-```ts
-type Institution = {
-  id: string;
-  value: string;       // slug usado por refunds/snapshots
-  label: string;       // texto visible
-  grupo: string;
-  margen_seguridad: number;
-  active: boolean;
-};
+1. **Nueva acción por movimiento**
+   - En la columna *Conciliación* de la tabla, además del botón actual, agregar un menú (`DropdownMenu`) con dos opciones:
+     - *Conciliar manualmente* (comportamiento actual).
+     - *Conciliar mediante CSV* → abre el nuevo diálogo.
+   - Ícono `FileSpreadsheet` para diferenciar.
 
-listPublic(): GET /public/institutions          // sin auth, fetch nativo
-listAdmin(): authenticatedFetch GET /admin/...
-getAdmin(id)
-createAdmin(payload)
-updateAdmin(id, payload)   // PATCH
-deleteAdmin(id)            // DELETE definitivo
-```
+2. **Nuevo diálogo `CsvReconcileDialog`** (`src/pages/Conciliacion/components/CsvReconcileDialog.tsx`)
+   - Header con datos del movimiento (fecha, descripción, doc., abono, saldo disponible).
+   - **Paso 1 – Cargar archivo**
+     - Zona *drag & drop* + input file (`.csv` únicamente).
+     - Botón *Descargar plantilla* que genera `plantilla_conciliacion.csv` con headers `nombre_cliente,rut,numero_operacion,poliza,monto` y una fila de ejemplo.
+     - Parser con PapaParse (`bun add papaparse`) forzando `numero_operacion` y `rut` como texto, `header: true`, `skipEmptyLines: 'greedy'`.
+     - Validaciones estructurales antes de habilitar *Procesar*:
+       - extensión `.csv`, tamaño ≤ 5 MB;
+       - columnas obligatorias presentes;
+       - máx. 5.000 filas;
+       - por fila: `numero_operacion` no vacío, `monto` numérico > 0, fila no totalmente vacía;
+       - duplicados de `numero_operacion` dentro del archivo → marcados como advertencia (se procesa solo el primero).
+     - Mensajes de error específicos por tipo (columna faltante, fila X con monto inválido, etc.). Nunca "ocurrió un error".
+   - **Paso 2 – Vista previa**
+     - Tabla con las filas normalizadas + estado preliminar (Válida / Duplicada en CSV / Error de formato).
+     - Contadores y botón *Procesar conciliación* con `ConfirmDialog` previo.
+   - **Paso 3 – Resultado**
+     - Barra de progreso durante la ejecución.
+     - Resumen con los indicadores solicitados (procesadas, conciliadas, no encontradas, duplicadas CSV, coincidencias duplicadas en sistema, ya conciliadas, asociadas a otro movimiento, errores de formato).
+     - Tabla con: fila, nombre, rut, nº operación, póliza, monto, estado, detalle.
+     - Filtro por estado (tabs / select) + acciones: *Descargar CSV de resultados*, *Reintentar solo errores* (vuelve al paso 2 con esas filas), *Ver solicitudes conciliadas* (navega al listado filtrando por publicIds), *Cerrar*.
 
-`API_BASE_URL` se reutiliza del constante en `apiClient.ts` (exportarla).
+3. **Lógica de matching** (`src/pages/Conciliacion/services/csvReconcileService.ts`)
+   - Cargar en paralelo:
+     - Universo de solicitudes en `payment_scheduled` (reusa `usePendingRefunds` /`refundAdminApi.search` con paginación en paralelo — mismo patrón existente).
+     - `cartolaLinksService.getBulk(todos los documento_numero visibles)` para saber qué publicIds ya están asociados y a qué movimiento.
+   - Normalización: `nroCredito.trim().toUpperCase()` como key; RUT normalizado (sin puntos ni guión) solo para *display*, no para match.
+   - Por cada fila:
+     - Buscar coincidencias por `nroCredito` en el universo.
+     - 0 → *Solicitud no encontrada*.
+     - >1 → *Coincidencia duplicada en sistema* (no asocia).
+     - 1:
+       - Si su `publicId` está en links del mismo `documentoNumero` → *Ya conciliada*.
+       - Si está en links de otro movimiento → *Asociada a otro movimiento*.
+       - Si no → candidato válido con `amountApplied = monto CSV` (validado contra saldo restante del abono).
+   - Al pulsar procesar: ejecutar **una sola** llamada `applyMatches(documentoNumero, candidatosValidos)` para mantener la transaccionalidad ya provista por el backend. Si el POST falla, ningún candidato queda asociado y se muestra el error del backend por fila (todas quedan en estado *Error* con detalle común).
 
-## Hooks
+4. **Historial por movimiento**
+   - Nueva pestaña *Historial CSV* dentro del mismo diálogo (o link *Ver historial* en el menú del movimiento) que lee de `localStorage` bajo `cartola-csv-history:<documentoNumero>`.
+   - Guarda: nombre archivo, fecha/hora, usuario (de `AuthContext`), totales por estado, estado global, tabla completa de filas procesadas.
+   - Se deja un `TODO` documentado para migrar a un endpoint real cuando esté disponible.
 
-- `usePublicInstitutions()` → `useQuery(['institutions','public'])`, staleTime 5 min. Devuelve `{ data, isLoading }`. Filtra `active === true` y ordena por `label`.
-- `useAdminInstitutions()` → query + `createMutation`, `updateMutation`, `deleteMutation`, `toggleActiveMutation` (helper sobre update). Invalida ambas queries (`public` y `admin`) tras cada mutación.
-- Helpers para reemplazar los actuales (`getSafetyMarginByInstitutionId`, `isInstitutionVisibleInCalculator`): leen desde la query cache; si no hay cache aún, retornan defaults (10%, visible) para no romper cálculos antiguos. Se exportan desde `useSafetyMargins.ts` redirigidos al nuevo módulo para no romper imports existentes.
+5. **Dependencias**
+   - `papaparse` + `@types/papaparse` (parser CSV robusto, maneja comillas y separadores).
 
-## Pantalla Ajustes – Instituciones financieras
+6. **README + versión**
+   - Nueva entrada `### Versión 4.1.2` en `README.md` describiendo la funcionalidad.
+   - Actualizar `Versión 4.1.2` en el footer de `src/pages/auth/Login.tsx`.
 
-Reescritura de `SafetyMarginsSection.tsx` manteniendo el estilo actual (cards con gradiente, switch sí/no, búsqueda, KPIs):
+## Detalles técnicos
 
-Header
-- Título "Instituciones financieras" + descripción.
-- Botón `+ Nueva institución` (abre dialog de creación).
+- **Reuso**: `Dialog`, `Table`, `Badge`, `Button`, `ScrollArea`, `Tabs`, `ConfirmDialog`, `Progress` (shadcn) — sin nuevos estilos.
+- **RUT**: normalización con `normalizeRut` existente si aplica; el campo del CSV es informativo, no bloqueante.
+- **Sin cambios** en `LinkRefundsDialog`, `cartolaLinksService` (salvo posible export de un helper para invalidar cache).
+- **Cache**: al terminar, `queryClient.invalidateQueries({ queryKey: ['cartola-reconciliation'] })` y `['conciliacion','pending-refunds']`.
+- **Accesibilidad**: labels, roles y `aria-live` en el progreso.
 
-Toolbar
-- Buscador por `label` / `value` / `grupo`.
-- Tabs/filtro: Todas · Activas · Inactivas.
-- KPIs: Total · Visibles en calculadora (`active === true`) · Margen promedio.
+## Fuera de alcance
 
-Lista (una card por institución)
-- Columna izquierda: nombre (`label`), subtítulo `grupo · value`.
-- Input numérico `margen_seguridad` (0–100, step 0.5).
-- Switch `Visible en calculadora` ↔ campo `active` del backend.
-- Menú "⋯": Editar (label / value / grupo) · Eliminar definitivamente.
-- Cambios de margen y de switch son optimistic: se envían con PATCH al soltar el input (debounce 600 ms) o al togglear el switch. Toast de éxito/error y rollback en error.
+- Endpoint backend nuevo para persistir historial CSV o metadatos de respaldo (rut/nombre/póliza) → se prepara el modelo local para migrar sin fricción.
+- Soporte Excel (`.xlsx`) → arquitectura del parser aislada para agregarlo en una próxima versión.
 
-Dialog de creación / edición
-- Campos: `label`, `value` (slug, validado `^[a-z0-9-]+$`), `grupo`, `margen_seguridad`, `active`.
-- Reutiliza `react-hook-form` + `zod`.
+## Archivos afectados
 
-Eliminación definitiva
-- `ConfirmDialog` con texto "eliminar" para evitar accidentes.
-
-Sin dialog masivo de "guardar cambios" como hoy: las acciones son individuales y atómicas vs backend.
-
-## Migración de consumidores
-
-- `INSTITUCIONES_DISPONIBLES` en `calculadoraUtils.ts` deja de exportar lista hardcoded; en su lugar `Calculadora` usa `usePublicInstitutions()` para poblar el select (mapea `value` → snapshot, `label` → texto). Mientras carga, el select muestra skeleton.
-- `getSafetyMarginByInstitutionId` se reimplementa leyendo la cache de la query pública (con fallback a 10%).
-- `useSafetyMargins` queda como wrapper deprecado que delega en el nuevo hook para no romper imports actuales (`EditSnapshotDialog`, etc.).
-
-## Plan de archivos
-1. `src/services/institutionsService.ts` (nuevo)
-2. `src/hooks/useInstitutions.ts` (nuevo, public + admin + helpers)
-3. `src/pages/Ajustes/components/InstitutionsSection.tsx` (nuevo, reemplaza `SafetyMarginsSection`)
-4. `src/pages/Ajustes/components/InstitutionFormDialog.tsx` (nuevo)
-5. `src/pages/Ajustes/index.tsx` (swap import)
-6. `src/lib/calculadoraUtils.ts` (quitar `INSTITUCIONES_DISPONIBLES` hardcoded o dejar como fallback)
-7. `src/pages/Calculadora/index.tsx` (consumir hook)
-8. `src/hooks/useSafetyMargins.ts` (re-export shim → nuevos helpers)
-
-## Pendientes de confirmar
-1. ¿`value` y `grupo` deben ser editables en la UI o solo `label`, `margen_seguridad` y `active`? Cambiar `value` rompe snapshots existentes.
-2. ¿Permito eliminación definitiva (`DELETE`) o oculto ese botón y dejo solo el toggle activo/inactivo?
-3. ¿La calculadora pública debe seguir mostrando instituciones aunque la API falle (cae a la lista hardcoded actual) o muestro estado de error?
+- `src/pages/Conciliacion/index.tsx` (menú de acciones en la tabla).
+- `src/pages/Conciliacion/components/CsvReconcileDialog.tsx` (nuevo).
+- `src/pages/Conciliacion/services/csvReconcileService.ts` (nuevo).
+- `src/pages/Conciliacion/hooks/usePendingRefunds.ts` (reuso, expone `nroCredito`).
+- `package.json` (papaparse).
+- `README.md`, `src/pages/auth/Login.tsx` (versión 4.1.2).
