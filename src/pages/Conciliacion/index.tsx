@@ -96,7 +96,11 @@ function formatLastUpdated(iso: string | null): string {
 export default function ConciliacionPage() {
   const qc = useQueryClient()
   const today = useMemo(() => new Date(), [])
-  const [cartolaFrom, setCartolaFrom] = useState<Date | undefined>(today)
+  const monthStart = useMemo(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+    [today],
+  )
+  const [cartolaFrom, setCartolaFrom] = useState<Date | undefined>(monthStart)
   const [cartolaTo, setCartolaTo] = useState<Date | undefined>(today)
 
   const toIsoDate = (d: Date) =>
