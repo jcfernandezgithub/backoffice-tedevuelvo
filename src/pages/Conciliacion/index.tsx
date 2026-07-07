@@ -329,9 +329,9 @@ export default function ConciliacionPage() {
               </PopoverContent>
             </Popover>
             <Button
-              onClick={() => query.refetch()}
-              variant="outline"
-              disabled={query.isFetching || !rangeReady}
+              onClick={handleUpdateCartola}
+              variant={datesChanged ? 'default' : 'outline'}
+              disabled={query.isFetching || !draftFrom || !draftTo}
             >
               {query.isFetching ? (
                 <>
@@ -341,7 +341,7 @@ export default function ConciliacionPage() {
               ) : (
                 <>
                   <RotateCw className="h-4 w-4 mr-2" />
-                  Actualizar cartola
+                  {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
                 </>
               )}
             </Button>
