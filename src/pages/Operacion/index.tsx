@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Wrench } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { FiltersBar } from './components/FiltersBar';
 import { TabResumen } from './tabs/Resumen';
 import { TabDetalleFinanciero } from './tabs/DetalleFinanciero';
@@ -12,6 +19,15 @@ import { TabSegmentos } from './tabs/Segmentos';
 import { TabAlertas } from './tabs/Alertas';
 import { exportCSV, exportXLSX } from '@/services/reportesService';
 import { useToast } from '@/hooks/use-toast';
+
+const tabs = [
+  { value: 'resumen', label: 'Resumen', disabled: false },
+  { value: 'detalle-financiero', label: 'Detalle Financiero', disabled: true },
+  { value: 'tendencias', label: 'Tendencias', disabled: true },
+  { value: 'cuellos', label: 'Cuellos de botella', disabled: true },
+  { value: 'segmentos', label: 'Segmentos', disabled: true },
+  { value: 'alertas', label: 'Alertas', disabled: true },
+];
 
 export default function Operacion() {
   const [tabActivo, setTabActivo] = useState('resumen');
@@ -75,44 +91,72 @@ export default function Operacion() {
       <FiltersBar onExport={handleExport} />
 
       {/* Tabs principales */}
-      <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
-            <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6 md:max-w-4xl">
-              <TabsTrigger value="resumen" className="whitespace-nowrap">Resumen</TabsTrigger>
-              <TabsTrigger value="detalle-financiero" className="whitespace-nowrap">Detalle Financiero</TabsTrigger>
-              <TabsTrigger value="tendencias" className="whitespace-nowrap">Tendencias</TabsTrigger>
-              <TabsTrigger value="cuellos" className="whitespace-nowrap">Cuellos de botella</TabsTrigger>
-              <TabsTrigger value="segmentos" className="whitespace-nowrap">Segmentos</TabsTrigger>
-              <TabsTrigger value="alertas" className="whitespace-nowrap">Alertas</TabsTrigger>
-            </TabsList>
+      <TooltipProvider delayDuration={100}>
+        <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+            <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
+              <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6 md:max-w-4xl">
+                {tabs.map((tab) => {
+                  const trigger = (
+                    <TabsTrigger
+                      value={tab.value}
+                      disabled={tab.disabled}
+                      className={cn(
+                        'whitespace-nowrap gap-1.5 w-full h-full',
+                        tab.disabled && 'cursor-not-allowed opacity-60'
+                      )}
+                    >
+                      {tab.label}
+                      {tab.disabled && (
+                        <Wrench className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </TabsTrigger>
+                  );
+
+                  return tab.disabled ? (
+                    <Tooltip key={tab.value}>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex w-full h-full cursor-not-allowed">{trigger}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>Sección en mantenimiento</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <span key={tab.value} className="inline-flex w-full h-full">
+                      {trigger}
+                    </span>
+                  );
+                })}
+              </TabsList>
+            </div>
           </div>
-        </div>
 
-        <TabsContent value="resumen" className="space-y-6">
-          <TabResumen />
-        </TabsContent>
+          <TabsContent value="resumen" className="space-y-6">
+            <TabResumen />
+          </TabsContent>
 
-        <TabsContent value="detalle-financiero" className="space-y-6">
-          <TabDetalleFinanciero />
-        </TabsContent>
+          <TabsContent value="detalle-financiero" className="space-y-6">
+            <TabDetalleFinanciero />
+          </TabsContent>
 
-        <TabsContent value="tendencias" className="space-y-6">
-          <TabTendencias />
-        </TabsContent>
+          <TabsContent value="tendencias" className="space-y-6">
+            <TabTendencias />
+          </TabsContent>
 
-        <TabsContent value="cuellos" className="space-y-6">
-          <TabCuellosBotella />
-        </TabsContent>
+          <TabsContent value="cuellos" className="space-y-6">
+            <TabCuellosBotella />
+          </TabsContent>
 
-        <TabsContent value="segmentos" className="space-y-6">
-          <TabSegmentos />
-        </TabsContent>
+          <TabsContent value="segmentos" className="space-y-6">
+            <TabSegmentos />
+          </TabsContent>
 
-        <TabsContent value="alertas" className="space-y-6">
-          <TabAlertas />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="alertas" className="space-y-6">
+            <TabAlertas />
+          </TabsContent>
+        </Tabs>
+      </TooltipProvider>
     </div>
   );
 }

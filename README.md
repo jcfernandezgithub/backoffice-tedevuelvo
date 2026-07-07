@@ -37,6 +37,12 @@
 - La selección de fechas ya no dispara la búsqueda automáticamente: el botón **Actualizar cartola** cambia a **Aplicar rango** cuando se modifican las fechas, y solo al confirmar se ejecuta el servicio.
 - Si las fechas no cambian, el botón permite forzar una recarga manual de la cartola.
 
+#### Operación: tabs en mantenimiento excepto Resumen
+- En la página `/operacion`, las pestañas **Detalle Financiero**, **Tendencias**, **Cuellos de botella**, **Segmentos** y **Alertas** se bloquean y se marcan con un ícono de mantenimiento.
+- Solo la pestaña **Resumen** permanece habilitada y accesible.
+- Al pasar el cursor sobre una pestaña bloqueada se muestra un tooltip indicando que la sección está en mantenimiento.
+- La pestaña activa mantiene su estilo normal y el resto presenta opacidad reducida para reforzar el estado deshabilitado.
+
 #### Sidebar y login: redirección por rol
 - Se quitó el tag **"En desarrollo"** de la opción **Conciliación** en el sidebar; ahora se muestra como módulo en producción.
 - Se agregó el tag **"En desarrollo"** a la opción **Dashboard** en el sidebar.
