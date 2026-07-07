@@ -284,9 +284,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={query.isFetching}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !cartolaTo && 'text-muted-foreground',
+                    query.isFetching && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
