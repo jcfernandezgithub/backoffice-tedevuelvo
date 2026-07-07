@@ -23,17 +23,12 @@ export default function Login() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
-  const getDefaultRoute = (email: string): string => {
-    if (email === 'admin@tedevuelvo.cl') return '/operacion'
-    if (email === 'admin@callcenter.cl') return '/gestion-callcenter'
-    return '/dashboard'
-  }
-
   const onSubmit = async (values: FormValues) => {
     try {
       await login(values.email, values.password)
       toast({ title: 'Bienvenido', description: 'Ingreso exitoso' })
-      const targetRoute = getDefaultRoute(values.email)
+      const email = values.email.trim().toLowerCase()
+      const targetRoute = email === 'admin@callcenter.cl' ? '/gestion-callcenter' : '/operacion'
       navigate(targetRoute, { replace: true })
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
