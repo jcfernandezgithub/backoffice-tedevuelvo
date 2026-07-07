@@ -109,15 +109,18 @@ export default function ConciliacionPage() {
     () => new Date(today.getFullYear(), today.getMonth(), 1),
     [today],
   )
-  const [cartolaFrom, setCartolaFrom] = useState<Date | undefined>(monthStart)
-  const [cartolaTo, setCartolaTo] = useState<Date | undefined>(today)
+  const [draftFrom, setDraftFrom] = useState<Date | undefined>(monthStart)
+  const [draftTo, setDraftTo] = useState<Date | undefined>(today)
+  const [committedFrom, setCommittedFrom] = useState<Date | undefined>(monthStart)
+  const [committedTo, setCommittedTo] = useState<Date | undefined>(today)
 
   const toIsoDate = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-  const rangeReady = !!cartolaFrom && !!cartolaTo
-  const rangeFromIso = cartolaFrom ? toIsoDate(cartolaFrom) : ''
-  const rangeToIso = cartolaTo ? toIsoDate(cartolaTo) : ''
+  const rangeReady = !!committedFrom && !!committedTo
+  const rangeFromIso = committedFrom ? toIsoDate(committedFrom) : ''
+  const rangeToIso = committedTo ? toIsoDate(committedTo) : ''
+  const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
   const query = useQuery({
     queryKey: ['cartola', 'xml', rangeFromIso, rangeToIso],
