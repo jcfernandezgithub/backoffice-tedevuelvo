@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 const items = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
@@ -23,7 +23,7 @@ const items = [
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Conciliación', url: '/conciliacion', icon: Link2, status: 'dev' as const, adminOnly: true, callCenterOnly: false },
+  { title: 'Conciliación', url: '/conciliacion', icon: Link2, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Procesos Masivos', url: '/procesos-masivos', icon: Package, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'live' as const, adminOnly: false, callCenterOnly: false },
 ]
