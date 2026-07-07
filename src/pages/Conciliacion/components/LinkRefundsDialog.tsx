@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Dialog,
   DialogContent,
@@ -44,22 +45,37 @@ function toNumberSafe(v: unknown): number {
 }
 
 export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: Props) {
+  const qc = useQueryClient()
   const pendingQuery = usePendingRefunds()
   const pendingRefunds = pendingQuery.data ?? []
 
   const [drafts, setDrafts] = useState<DraftMatch[]>([])
   const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [existingLinks, setExistingLinks] = useState<CartolaLink[]>([])
 
-  // cargar links existentes del movimiento al abrir
+  // Links ya asociados al movimiento (backend).
+  const detailQuery = useQuery({
+    queryKey: ['cartola-reconciliation', 'detail', movement?.documentoNumero ?? ''],
+    queryFn: () => cartolaLinksService.getByMovement(movement!.documentoNumero),
+    enabled: open && !!movement?.documentoNumero,
+    staleTime: 15_000,
+  })
+  const existingLinks: CartolaLink[] = detailQuery.data?.links ?? []
+
+  // Reset del formulario al abrir el diálogo con otro movimiento.
   useEffect(() => {
-    if (open && movement?.documentoNumero) {
-      setExistingLinks(cartolaLinksService.listByMovement(movement.documentoNumero))
+    if (open) {
       setDrafts([])
       setSearch('')
     }
   }, [open, movement?.documentoNumero])
+
+  // Mapa publicId → refund pendiente, para enriquecer los links existentes.
+  const refundsByPublicId = useMemo(() => {
+    const map = new Map<string, PendingRefund>()
+    for (const r of pendingRefunds) map.set(r.publicId, r)
+    return map
+  }, [pendingRefunds])
 
   const alreadyReconciled = useMemo(
     () => existingLinks.reduce((s, l) => s + l.amountApplied, 0),
@@ -76,12 +92,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const isFullyAllocated = availableBefore > 0 && newAvailable <= 0.5 && !overApplied
 
   const draftIds = new Set(drafts.map((d) => d.refund.id))
-  const linkedIds = new Set(existingLinks.map((l) => l.refundId))
+  const linkedPublicIds = new Set(existingLinks.map((l) => l.refundId))
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return pendingRefunds
-      .filter((r) => !r.isFullyReconciled && !draftIds.has(r.id) && !linkedIds.has(r.id))
+      .filter(
+        (r) =>
+          !r.isFullyReconciled && !draftIds.has(r.id) && !linkedPublicIds.has(r.publicId),
+      )
       .filter((r) => {
         if (!q) return true
         return (
@@ -142,11 +161,21 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     )
   }
 
-  const removeExistingLink = (linkId: string) => {
+  const removeExistingLink = async (linkId: string) => {
     if (!movement) return
-    cartolaLinksService.removeLink(linkId)
-    setExistingLinks(cartolaLinksService.listByMovement(movement.documentoNumero))
-    onApplied?.()
+    try {
+      await cartolaLinksService.removeLink(linkId)
+      await detailQuery.refetch()
+      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+      onApplied?.()
+      toast({ title: 'Asociación eliminada' })
+    } catch (err: any) {
+      toast({
+        title: 'No se pudo eliminar',
+        description: err?.message ?? 'Error de red',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleApply = async () => {
@@ -176,10 +205,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     }
     try {
       setSubmitting(true)
-      cartolaLinksService.addMatches(
+      await cartolaLinksService.applyMatches(
         movement.documentoNumero,
-        drafts.map((d) => ({ refund: d.refund, amount: d.amount })),
+        drafts.map((d) => ({ publicId: d.refund.publicId, amountApplied: d.amount })),
       )
+      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
       toast({
         title: 'Conciliación aplicada',
         description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} asociada${drafts.length === 1 ? '' : 's'} al movimiento.`,
@@ -259,11 +289,14 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs"
                 >
                   <div className="flex flex-col leading-tight">
-                    <span className="font-medium truncate max-w-[180px]" title={l.refundClientName}>
-                      {l.refundClientName}
+                    <span
+                      className="font-medium truncate max-w-[180px]"
+                      title={refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
+                    >
+                      {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
                     </span>
                     <span className="text-muted-foreground">
-                      {l.refundPublicId} · {formatCurrency(l.amountApplied)}
+                      {l.refundId} · {formatCurrency(l.amountApplied)}
                     </span>
                   </div>
                   <Button
