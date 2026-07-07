@@ -95,9 +95,21 @@ function formatLastUpdated(iso: string | null): string {
 
 export default function ConciliacionPage() {
   const qc = useQueryClient()
+  const today = useMemo(() => new Date(), [])
+  const [cartolaFrom, setCartolaFrom] = useState<Date | undefined>(today)
+  const [cartolaTo, setCartolaTo] = useState<Date | undefined>(today)
+
+  const toIsoDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+  const rangeReady = !!cartolaFrom && !!cartolaTo
+  const rangeFromIso = cartolaFrom ? toIsoDate(cartolaFrom) : ''
+  const rangeToIso = cartolaTo ? toIsoDate(cartolaTo) : ''
+
   const query = useQuery({
-    queryKey: ['cartola', 'xml'],
-    queryFn: downloadCartolaXml,
+    queryKey: ['cartola', 'xml', rangeFromIso, rangeToIso],
+    queryFn: () => downloadCartolaXml({ from: rangeFromIso, to: rangeToIso }),
+    enabled: rangeReady,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
     retry: false,
@@ -236,20 +248,74 @@ export default function ConciliacionPage() {
             Cartola descargada automáticamente desde el portal bancario.
           </p>
         </div>
-        <div className="flex flex-col items-start md:items-end gap-1.5">
-          <Button onClick={() => query.refetch()} variant="outline" disabled={query.isFetching}>
-            {query.isFetching ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Actualizando…
-              </>
-            ) : (
-              <>
-                <RotateCw className="h-4 w-4 mr-2" />
-                Actualizar cartola
-              </>
-            )}
-          </Button>
+        <div className="flex flex-col items-start md:items-end gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'justify-start text-left font-normal w-[150px]',
+                    !cartolaFrom && 'text-muted-foreground',
+                  )}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {cartolaFrom ? format(cartolaFrom, 'dd/MM/yyyy', { locale: es }) : 'Desde'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarUI
+                  mode="single"
+                  selected={cartolaFrom}
+                  onSelect={setCartolaFrom}
+                  initialFocus
+                  locale={es}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'justify-start text-left font-normal w-[150px]',
+                    !cartolaTo && 'text-muted-foreground',
+                  )}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {cartolaTo ? format(cartolaTo, 'dd/MM/yyyy', { locale: es }) : 'Hasta'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarUI
+                  mode="single"
+                  selected={cartolaTo}
+                  onSelect={setCartolaTo}
+                  initialFocus
+                  locale={es}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              onClick={() => query.refetch()}
+              variant="outline"
+              disabled={query.isFetching || !rangeReady}
+            >
+              {query.isFetching ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Actualizando…
+                </>
+              ) : (
+                <>
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Actualizar cartola
+                </>
+              )}
+            </Button>
+          </div>
           <span className="text-xs text-muted-foreground">
             {formatLastUpdated(lastUpdatedAt)}
           </span>
