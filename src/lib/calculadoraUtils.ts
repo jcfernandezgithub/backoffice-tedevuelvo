@@ -84,6 +84,56 @@ const MAPEO_INSTITUCIONES: { [key: string]: string } = {
   "Santander Consumer": "SANTANDER CONSUMER",
 };
 
+// Normaliza un string: mayúsculas, sin acentos, sin puntuación, espacios colapsados.
+const normalizar = (s: string): string =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/**
+ * Resuelve la clave de institución del banco contra el set de claves
+ * disponibles en un archivo JSON de tasas. Tolera prefijos ("Banco de "),
+ * acentos, y variaciones frecuentes (Chile ↔ BANCO CHILE, Forum ↔ FORUM
+ * SERVICIOS FINANCIEROS, Chevrolet SF ↔ CHEVROLET, etc.).
+ */
+const resolveInstitutionKey = (
+  input: string,
+  availableKeys: string[],
+): string | null => {
+  if (!input) return null;
+  // 1) Match directo case-insensitive
+  const upper = input.toUpperCase().trim();
+  const direct = availableKeys.find((k) => k.toUpperCase() === upper);
+  if (direct) return direct;
+  // 2) Vía mapeo explícito
+  const mapped = MAPEO_INSTITUCIONES[input] || MAPEO_INSTITUCIONES[input.trim()];
+  if (mapped) {
+    const viaMap = availableKeys.find((k) => k.toUpperCase() === mapped.toUpperCase());
+    if (viaMap) return viaMap;
+  }
+  // 3) Normalización + variantes con/sin "BANCO"
+  const n = normalizar(input);
+  const candidates = [n, `BANCO ${n}`, n.replace(/^BANCO (DE )?/, "")].map((c) => c.trim());
+  for (const c of candidates) {
+    const hit = availableKeys.find((k) => normalizar(k) === c);
+    if (hit) return hit;
+  }
+  // 4) Coincidencia por prefijo/inclusión (Forum ↔ FORUM SERVICIOS FINANCIEROS)
+  const token = candidates[0].replace(/^BANCO (DE )?/, "").trim();
+  if (token) {
+    const partial = availableKeys.find((k) => {
+      const nk = normalizar(k).replace(/^BANCO (DE )?/, "").trim();
+      return nk === token || nk.startsWith(token + " ") || token.startsWith(nk + " ");
+    });
+    if (partial) return partial;
+  }
+  return null;
+};
+
 export interface CalculationResult {
   primaBanco: number;
   primaPreferencial: number;
@@ -152,10 +202,11 @@ const obtenerRangoTramo = (tramo: string): { desde: number; hasta: number | null
 const obtenerTasaCesantiaBanco = (banco: string, monto: number): number | null => {
   try {
     const tramo = obtenerTramo(monto);
-    if (!tasasCesantiaBanco[banco as keyof typeof tasasCesantiaBanco]) {
+    const key = resolveInstitutionKey(banco, Object.keys(tasasCesantiaBanco));
+    if (!key) {
       return null;
     }
-    const datosBanco = tasasCesantiaBanco[banco as keyof typeof tasasCesantiaBanco];
+    const datosBanco = tasasCesantiaBanco[key as keyof typeof tasasCesantiaBanco];
     const datosTramo = datosBanco[tramo as keyof typeof datosBanco];
     if (!datosTramo || typeof datosTramo !== "object") {
       return null;
@@ -185,12 +236,13 @@ const obtenerTasaBanco = (
     const montoRedondeado = Math.round(monto / 1000000) * 1000000;
     const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 100000000);
 
-    if (!tasasSeguro[banco as keyof typeof tasasSeguro]) {
+    const key = resolveInstitutionKey(banco, Object.keys(tasasSeguro));
+    if (!key) {
       console.warn(`Banco no encontrado: ${banco}`);
       return null;
     }
 
-    const datosBanco = tasasSeguro[banco as keyof typeof tasasSeguro] as Record<string, Record<string, Record<string, number>>>;
+    const datosBanco = tasasSeguro[key as keyof typeof tasasSeguro] as Record<string, Record<string, Record<string, number>>>;
     const datosTramo = datosBanco[tramo];
     const datosMonto = datosTramo?.[montoFinal.toString()];
 
