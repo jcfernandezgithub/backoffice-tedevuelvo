@@ -44,6 +44,7 @@ export interface BreakdownResult {
     primaTotalBanco: number
     primaTotalTDV: number
     devolucion: number
+    devolucionConMargen: number
   }
   cesantia: {
     primaBanco: number
@@ -51,6 +52,7 @@ export interface BreakdownResult {
     primaTotalBanco: number
     primaTotalTDV: number
     devolucion: number
+    devolucionConMargen: number
   }
   totalDevolucion: number
   totalConMargen: number
@@ -113,6 +115,7 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   }
 
   const totalConMargen = Math.round(totalDevolucion * (1 - margen / 100))
+  const factor = 1 - margen / 100
 
   return {
     desgravamen: {
@@ -121,6 +124,7 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
       primaTotalBanco: desgPrimaBanco * remainingInstallments,
       primaTotalTDV: desgPrimaTDV * remainingInstallments,
       devolucion: Math.max(0, Math.round(desgDevolucion)),
+      devolucionConMargen: Math.max(0, Math.round(desgDevolucion * factor)),
     },
     cesantia: {
       primaBanco: cesantiaPrimaBanco,
@@ -128,6 +132,7 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
       primaTotalBanco: cesantiaPrimaBanco * remainingInstallments,
       primaTotalTDV: cesantiaPrimaTDV * remainingInstallments,
       devolucion: Math.max(0, Math.round(cesantiaDevolucion)),
+      devolucionConMargen: Math.max(0, Math.round(cesantiaDevolucion * factor)),
     },
     totalDevolucion: Math.round(totalDevolucion),
     totalConMargen,

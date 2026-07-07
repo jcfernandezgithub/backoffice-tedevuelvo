@@ -1639,8 +1639,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             if (bd) {
                               return (
                                 <PairedAmountCell
-                                  selfValue={bd.desgravamen.devolucion}
-                                  siblingValue={bd.cesantia.devolucion}
+                                  selfValue={bd.desgravamen.devolucionConMargen}
+                                  siblingValue={bd.cesantia.devolucionConMargen}
                                   selfTipo="desgravamen"
                                   siblingTipo="cesantia"
                                 />
@@ -1913,8 +1913,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           if (bd) {
                             return (
                               <PairedAmountCell
-                                selfValue={bd.desgravamen.devolucion}
-                                siblingValue={bd.cesantia.devolucion}
+                                selfValue={bd.desgravamen.devolucionConMargen}
+                                siblingValue={bd.cesantia.devolucionConMargen}
                                 selfTipo="desgravamen"
                                 siblingTipo="cesantia"
                               />
