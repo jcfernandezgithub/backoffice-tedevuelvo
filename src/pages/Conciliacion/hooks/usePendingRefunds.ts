@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { refundAdminApi } from '@/services/refundAdminApi'
-import { conciliacionService } from '../services/conciliacionService'
 import type { PendingRefund } from '../types'
 import type { RefundRequest } from '@/types/refund'
 
@@ -42,12 +41,11 @@ export function usePendingRefunds() {
         )
         allItems = allItems.concat(...rest.map((r) => r.items ?? []))
       }
-      const links = conciliacionService.listLinks()
       return allItems.map((r) => {
         const realAmount = getRealAmount(r)
-        const reconciledAmount = links
-          .filter((l) => l.refundId === r.id)
-          .reduce((s, l) => s + l.amountApplied, 0)
+        // El estado de conciliación vive en el backend por movimiento;
+        // este hook solo expone el saldo total a asignar.
+        const reconciledAmount = 0
         const remainingAmount = Math.max(0, realAmount - reconciledAmount)
         return {
           id: r.id,
