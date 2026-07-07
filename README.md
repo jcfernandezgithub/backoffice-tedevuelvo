@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.1
+## Versión 4.1.2
 
 ## Changelog
+
+### Versión 4.1.2 - 2026-07-07
+
+#### Conciliación bancaria masiva por CSV
+- Nueva acción **"Conciliar mediante CSV"** disponible en cada movimiento bancario de la página `/conciliacion`, junto al botón de conciliación manual (menú desplegable).
+- Diálogo con flujo de tres pasos: **carga** (drag & drop o selector, plantilla descargable), **vista previa** con validaciones estructurales y cruce contra las solicitudes reales en estado *Pago programado*, y **resultado** con resumen por estado y descarga del CSV de conciliación.
+- La llave de cruce es el **número de operación** (`calculationSnapshot.nroCredito`). El procesamiento agrupa todas las coincidencias válidas en una única llamada transaccional al backend (`POST /bank/reconciliation`).
+- Estados soportados por fila: *Conciliada*, *No encontrada*, *Duplicada en CSV*, *Coincidencia duplicada en sistema*, *Ya conciliada*, *Asociada a otro movimiento*, *Error de formato*, *Error al aplicar*.
+- Validaciones: extensión `.csv`, tamaño ≤ 5 MB, hasta 5.000 filas, columnas obligatorias (`nombre_cliente, rut, numero_operacion, poliza, monto`), monto numérico > 0, número de operación no vacío y tratado como texto (conserva ceros iniciales).
+- Historial local por movimiento (últimas 20 cargas): archivo, fecha, usuario, totales y detalle descargable. Preparado para migrar a un endpoint dedicado.
+- Acciones posteriores al procesamiento: **Descargar resultado**, **Reintentar solo errores**, filtrar la tabla por estado y cerrar sin perder el historial.
 
 ### Versión 4.1.1 - 2026-07-07
 

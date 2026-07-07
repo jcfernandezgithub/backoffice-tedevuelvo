@@ -39,4 +39,5 @@ export interface PendingRefund {
   remainingAmount: number
   isFullyReconciled: boolean
   scheduledAt: string
+  nroCredito?: string
 }
