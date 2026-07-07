@@ -44,6 +44,8 @@
 - El resto de los usuarios (incluido el administrador) se redirige directamente a `/operacion` después del login.
 
 
+### Versión 4.0.2 - 2026-06-24
+
 #### Corrección del estado del Mandato en listados y detalle
 - En `Refunds/List`, `Refunds/Detail` y los servicios masivos (`corteBatchService`, `certificadoBatchService`) el mandato ya no depende exclusivamente de `hasSignedPdf`. Ahora se considera **firmado** cuando se cumple cualquiera de estas condiciones provenientes de `listV2`/`search`:
   - `signatureStatus === 'signed'`, o
@@ -53,9 +55,7 @@
 - Se agregaron los campos `signatureStatus`, `signatureSignedAt`, `signaturePdfKey`, `signedPdfS3Key`, `experianSignUrl`, `experianGroupId`, `experianDocumentId` y `signatureProvider` al tipo `RefundRequest`.
 - Esto resuelve casos donde solicitudes con mandato firmado aparecían como "Pendiente" porque el backend no poblaba `hasSignedPdf` en el payload de la lista.
 
-### Versión 4.0.2 - 2026-06-24
-
-
+### Versión 4.0.1 - 2026-06-21
 
 #### Eliminación de avalancha de llamadas a `experian/status`
 - Se removieron las consultas masivas e individuales al endpoint `GET/PATCH /refund-requests/{publicId}/experian/status` en Dashboard, Operación (Resumen), Solicitudes, Refunds (List y Detail) y en los servicios de Procesos Masivos (`corteBatchService`, `certificadoBatchService`).
@@ -64,6 +64,7 @@
 - En el detalle de solicitud, `handleViewMandate` usa primero `signedPdfUrl` del snapshot y solo recurre a `publicFilesApi.getSignedPdfInfo` como fallback.
 
 ### Versión 4.0.0 - 2026-06-20
+
 
 #### Detalle de solicitud: margen derivado dinámicamente
 - En el desglose "Ahorro total (devolución al cliente)" del detalle de solicitud, el porcentaje de margen del **Paso 3** ya no se asume fijo en 10%. Ahora se calcula a partir de la devolución real ofrecida (`totalSaving` del snapshot) versus la devolución bruta: `margen = (1 − totalSaving / devoluciónBruta) × 100`.
