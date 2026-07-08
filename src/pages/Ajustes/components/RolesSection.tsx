@@ -4,6 +4,8 @@ import { Plus, Pencil, Trash2, ShieldCheck, Lock, Users, ExternalLink } from 'lu
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +29,7 @@ export function RolesSection() {
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<RoleDefinition | null>(null)
   const [deleting, setDeleting] = useState<RoleDefinition | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   const usersByRole = useMemo(() => {
     const map: Record<string, number> = {}
@@ -34,11 +37,16 @@ export function RolesSection() {
     return map
   }, [users])
 
+  const expectedConfirm = deleting?.label ?? ''
+  const canConfirmDelete =
+    !!deleting && deleteConfirmText.trim().toLowerCase() === expectedConfirm.toLowerCase()
+
   const confirmDelete = () => {
-    if (!deleting) return
+    if (!deleting || !canConfirmDelete) return
     removeRole(deleting.id)
     toast.success('Rol eliminado')
     setDeleting(null)
+    setDeleteConfirmText('')
   }
 
   return (
@@ -145,18 +153,40 @@ export function RolesSection() {
         <RoleFormDialog open={creating} onOpenChange={setCreating} />
         <RoleFormDialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)} role={editing} />
 
-        <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialog
+          open={!!deleting}
+          onOpenChange={(o) => {
+            if (!o) {
+              setDeleting(null)
+              setDeleteConfirmText('')
+            }
+          }}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Eliminar rol</AlertDialogTitle>
               <AlertDialogDescription>
-                ¿Estás seguro que quieres eliminar el rol <strong>{deleting?.label}</strong>? Esta acción no se puede deshacer.
+                Esta acción no se puede deshacer. Para confirmar la eliminación del rol{' '}
+                <strong>{deleting?.label}</strong>, escribe su nombre exactamente igual en el campo de abajo.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="delete-role-confirm" className="text-xs text-muted-foreground">
+                Escribe <span className="font-mono font-semibold text-foreground">{expectedConfirm}</span> para confirmar
+              </Label>
+              <Input
+                id="delete-role-confirm"
+                autoFocus
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={expectedConfirm}
+              />
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
+                disabled={!canConfirmDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Eliminar rol
