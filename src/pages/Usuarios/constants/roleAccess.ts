@@ -1,5 +1,3 @@
-import type { RoleV2 } from '../types/userTypesV2'
-
 export const ALL_PLATFORM_PAGES = [
   'Dashboard',
   'Solicitudes',
@@ -16,43 +14,6 @@ export const ALL_PLATFORM_PAGES = [
 
 export type PlatformPage = (typeof ALL_PLATFORM_PAGES)[number]
 
-export interface RoleAccessDefinition {
-  label: string
-  shortLabel: string
-  summary: string
-  description: string
-  scope: 'FULL' | 'LIMITED'
-  allowedPages: readonly PlatformPage[]
-  restrictedPages: readonly PlatformPage[]
-}
-
-const CALLCENTER_ALLOWED: PlatformPage[] = ['Call Center']
-
-export const ROLE_ACCESS: Record<RoleV2, RoleAccessDefinition> = {
-  ADMIN: {
-    label: 'Administrador',
-    shortLabel: 'Admin',
-    scope: 'FULL',
-    summary: 'Acceso completo a la plataforma',
-    description:
-      'Este usuario podrá visualizar y administrar todas las páginas y funcionalidades de la plataforma.',
-    allowedPages: ALL_PLATFORM_PAGES,
-    restrictedPages: [],
-  },
-  CALLCENTER: {
-    label: 'Call Center',
-    shortLabel: 'Call Center',
-    scope: 'LIMITED',
-    summary: 'Acceso exclusivo al módulo Call Center',
-    description:
-      'Este usuario solo podrá visualizar y utilizar la página Call Center.',
-    allowedPages: CALLCENTER_ALLOWED,
-    restrictedPages: ALL_PLATFORM_PAGES.filter(
-      (p) => !CALLCENTER_ALLOWED.includes(p),
-    ),
-  },
-}
-
 export const STATE_LABELS: Record<'ACTIVE' | 'INACTIVE' | 'PENDING', string> = {
   ACTIVE: 'Activo',
   INACTIVE: 'Inactivo',
@@ -62,3 +23,17 @@ export const STATE_LABELS: Record<'ACTIVE' | 'INACTIVE' | 'PENDING', string> = {
 // Correo del usuario "autenticado" simulado.
 // En la etapa real se debe reemplazar por el email del AuthContext.
 export const CURRENT_USER_EMAIL = 'admin@tedevuelvo.cl'
+
+// IDs de roles del sistema — no eliminables.
+export const SYSTEM_ROLE_IDS = {
+  ADMIN: 'ADMIN',
+  CALLCENTER: 'CALLCENTER',
+} as const
+
+// Helper para consumidores fuera del contexto React (activity log, etc.)
+export function getRoleLabel(roleId: string): string {
+  // Import diferido para evitar ciclo.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { rolesStore } = require('@/pages/Ajustes/services/rolesStore')
+  return rolesStore.get(roleId)?.label ?? roleId
+}

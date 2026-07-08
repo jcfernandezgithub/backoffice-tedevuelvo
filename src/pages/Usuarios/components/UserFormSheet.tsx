@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Settings2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +22,7 @@ import {
 import { userSchemaV2, type UserFormValuesV2 } from '../schemas/userSchemaV2'
 import type { UserV2 } from '../types/userTypesV2'
 import { RoleAccessInfo } from './RoleAccessInfo'
-import { ROLE_ACCESS } from '../constants/roleAccess'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
   open: boolean
@@ -34,12 +35,14 @@ interface Props {
 export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists }: Props) {
   const isEditing = !!user
   const [pendingRoleChange, setPendingRoleChange] = useState<UserFormValuesV2 | null>(null)
+  const { roles, getRole } = useRoles()
+  const defaultRoleId = roles.find((r) => r.id === 'CALLCENTER')?.id ?? roles[0]?.id ?? ''
 
   const form = useForm<UserFormValuesV2>({
     resolver: zodResolver(userSchemaV2),
     defaultValues: {
       firstName: '', lastName: '', email: '', phone: '',
-      role: 'CALLCENTER', state: 'PENDING',
+      role: defaultRoleId, state: 'PENDING',
     },
   })
 
@@ -55,10 +58,10 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
               role: user.role,
               state: user.state,
             }
-          : { firstName: '', lastName: '', email: '', phone: '', role: 'CALLCENTER', state: 'PENDING' },
+          : { firstName: '', lastName: '', email: '', phone: '', role: defaultRoleId, state: 'PENDING' },
       )
     }
-  }, [open, user, form])
+  }, [open, user, form, defaultRoleId])
 
   const role = form.watch('role')
 
@@ -81,11 +84,25 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
     }
   }
 
-  const roleChangeWarning = user && pendingRoleChange
-    ? pendingRoleChange.role === 'CALLCENTER'
-      ? 'Este usuario perderá acceso a todas las páginas excepto Call Center.'
-      : 'Este usuario obtendrá acceso completo a todas las páginas y funcionalidades de la plataforma.'
-    : ''
+  const currentRoleDef = user ? getRole(user.role) : undefined
+  const nextRoleDef = getRole(role)
+  const pendingRoleDef = pendingRoleChange ? getRole(pendingRoleChange.role) : undefined
+
+  const buildRoleWarning = (
+    prev: ReturnType<typeof getRole>,
+    next: ReturnType<typeof getRole>,
+  ) => {
+    if (!prev || !next) return ''
+    if (next.scope === 'FULL' && prev.scope !== 'FULL') {
+      return 'Este usuario obtendrá acceso completo a todas las páginas y funcionalidades de la plataforma.'
+    }
+    if (next.scope !== 'FULL' && prev.scope === 'FULL') {
+      return `Este usuario perderá acceso a la mayoría de páginas. Solo podrá acceder a: ${next.allowedPages.join(', ')}.`
+    }
+    return `Este usuario podrá acceder a: ${next.allowedPages.join(', ')}.`
+  }
+
+  const roleChangeWarning = buildRoleWarning(currentRoleDef, pendingRoleDef)
 
   return (
     <>
@@ -136,12 +153,25 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Configuración de acceso</h3>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Rol *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Rol *</Label>
+                    <Link
+                      to="/ajustes"
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <Settings2 className="h-3 w-3" /> Administrar roles
+                    </Link>
+                  </div>
                   <Select value={role} onValueChange={(v) => form.setValue('role', v as any, { shouldDirty: true })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ADMIN">Administrador</SelectItem>
-                      <SelectItem value="CALLCENTER">Call Center</SelectItem>
+                      {roles.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.label}
+                          {r.isSystem ? ' · sistema' : ''}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -160,15 +190,13 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
 
               <RoleAccessInfo role={role} />
 
-              {isEditing && user && role !== user.role && (
+              {isEditing && user && role !== user.role && currentRoleDef && nextRoleDef && (
                 <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
                   <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                   <div>
                     <p className="font-medium">Estás cambiando el rol de este usuario</p>
                     <p className="text-xs mt-1">
-                      {role === 'CALLCENTER'
-                        ? 'Perderá acceso a todas las páginas excepto Call Center.'
-                        : 'Obtendrá acceso completo a todas las páginas y funcionalidades de la plataforma.'}
+                      {buildRoleWarning(currentRoleDef, nextRoleDef)}
                     </p>
                   </div>
                 </div>
@@ -195,7 +223,7 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
               {pendingRoleChange && user && (
                 <>
                   Vas a cambiar el rol de <strong>{user.firstName} {user.lastName}</strong> a{' '}
-                  <strong>{ROLE_ACCESS[pendingRoleChange.role].label}</strong>. {roleChangeWarning}
+                  <strong>{pendingRoleDef?.label ?? pendingRoleChange.role}</strong>. {roleChangeWarning}
                 </>
               )}
             </AlertDialogDescription>

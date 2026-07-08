@@ -6,6 +6,7 @@ import type { UserV2 } from '../types/userTypesV2'
 import { RoleBadge, StateBadge } from './StateRoleBadges'
 import { RoleAccessInfo } from './RoleAccessInfo'
 import { CURRENT_USER_EMAIL } from '../constants/roleAccess'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Props {
@@ -35,8 +36,10 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export function UserDetailsSheet({ user, open, onOpenChange, onEdit, onChangeRole, onToggleState }: Props) {
+  const { getRole } = useRoles()
   if (!user) return null
   const isCurrent = user.email.toLowerCase() === CURRENT_USER_EMAIL.toLowerCase()
+  const isFullAccess = getRole(user.role)?.scope === 'FULL'
   const selfTip = 'No puedes realizar esta acción sobre tu propio usuario'
 
   return (
@@ -58,7 +61,7 @@ export function UserDetailsSheet({ user, open, onOpenChange, onEdit, onChangeRol
             <Button size="sm" variant="outline" onClick={() => onEdit(user)}>
               <Pencil className="h-4 w-4 mr-2" /> Editar
             </Button>
-            {isCurrent && user.role === 'ADMIN' ? (
+            {isCurrent && isFullAccess ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span>
@@ -67,7 +70,7 @@ export function UserDetailsSheet({ user, open, onOpenChange, onEdit, onChangeRol
                     </Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>No puedes cambiar tu propio rol</TooltipContent>
+                <TooltipContent>No puedes reducir tu propio nivel de acceso</TooltipContent>
               </Tooltip>
             ) : (
               <Button size="sm" variant="outline" onClick={() => onChangeRole(user)}>

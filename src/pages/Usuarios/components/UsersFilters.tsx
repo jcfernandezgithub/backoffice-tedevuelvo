@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { UserFiltersV2 } from '../types/userTypesV2'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
   filters: UserFiltersV2
@@ -14,6 +15,7 @@ interface Props {
 export const DEFAULT_FILTERS: UserFiltersV2 = { search: '', role: 'ALL', state: 'ALL' }
 
 export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
+  const { roles } = useRoles()
   const hasActive = filters.search !== '' || filters.role !== 'ALL' || filters.state !== 'ALL'
 
   return (
@@ -29,14 +31,15 @@ export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
             aria-label="Buscar usuarios"
           />
         </div>
-        <Select value={filters.role} onValueChange={(v) => onChange({ ...filters, role: v as UserFiltersV2['role'] })}>
+        <Select value={filters.role} onValueChange={(v) => onChange({ ...filters, role: v })}>
           <SelectTrigger className="md:w-52" aria-label="Filtrar por rol">
             <SelectValue placeholder="Rol" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">Todos los roles</SelectItem>
-            <SelectItem value="ADMIN">Administrador</SelectItem>
-            <SelectItem value="CALLCENTER">Call Center</SelectItem>
+            {roles.map((r) => (
+              <SelectItem key={r.id} value={r.id}>{r.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={filters.state} onValueChange={(v) => onChange({ ...filters, state: v as UserFiltersV2['state'] })}>

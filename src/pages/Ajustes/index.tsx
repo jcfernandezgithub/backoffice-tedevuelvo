@@ -5,6 +5,7 @@ import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
 import { AIValidationSection } from './components/AIValidationSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
+import { RolesSection } from './components/RolesSection';
 import {
   Timer,
   TrendingUp,
@@ -13,6 +14,7 @@ import {
   ChevronRight,
   Sparkles,
   Building2,
+  ShieldCheck,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -66,6 +68,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Sparkles,
     group: 'Automatización',
     component: <AIValidationSection />,
+  },
+  {
+    id: 'roles',
+    label: 'Roles y permisos',
+    description: 'Perfiles de acceso a la plataforma',
+    icon: ShieldCheck,
+    group: 'Accesos',
+    component: <RolesSection />,
   },
 ];
 
