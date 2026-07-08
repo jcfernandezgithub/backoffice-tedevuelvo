@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import type { UserV2 } from '../types/userTypesV2'
-import { ROLE_ACCESS } from '../constants/roleAccess'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
   user: UserV2 | null
@@ -20,7 +20,9 @@ interface Props {
 }
 
 export function DeleteUserConfirm({ user, open, onOpenChange, onConfirm }: Props) {
+  const { getRole } = useRoles()
   if (!user) return null
+  const roleLabel = getRole(user.role)?.label ?? user.role
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -35,7 +37,7 @@ export function DeleteUserConfirm({ user, open, onOpenChange, onConfirm }: Props
               <div className="rounded-md border p-3 bg-muted/30">
                 <p className="font-medium text-foreground">{user.firstName} {user.lastName}</p>
                 <p className="text-muted-foreground">{user.email}</p>
-                <p className="text-muted-foreground text-xs mt-1">Rol actual: {ROLE_ACCESS[user.role].label}</p>
+                <p className="text-muted-foreground text-xs mt-1">Rol actual: {roleLabel}</p>
               </div>
               <p className="text-destructive">
                 El usuario perderá el acceso a la plataforma inmediatamente. Esta acción no se puede deshacer.
