@@ -1,4 +1,5 @@
-export type RoleV2 = 'ADMIN' | 'CALLCENTER'
+// Role id: system roles ('ADMIN' | 'CALLCENTER') o custom (`role-xxxxxx`).
+export type RoleV2 = string
 export type UserStateV2 = 'ACTIVE' | 'INACTIVE' | 'PENDING'
 
 export interface ActivityEvent {
@@ -30,6 +31,6 @@ export interface UserV2 {
 
 export interface UserFiltersV2 {
   search: string
-  role: RoleV2 | 'ALL'
+  role: string | 'ALL'
   state: UserStateV2 | 'ALL'
 }
