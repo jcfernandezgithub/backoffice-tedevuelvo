@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { UserV2 } from '../types/userTypesV2'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
   user: UserV2
@@ -50,6 +51,8 @@ export function UserRowActionsV2({
   onResendInvitation,
   onDelete,
 }: Props) {
+  const { getRole } = useRoles()
+  const isFullAccess = getRole(user.role)?.scope === 'FULL'
   const selfTooltip = 'No puedes realizar esta acción sobre tu propio usuario'
 
   return (
@@ -67,8 +70,8 @@ export function UserRowActionsV2({
           <Pencil className="h-4 w-4 mr-2" /> Editar usuario
         </DropdownMenuItem>
 
-        {isCurrentUser && user.role === 'ADMIN' ? (
-          <DisabledItem label="Cambiar rol" tooltip="No puedes cambiar tu propio rol a Call Center" icon={ShieldCheck} />
+        {isCurrentUser && isFullAccess ? (
+          <DisabledItem label="Cambiar rol" tooltip="No puedes reducir tu propio nivel de acceso" icon={ShieldCheck} />
         ) : (
           <DropdownMenuItem onClick={onChangeRole}>
             <ShieldCheck className="h-4 w-4 mr-2" /> Cambiar rol
