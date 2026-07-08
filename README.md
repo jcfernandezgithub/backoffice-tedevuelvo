@@ -1,8 +1,31 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.3
+## Versión 4.1.4
 
 ## Changelog
+
+### Versión 4.1.4 - 2026-07-08
+
+#### Administración de roles y permisos (Ajustes)
+- Nueva sección **Roles y permisos** dentro de `/ajustes` (grupo *Accesos*) que permite **crear, editar y eliminar** los perfiles de acceso disponibles en la plataforma.
+- Cada rol define: nombre, descripción y las páginas de la plataforma a las que tendrá acceso (selección desde las 11 páginas disponibles).
+- **Roles del sistema** (`Administrador` y `Call Center`) quedan marcados como *Sistema*: solo se puede editar su descripción, no se pueden renombrar ni cambiar sus páginas, ni eliminarse.
+- **No se puede eliminar** un rol con usuarios asignados; tooltip explica el motivo.
+- Cada tarjeta muestra la cantidad de usuarios asignados con enlace directo a `/usuarios`.
+- Validaciones en el diálogo: nombre obligatorio, único, ≤ 40 caracteres, al menos una página seleccionada. Atajos *Todas* / *Ninguna*.
+
+#### Integración con Administración de usuarios
+- El selector de rol en el panel *Crear/Editar usuario* se alimenta dinámicamente de los roles configurados. Los roles del sistema se marcan con el sufijo *· sistema*.
+- Enlace **"Administrar roles →"** junto al selector para navegar a Ajustes.
+- Filtro de rol, badges, diálogo *Cambiar rol* y detalle del usuario consumen los roles dinámicos.
+- Regla actualizada: el usuario autenticado no puede reducir su propio nivel de acceso (aplica a cualquier rol con acceso completo).
+- Advertencias al cambiar de rol calculadas dinámicamente según las páginas del rol destino.
+- `RoleAccessInfo` maneja el caso de un rol eliminado sin romper la UI.
+
+#### Arquitectura
+- Nueva capa `rolesStore` (`src/pages/Ajustes/services/rolesStore.ts`) con estado en memoria y `useSyncExternalStore` — punto único a reemplazar por API real.
+- `RoleV2` ampliado a `string` para admitir roles personalizados; los IDs de sistema (`ADMIN`, `CALLCENTER`) siguen siendo estables.
+- **Pendiente:** persistir roles en backend, aplicar las páginas habilitadas del rol real sobre `AppSidebar`, `ProtectedRoute` y `AdminRoute`.
 
 ### Versión 4.1.3 - 2026-07-08
 
