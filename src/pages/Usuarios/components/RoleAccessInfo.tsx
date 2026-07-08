@@ -1,15 +1,25 @@
-import { ShieldCheck, Lock, Check, X } from 'lucide-react'
+import { ShieldCheck, Lock, Check, X, HelpCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { ROLE_ACCESS } from '../constants/roleAccess'
-import type { RoleV2 } from '../types/userTypesV2'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
-  role: RoleV2
+  role: string
   compact?: boolean
 }
 
 export function RoleAccessInfo({ role, compact }: Props) {
-  const def = ROLE_ACCESS[role]
+  const { getRole } = useRoles()
+  const def = getRole(role)
+
+  if (!def) {
+    return (
+      <div className="rounded-lg border p-4 flex items-center gap-2 text-sm text-muted-foreground bg-muted/30">
+        <HelpCircle className="h-4 w-4" />
+        Este rol ya no existe. Selecciona uno vigente.
+      </div>
+    )
+  }
+
   const isFull = def.scope === 'FULL'
   const Icon = isFull ? ShieldCheck : Lock
 
