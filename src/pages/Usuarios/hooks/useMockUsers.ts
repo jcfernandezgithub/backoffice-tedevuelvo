@@ -7,7 +7,7 @@ import type {
   UserStateV2,
   UserV2,
 } from '../types/userTypesV2'
-import { ROLE_ACCESS } from '../constants/roleAccess'
+import { getRoleLabel } from '../constants/roleAccess'
 
 // Store en memoria compartido durante la sesión — se reemplazará por API real.
 let STORE: UserV2[] = [...MOCK_USERS_SEED]
@@ -106,7 +106,7 @@ export function useMockUsers() {
         withActivity = pushActivity(
           withActivity,
           'ROLE_CHANGED',
-          `Rol actualizado de ${ROLE_ACCESS[prevRole].label} a ${ROLE_ACCESS[input.role].label}`,
+          `Rol actualizado de ${getRoleLabel(prevRole)} a ${getRoleLabel(input.role)}`,
         )
       } else {
         withActivity = pushActivity(withActivity, 'USER_UPDATED', 'Datos del usuario actualizados')
