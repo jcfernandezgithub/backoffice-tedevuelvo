@@ -47,11 +47,11 @@ let STORE: RoleDefinition[] = [
     label: 'Call Center',
     shortLabel: 'Call Center',
     scope: 'LIMITED',
-    summary: 'Acceso exclusivo al módulo Call Center',
+    summary: 'Acceso a Call Center y Calculadora',
     description:
-      'Este usuario solo podrá visualizar y utilizar la página Call Center.',
-    allowedPages: ['Call Center'],
-    isSystem: true,
+      'Este usuario podrá visualizar y utilizar las páginas Call Center y Calculadora.',
+    allowedPages: ['Call Center', 'Calculadora'],
+    isSystem: false,
   }),
 ]
 
