@@ -1,8 +1,26 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.2
+## Versión 4.1.3
 
 ## Changelog
+
+### Versión 4.1.3 - 2026-07-08
+
+#### Nueva página Administración de usuarios (interfaz con datos simulados)
+- Se rediseñó por completo la página `/usuarios` con el título **"Administración de usuarios"** y se orientó a los dos roles disponibles en esta etapa: **Administrador** (acceso completo a la plataforma) y **Call Center** (acceso exclusivo al módulo Call Center).
+- Encabezado con descripción, botón principal **Crear usuario** y 5 KPIs: Total, Activos, Inactivos, Administradores y Call Center.
+- Buscador por nombre o correo, filtros por rol y estado (Activo / Inactivo / Invitación pendiente), botón para limpiar filtros y contador de resultados. Filtrado 100% local.
+- Listado responsivo: **tabla** en escritorio (Nombre, Correo, Rol, Estado, Último acceso, Fecha de creación, Acciones) y **tarjetas** en dispositivos móviles con rol y estado destacados en la parte superior.
+- Acciones por usuario en menú contextual: **Ver detalle, Editar, Cambiar rol, Activar/Desactivar, Reenviar invitación** (solo pendientes) y **Eliminar**. Confirmaciones para acciones destructivas.
+- Restricciones del usuario autenticado (mockeado): no puede eliminarse, desactivarse ni degradar su propio rol a Call Center. Se representan con acciones deshabilitadas y tooltips explicativos.
+- Panel lateral **Crear/Editar** con secciones *Información del usuario* y *Configuración de acceso*. Al seleccionar un rol se muestra en vivo una explicación (**Acceso completo** vs **Acceso limitado**) con la lista de páginas habilitadas y restringidas.
+- Cambio de rol en edición muestra advertencia contextual y requiere confirmación explícita. Diálogo dedicado **Cambiar rol** con las mismas explicaciones y advertencias.
+- Panel lateral **Detalle del usuario** con datos personales, nivel de acceso, páginas habilitadas/restringidas y timeline simulado de actividad (creación, cambios de rol, activaciones/desactivaciones, reenvíos de invitación).
+- Validaciones: nombre, apellido, correo (formato y unicidad), rol y estado obligatorios; mensajes de error inline y botón principal deshabilitado con errores.
+- Notificaciones (`sonner`) para cada acción exitosa. Estados vacíos y skeleton listos para cuando se conecte al backend.
+- **Alcance:** solo capa visual con datos simulados en memoria. No se implementa autenticación real, invitaciones por correo, protección de rutas ni matriz editable de permisos. Ninguna otra página del sitio fue modificada.
+- **Componentes creados:** `UsersStats`, `UsersFilters`, `UsersTable`, `UsersMobileList`, `UserFormSheet`, `UserDetailsSheet`, `ChangeRoleDialog`, `DeleteUserConfirm`, `RoleAccessInfo`, `UserRowActionsV2`, `StateRoleBadges`. Store simulado en `useMockUsers`. Definición de accesos por rol centralizada en `constants/roleAccess.ts` (punto único a reemplazar cuando existan permisos reales).
+- **Pendiente para siguiente etapa:** reemplazar `useMockUsers` por servicio real, alimentar el usuario actual desde `AuthContext`, invitaciones reales, persistencia backend y aplicación real de las restricciones de rol en `AppSidebar`, `ProtectedRoute` y `AdminRoute`.
 
 ### Versión 4.1.2 - 2026-07-07
 

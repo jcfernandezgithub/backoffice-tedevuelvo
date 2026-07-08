@@ -1,91 +1,103 @@
-## Contexto revisado
 
-- **Página**: `src/pages/Conciliacion/index.tsx` lista los abonos del XML de la cartola. Cada fila abre `LinkRefundsDialog` (conciliación manual) mediante el botón **Conciliar / Ver·editar**.
-- **Servicio**: `cartolaLinksService` (`/bank/reconciliation`) ya soporta:
-  - `applyMatches(documentoNumero, [{ publicId, amountApplied }])`
-  - `getByMovement(documentoNumero)` / `getBulk(...)` / `removeLink(id)`
-- **Solicitudes**: se obtienen vía `refundAdminApi.search`. El "número de operación" del CSV corresponde a `calculationSnapshot.nroCredito` de cada solicitud (mismo campo usado en corte, cesantía, listados y wizard masivo). El backend expone `search` pero **no un lookup exacto por `nroCredito`**, por lo que la coincidencia se resolverá cargando el universo de solicitudes en estado *Pago programado* (misma estrategia que ya usa `usePendingRefunds`) e indexando por `nroCredito` en el cliente.
-- **Modelo de link**: cada asociación guarda `refundId (publicId)` + `amountApplied`. No hay campos de "respaldo" (rut/nombre/póliza/monto CSV) hoy; los guardaremos como metadatos locales en el resultado del proceso y en un historial en `localStorage` (no hay endpoint aún — se deja preparado para migrar).
+# Plan: Rediseño de página Administración de Usuarios
 
-## Alcance de esta iteración (frontend)
+## Alcance
+Reemplazar el prototipo actual de `/usuarios` por una experiencia nueva orientada a los dos roles reales de esta etapa: **Administrador** y **Call Center**. Solo capa visual con datos simulados en memoria — sin backend, sin autenticación real, sin cambios en rutas ni en otras páginas.
 
-No se modifica la conciliación manual existente. Se agrega el flujo CSV como una acción adicional por movimiento, reutilizando el mismo endpoint `POST /bank/reconciliation` (una llamada por movimiento con todos los matches válidos), lo que mantiene la operación atómica del lado servidor.
+## Roles y accesos (predefinidos, no editables)
+- **Administrador** → "Acceso completo a la plataforma". Ve todas las páginas del sidebar.
+- **Call Center** → "Acceso exclusivo al módulo Call Center". Solo ve la página Call Center.
 
-## Cambios
+Se define una constante única `ROLE_ACCESS` con la lista de páginas habilitadas/restringidas por rol, reutilizada en formulario, detalle y advertencias. Esto deja preparado el punto de conexión futura con permisos reales.
 
-1. **Nueva acción por movimiento**
-   - En la columna *Conciliación* de la tabla, además del botón actual, agregar un menú (`DropdownMenu`) con dos opciones:
-     - *Conciliar manualmente* (comportamiento actual).
-     - *Conciliar mediante CSV* → abre el nuevo diálogo.
-   - Ícono `FileSpreadsheet` para diferenciar.
+## Estructura de la página
 
-2. **Nuevo diálogo `CsvReconcileDialog`** (`src/pages/Conciliacion/components/CsvReconcileDialog.tsx`)
-   - Header con datos del movimiento (fecha, descripción, doc., abono, saldo disponible).
-   - **Paso 1 – Cargar archivo**
-     - Zona *drag & drop* + input file (`.csv` únicamente).
-     - Botón *Descargar plantilla* que genera `plantilla_conciliacion.csv` con headers `nombre_cliente,rut,numero_operacion,poliza,monto` y una fila de ejemplo.
-     - Parser con PapaParse (`bun add papaparse`) forzando `numero_operacion` y `rut` como texto, `header: true`, `skipEmptyLines: 'greedy'`.
-     - Validaciones estructurales antes de habilitar *Procesar*:
-       - extensión `.csv`, tamaño ≤ 5 MB;
-       - columnas obligatorias presentes;
-       - máx. 5.000 filas;
-       - por fila: `numero_operacion` no vacío, `monto` numérico > 0, fila no totalmente vacía;
-       - duplicados de `numero_operacion` dentro del archivo → marcados como advertencia (se procesa solo el primero).
-     - Mensajes de error específicos por tipo (columna faltante, fila X con monto inválido, etc.). Nunca "ocurrió un error".
-   - **Paso 2 – Vista previa**
-     - Tabla con las filas normalizadas + estado preliminar (Válida / Duplicada en CSV / Error de formato).
-     - Contadores y botón *Procesar conciliación* con `ConfirmDialog` previo.
-   - **Paso 3 – Resultado**
-     - Barra de progreso durante la ejecución.
-     - Resumen con los indicadores solicitados (procesadas, conciliadas, no encontradas, duplicadas CSV, coincidencias duplicadas en sistema, ya conciliadas, asociadas a otro movimiento, errores de formato).
-     - Tabla con: fila, nombre, rut, nº operación, póliza, monto, estado, detalle.
-     - Filtro por estado (tabs / select) + acciones: *Descargar CSV de resultados*, *Reintentar solo errores* (vuelve al paso 2 con esas filas), *Ver solicitudes conciliadas* (navega al listado filtrando por publicIds), *Cerrar*.
+### Encabezado
+- Título: **Administración de usuarios**
+- Descripción: "Administra las personas que pueden acceder a la plataforma y define su nivel de acceso."
+- Botón principal **Crear usuario** (abre panel lateral).
 
-3. **Lógica de matching** (`src/pages/Conciliacion/services/csvReconcileService.ts`)
-   - Cargar en paralelo:
-     - Universo de solicitudes en `payment_scheduled` (reusa `usePendingRefunds` /`refundAdminApi.search` con paginación en paralelo — mismo patrón existente).
-     - `cartolaLinksService.getBulk(todos los documento_numero visibles)` para saber qué publicIds ya están asociados y a qué movimiento.
-   - Normalización: `nroCredito.trim().toUpperCase()` como key; RUT normalizado (sin puntos ni guión) solo para *display*, no para match.
-   - Por cada fila:
-     - Buscar coincidencias por `nroCredito` en el universo.
-     - 0 → *Solicitud no encontrada*.
-     - >1 → *Coincidencia duplicada en sistema* (no asocia).
-     - 1:
-       - Si su `publicId` está en links del mismo `documentoNumero` → *Ya conciliada*.
-       - Si está en links de otro movimiento → *Asociada a otro movimiento*.
-       - Si no → candidato válido con `amountApplied = monto CSV` (validado contra saldo restante del abono).
-   - Al pulsar procesar: ejecutar **una sola** llamada `applyMatches(documentoNumero, candidatosValidos)` para mantener la transaccionalidad ya provista por el backend. Si el POST falla, ningún candidato queda asociado y se muestra el error del backend por fila (todas quedan en estado *Error* con detalle común).
+### KPIs (5 tarjetas)
+Total, Activos, Inactivos, Administradores, Call Center — calculadas sobre los datos simulados.
 
-4. **Historial por movimiento**
-   - Nueva pestaña *Historial CSV* dentro del mismo diálogo (o link *Ver historial* en el menú del movimiento) que lee de `localStorage` bajo `cartola-csv-history:<documentoNumero>`.
-   - Guarda: nombre archivo, fecha/hora, usuario (de `AuthContext`), totales por estado, estado global, tabla completa de filas procesadas.
-   - Se deja un `TODO` documentado para migrar a un endpoint real cuando esté disponible.
+### Buscador + filtros
+- Input de búsqueda por nombre o correo.
+- Select rol: Todos / Administrador / Call Center.
+- Select estado: Todos / Activo / Inactivo / Invitación pendiente.
+- Botón **Limpiar filtros** + contador de resultados.
+- Filtrado 100% local sobre el store simulado.
 
-5. **Dependencias**
-   - `papaparse` + `@types/papaparse` (parser CSV robusto, maneja comillas y separadores).
+### Listado
+- **Desktop:** tabla con columnas Nombre, Correo, Rol (badge), Estado (badge), Último acceso, Fecha de creación, Acciones.
+- **Mobile (`<md`):** tarjetas con rol y estado arriba, campos apilados y menú contextual de acciones (usa `MobileCard`).
+- Skeleton en loading simulado; estado vacío con ilustración textual y CTA "Crear usuario".
 
-6. **README + versión**
-   - Nueva entrada `### Versión 4.1.2` en `README.md` describiendo la funcionalidad.
-   - Actualizar `Versión 4.1.2` en el footer de `src/pages/auth/Login.tsx`.
+### Acciones por usuario (menú `…`)
+Ver detalle, Editar, Cambiar rol, Activar/Desactivar, Reenviar invitación (solo si estado = pendiente), Eliminar.
+- Acciones destructivas → `ConfirmDialog`.
+- Usuario autenticado actual (mockeado, ej. `admin@tedevuelvo.cl`): opciones Eliminar, Desactivar y Cambiar-rol-a-Call-Center quedan deshabilitadas con `Tooltip` explicativo.
 
-## Detalles técnicos
+## Paneles y diálogos
 
-- **Reuso**: `Dialog`, `Table`, `Badge`, `Button`, `ScrollArea`, `Tabs`, `ConfirmDialog`, `Progress` (shadcn) — sin nuevos estilos.
-- **RUT**: normalización con `normalizeRut` existente si aplica; el campo del CSV es informativo, no bloqueante.
-- **Sin cambios** en `LinkRefundsDialog`, `cartolaLinksService` (salvo posible export de un helper para invalidar cache).
-- **Cache**: al terminar, `queryClient.invalidateQueries({ queryKey: ['cartola-reconciliation'] })` y `['conciliacion','pending-refunds']`.
-- **Accesibilidad**: labels, roles y `aria-live` en el progreso.
+### Panel lateral Crear/Editar (Sheet)
+Dos secciones:
+1. **Información** — Nombre, Apellido, Correo, Teléfono (opcional).
+2. **Configuración de acceso** — Rol, Estado inicial (Activo / Inactivo / Invitación pendiente).
 
-## Fuera de alcance
+Debajo del selector de rol se muestra en vivo un bloque **Explicación del rol**:
+- Admin → badge "Acceso completo" + lista de páginas.
+- Call Center → badge "Acceso limitado" + listas "Páginas habilitadas" y "Páginas restringidas".
 
-- Endpoint backend nuevo para persistir historial CSV o metadatos de respaldo (rut/nombre/póliza) → se prepara el modelo local para migrar sin fricción.
-- Soporte Excel (`.xlsx`) → arquitectura del parser aislada para agregarlo en una próxima versión.
+Validaciones (zod + react-hook-form): nombre, apellido, correo (formato y unicidad contra el store simulado), rol y estado obligatorios. Errores inline; botón principal deshabilitado con errores.
 
-## Archivos afectados
+En edición, si cambia el rol se muestra advertencia contextual y se pide confirmación antes de guardar el cambio de rol.
 
-- `src/pages/Conciliacion/index.tsx` (menú de acciones en la tabla).
-- `src/pages/Conciliacion/components/CsvReconcileDialog.tsx` (nuevo).
-- `src/pages/Conciliacion/services/csvReconcileService.ts` (nuevo).
-- `src/pages/Conciliacion/hooks/usePendingRefunds.ts` (reuso, expone `nroCredito`).
-- `package.json` (papaparse).
-- `README.md`, `src/pages/auth/Login.tsx` (versión 4.1.2).
+### Panel lateral Detalle (Sheet)
+Datos personales, estado, rol, fechas, descripción del nivel de acceso, listas de páginas habilitadas/restringidas, timeline simulado de actividad (Usuario creado, Rol actualizado, Desactivado, Invitación reenviada). Accesos rápidos: Editar, Cambiar rol, Activar/Desactivar.
+
+### Confirmación de eliminación
+Modal con nombre, correo, rol, advertencia y botón destructivo.
+
+## Estado y datos simulados
+- Store local con Zustand-like via `useState` + contexto simple en un hook `useMockUsers` que reemplaza el actual `useUsers`. Persiste en memoria durante la sesión.
+- Seed con ~10 usuarios cubriendo: admins activos, call center activos, inactivos, invitaciones pendientes, el usuario autenticado actual.
+- Toasts (`sonner`) para éxito/error en cada acción.
+
+## Archivos
+
+### Nuevos
+- `src/pages/Usuarios/constants/roleAccess.ts` — definición de páginas por rol (punto de conexión futura).
+- `src/pages/Usuarios/mocks/mockUsers.seed.ts` — datos simulados iniciales.
+- `src/pages/Usuarios/hooks/useMockUsers.ts` — store en memoria (CRUD + filtros).
+- `src/pages/Usuarios/components/UsersStats.tsx` — 5 KPIs.
+- `src/pages/Usuarios/components/UsersFilters.tsx` — buscador + filtros + limpiar.
+- `src/pages/Usuarios/components/UsersTable.tsx` — tabla desktop.
+- `src/pages/Usuarios/components/UsersMobileList.tsx` — tarjetas mobile.
+- `src/pages/Usuarios/components/UserRowActionsV2.tsx` — menú de acciones con restricciones del usuario actual.
+- `src/pages/Usuarios/components/UserFormSheet.tsx` — panel crear/editar con explicación de rol.
+- `src/pages/Usuarios/components/UserDetailsSheet.tsx` — panel detalle.
+- `src/pages/Usuarios/components/RoleAccessInfo.tsx` — bloque reutilizable de accesos por rol.
+- `src/pages/Usuarios/components/DeleteUserConfirm.tsx` — modal eliminar.
+- `src/pages/Usuarios/schemas/userSchemaV2.ts` — zod schema con validaciones actualizadas.
+- `src/pages/Usuarios/types/userTypesV2.ts` — tipos `Role = 'ADMIN' | 'CALLCENTER'`, `UserState = 'ACTIVE' | 'INACTIVE' | 'PENDING'`.
+
+### Modificados
+- `src/pages/Usuarios/index.tsx` — reescrito para usar los componentes nuevos.
+- `README.md` — sección versión **4.1.3**.
+- `src/pages/auth/Login.tsx` — versión 4.1.3.
+
+### Conservados (sin tocar)
+Todos los componentes legacy (`UserTable`, `UserForm`, `UserDetailsDrawer`, `useUsers`, etc.) se dejan como referencia para no romper otras dependencias; simplemente dejan de usarse en la página.
+
+## Restricciones respetadas
+- No se crean roles ni matriz editable de permisos.
+- No se toca autenticación, rutas protegidas, ni el sidebar (los roles no ocultan páginas reales todavía).
+- Ningún otro módulo se modifica.
+
+## Puntos a conectar al backend en la siguiente etapa
+1. Reemplazar `useMockUsers` por servicio real (crear, listar, editar, eliminar, cambiar estado, cambiar rol, reenviar invitación).
+2. Alimentar el usuario autenticado actual desde `AuthContext` en vez del mock.
+3. Invitaciones reales por correo (`Reenviar invitación`).
+4. Persistir el rol en el backend y aplicar restricciones reales en `AppSidebar`, `ProtectedRoute` y `AdminRoute`.
+5. Migrar `ROLE_ACCESS` a datos servidos por backend cuando se soporten permisos personalizados.
+6. Auditoría real de actividad reemplazando el timeline simulado.
