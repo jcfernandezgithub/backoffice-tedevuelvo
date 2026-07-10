@@ -418,7 +418,7 @@ export default function ConciliacionPage() {
           <CardTitle>Movimientos bancarios</CardTitle>
           <CardDescription>
             Abonos obtenidos desde el XML de la cartola. Cada abono puede
-            asociarse a una o varias solicitudes en pago programado.
+            asociarse a una o varias solicitudes en estado Ingresada.
           </CardDescription>
         </CardHeader>
         <CardContent>

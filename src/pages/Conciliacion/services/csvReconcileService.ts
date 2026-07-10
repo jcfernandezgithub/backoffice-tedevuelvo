@@ -207,7 +207,7 @@ export function matchAgainstSystem(
       return {
         ...row,
         status: 'not_found',
-        detail: 'No se encontró una solicitud en Pago programado con ese número de operación.',
+        detail: 'No se encontró una solicitud en estado Ingresada con ese número de operación.',
       }
     }
     if (matches.length > 1) {

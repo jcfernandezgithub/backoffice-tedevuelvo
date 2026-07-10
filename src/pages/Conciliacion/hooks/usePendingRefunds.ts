@@ -9,9 +9,12 @@ function getRealAmount(refund: RefundRequest): number {
     .reverse()
     .find((e) => {
       const to = String(e.to).toLowerCase()
-      return (to === 'payment_scheduled' || to === 'paid') && e.realAmount
+      return (to === 'submitted' || to === 'payment_scheduled' || to === 'paid') && e.realAmount
     })
-  return Number(entry?.realAmount ?? 0)
+  const fromHistory = Number(entry?.realAmount ?? 0)
+  if (fromHistory > 0) return fromHistory
+  // Fallback para solicitudes en "Ingresada" que aún no tienen realAmount
+  return Number((refund as any).estimatedAmountCLP ?? 0)
 }
 
 export function usePendingRefunds() {
@@ -21,7 +24,7 @@ export function usePendingRefunds() {
       // El endpoint /admin/search limita a 100 por página: paginamos en paralelo.
       const PAGE_SIZE = 100
       const first = await refundAdminApi.search({
-        status: 'payment_scheduled',
+        status: 'submitted',
         limit: PAGE_SIZE,
         page: 1,
         sort: 'recent',
@@ -32,7 +35,7 @@ export function usePendingRefunds() {
         const rest = await Promise.all(
           Array.from({ length: totalPages - 1 }, (_, i) =>
             refundAdminApi.search({
-              status: 'payment_scheduled',
+              status: 'submitted',
               limit: PAGE_SIZE,
               page: i + 2,
               sort: 'recent',
