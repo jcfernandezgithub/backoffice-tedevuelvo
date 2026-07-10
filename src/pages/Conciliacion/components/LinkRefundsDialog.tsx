@@ -236,7 +236,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           <DialogTitle>Conciliar movimiento bancario</DialogTitle>
           <DialogDescription>
             Asocia este abono a una o varias solicitudes en estado{' '}
-            <strong>Pago programado</strong>. Puedes dividir el monto entre varias.
+            <strong>Ingresada</strong>. Puedes dividir el monto entre varias.
           </DialogDescription>
         </DialogHeader>
 
@@ -345,7 +345,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               {pendingQuery.isLoading ? (
                 <div className="p-6 text-sm text-muted-foreground flex items-center justify-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Cargando solicitudes en pago programado…
+                  Cargando solicitudes en estado Ingresada…
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="p-4 text-sm text-muted-foreground text-center">
