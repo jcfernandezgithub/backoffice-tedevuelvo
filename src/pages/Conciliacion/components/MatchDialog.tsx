@@ -147,7 +147,7 @@ export function MatchDialog({ movement, pendingRefunds, open, onOpenChange, onAp
         <DialogHeader>
           <DialogTitle>Conciliar movimiento</DialogTitle>
           <DialogDescription>
-            Asocia este depósito a una o varias solicitudes en estado <strong>Pago programado</strong>.
+            Asocia este depósito a una o varias solicitudes en estado <strong>Ingresada</strong>.
             Puedes dividir el monto entre varias solicitudes.
           </DialogDescription>
         </DialogHeader>
