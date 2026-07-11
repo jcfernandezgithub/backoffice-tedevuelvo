@@ -1,8 +1,22 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.4
+## Versión 4.1.5
 
 ## Changelog
+
+### Versión 4.1.5 - 2026-07-10
+
+#### Conciliación por CSV — cambio de estado + monto real
+- El wizard de conciliación mediante CSV ahora, además de asociar la solicitud al movimiento bancario, **pasa la solicitud a estado *Pago Programado*** y guarda el **monto informado en el CSV como monto real de devolución** (`realAmount`), registrando la transición en el historial de la solicitud (nota: `Conciliación CSV — movimiento {docNumero} ({fileName})`).
+- Nueva tabla de vista previa:
+  - **Checkbox por fila** (y "seleccionar todas") para aprobar explícitamente qué solicitudes se procesan.
+  - Columna **Solicitud** con `publicId` + nombre matcheado.
+  - Columna **Estimado sistema** vs **Monto CSV** con **Δ** absoluto y porcentual (indicativo, no bloqueante).
+- **Validación dura**: la suma de los montos aprobados no puede superar el abono disponible del movimiento; si se supera, el botón queda deshabilitado y se muestra alerta.
+- Botón de acción renombrado a **"Aplicar N y programar pago"** para transparentar el efecto.
+- Confirmación con detalle explícito de qué se guardará y cómo cambia el estado.
+- **Flujo tolerante a fallos**: el proceso itera solicitud a solicitud (barra de progreso "N/M"); si el `PATCH` de estado falla, la fila queda `apply_error` y se continúa. Si todos los cambios de estado pasan pero el link al movimiento falla, las filas quedan en un nuevo estado **"Estado actualizado sin asociar"** con banner explicativo en el paso Resultado, indicando resolverlas manualmente.
+- Se invalidan las cachés de `refund-admin-search` y `refund` para reflejar el cambio de estado en la Lista de Solicitudes al cerrar el diálogo.
 
 ### Versión 4.1.4 - 2026-07-08
 
