@@ -515,7 +515,7 @@ export function IndividualCsvReconcileDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
-            Conciliación individual (CSV)
+            Conciliación CSV para Abonos Individuales
           </DialogTitle>
           <DialogDescription>
             Sube un CSV donde el <strong>monto es el abono bancario</strong>. Buscaremos el abono coincidente y calcularemos la devolución real como <span className="font-mono">abono − (prima nueva × cuotas restantes)</span>.
