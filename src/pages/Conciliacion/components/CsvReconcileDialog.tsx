@@ -173,58 +173,165 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
   )
 
   const validRows = useMemo(() => rows.filter((r) => r.status === 'valid'), [rows])
-  const totalToApply = validRows.reduce((s, r) => s + r.monto, 0)
+  const approvedRows = useMemo(
+    () => validRows.filter((r) => r.approved !== false),
+    [validRows],
+  )
+  const totalToApply = approvedRows.reduce((s, r) => s + r.monto, 0)
   const abono = movement?.abono ?? 0
   const overApplied = totalToApply > abono + 0.5
   const hasStructuralErrors = totals.format_error > 0 || totals.duplicated_in_csv > 0
-  const canProcess = !processing && validRows.length > 0 && !overApplied
+  const canProcess = !processing && approvedRows.length > 0 && !overApplied
+  const allValidApproved =
+    validRows.length > 0 && validRows.every((r) => r.approved !== false)
+
+  const toggleRowApproved = (rowNumber: number, next: boolean) => {
+    setRows((prev) =>
+      prev.map((r) => (r.rowNumber === rowNumber ? { ...r, approved: next } : r)),
+    )
+  }
+  const toggleAllApproved = (next: boolean) => {
+    setRows((prev) =>
+      prev.map((r) => (r.status === 'valid' ? { ...r, approved: next } : r)),
+    )
+  }
+
+  const [progressLabel, setProgressLabel] = useState('')
 
   const runProcess = async () => {
-    if (!movement || validRows.length === 0) return
+    if (!movement || approvedRows.length === 0) return
     setProcessing(true)
-    setProgress(20)
-    try {
-      const matches = validRows.map((r) => ({
-        publicId: r.matchedPublicId!,
-        amountApplied: Math.round(r.monto),
-      }))
-      setProgress(50)
-      await cartolaLinksService.applyMatches(movement.documentoNumero, matches)
-      setProgress(90)
-      const nextRows = rows.map((r) =>
-        r.status === 'valid'
-          ? {
-              ...r,
-              status: 'reconciled' as CsvRowStatus,
-              detail: `Asociada correctamente al movimiento ${movement.documentoNumero}.`,
-            }
-          : r,
+    setProgress(2)
+    setProgressLabel('Preparando…')
+
+    const noteBase = `Conciliación CSV — movimiento ${movement.documentoNumero}${
+      file?.name ? ` (${file.name})` : ''
+    }`
+
+    // Snapshot para no perder cambios de aprobación mientras corre el proceso.
+    const targets = approvedRows.slice()
+    const total = targets.length
+
+    // Paso 1: por cada solicitud, actualizar estado a Pago Programado con realAmount.
+    type StepResult = { row: ProcessedRow; ok: boolean; error?: string }
+    const results: StepResult[] = []
+    for (let i = 0; i < targets.length; i++) {
+      const r = targets[i]
+      setProgressLabel(
+        `Actualizando ${i + 1}/${total} · ${r.matchedPublicId ?? r.numero_operacion}`,
       )
-      setRows(nextRows)
-      persistHistory(nextRows, 'success')
-      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
-      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
-      onApplied?.()
+      setProgress(Math.round(((i + 1) / (total + 1)) * 80))
+      try {
+        if (!r.matchedRefundId) throw new Error('Solicitud sin id interno.')
+        await refundAdminApi.updateStatus(r.matchedRefundId, {
+          status: 'payment_scheduled',
+          realAmount: Math.round(r.monto),
+          note: noteBase,
+          by: user?.email ?? user?.nombre ?? undefined,
+        })
+        results.push({ row: r, ok: true })
+      } catch (err: any) {
+        results.push({
+          row: r,
+          ok: false,
+          error: err?.message ?? 'No se pudo actualizar el estado de la solicitud.',
+        })
+      }
+    }
+
+    // Paso 2: link movimiento↔solicitud SOLO para los que pasaron el paso 1.
+    const okRows = results.filter((x) => x.ok).map((x) => x.row)
+    let linkError: string | null = null
+    if (okRows.length > 0) {
+      setProgressLabel('Asociando solicitudes al movimiento…')
+      setProgress(92)
+      try {
+        await cartolaLinksService.applyMatches(
+          movement.documentoNumero,
+          okRows.map((r) => ({
+            publicId: r.matchedPublicId!,
+            amountApplied: Math.round(r.monto),
+          })),
+        )
+      } catch (err: any) {
+        linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
+      }
+    }
+
+    // Paso 3: componer nuevo array de filas con status por fila.
+    const outcomeByRow = new Map<number, StepResult>()
+    for (const r of results) outcomeByRow.set(r.row.rowNumber, r)
+    const nextRows: ProcessedRow[] = rows.map((r) => {
+      if (r.status !== 'valid') return r
+      const outcome = outcomeByRow.get(r.rowNumber)
+      if (!outcome) return r // no aprobada por el usuario, se queda como 'valid'
+      if (!outcome.ok) {
+        return {
+          ...r,
+          status: 'apply_error',
+          detail: outcome.error ?? 'Error al actualizar el estado.',
+        }
+      }
+      if (linkError) {
+        return {
+          ...r,
+          status: 'status_updated_no_link',
+          detail: `Solicitud pasada a Pago Programado con monto ${formatCurrency(
+            r.monto,
+          )}, pero no se pudo asociar al movimiento: ${linkError}`,
+        }
+      }
+      return {
+        ...r,
+        status: 'reconciled',
+        detail: `Pago Programado con monto real ${formatCurrency(
+          r.monto,
+        )} y asociada al movimiento ${movement.documentoNumero}.`,
+      }
+    })
+
+    setRows(nextRows)
+    setProgress(100)
+    setProgressLabel('Listo')
+
+    // Overall + toasts.
+    const okCount = nextRows.filter((r) => r.status === 'reconciled').length
+    const partialCount = nextRows.filter((r) => r.status === 'status_updated_no_link').length
+    const errCount = nextRows.filter((r) => r.status === 'apply_error').length
+    const overall: CsvHistoryEntry['overallStatus'] =
+      errCount === 0 && partialCount === 0
+        ? 'success'
+        : okCount === 0
+          ? 'error'
+          : 'partial'
+    persistHistory(nextRows, overall)
+
+    qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+    qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
+    qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
+    qc.invalidateQueries({ queryKey: ['refund'] })
+    onApplied?.()
+
+    if (okCount > 0 && errCount === 0 && partialCount === 0) {
       toast({
         title: 'Conciliación aplicada',
-        description: `${matches.length} solicitud${matches.length === 1 ? '' : 'es'} asociada${matches.length === 1 ? '' : 's'}.`,
+        description: `${okCount} solicitud${okCount === 1 ? '' : 'es'} programada${okCount === 1 ? '' : 's'} para pago y asociada${okCount === 1 ? '' : 's'} al movimiento.`,
       })
-      setProgress(100)
-      setStep('result')
-    } catch (err: any) {
-      const msg = err?.message ?? 'No se pudo aplicar la conciliación en el backend.'
-      const nextRows = rows.map((r) =>
-        r.status === 'valid'
-          ? { ...r, status: 'apply_error' as CsvRowStatus, detail: msg }
-          : r,
-      )
-      setRows(nextRows)
-      persistHistory(nextRows, 'error')
-      toast({ title: 'Error al conciliar', description: msg, variant: 'destructive' })
-      setStep('result')
-    } finally {
-      setProcessing(false)
+    } else if (okCount > 0) {
+      toast({
+        title: 'Conciliación parcial',
+        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${partialCount} sin asociar · ${errCount} con error.`,
+      })
+    } else {
+      toast({
+        title: 'No se pudo conciliar',
+        description: linkError ?? 'Ninguna solicitud pudo procesarse.',
+        variant: 'destructive',
+      })
     }
+
+    setStep('result')
+    setProcessing(false)
   }
 
   const persistHistory = (finalRows: ProcessedRow[], overall: CsvHistoryEntry['overallStatus']) => {
