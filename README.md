@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.6
+## Versión 4.1.7
 
 ## Changelog
+
+### Versión 4.1.7 - 2026-07-11
+
+#### Conciliación — corrección de transiciones y mejora de trazabilidad
+- **Fix de identificador en cambios de estado:** los flujos de conciliación por CSV (masivo e individual) ahora envían el `publicId` de la solicitud (`TDV-...`) en el `PATCH` de cambio de estado, en lugar del `_id` interno de MongoDB. Esto corrige los errores 404 al intentar programar el pago desde la conciliación.
+- **Transición directa Ingresado → Pago Programado:** se agrega el flag `force: true` en el cuerpo del `PATCH` para permitir la transición forzada durante el proceso de conciliación CSV, ya que el monto real ya fue validado contra el abono bancario.
+- **Diagnóstico más claro para solicitudes no encontradas:** en la conciliación individual, cuando una fila no encuentra coincidencia local, se consulta al backend por `numero_operacion`. El mensaje ahora distingue entre:
+  - Solicitud que **no existe** en el sistema.
+  - Solicitud que **existe pero está en otro estado** (se muestra su `publicId` y estado actual para resolución manual).
+- **Renombrado de acción:** el botón de header pasó de **"Conciliar por CSV"** a **"Conciliación CSV para Abonos Individuales"** para reflejar con mayor claridad el alcance de la funcionalidad.
 
 ### Versión 4.1.6 - 2026-07-11
 
