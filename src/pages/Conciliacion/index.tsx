@@ -35,6 +35,10 @@ import {
 } from './components/LinkRefundsDialog'
 import { CsvReconcileDialog } from './components/CsvReconcileDialog'
 import {
+  IndividualCsvReconcileDialog,
+  type MovementCandidate,
+} from './components/IndividualCsvReconcileDialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -240,6 +244,25 @@ export default function ConciliacionPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
   const [csvOpen, setCsvOpen] = useState(false)
+  const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
+
+  const movementCandidates: MovementCandidate[] = useMemo(() => {
+    return abonos
+      .map((m) => {
+        const doc = String(m.documento_numero ?? '').trim()
+        const abono = toNumber(m.abono) ?? 0
+        if (!doc || abono <= 0) return null
+        const applied = bulkMap[doc]?.totalApplied ?? 0
+        return {
+          documentoNumero: doc,
+          descripcion: String(m.descripcion ?? ''),
+          abono,
+          fecha: fmtDate(m.fecha_movimiento),
+          remaining: Math.max(0, abono - applied),
+        } as MovementCandidate
+      })
+      .filter((x): x is MovementCandidate => x !== null)
+  }, [abonos, bulkMap])
 
   const buildMovementRef = (m: CartolaMovimiento): CartolaMovementRef | null => {
     const doc = String(m.documento_numero ?? '').trim()
@@ -366,6 +389,15 @@ export default function ConciliacionPage() {
                   {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
                 </>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIndividualCsvOpen(true)}
+              disabled={abonos.length === 0 || query.isFetching}
+              title="Concilia varias solicitudes por CSV buscando el abono coincidente"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Conciliar por CSV
             </Button>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -640,6 +672,12 @@ export default function ConciliacionPage() {
         movement={selected}
         open={csvOpen}
         onOpenChange={setCsvOpen}
+        onApplied={refreshReconciliation}
+      />
+      <IndividualCsvReconcileDialog
+        open={individualCsvOpen}
+        onOpenChange={setIndividualCsvOpen}
+        movements={movementCandidates}
         onApplied={refreshReconciliation}
       />
     </div>
