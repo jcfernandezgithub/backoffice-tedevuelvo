@@ -951,14 +951,17 @@ function RowsTable({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+                        className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
                       >
                         {STATUS_LABELS[r.status]}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate" title={r.detail}>
+                    <TableCell
+                      className="text-xs text-muted-foreground min-w-[280px] max-w-[420px] whitespace-normal break-words align-top"
+                      title={r.detail}
+                    >
                       {r.detail}
                     </TableCell>
                   </TableRow>
