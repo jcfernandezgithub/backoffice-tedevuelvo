@@ -759,6 +759,7 @@ function SummaryStrip({ totals }: { totals: ReturnType<typeof computeTotals> }) 
     { label: 'Duplicadas sistema', value: totals.duplicated_in_system, cls: 'bg-amber-50 text-amber-800 border-amber-200' },
     { label: 'Ya conciliadas', value: totals.already_reconciled_here, cls: 'bg-emerald-50/60 text-emerald-700 border-emerald-200' },
     { label: 'Otro movimiento', value: totals.linked_to_other_movement, cls: 'bg-orange-50 text-orange-800 border-orange-200' },
+    { label: 'Sin asociar', value: totals.status_updated_no_link, cls: 'bg-amber-50 text-amber-900 border-amber-300' },
     { label: 'Errores', value: totals.format_error + totals.apply_error, cls: 'bg-destructive/10 text-destructive border-destructive/30' },
   ]
   return (
@@ -795,6 +796,7 @@ function StatusFilter({
     { v: 'duplicated_in_system', label: STATUS_LABELS.duplicated_in_system, count: totals.duplicated_in_system },
     { v: 'already_reconciled_here', label: STATUS_LABELS.already_reconciled_here, count: totals.already_reconciled_here },
     { v: 'linked_to_other_movement', label: STATUS_LABELS.linked_to_other_movement, count: totals.linked_to_other_movement },
+    { v: 'status_updated_no_link', label: STATUS_LABELS.status_updated_no_link, count: totals.status_updated_no_link },
     { v: 'format_error', label: STATUS_LABELS.format_error, count: totals.format_error },
     { v: 'apply_error', label: STATUS_LABELS.apply_error, count: totals.apply_error },
   ] as Opt[]).filter((o) => o.v === 'all' || o.count > 0)
