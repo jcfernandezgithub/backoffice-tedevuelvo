@@ -35,6 +35,8 @@ export interface PendingRefund {
   fullName: string
   rut: string
   realAmount: number
+  /** Monto estimado por la simulación original (referencia para comparar contra el CSV). */
+  estimatedAmount: number
   reconciledAmount: number // suma de matches existentes
   remainingAmount: number
   isFullyReconciled: boolean
