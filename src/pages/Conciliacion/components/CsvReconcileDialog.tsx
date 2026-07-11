@@ -222,8 +222,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
       )
       setProgress(Math.round(((i + 1) / (total + 1)) * 80))
       try {
-        if (!r.matchedRefundId) throw new Error('Solicitud sin id interno.')
-        await refundAdminApi.updateStatus(r.matchedRefundId, {
+        if (!r.matchedPublicId) throw new Error('Solicitud sin publicId.')
+        await refundAdminApi.updateStatus(r.matchedPublicId, {
           status: 'payment_scheduled',
           realAmount: Math.round(r.monto),
           note: noteBase,

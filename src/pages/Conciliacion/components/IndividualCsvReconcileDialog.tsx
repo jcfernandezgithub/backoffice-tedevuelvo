@@ -451,7 +451,7 @@ export function IndividualCsvReconcileDialog({
       setProgressLabel(`Actualizando ${i + 1}/${total} · ${r.refundPublicId ?? r.numero_operacion}`)
       setProgress(Math.round(((i + 1) / (total + 1)) * 70))
       try {
-        await refundAdminApi.updateStatus(r.refundId!, {
+        await refundAdminApi.updateStatus(r.refundPublicId!, {
           status: 'payment_scheduled',
           realAmount: r.realAmount!,
           note: `Conciliación CSV individual — abono ${r.chosenDoc}${file?.name ? ` (${file.name})` : ''} · devolución ${formatCurrency(r.realAmount!)} = abono ${formatCurrency(r.monto)} − prima total ${formatCurrency(r.primaTotal ?? 0)}`,
