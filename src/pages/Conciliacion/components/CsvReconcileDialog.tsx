@@ -818,19 +818,47 @@ function StatusFilter({
   )
 }
 
-function RowsTable({ rows }: { rows: ProcessedRow[] }) {
+interface RowsTableProps {
+  rows: ProcessedRow[]
+  selectable?: boolean
+  allValidApproved?: boolean
+  onToggleAll?: (next: boolean) => void
+  onToggleRow?: (rowNumber: number, next: boolean) => void
+}
+
+function RowsTable({
+  rows,
+  selectable = false,
+  allValidApproved = false,
+  onToggleAll,
+  onToggleRow,
+}: RowsTableProps) {
+  const cols = selectable ? 8 : 7
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
       <ScrollArea className="h-full">
         <Table>
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
+              {selectable && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allValidApproved}
+                    onCheckedChange={(v) => onToggleAll?.(v === true)}
+                    aria-label="Aprobar todas"
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-14">Fila</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>RUT</TableHead>
+              <TableHead>Solicitud / Cliente CSV</TableHead>
               <TableHead>N° Operación</TableHead>
-              <TableHead>Póliza</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
+              <TableHead className="text-right">Estimado sistema</TableHead>
+              <TableHead className="text-right">
+                Monto CSV
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  se guardará como monto real
+                </div>
+              </TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Detalle</TableHead>
             </TableRow>
@@ -838,35 +866,102 @@ function RowsTable({ rows }: { rows: ProcessedRow[] }) {
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">
+                <TableCell colSpan={cols} className="text-center text-sm text-muted-foreground py-6">
                   Sin filas para mostrar.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => (
-                <TableRow key={r.rowNumber}>
-                  <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
-                  <TableCell className="text-sm truncate max-w-[200px]" title={r.nombre_cliente}>
-                    {r.nombre_cliente || '—'}
-                  </TableCell>
-                  <TableCell className="text-xs font-mono">{r.rut || '—'}</TableCell>
-                  <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
-                  <TableCell className="text-xs font-mono">{r.poliza || '—'}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
-                    {formatCurrency(r.monto)}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
-                    >
-                      {STATUS_LABELS[r.status]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate" title={r.detail}>
-                    {r.detail}
-                  </TableCell>
-                </TableRow>
-              ))
+              rows.map((r) => {
+                const est = r.matchedEstimated ?? 0
+                const diff = est > 0 ? r.monto - est : 0
+                const diffPct = est > 0 ? (diff / est) * 100 : 0
+                const hasDiff = est > 0 && Math.abs(diff) > 0.5
+                return (
+                  <TableRow
+                    key={r.rowNumber}
+                    className={r.approved === false ? 'opacity-60' : undefined}
+                  >
+                    {selectable && (
+                      <TableCell>
+                        {r.status === 'valid' ? (
+                          <Checkbox
+                            checked={r.approved !== false}
+                            onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
+                            aria-label={`Aprobar fila ${r.rowNumber}`}
+                          />
+                        ) : (
+                          <span className="text-muted-foreground/50 text-xs">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
+                    <TableCell className="text-sm max-w-[240px]">
+                      {r.matchedPublicId ? (
+                        <div className="flex flex-col">
+                          <span className="font-mono text-xs text-primary">
+                            {r.matchedPublicId}
+                          </span>
+                          <span className="truncate text-xs" title={r.matchedFullName}>
+                            {r.matchedFullName || r.nombre_cliente || '—'}
+                          </span>
+                          {r.rut && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {r.rut}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span
+                            className="truncate text-xs"
+                            title={r.nombre_cliente}
+                          >
+                            {r.nombre_cliente || '—'}
+                          </span>
+                          {r.rut && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {r.rut}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                      {est > 0 ? formatCurrency(est) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-medium tabular-nums">
+                          {formatCurrency(r.monto)}
+                        </span>
+                        {hasDiff && (
+                          <span
+                            className={`text-[10px] tabular-nums ${
+                              diff > 0 ? 'text-amber-700' : 'text-sky-700'
+                            }`}
+                            title="Diferencia respecto al monto estimado del sistema"
+                          >
+                            {diff > 0 ? '+' : ''}
+                            {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
+                            {diffPct.toFixed(1)}%)
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+                      >
+                        {STATUS_LABELS[r.status]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate" title={r.detail}>
+                      {r.detail}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
