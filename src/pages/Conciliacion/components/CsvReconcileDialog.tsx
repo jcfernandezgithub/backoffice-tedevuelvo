@@ -499,7 +499,23 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                     value={filterStatus}
                     onChange={setFilterStatus}
                   />
-                  <RowsTable rows={filteredRows} />
+                  {overApplied && (
+                    <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <span>
+                        La suma de los montos aprobados ({formatCurrency(totalToApply)})
+                        supera el abono disponible ({formatCurrency(abono)}). Desmarca
+                        alguna solicitud para poder continuar.
+                      </span>
+                    </div>
+                  )}
+                  <RowsTable
+                    rows={filteredRows}
+                    selectable
+                    allValidApproved={allValidApproved}
+                    onToggleAll={toggleAllApproved}
+                    onToggleRow={toggleRowApproved}
+                  />
                 </>
               )}
             </div>
@@ -507,6 +523,38 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
           {step === 'result' && (
             <div className="flex-1 min-h-0 flex flex-col gap-3">
+              {totals.status_updated_no_link > 0 && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="text-amber-900">
+                    <div className="font-medium">
+                      {totals.status_updated_no_link} solicitud
+                      {totals.status_updated_no_link === 1 ? '' : 'es'} quedaron con estado
+                      actualizado pero sin asociar al movimiento.
+                    </div>
+                    <div className="text-xs mt-0.5">
+                      El monto real de devolución ya se guardó y el estado es Pago Programado.
+                      Asócialas manualmente al movimiento desde la opción "Conciliar
+                      manualmente" para completar el proceso.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {totals.reconciled > 0 && (
+                <div className="rounded-md border bg-emerald-50 border-emerald-200 p-3 text-sm text-emerald-800">
+                  <strong>{totals.reconciled}</strong> solicitud
+                  {totals.reconciled === 1 ? '' : 'es'} programada
+                  {totals.reconciled === 1 ? '' : 's'} para pago por un total de{' '}
+                  <strong>
+                    {formatCurrency(
+                      rows
+                        .filter((r) => r.status === 'reconciled')
+                        .reduce((s, r) => s + r.monto, 0),
+                    )}
+                  </strong>
+                  .
+                </div>
+              )}
               <SummaryStrip totals={totals} />
               <StatusFilter
                 totals={totals}
