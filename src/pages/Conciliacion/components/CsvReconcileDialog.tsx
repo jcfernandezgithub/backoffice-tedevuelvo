@@ -589,7 +589,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           <div className="shrink-0 space-y-1" aria-live="polite">
             <Progress value={progress} />
             <div className="text-xs text-muted-foreground text-center">
-              Aplicando conciliación…
+              {progressLabel || 'Aplicando conciliación…'}
             </div>
           </div>
         )}
@@ -598,7 +598,9 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           <div className="text-xs text-muted-foreground">
             {step === 'preview' && (
               <>
-                {validRows.length} lista{validRows.length === 1 ? '' : 's'} para conciliar
+                {approvedRows.length} de {validRows.length} aprobada
+                {approvedRows.length === 1 ? '' : 's'} · Suma {formatCurrency(totalToApply)} /{' '}
+                Abono {formatCurrency(abono)}
                 {hasStructuralErrors && ' · hay filas con errores estructurales'}
               </>
             )}
@@ -613,7 +615,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
               <>
                 <Button variant="outline" onClick={() => setStep('upload')}>Cambiar archivo</Button>
                 <Button disabled={!canProcess} onClick={() => setConfirmOpen(true)}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> Procesar conciliación
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Aplicar {approvedRows.length} y programar pago
                 </Button>
               </>
             )}
@@ -648,11 +651,37 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Procesar conciliación</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se asociarán {validRows.length} solicitud{validRows.length === 1 ? '' : 'es'} al
-              movimiento {movement.documentoNumero} por un total de {formatCurrency(totalToApply)}.
-              Esta acción no se puede deshacer automáticamente.
+            <AlertDialogTitle>Confirmar conciliación</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Se procesarán{' '}
+                  <strong>
+                    {approvedRows.length} solicitud{approvedRows.length === 1 ? '' : 'es'}
+                  </strong>{' '}
+                  contra el movimiento{' '}
+                  <span className="font-mono">{movement.documentoNumero}</span>.
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                  <li>
+                    Cada solicitud pasará a estado <strong>Pago Programado</strong>.
+                  </li>
+                  <li>
+                    El <strong>monto del CSV</strong> quedará guardado como{' '}
+                    <strong>monto real de devolución</strong> de la solicitud.
+                  </li>
+                  <li>
+                    Se registrará una entrada en el historial de la solicitud.
+                  </li>
+                </ul>
+                <div className="rounded-md bg-muted/60 p-2 text-xs">
+                  Total a aplicar: <strong>{formatCurrency(totalToApply)}</strong> · Abono
+                  disponible: <strong>{formatCurrency(abono)}</strong>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Esta acción no se puede deshacer automáticamente.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -663,7 +692,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                 runProcess()
               }}
             >
-              Confirmar y conciliar
+              Confirmar y programar pago
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
