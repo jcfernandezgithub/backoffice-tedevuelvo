@@ -42,4 +42,8 @@ export interface PendingRefund {
   isFullyReconciled: boolean
   scheduledAt: string
   nroCredito?: string
+  /** Prima mensual del nuevo seguro (Te Devuelvo) — desde calculationSnapshot. */
+  newMonthlyPremium?: number
+  /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
+  confirmedRemainingInstallments?: number
 }

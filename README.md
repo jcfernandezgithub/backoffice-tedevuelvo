@@ -1,8 +1,21 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.5
+## Versión 4.1.6
 
 ## Changelog
+
+### Versión 4.1.6 - 2026-07-11
+
+#### Conciliación individual (CSV) — devolución real por cliente
+- Nuevo botón **"Conciliar por CSV"** en el header de Conciliación que abre un wizard global independiente del movimiento seleccionado.
+- El CSV usa la misma plantilla (`nombre_cliente, rut, numero_operacion, poliza, monto`) pero ahora **`monto` = abono bancario**.
+- Por cada fila el sistema:
+  - Busca la solicitud en estado **Ingresada** por `numero_operacion`.
+  - Busca el/los abono(s) del rango cargado cuyo monto coincida con el `monto` del CSV; si hay más de uno el usuario elige desde un selector con fecha y saldo.
+  - Calcula la **devolución real** como `abono − (newMonthlyPremium × confirmedRemainingInstallments)`; si el resultado es ≤ 0 la fila se bloquea.
+- Aprobación explícita por fila. Al aplicar, la solicitud pasa a **Pago Programado** con la devolución real guardada como `realAmount` y registro en el historial (`Conciliación CSV individual — abono {doc} · devolución {monto} = abono − prima total`).
+- Validación dura de saldo: la suma por movimiento no puede superar el saldo disponible del abono.
+- Tolerante a fallos: si el estado se actualiza pero el link al movimiento falla, la fila queda en **"Estado actualizado sin asociar"** con banner explicativo.
 
 ### Versión 4.1.5 - 2026-07-10
 
