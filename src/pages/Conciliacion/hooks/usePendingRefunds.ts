@@ -52,6 +52,11 @@ export function usePendingRefunds() {
         const reconciledAmount = 0
         const remainingAmount = Math.max(0, realAmount - reconciledAmount)
         const nroCredito = String((r as any)?.calculationSnapshot?.nroCredito ?? '').trim()
+        const snap = (r as any)?.calculationSnapshot ?? {}
+        const newMonthlyPremium = Number(snap?.newMonthlyPremium ?? 0)
+        const confirmedRemainingInstallments = Number(
+          snap?.confirmedRemainingInstallments ?? snap?.remainingInstallments ?? 0,
+        )
         return {
           id: r.id,
           publicId: r.publicId,
@@ -64,6 +69,8 @@ export function usePendingRefunds() {
           isFullyReconciled: realAmount > 0 && remainingAmount <= 0.5,
           scheduledAt: r.updatedAt,
           nroCredito,
+          newMonthlyPremium,
+          confirmedRemainingInstallments,
         } as PendingRefund
       })
     },
