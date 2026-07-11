@@ -259,7 +259,7 @@ export function matchAgainstSystem(
       matchedEstimated: refund.estimatedAmount,
       matchedFullName: refund.fullName,
       approved: true,
-      detail: `Coincide con la solicitud ${refund.publicId} (${refund.fullName}).`,
+      detail: 'Coincide con una solicitud Ingresada. Lista para conciliar.',
     }
   })
 }
