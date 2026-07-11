@@ -334,6 +334,73 @@ export function IndividualCsvReconcileDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, pendingQuery.isLoading, pendingQuery.data])
 
+  // Fallback: enriquecer filas "not_found" consultando el backend por número de
+  // operación / póliza / RUT para distinguir "no existe" vs "existe en otro estado".
+  const enrichedRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (step !== 'preview') return
+    const STATUS_LABELS: Record<string, string> = {
+      submitted: 'Ingresada',
+      payment_scheduled: 'Pago programado',
+      paid: 'Pagada',
+      rejected: 'Rechazada',
+      cancelled: 'Cancelada',
+      draft: 'Borrador',
+      documents_received: 'Documentos recibidos',
+      pending_documents: 'Pendiente documentos',
+    }
+    const targets = rows.filter(
+      (r) => r.state === 'not_found' && r.numero_operacion && !enrichedRef.current.has(String(r.rowNumber)),
+    )
+    if (targets.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      const updates = new Map<number, Partial<Row>>()
+      await Promise.all(
+        targets.map(async (r) => {
+          enrichedRef.current.add(String(r.rowNumber))
+          try {
+            // Busca por número de operación (q hace full-text sobre snapshot).
+            const res = await refundAdminApi.search({ q: r.numero_operacion, limit: 5 })
+            const items = (res.items ?? []) as any[]
+            // Filtrar los que realmente tienen ese nroCredito.
+            const matches = items.filter(
+              (it) => normalizeOp(it?.calculationSnapshot?.nroCredito ?? '') === normalizeOp(r.numero_operacion),
+            )
+            if (matches.length === 0) {
+              updates.set(r.rowNumber, {
+                message: `No existe ninguna solicitud con nº de operación ${r.numero_operacion}. Verifica el CSV.`,
+              })
+              return
+            }
+            const first = matches[0]
+            const st = String(first.status ?? '').toLowerCase()
+            const label = STATUS_LABELS[st] ?? st ?? 'desconocido'
+            const publicId = first.publicId ?? first.id
+            const name = first.fullName ?? r.nombre_cliente
+            updates.set(r.rowNumber, {
+              refundPublicId: publicId,
+              refundName: name,
+              message:
+                matches.length > 1
+                  ? `Hay ${matches.length} solicitudes con ese nº de operación. Ninguna está en Ingresada — resuélvelas manualmente.`
+                  : `La solicitud ${publicId} existe pero está en "${label}", no en Ingresada. Solo se pueden conciliar solicitudes Ingresadas.`,
+            })
+          } catch (err: any) {
+            updates.set(r.rowNumber, {
+              message: `No hay solicitud Ingresada con ese nº de operación (no se pudo verificar en backend: ${err?.message ?? 'error'}).`,
+            })
+          }
+        }),
+      )
+      if (cancelled || updates.size === 0) return
+      setRows((prev) => prev.map((r) => (updates.has(r.rowNumber) ? { ...r, ...updates.get(r.rowNumber)! } : r)))
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [step, rows])
+
   const setChosenDoc = (rowNumber: number, doc: string) => {
     setRows((prev) =>
       prev.map((r) =>
