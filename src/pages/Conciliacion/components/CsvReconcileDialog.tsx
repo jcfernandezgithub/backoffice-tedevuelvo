@@ -42,11 +42,14 @@ import {
   Upload,
   X,
 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
+import { refundAdminApi } from '@/services/refundAdminApi'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   computeTotals,
   downloadCsv,
@@ -82,6 +85,7 @@ const STATUS_STYLES: Record<CsvRowStatus, string> = {
   linked_to_other_movement: 'bg-orange-50 text-orange-800 border-orange-200',
   format_error: 'bg-destructive/10 text-destructive border-destructive/30',
   apply_error: 'bg-destructive/10 text-destructive border-destructive/30',
+  status_updated_no_link: 'bg-amber-50 text-amber-900 border-amber-300',
 }
 
 export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: Props) {
