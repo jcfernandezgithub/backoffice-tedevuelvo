@@ -228,6 +228,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           realAmount: Math.round(r.monto),
           note: noteBase,
           by: user?.email ?? user?.nombre ?? undefined,
+          force: true,
         })
         results.push({ row: r, ok: true })
       } catch (err: any) {
