@@ -456,6 +456,7 @@ export function IndividualCsvReconcileDialog({
           realAmount: r.realAmount!,
           note: `Conciliación CSV individual — abono ${r.chosenDoc}${file?.name ? ` (${file.name})` : ''} · devolución ${formatCurrency(r.realAmount!)} = abono ${formatCurrency(r.monto)} − prima total ${formatCurrency(r.primaTotal ?? 0)}`,
           by: user?.email ?? user?.nombre ?? undefined,
+          force: true,
         })
         results.push({ row: r, ok: true })
       } catch (err: any) {
