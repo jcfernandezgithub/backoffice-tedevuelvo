@@ -1,8 +1,86 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.2
+## Versión 4.1.7
 
 ## Changelog
+
+### Versión 4.1.7 - 2026-07-11
+
+#### Conciliación — corrección de transiciones y mejora de trazabilidad
+- **Fix de identificador en cambios de estado:** los flujos de conciliación por CSV (masivo e individual) ahora envían el `publicId` de la solicitud (`TDV-...`) en el `PATCH` de cambio de estado, en lugar del `_id` interno de MongoDB. Esto corrige los errores 404 al intentar programar el pago desde la conciliación.
+- **Transición directa Ingresado → Pago Programado:** se agrega el flag `force: true` en el cuerpo del `PATCH` para permitir la transición forzada durante el proceso de conciliación CSV, ya que el monto real ya fue validado contra el abono bancario.
+- **Diagnóstico más claro para solicitudes no encontradas:** en la conciliación individual, cuando una fila no encuentra coincidencia local, se consulta al backend por `numero_operacion`. El mensaje ahora distingue entre:
+  - Solicitud que **no existe** en el sistema.
+  - Solicitud que **existe pero está en otro estado** (se muestra su `publicId` y estado actual para resolución manual).
+- **Renombrado de acción:** el botón de header pasó de **"Conciliar por CSV"** a **"Conciliación CSV para Abonos Individuales"** para reflejar con mayor claridad el alcance de la funcionalidad.
+
+### Versión 4.1.6 - 2026-07-11
+
+#### Conciliación individual (CSV) — devolución real por cliente
+- Nuevo botón **"Conciliar por CSV"** en el header de Conciliación que abre un wizard global independiente del movimiento seleccionado.
+- El CSV usa la misma plantilla (`nombre_cliente, rut, numero_operacion, poliza, monto`) pero ahora **`monto` = abono bancario**.
+- Por cada fila el sistema:
+  - Busca la solicitud en estado **Ingresada** por `numero_operacion`.
+  - Busca el/los abono(s) del rango cargado cuyo monto coincida con el `monto` del CSV; si hay más de uno el usuario elige desde un selector con fecha y saldo.
+  - Calcula la **devolución real** como `abono − (newMonthlyPremium × confirmedRemainingInstallments)`; si el resultado es ≤ 0 la fila se bloquea.
+- Aprobación explícita por fila. Al aplicar, la solicitud pasa a **Pago Programado** con la devolución real guardada como `realAmount` y registro en el historial (`Conciliación CSV individual — abono {doc} · devolución {monto} = abono − prima total`).
+- Validación dura de saldo: la suma por movimiento no puede superar el saldo disponible del abono.
+- Tolerante a fallos: si el estado se actualiza pero el link al movimiento falla, la fila queda en **"Estado actualizado sin asociar"** con banner explicativo.
+
+### Versión 4.1.5 - 2026-07-10
+
+#### Conciliación por CSV — cambio de estado + monto real
+- El wizard de conciliación mediante CSV ahora, además de asociar la solicitud al movimiento bancario, **pasa la solicitud a estado *Pago Programado*** y guarda el **monto informado en el CSV como monto real de devolución** (`realAmount`), registrando la transición en el historial de la solicitud (nota: `Conciliación CSV — movimiento {docNumero} ({fileName})`).
+- Nueva tabla de vista previa:
+  - **Checkbox por fila** (y "seleccionar todas") para aprobar explícitamente qué solicitudes se procesan.
+  - Columna **Solicitud** con `publicId` + nombre matcheado.
+  - Columna **Estimado sistema** vs **Monto CSV** con **Δ** absoluto y porcentual (indicativo, no bloqueante).
+- **Validación dura**: la suma de los montos aprobados no puede superar el abono disponible del movimiento; si se supera, el botón queda deshabilitado y se muestra alerta.
+- Botón de acción renombrado a **"Aplicar N y programar pago"** para transparentar el efecto.
+- Confirmación con detalle explícito de qué se guardará y cómo cambia el estado.
+- **Flujo tolerante a fallos**: el proceso itera solicitud a solicitud (barra de progreso "N/M"); si el `PATCH` de estado falla, la fila queda `apply_error` y se continúa. Si todos los cambios de estado pasan pero el link al movimiento falla, las filas quedan en un nuevo estado **"Estado actualizado sin asociar"** con banner explicativo en el paso Resultado, indicando resolverlas manualmente.
+- Se invalidan las cachés de `refund-admin-search` y `refund` para reflejar el cambio de estado en la Lista de Solicitudes al cerrar el diálogo.
+
+### Versión 4.1.4 - 2026-07-08
+
+#### Administración de roles y permisos (Ajustes)
+- Nueva sección **Roles y permisos** dentro de `/ajustes` (grupo *Accesos*) que permite **crear, editar y eliminar** los perfiles de acceso disponibles en la plataforma.
+- Cada rol define: nombre, descripción y las páginas de la plataforma a las que tendrá acceso (selección desde las 11 páginas disponibles).
+- **Roles del sistema** (`Administrador` y `Call Center`) quedan marcados como *Sistema*: solo se puede editar su descripción, no se pueden renombrar ni cambiar sus páginas, ni eliminarse.
+- **No se puede eliminar** un rol con usuarios asignados; tooltip explica el motivo.
+- Cada tarjeta muestra la cantidad de usuarios asignados con enlace directo a `/usuarios`.
+- Validaciones en el diálogo: nombre obligatorio, único, ≤ 40 caracteres, al menos una página seleccionada. Atajos *Todas* / *Ninguna*.
+
+#### Integración con Administración de usuarios
+- El selector de rol en el panel *Crear/Editar usuario* se alimenta dinámicamente de los roles configurados. Los roles del sistema se marcan con el sufijo *· sistema*.
+- Enlace **"Administrar roles →"** junto al selector para navegar a Ajustes.
+- Filtro de rol, badges, diálogo *Cambiar rol* y detalle del usuario consumen los roles dinámicos.
+- Regla actualizada: el usuario autenticado no puede reducir su propio nivel de acceso (aplica a cualquier rol con acceso completo).
+- Advertencias al cambiar de rol calculadas dinámicamente según las páginas del rol destino.
+- `RoleAccessInfo` maneja el caso de un rol eliminado sin romper la UI.
+
+#### Arquitectura
+- Nueva capa `rolesStore` (`src/pages/Ajustes/services/rolesStore.ts`) con estado en memoria y `useSyncExternalStore` — punto único a reemplazar por API real.
+- `RoleV2` ampliado a `string` para admitir roles personalizados; los IDs de sistema (`ADMIN`, `CALLCENTER`) siguen siendo estables.
+- **Pendiente:** persistir roles en backend, aplicar las páginas habilitadas del rol real sobre `AppSidebar`, `ProtectedRoute` y `AdminRoute`.
+
+### Versión 4.1.3 - 2026-07-08
+
+#### Nueva página Administración de usuarios (interfaz con datos simulados)
+- Se rediseñó por completo la página `/usuarios` con el título **"Administración de usuarios"** y se orientó a los dos roles disponibles en esta etapa: **Administrador** (acceso completo a la plataforma) y **Call Center** (acceso exclusivo al módulo Call Center).
+- Encabezado con descripción, botón principal **Crear usuario** y 5 KPIs: Total, Activos, Inactivos, Administradores y Call Center.
+- Buscador por nombre o correo, filtros por rol y estado (Activo / Inactivo / Invitación pendiente), botón para limpiar filtros y contador de resultados. Filtrado 100% local.
+- Listado responsivo: **tabla** en escritorio (Nombre, Correo, Rol, Estado, Último acceso, Fecha de creación, Acciones) y **tarjetas** en dispositivos móviles con rol y estado destacados en la parte superior.
+- Acciones por usuario en menú contextual: **Ver detalle, Editar, Cambiar rol, Activar/Desactivar, Reenviar invitación** (solo pendientes) y **Eliminar**. Confirmaciones para acciones destructivas.
+- Restricciones del usuario autenticado (mockeado): no puede eliminarse, desactivarse ni degradar su propio rol a Call Center. Se representan con acciones deshabilitadas y tooltips explicativos.
+- Panel lateral **Crear/Editar** con secciones *Información del usuario* y *Configuración de acceso*. Al seleccionar un rol se muestra en vivo una explicación (**Acceso completo** vs **Acceso limitado**) con la lista de páginas habilitadas y restringidas.
+- Cambio de rol en edición muestra advertencia contextual y requiere confirmación explícita. Diálogo dedicado **Cambiar rol** con las mismas explicaciones y advertencias.
+- Panel lateral **Detalle del usuario** con datos personales, nivel de acceso, páginas habilitadas/restringidas y timeline simulado de actividad (creación, cambios de rol, activaciones/desactivaciones, reenvíos de invitación).
+- Validaciones: nombre, apellido, correo (formato y unicidad), rol y estado obligatorios; mensajes de error inline y botón principal deshabilitado con errores.
+- Notificaciones (`sonner`) para cada acción exitosa. Estados vacíos y skeleton listos para cuando se conecte al backend.
+- **Alcance:** solo capa visual con datos simulados en memoria. No se implementa autenticación real, invitaciones por correo, protección de rutas ni matriz editable de permisos. Ninguna otra página del sitio fue modificada.
+- **Componentes creados:** `UsersStats`, `UsersFilters`, `UsersTable`, `UsersMobileList`, `UserFormSheet`, `UserDetailsSheet`, `ChangeRoleDialog`, `DeleteUserConfirm`, `RoleAccessInfo`, `UserRowActionsV2`, `StateRoleBadges`. Store simulado en `useMockUsers`. Definición de accesos por rol centralizada en `constants/roleAccess.ts` (punto único a reemplazar cuando existan permisos reales).
+- **Pendiente para siguiente etapa:** reemplazar `useMockUsers` por servicio real, alimentar el usuario actual desde `AuthContext`, invitaciones reales, persistencia backend y aplicación real de las restricciones de rol en `AppSidebar`, `ProtectedRoute` y `AdminRoute`.
 
 ### Versión 4.1.2 - 2026-07-07
 

@@ -42,11 +42,14 @@ import {
   Upload,
   X,
 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
+import { refundAdminApi } from '@/services/refundAdminApi'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   computeTotals,
   downloadCsv,
@@ -82,6 +85,7 @@ const STATUS_STYLES: Record<CsvRowStatus, string> = {
   linked_to_other_movement: 'bg-orange-50 text-orange-800 border-orange-200',
   format_error: 'bg-destructive/10 text-destructive border-destructive/30',
   apply_error: 'bg-destructive/10 text-destructive border-destructive/30',
+  status_updated_no_link: 'bg-amber-50 text-amber-900 border-amber-300',
 }
 
 export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: Props) {
@@ -169,58 +173,166 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
   )
 
   const validRows = useMemo(() => rows.filter((r) => r.status === 'valid'), [rows])
-  const totalToApply = validRows.reduce((s, r) => s + r.monto, 0)
+  const approvedRows = useMemo(
+    () => validRows.filter((r) => r.approved !== false),
+    [validRows],
+  )
+  const totalToApply = approvedRows.reduce((s, r) => s + r.monto, 0)
   const abono = movement?.abono ?? 0
   const overApplied = totalToApply > abono + 0.5
   const hasStructuralErrors = totals.format_error > 0 || totals.duplicated_in_csv > 0
-  const canProcess = !processing && validRows.length > 0 && !overApplied
+  const canProcess = !processing && approvedRows.length > 0 && !overApplied
+  const allValidApproved =
+    validRows.length > 0 && validRows.every((r) => r.approved !== false)
+
+  const toggleRowApproved = (rowNumber: number, next: boolean) => {
+    setRows((prev) =>
+      prev.map((r) => (r.rowNumber === rowNumber ? { ...r, approved: next } : r)),
+    )
+  }
+  const toggleAllApproved = (next: boolean) => {
+    setRows((prev) =>
+      prev.map((r) => (r.status === 'valid' ? { ...r, approved: next } : r)),
+    )
+  }
+
+  const [progressLabel, setProgressLabel] = useState('')
 
   const runProcess = async () => {
-    if (!movement || validRows.length === 0) return
+    if (!movement || approvedRows.length === 0) return
     setProcessing(true)
-    setProgress(20)
-    try {
-      const matches = validRows.map((r) => ({
-        publicId: r.matchedPublicId!,
-        amountApplied: Math.round(r.monto),
-      }))
-      setProgress(50)
-      await cartolaLinksService.applyMatches(movement.documentoNumero, matches)
-      setProgress(90)
-      const nextRows = rows.map((r) =>
-        r.status === 'valid'
-          ? {
-              ...r,
-              status: 'reconciled' as CsvRowStatus,
-              detail: `Asociada correctamente al movimiento ${movement.documentoNumero}.`,
-            }
-          : r,
+    setProgress(2)
+    setProgressLabel('Preparando…')
+
+    const noteBase = `Conciliación CSV — movimiento ${movement.documentoNumero}${
+      file?.name ? ` (${file.name})` : ''
+    }`
+
+    // Snapshot para no perder cambios de aprobación mientras corre el proceso.
+    const targets = approvedRows.slice()
+    const total = targets.length
+
+    // Paso 1: por cada solicitud, actualizar estado a Pago Programado con realAmount.
+    type StepResult = { row: ProcessedRow; ok: boolean; error?: string }
+    const results: StepResult[] = []
+    for (let i = 0; i < targets.length; i++) {
+      const r = targets[i]
+      setProgressLabel(
+        `Actualizando ${i + 1}/${total} · ${r.matchedPublicId ?? r.numero_operacion}`,
       )
-      setRows(nextRows)
-      persistHistory(nextRows, 'success')
-      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
-      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
-      onApplied?.()
+      setProgress(Math.round(((i + 1) / (total + 1)) * 80))
+      try {
+        if (!r.matchedPublicId) throw new Error('Solicitud sin publicId.')
+        await refundAdminApi.updateStatus(r.matchedPublicId, {
+          status: 'payment_scheduled',
+          realAmount: Math.round(r.monto),
+          note: noteBase,
+          by: user?.email ?? user?.nombre ?? undefined,
+          force: true,
+        })
+        results.push({ row: r, ok: true })
+      } catch (err: any) {
+        results.push({
+          row: r,
+          ok: false,
+          error: err?.message ?? 'No se pudo actualizar el estado de la solicitud.',
+        })
+      }
+    }
+
+    // Paso 2: link movimiento↔solicitud SOLO para los que pasaron el paso 1.
+    const okRows = results.filter((x) => x.ok).map((x) => x.row)
+    let linkError: string | null = null
+    if (okRows.length > 0) {
+      setProgressLabel('Asociando solicitudes al movimiento…')
+      setProgress(92)
+      try {
+        await cartolaLinksService.applyMatches(
+          movement.documentoNumero,
+          okRows.map((r) => ({
+            publicId: r.matchedPublicId!,
+            amountApplied: Math.round(r.monto),
+          })),
+        )
+      } catch (err: any) {
+        linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
+      }
+    }
+
+    // Paso 3: componer nuevo array de filas con status por fila.
+    const outcomeByRow = new Map<number, StepResult>()
+    for (const r of results) outcomeByRow.set(r.row.rowNumber, r)
+    const nextRows: ProcessedRow[] = rows.map((r) => {
+      if (r.status !== 'valid') return r
+      const outcome = outcomeByRow.get(r.rowNumber)
+      if (!outcome) return r // no aprobada por el usuario, se queda como 'valid'
+      if (!outcome.ok) {
+        return {
+          ...r,
+          status: 'apply_error',
+          detail: outcome.error ?? 'Error al actualizar el estado.',
+        }
+      }
+      if (linkError) {
+        return {
+          ...r,
+          status: 'status_updated_no_link',
+          detail: `Solicitud pasada a Pago Programado con monto ${formatCurrency(
+            r.monto,
+          )}, pero no se pudo asociar al movimiento: ${linkError}`,
+        }
+      }
+      return {
+        ...r,
+        status: 'reconciled',
+        detail: `Pago Programado con monto real ${formatCurrency(
+          r.monto,
+        )} y asociada al movimiento ${movement.documentoNumero}.`,
+      }
+    })
+
+    setRows(nextRows)
+    setProgress(100)
+    setProgressLabel('Listo')
+
+    // Overall + toasts.
+    const okCount = nextRows.filter((r) => r.status === 'reconciled').length
+    const partialCount = nextRows.filter((r) => r.status === 'status_updated_no_link').length
+    const errCount = nextRows.filter((r) => r.status === 'apply_error').length
+    const overall: CsvHistoryEntry['overallStatus'] =
+      errCount === 0 && partialCount === 0
+        ? 'success'
+        : okCount === 0
+          ? 'error'
+          : 'partial'
+    persistHistory(nextRows, overall)
+
+    qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+    qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
+    qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
+    qc.invalidateQueries({ queryKey: ['refund'] })
+    onApplied?.()
+
+    if (okCount > 0 && errCount === 0 && partialCount === 0) {
       toast({
         title: 'Conciliación aplicada',
-        description: `${matches.length} solicitud${matches.length === 1 ? '' : 'es'} asociada${matches.length === 1 ? '' : 's'}.`,
+        description: `${okCount} solicitud${okCount === 1 ? '' : 'es'} programada${okCount === 1 ? '' : 's'} para pago y asociada${okCount === 1 ? '' : 's'} al movimiento.`,
       })
-      setProgress(100)
-      setStep('result')
-    } catch (err: any) {
-      const msg = err?.message ?? 'No se pudo aplicar la conciliación en el backend.'
-      const nextRows = rows.map((r) =>
-        r.status === 'valid'
-          ? { ...r, status: 'apply_error' as CsvRowStatus, detail: msg }
-          : r,
-      )
-      setRows(nextRows)
-      persistHistory(nextRows, 'error')
-      toast({ title: 'Error al conciliar', description: msg, variant: 'destructive' })
-      setStep('result')
-    } finally {
-      setProcessing(false)
+    } else if (okCount > 0) {
+      toast({
+        title: 'Conciliación parcial',
+        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${partialCount} sin asociar · ${errCount} con error.`,
+      })
+    } else {
+      toast({
+        title: 'No se pudo conciliar',
+        description: linkError ?? 'Ninguna solicitud pudo procesarse.',
+        variant: 'destructive',
+      })
     }
+
+    setStep('result')
+    setProcessing(false)
   }
 
   const persistHistory = (finalRows: ProcessedRow[], overall: CsvHistoryEntry['overallStatus']) => {
@@ -260,7 +372,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-[min(96vw,1200px)] max-h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -388,7 +500,23 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                     value={filterStatus}
                     onChange={setFilterStatus}
                   />
-                  <RowsTable rows={filteredRows} />
+                  {overApplied && (
+                    <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <span>
+                        La suma de los montos aprobados ({formatCurrency(totalToApply)})
+                        supera el abono disponible ({formatCurrency(abono)}). Desmarca
+                        alguna solicitud para poder continuar.
+                      </span>
+                    </div>
+                  )}
+                  <RowsTable
+                    rows={filteredRows}
+                    selectable
+                    allValidApproved={allValidApproved}
+                    onToggleAll={toggleAllApproved}
+                    onToggleRow={toggleRowApproved}
+                  />
                 </>
               )}
             </div>
@@ -396,6 +524,38 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
           {step === 'result' && (
             <div className="flex-1 min-h-0 flex flex-col gap-3">
+              {totals.status_updated_no_link > 0 && (
+                <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="text-amber-900">
+                    <div className="font-medium">
+                      {totals.status_updated_no_link} solicitud
+                      {totals.status_updated_no_link === 1 ? '' : 'es'} quedaron con estado
+                      actualizado pero sin asociar al movimiento.
+                    </div>
+                    <div className="text-xs mt-0.5">
+                      El monto real de devolución ya se guardó y el estado es Pago Programado.
+                      Asócialas manualmente al movimiento desde la opción "Conciliar
+                      manualmente" para completar el proceso.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {totals.reconciled > 0 && (
+                <div className="rounded-md border bg-emerald-50 border-emerald-200 p-3 text-sm text-emerald-800">
+                  <strong>{totals.reconciled}</strong> solicitud
+                  {totals.reconciled === 1 ? '' : 'es'} programada
+                  {totals.reconciled === 1 ? '' : 's'} para pago por un total de{' '}
+                  <strong>
+                    {formatCurrency(
+                      rows
+                        .filter((r) => r.status === 'reconciled')
+                        .reduce((s, r) => s + r.monto, 0),
+                    )}
+                  </strong>
+                  .
+                </div>
+              )}
               <SummaryStrip totals={totals} />
               <StatusFilter
                 totals={totals}
@@ -478,7 +638,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           <div className="shrink-0 space-y-1" aria-live="polite">
             <Progress value={progress} />
             <div className="text-xs text-muted-foreground text-center">
-              Aplicando conciliación…
+              {progressLabel || 'Aplicando conciliación…'}
             </div>
           </div>
         )}
@@ -487,7 +647,9 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           <div className="text-xs text-muted-foreground">
             {step === 'preview' && (
               <>
-                {validRows.length} lista{validRows.length === 1 ? '' : 's'} para conciliar
+                {approvedRows.length} de {validRows.length} aprobada
+                {approvedRows.length === 1 ? '' : 's'} · Suma {formatCurrency(totalToApply)} /{' '}
+                Abono {formatCurrency(abono)}
                 {hasStructuralErrors && ' · hay filas con errores estructurales'}
               </>
             )}
@@ -502,7 +664,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
               <>
                 <Button variant="outline" onClick={() => setStep('upload')}>Cambiar archivo</Button>
                 <Button disabled={!canProcess} onClick={() => setConfirmOpen(true)}>
-                  <CheckCircle2 className="h-4 w-4 mr-1" /> Procesar conciliación
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Aplicar {approvedRows.length} y programar pago
                 </Button>
               </>
             )}
@@ -537,11 +700,37 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Procesar conciliación</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se asociarán {validRows.length} solicitud{validRows.length === 1 ? '' : 'es'} al
-              movimiento {movement.documentoNumero} por un total de {formatCurrency(totalToApply)}.
-              Esta acción no se puede deshacer automáticamente.
+            <AlertDialogTitle>Confirmar conciliación</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Se procesarán{' '}
+                  <strong>
+                    {approvedRows.length} solicitud{approvedRows.length === 1 ? '' : 'es'}
+                  </strong>{' '}
+                  contra el movimiento{' '}
+                  <span className="font-mono">{movement.documentoNumero}</span>.
+                </p>
+                <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                  <li>
+                    Cada solicitud pasará a estado <strong>Pago Programado</strong>.
+                  </li>
+                  <li>
+                    El <strong>monto del CSV</strong> quedará guardado como{' '}
+                    <strong>monto real de devolución</strong> de la solicitud.
+                  </li>
+                  <li>
+                    Se registrará una entrada en el historial de la solicitud.
+                  </li>
+                </ul>
+                <div className="rounded-md bg-muted/60 p-2 text-xs">
+                  Total a aplicar: <strong>{formatCurrency(totalToApply)}</strong> · Abono
+                  disponible: <strong>{formatCurrency(abono)}</strong>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Esta acción no se puede deshacer automáticamente.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -552,7 +741,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                 runProcess()
               }}
             >
-              Confirmar y conciliar
+              Confirmar y programar pago
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -571,6 +760,7 @@ function SummaryStrip({ totals }: { totals: ReturnType<typeof computeTotals> }) 
     { label: 'Duplicadas sistema', value: totals.duplicated_in_system, cls: 'bg-amber-50 text-amber-800 border-amber-200' },
     { label: 'Ya conciliadas', value: totals.already_reconciled_here, cls: 'bg-emerald-50/60 text-emerald-700 border-emerald-200' },
     { label: 'Otro movimiento', value: totals.linked_to_other_movement, cls: 'bg-orange-50 text-orange-800 border-orange-200' },
+    { label: 'Sin asociar', value: totals.status_updated_no_link, cls: 'bg-amber-50 text-amber-900 border-amber-300' },
     { label: 'Errores', value: totals.format_error + totals.apply_error, cls: 'bg-destructive/10 text-destructive border-destructive/30' },
   ]
   return (
@@ -607,6 +797,7 @@ function StatusFilter({
     { v: 'duplicated_in_system', label: STATUS_LABELS.duplicated_in_system, count: totals.duplicated_in_system },
     { v: 'already_reconciled_here', label: STATUS_LABELS.already_reconciled_here, count: totals.already_reconciled_here },
     { v: 'linked_to_other_movement', label: STATUS_LABELS.linked_to_other_movement, count: totals.linked_to_other_movement },
+    { v: 'status_updated_no_link', label: STATUS_LABELS.status_updated_no_link, count: totals.status_updated_no_link },
     { v: 'format_error', label: STATUS_LABELS.format_error, count: totals.format_error },
     { v: 'apply_error', label: STATUS_LABELS.apply_error, count: totals.apply_error },
   ] as Opt[]).filter((o) => o.v === 'all' || o.count > 0)
@@ -630,19 +821,47 @@ function StatusFilter({
   )
 }
 
-function RowsTable({ rows }: { rows: ProcessedRow[] }) {
+interface RowsTableProps {
+  rows: ProcessedRow[]
+  selectable?: boolean
+  allValidApproved?: boolean
+  onToggleAll?: (next: boolean) => void
+  onToggleRow?: (rowNumber: number, next: boolean) => void
+}
+
+function RowsTable({
+  rows,
+  selectable = false,
+  allValidApproved = false,
+  onToggleAll,
+  onToggleRow,
+}: RowsTableProps) {
+  const cols = selectable ? 8 : 7
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
       <ScrollArea className="h-full">
         <Table>
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
+              {selectable && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allValidApproved}
+                    onCheckedChange={(v) => onToggleAll?.(v === true)}
+                    aria-label="Aprobar todas"
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-14">Fila</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>RUT</TableHead>
+              <TableHead>Solicitud / Cliente CSV</TableHead>
               <TableHead>N° Operación</TableHead>
-              <TableHead>Póliza</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
+              <TableHead className="text-right">Estimado sistema</TableHead>
+              <TableHead className="text-right">
+                Monto CSV
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  se guardará como monto real
+                </div>
+              </TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Detalle</TableHead>
             </TableRow>
@@ -650,35 +869,105 @@ function RowsTable({ rows }: { rows: ProcessedRow[] }) {
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">
+                <TableCell colSpan={cols} className="text-center text-sm text-muted-foreground py-6">
                   Sin filas para mostrar.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => (
-                <TableRow key={r.rowNumber}>
-                  <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
-                  <TableCell className="text-sm truncate max-w-[200px]" title={r.nombre_cliente}>
-                    {r.nombre_cliente || '—'}
-                  </TableCell>
-                  <TableCell className="text-xs font-mono">{r.rut || '—'}</TableCell>
-                  <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
-                  <TableCell className="text-xs font-mono">{r.poliza || '—'}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">
-                    {formatCurrency(r.monto)}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+              rows.map((r) => {
+                const est = r.matchedEstimated ?? 0
+                const diff = est > 0 ? r.monto - est : 0
+                const diffPct = est > 0 ? (diff / est) * 100 : 0
+                const hasDiff = est > 0 && Math.abs(diff) > 0.5
+                return (
+                  <TableRow
+                    key={r.rowNumber}
+                    className={r.approved === false ? 'opacity-60' : undefined}
+                  >
+                    {selectable && (
+                      <TableCell>
+                        {r.status === 'valid' ? (
+                          <Checkbox
+                            checked={r.approved !== false}
+                            onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
+                            aria-label={`Aprobar fila ${r.rowNumber}`}
+                          />
+                        ) : (
+                          <span className="text-muted-foreground/50 text-xs">—</span>
+                        )}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
+                    <TableCell className="text-sm max-w-[240px]">
+                      {r.matchedPublicId ? (
+                        <div className="flex flex-col">
+                          <span className="font-mono text-xs text-primary">
+                            {r.matchedPublicId}
+                          </span>
+                          <span className="truncate text-xs" title={r.matchedFullName}>
+                            {r.matchedFullName || r.nombre_cliente || '—'}
+                          </span>
+                          {r.rut && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {r.rut}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span
+                            className="truncate text-xs"
+                            title={r.nombre_cliente}
+                          >
+                            {r.nombre_cliente || '—'}
+                          </span>
+                          {r.rut && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {r.rut}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
+                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                      {est > 0 ? formatCurrency(est) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-col items-end">
+                        <span className="text-sm font-medium tabular-nums">
+                          {formatCurrency(r.monto)}
+                        </span>
+                        {hasDiff && (
+                          <span
+                            className={`text-[10px] tabular-nums ${
+                              diff > 0 ? 'text-amber-700' : 'text-sky-700'
+                            }`}
+                            title="Diferencia respecto al monto estimado del sistema"
+                          >
+                            {diff > 0 ? '+' : ''}
+                            {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
+                            {diffPct.toFixed(1)}%)
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+                      >
+                        {STATUS_LABELS[r.status]}
+                      </span>
+                    </TableCell>
+                    <TableCell
+                      className="text-xs text-muted-foreground min-w-[280px] max-w-[420px] whitespace-normal break-words align-top"
+                      title={r.detail}
                     >
-                      {STATUS_LABELS[r.status]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate" title={r.detail}>
-                    {r.detail}
-                  </TableCell>
-                </TableRow>
-              ))
+                      {r.detail}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

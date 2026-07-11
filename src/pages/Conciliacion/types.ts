@@ -35,9 +35,15 @@ export interface PendingRefund {
   fullName: string
   rut: string
   realAmount: number
+  /** Monto estimado por la simulación original (referencia para comparar contra el CSV). */
+  estimatedAmount: number
   reconciledAmount: number // suma de matches existentes
   remainingAmount: number
   isFullyReconciled: boolean
   scheduledAt: string
   nroCredito?: string
+  /** Prima mensual del nuevo seguro (Te Devuelvo) — desde calculationSnapshot. */
+  newMonthlyPremium?: number
+  /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
+  confirmedRemainingInstallments?: number
 }

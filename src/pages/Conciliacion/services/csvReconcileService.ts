@@ -12,6 +12,7 @@ export type CsvRowStatus =
   | 'format_error'
   | 'reconciled'
   | 'apply_error'
+  | 'status_updated_no_link'
 
 export interface CsvRowRaw {
   nombre_cliente: string
@@ -32,6 +33,14 @@ export interface ProcessedRow {
   status: CsvRowStatus
   detail: string
   matchedPublicId?: string
+  /** id interno de la solicitud (Mongo _id) — necesario para PATCH de status. */
+  matchedRefundId?: string
+  /** Monto estimado de la solicitud, para comparar con el `monto` del CSV. */
+  matchedEstimated?: number
+  /** Nombre completo del cliente asociado (para mostrar en la tabla). */
+  matchedFullName?: string
+  /** Aprobado explícitamente por el usuario para conciliar. */
+  approved?: boolean
   matchedLinkedMovement?: string
 }
 
@@ -207,7 +216,7 @@ export function matchAgainstSystem(
       return {
         ...row,
         status: 'not_found',
-        detail: 'No se encontró una solicitud en Pago programado con ese número de operación.',
+        detail: 'No se encontró una solicitud en estado Ingresada con ese número de operación.',
       }
     }
     if (matches.length > 1) {
@@ -224,6 +233,9 @@ export function matchAgainstSystem(
         ...row,
         status: 'already_reconciled_here',
         matchedPublicId: refund.publicId,
+        matchedRefundId: refund.id,
+        matchedEstimated: refund.estimatedAmount,
+        matchedFullName: refund.fullName,
         detail: `La solicitud ${refund.publicId} ya está asociada a este movimiento.`,
       }
     }
@@ -232,6 +244,9 @@ export function matchAgainstSystem(
         ...row,
         status: 'linked_to_other_movement',
         matchedPublicId: refund.publicId,
+        matchedRefundId: refund.id,
+        matchedEstimated: refund.estimatedAmount,
+        matchedFullName: refund.fullName,
         matchedLinkedMovement: linkedDoc,
         detail: `La solicitud ${refund.publicId} ya está asociada al movimiento ${linkedDoc}.`,
       }
@@ -240,7 +255,11 @@ export function matchAgainstSystem(
       ...row,
       status: 'valid',
       matchedPublicId: refund.publicId,
-      detail: `Coincide con la solicitud ${refund.publicId} (${refund.fullName}).`,
+      matchedRefundId: refund.id,
+      matchedEstimated: refund.estimatedAmount,
+      matchedFullName: refund.fullName,
+      approved: true,
+      detail: 'Coincide con una solicitud Ingresada. Lista para conciliar.',
     }
   })
 }
@@ -342,6 +361,7 @@ export function computeTotals(rows: ProcessedRow[]) {
     linked_to_other_movement: 0,
     format_error: 0,
     apply_error: 0,
+    status_updated_no_link: 0,
   } as Record<CsvRowStatus, number> & { total: number }
   for (const r of rows) totals[r.status] = (totals[r.status] ?? 0) + 1
   return totals
@@ -357,4 +377,5 @@ export const STATUS_LABELS: Record<CsvRowStatus, string> = {
   linked_to_other_movement: 'Asociada a otro movimiento',
   format_error: 'Error de formato',
   apply_error: 'Error al aplicar',
+  status_updated_no_link: 'Estado actualizado sin asociar',
 }
