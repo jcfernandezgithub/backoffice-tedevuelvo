@@ -72,7 +72,7 @@ export function UsersTable(props: Props) {
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                <TableCell><RoleBadge role={u.role} /></TableCell>
+                <TableCell><RoleBadge role={u.role} roleName={u.roleName} /></TableCell>
                 <TableCell><StateBadge state={u.state} /></TableCell>
                 <TableCell className="text-muted-foreground text-sm">{formatDateTime(u.lastLoginAt)}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{formatDate(u.createdAt)}</TableCell>

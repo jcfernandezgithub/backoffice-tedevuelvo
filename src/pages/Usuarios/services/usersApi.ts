@@ -5,6 +5,7 @@ export type BackendUserStatus = 'invited' | 'active' | 'inactive' | 'blocked'
 export interface BackendRoleRef {
   id?: string
   _id?: string
+  label?: string
   name?: string
   normalizedName?: string
   pages?: string[]
@@ -18,7 +19,7 @@ export interface BackendUser {
   rut?: string
   phone?: string
   status: BackendUserStatus
-  roleId?: string
+  roleId?: string | null
   role?: BackendRoleRef | null
   createdAt?: string
   updatedAt?: string

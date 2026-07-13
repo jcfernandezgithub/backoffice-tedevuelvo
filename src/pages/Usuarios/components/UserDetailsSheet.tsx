@@ -51,7 +51,7 @@ export function UserDetailsSheet({ user, open, onOpenChange, onEdit, onChangeRol
           </SheetTitle>
           <SheetDescription>Detalle del usuario y nivel de acceso.</SheetDescription>
           <div className="flex flex-wrap gap-2 pt-2">
-            <RoleBadge role={user.role} />
+            <RoleBadge role={user.role} roleName={user.roleName} />
             <StateBadge state={user.state} />
           </div>
         </SheetHeader>

@@ -22,6 +22,7 @@ export interface UserV2 {
   email: string
   phone?: string
   role: RoleV2
+  roleName?: string
   state: UserStateV2
   lastLoginAt?: string
   createdAt: string
