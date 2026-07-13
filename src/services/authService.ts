@@ -20,10 +20,11 @@ interface LoginResponse {
 }
 
 const mapRoleToFrontend = (roles: string[]): Rol => {
-  if (roles.includes('admin')) return 'ADMIN'
-  if (roles.includes('operaciones')) return 'OPERACIONES'
-  if (roles.includes('alianzas')) return 'ALIANZAS'
-  if (roles.includes('callcenter')) return 'CALLCENTER'
+  const safe = Array.isArray(roles) ? roles.map((r) => String(r).toLowerCase()) : []
+  if (safe.includes('admin')) return 'ADMIN'
+  if (safe.includes('operaciones')) return 'OPERACIONES'
+  if (safe.includes('alianzas')) return 'ALIANZAS'
+  if (safe.includes('callcenter') || safe.includes('call_center')) return 'CALLCENTER'
   return 'READONLY'
 }
 
@@ -76,7 +77,7 @@ export const authService = {
       id: data.user.id,
       nombre: data.user.fullName,
       email: data.user.email,
-      rol: mapRoleToFrontend(data.user.roles),
+      rol: mapRoleToFrontend(data.user.roles ?? []),
       activo: true,
     }
 
@@ -118,7 +119,7 @@ export const authService = {
       id: data.user.id,
       nombre: data.user.fullName,
       email: data.user.email,
-      rol: mapRoleToFrontend(data.user.roles),
+      rol: mapRoleToFrontend(data.user.roles ?? []),
       activo: true,
     }
 
