@@ -15,7 +15,7 @@ interface Props {
 export const DEFAULT_FILTERS: UserFiltersV2 = { search: '', role: 'ALL', state: 'ALL' }
 
 export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
-  const { roles } = useRoles()
+  const { roles } = useRoles({ includeCustomer: true })
   const hasActive = filters.search !== '' || filters.role !== 'ALL' || filters.state !== 'ALL'
 
   return (
