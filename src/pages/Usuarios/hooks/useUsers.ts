@@ -1,233 +1,185 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersClient } from '../services/usersClient';
-import type { UserListParams, User } from '../types/userTypes';
-import type { UserFormData, PasswordFormData } from '../schemas/userSchema';
-import { useToast } from '@/hooks/use-toast';
+import { useCallback, useMemo } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  usersApi,
+  type BackendUser,
+  type BackendUserStatus,
+  type CreateUserPayload,
+} from '../services/usersApi'
+import type { UserFiltersV2, UserStateV2, UserV2 } from '../types/userTypesV2'
 
-const USERS_QUERY_KEY = 'users';
+const USERS_QUERY_KEY = ['usuarios', 'list'] as const
 
-export function useUsers(params: UserListParams = {}) {
-  return useQuery({
-    queryKey: [USERS_QUERY_KEY, 'list', params],
-    queryFn: () => usersClient.listUsers(params),
-    staleTime: 30 * 1000, // 30 seconds
-  });
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = (fullName || '').trim().split(/\s+/)
+  if (parts.length === 0) return { firstName: '', lastName: '' }
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' }
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
 }
 
-export function useUserAudit(userId: string) {
-  return useQuery({
-    queryKey: [USERS_QUERY_KEY, 'audit', userId],
-    queryFn: () => usersClient.getUserAudit(userId),
-    enabled: !!userId,
-  });
+function statusToState(status?: BackendUserStatus): UserStateV2 {
+  switch (status) {
+    case 'active': return 'ACTIVE'
+    case 'invited': return 'PENDING'
+    case 'inactive':
+    case 'blocked':
+    default: return 'INACTIVE'
+  }
 }
 
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+function stateToStatus(state: UserStateV2): BackendUserStatus {
+  switch (state) {
+    case 'ACTIVE': return 'active'
+    case 'PENDING': return 'invited'
+    case 'INACTIVE': return 'inactive'
+  }
+}
 
-  return useMutation({
-    mutationFn: (data: UserFormData) => usersClient.createUser(data),
-    onSuccess: (newUser) => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Usuario creado',
-        description: `${newUser.name} ha sido creado exitosamente.`
-      });
+function normalize(u: BackendUser): UserV2 {
+  const { firstName, lastName } = splitFullName(u.fullName)
+  const roleId = u.roleId ?? u.role?.id ?? u.role?._id ?? ''
+  return {
+    id: (u.id ?? u._id ?? '') as string,
+    firstName,
+    lastName,
+    email: u.email,
+    phone: u.phone || undefined,
+    role: roleId,
+    state: statusToState(u.status),
+    lastLoginAt: u.lastLoginAt,
+    createdAt: u.createdAt ?? new Date().toISOString(),
+    updatedAt: u.updatedAt ?? new Date().toISOString(),
+    activity: [],
+  }
+}
+
+export interface CreateUserInput {
+  firstName: string
+  lastName: string
+  email: string
+  phone?: string
+  role: string
+  state: UserStateV2
+  password?: string
+  rut?: string
+}
+
+export type UpdateUserInput = Partial<CreateUserInput>
+
+export function useUsers() {
+  const qc = useQueryClient()
+
+  const query = useQuery<UserV2[]>({
+    queryKey: USERS_QUERY_KEY,
+    queryFn: async () => {
+      const data = await usersApi.list()
+      return (Array.isArray(data) ? data : []).map(normalize)
     },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al crear usuario',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
+    staleTime: 30_000,
+  })
+
+  const users = query.data ?? []
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: USERS_QUERY_KEY })
+
+  const emailExists = useCallback(
+    (email: string, exceptId?: string) =>
+      users.some(
+        (u) => u.email.toLowerCase() === email.trim().toLowerCase() && u.id !== exceptId,
+      ),
+    [users],
+  )
+
+  const createMutation = useMutation({
+    mutationFn: async (input: CreateUserInput) => {
+      const payload: CreateUserPayload = {
+        email: input.email.trim(),
+        fullName: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
+        phone: input.phone?.trim() || undefined,
+        rut: input.rut?.trim() || undefined,
+        roleId: input.role || undefined,
+        password: input.password || undefined,
+        status: stateToStatus(input.state),
+      }
+      return usersApi.create(payload)
+    },
+    onSuccess: invalidate,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, input, prev }: { id: string; input: UpdateUserInput; prev: UserV2 }) => {
+      const fullName = (input.firstName !== undefined || input.lastName !== undefined)
+        ? `${input.firstName ?? prev.firstName} ${input.lastName ?? prev.lastName}`.trim()
+        : undefined
+      await usersApi.update(id, {
+        fullName,
+        phone: input.phone,
+        rut: input.rut,
+        status: input.state ? stateToStatus(input.state) : undefined,
+      })
+      // Rol se actualiza vía endpoint dedicado.
+      if (input.role && input.role !== prev.role) {
+        await usersApi.assignRole(id, input.role)
+      }
+    },
+    onSuccess: invalidate,
+  })
+
+  const setStateMutation = useMutation({
+    mutationFn: ({ id, state }: { id: string; state: UserStateV2 }) =>
+      usersApi.update(id, { status: stateToStatus(state) }),
+    onSuccess: invalidate,
+  })
+
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ id, roleId }: { id: string; roleId: string }) => usersApi.assignRole(id, roleId),
+    onSuccess: invalidate,
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string) => usersApi.remove(id),
+    onSuccess: invalidate,
+  })
+
+  const api = useMemo(
+    () => ({
+      users,
+      isLoading: query.isLoading,
+      isFetching: query.isFetching,
+      error: query.error as Error | null,
+      refetch: query.refetch,
+      emailExists,
+      createUser: (input: CreateUserInput) => createMutation.mutateAsync(input),
+      updateUser: (id: string, input: UpdateUserInput) => {
+        const prev = users.find((u) => u.id === id)
+        if (!prev) throw new Error('Usuario no encontrado')
+        return updateMutation.mutateAsync({ id, input, prev })
+      },
+      setState: (id: string, state: UserStateV2) => setStateMutation.mutateAsync({ id, state }),
+      changeRole: (id: string, roleId: string) => changeRoleMutation.mutateAsync({ id, roleId }),
+      deleteUser: (id: string) => removeMutation.mutateAsync(id),
+      // No hay endpoint dedicado; forzamos status=invited para "reenviar".
+      resendInvitation: (id: string) =>
+        setStateMutation.mutateAsync({ id, state: 'PENDING' }),
+      isCreating: createMutation.isPending,
+      isUpdating: updateMutation.isPending,
+      isRemoving: removeMutation.isPending,
+    }),
+    [users, query.isLoading, query.isFetching, query.error, query.refetch, emailExists, createMutation, updateMutation, setStateMutation, changeRoleMutation, removeMutation],
+  )
+
+  return api
 }
 
-export function useUpdateUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<UserFormData> }) =>
-      usersClient.updateUser(id, data),
-    onSuccess: (updatedUser) => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Usuario actualizado',
-        description: `${updatedUser.name} ha sido actualizado exitosamente.`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al actualizar usuario',
-        description: error.message,
-        variant: 'destructive'
-      });
+export function applyFilters(users: UserV2[], filters: UserFiltersV2): UserV2[] {
+  const q = filters.search.trim().toLowerCase()
+  return users.filter((u) => {
+    if (filters.role !== 'ALL' && u.role !== filters.role) return false
+    if (filters.state !== 'ALL' && u.state !== filters.state) return false
+    if (q) {
+      const full = `${u.firstName} ${u.lastName}`.toLowerCase()
+      if (!full.includes(q) && !u.email.toLowerCase().includes(q)) return false
     }
-  });
-}
-
-export function useBlockUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
-      usersClient.blockUser(id, reason),
-    onSuccess: (user) => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Usuario bloqueado',
-        description: `${user.name} ha sido bloqueado exitosamente.`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al bloquear usuario',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useUnblockUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => usersClient.unblockUser(id),
-    onSuccess: (user) => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Usuario desbloqueado',
-        description: `${user.name} ha sido desbloqueado exitosamente.`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al desbloquear usuario',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useResetPassword() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ id, password }: { id: string; password?: string }) =>
-      usersClient.resetPassword(id, password),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Contraseña actualizada',
-        description: 'La contraseña ha sido actualizada exitosamente.'
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al actualizar contraseña',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => usersClient.deleteUser(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Usuario eliminado',
-        description: 'El usuario ha sido eliminado exitosamente.'
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al eliminar usuario',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useResendInvitation() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => usersClient.resendInvitation(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      toast({
-        title: 'Invitación reenviada',
-        description: 'La invitación ha sido reenviada exitosamente.'
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al reenviar invitación',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useRevokeSessions() {
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: (id: string) => usersClient.revokeSessions(id),
-    onSuccess: () => {
-      toast({
-        title: 'Sesiones revocadas',
-        description: 'Todas las sesiones activas han sido revocadas.'
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error al revocar sesiones',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
-}
-
-export function useBulkAction() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: ({ userIds, action }: { userIds: string[]; action: 'block' | 'unblock' }) =>
-      usersClient.bulkAction(userIds, action),
-    onSuccess: (_, { userIds, action }) => {
-      queryClient.invalidateQueries({ queryKey: [USERS_QUERY_KEY] });
-      const actionText = action === 'block' ? 'bloqueados' : 'desbloqueados';
-      toast({
-        title: 'Acción completada',
-        description: `${userIds.length} usuarios han sido ${actionText}.`
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Error en acción masiva',
-        description: error.message,
-        variant: 'destructive'
-      });
-    }
-  });
+    return true
+  })
 }

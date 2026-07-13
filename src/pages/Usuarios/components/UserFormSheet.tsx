@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, Settings2 } from 'lucide-react'
+import { AlertTriangle, Eye, EyeOff, RefreshCw, Settings2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,7 @@ interface Props {
 export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists }: Props) {
   const isEditing = !!user
   const [pendingRoleChange, setPendingRoleChange] = useState<UserFormValuesV2 | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
   const { roles, getRole } = useRoles()
   const defaultRoleId = roles.find((r) => r.id === 'CALLCENTER')?.id ?? roles[0]?.id ?? ''
 
@@ -42,12 +43,13 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
     resolver: zodResolver(userSchemaV2),
     defaultValues: {
       firstName: '', lastName: '', email: '', phone: '',
-      role: defaultRoleId, state: 'PENDING',
+      role: defaultRoleId, state: 'ACTIVE', password: '',
     },
   })
 
   useEffect(() => {
     if (open) {
+      setShowPassword(false)
       form.reset(
         user
           ? {
@@ -57,8 +59,9 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
               phone: user.phone ?? '',
               role: user.role,
               state: user.state,
+              password: '',
             }
-          : { firstName: '', lastName: '', email: '', phone: '', role: defaultRoleId, state: 'PENDING' },
+          : { firstName: '', lastName: '', email: '', phone: '', role: defaultRoleId, state: 'ACTIVE', password: '' },
       )
     }
   }, [open, user, form, defaultRoleId])
@@ -70,12 +73,30 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
       form.setError('email', { message: 'Ya existe un usuario con este correo' })
       return
     }
+    if (!isEditing && !values.password) {
+      form.setError('password', { message: 'Contraseña obligatoria al crear' })
+      return
+    }
     if (isEditing && user && values.role !== user.role) {
       setPendingRoleChange(values)
       return
     }
     onSubmit(values)
   })
+
+  const generatePassword = () => {
+    const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+    const lower = 'abcdefghijkmnopqrstuvwxyz'
+    const nums = '23456789'
+    const syms = '!@#$%&*?'
+    const all = upper + lower + nums + syms
+    const pick = (s: string) => s[Math.floor(Math.random() * s.length)]
+    let pwd = pick(upper) + pick(lower) + pick(nums) + pick(syms)
+    for (let i = 0; i < 8; i++) pwd += pick(all)
+    pwd = pwd.split('').sort(() => Math.random() - 0.5).join('')
+    form.setValue('password', pwd, { shouldDirty: true, shouldValidate: true })
+    setShowPassword(true)
+  }
 
   const confirmRoleChangeAndSubmit = () => {
     if (pendingRoleChange) {
@@ -189,6 +210,45 @@ export function UserFormSheet({ open, user, onOpenChange, onSubmit, emailExists 
               </div>
 
               <RoleAccessInfo role={role} />
+
+              {!isEditing && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Contraseña inicial *</Label>
+                    <button
+                      type="button"
+                      onClick={generatePassword}
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <RefreshCw className="h-3 w-3" /> Generar
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      {...form.register('password')}
+                      placeholder="Mín. 8 caracteres, mayús, minús, número y símbolo"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {form.formState.errors.password && (
+                    <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    El usuario podrá cambiarla más adelante desde su perfil.
+                  </p>
+                </div>
+              )}
 
               {isEditing && user && role !== user.role && currentRoleDef && nextRoleDef && (
                 <div className="flex gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
