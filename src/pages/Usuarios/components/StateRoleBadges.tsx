@@ -3,13 +3,18 @@ import { ShieldCheck, Headphones, CheckCircle2, XCircle, Clock, UserCog } from '
 import type { UserStateV2 } from '../types/userTypesV2'
 import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
-export function RoleBadge({ role }: { role: string }) {
+function isLikelyBackendId(value: string) {
+  return /^[a-f0-9]{24}$/i.test(value)
+}
+
+export function RoleBadge({ role, roleName }: { role: string; roleName?: string }) {
   const { getRole } = useRoles()
   const def = getRole(role)
   if (!def) {
+    const label = roleName || (role ? (isLikelyBackendId(role) ? 'Rol no encontrado' : role) : 'Sin rol')
     return (
       <Badge variant="outline" className="gap-1 border-muted-foreground/30 bg-muted text-muted-foreground">
-        <UserCog className="h-3 w-3" /> {role}
+        <UserCog className="h-3 w-3" /> {label}
       </Badge>
     )
   }

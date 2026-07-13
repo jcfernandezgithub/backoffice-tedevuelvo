@@ -38,6 +38,7 @@ function stateToStatus(state: UserStateV2): BackendUserStatus {
 function normalize(u: BackendUser): UserV2 {
   const { firstName, lastName } = splitFullName(u.fullName)
   const roleId = u.roleId ?? u.role?.id ?? u.role?._id ?? ''
+  const roleName = u.role?.label ?? u.role?.name ?? u.role?.normalizedName ?? undefined
   return {
     id: (u.id ?? u._id ?? '') as string,
     firstName,
@@ -45,6 +46,7 @@ function normalize(u: BackendUser): UserV2 {
     email: u.email,
     phone: u.phone || undefined,
     role: roleId,
+    roleName,
     state: statusToState(u.status),
     lastLoginAt: u.lastLoginAt,
     createdAt: u.createdAt ?? new Date().toISOString(),
