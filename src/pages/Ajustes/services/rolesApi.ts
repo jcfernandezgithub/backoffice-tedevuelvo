@@ -77,9 +77,11 @@ export const rolesApi = {
 }
 
 function serializePayload<T extends UpdateRolePayload>(data: T): Record<string, unknown> {
-  const out: Record<string, unknown> = { ...data }
+  const out: Record<string, unknown> = {}
+  if (typeof data.label === 'string') out.name = data.label
+  if (typeof data.description === 'string') out.description = data.description
   if (Array.isArray(data.allowedPages)) {
-    out.allowedPages = pageLabelsToKeys(data.allowedPages as PlatformPage[])
+    out.pages = pageLabelsToKeys(data.allowedPages as PlatformPage[])
   }
   return out
 }
