@@ -1,15 +1,41 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { rolesApi, type CreateRolePayload, type RoleApi, type UpdateRolePayload } from '../services/rolesApi'
+import { ALL_PLATFORM_PAGES } from '@/pages/Usuarios/constants/roleAccess'
 import type { RoleDefinition } from '../services/rolesStore'
 
 const ROLES_QUERY_KEY = ['ajustes', 'roles'] as const
+
+function normalize(r: any): RoleApi {
+  const allowedPages = Array.isArray(r?.allowedPages) ? r.allowedPages : []
+  const restrictedPages = Array.isArray(r?.restrictedPages)
+    ? r.restrictedPages
+    : ALL_PLATFORM_PAGES.filter((p) => !allowedPages.includes(p))
+  const scope = r?.scope ?? (allowedPages.length === ALL_PLATFORM_PAGES.length ? 'FULL' : 'LIMITED')
+  return {
+    id: r?.id ?? '',
+    label: r?.label ?? '',
+    shortLabel: r?.shortLabel ?? r?.label ?? '',
+    description: r?.description ?? '',
+    summary: r?.summary ?? (scope === 'FULL' ? 'Acceso completo a la plataforma' : `Acceso limitado (${allowedPages.length} páginas)`),
+    scope,
+    allowedPages,
+    restrictedPages,
+    isSystem: !!r?.isSystem,
+    createdAt: r?.createdAt ?? '',
+    updatedAt: r?.updatedAt ?? '',
+    usersAssigned: typeof r?.usersAssigned === 'number' ? r.usersAssigned : undefined,
+  }
+}
 
 export function useRoles() {
   const qc = useQueryClient()
 
   const query = useQuery<RoleApi[]>({
     queryKey: ROLES_QUERY_KEY,
-    queryFn: () => rolesApi.list(),
+    queryFn: async () => {
+      const data = await rolesApi.list()
+      return (Array.isArray(data) ? data : []).map(normalize)
+    },
     staleTime: 30_000,
   })
 
