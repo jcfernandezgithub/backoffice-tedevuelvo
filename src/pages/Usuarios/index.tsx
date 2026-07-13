@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Users2 } from 'lucide-react'
+import { AlertCircle, Loader2, Plus, Users2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,13 +12,17 @@ import { UserFormSheet } from './components/UserFormSheet'
 import { UserDetailsSheet } from './components/UserDetailsSheet'
 import { DeleteUserConfirm } from './components/DeleteUserConfirm'
 import { ChangeRoleDialog } from './components/ChangeRoleDialog'
-import { useMockUsers, applyFilters } from './hooks/useMockUsers'
+import { useUsers, applyFilters } from './hooks/useUsers'
+import { UsersApiError } from './services/usersApi'
 import type { UserFiltersV2, UserV2 } from './types/userTypesV2'
 
 export default function UsuariosPage() {
   const isMobile = useIsMobile()
   const {
     users,
+    isLoading,
+    error,
+    refetch,
     emailExists,
     createUser,
     updateUser,
@@ -26,7 +30,7 @@ export default function UsuariosPage() {
     changeRole,
     resendInvitation,
     deleteUser,
-  } = useMockUsers()
+  } = useUsers()
 
   const [filters, setFilters] = useState<UserFiltersV2>(DEFAULT_FILTERS)
   const [creating, setCreating] = useState(false)
@@ -37,43 +41,70 @@ export default function UsuariosPage() {
 
   const filtered = useMemo(() => applyFilters(users, filters), [users, filters])
 
-  const handleCreate = (values: Parameters<typeof createUser>[0]) => {
-    createUser(values)
-    toast.success('Usuario creado correctamente')
-    setCreating(false)
+  const errMsg = (e: unknown, fallback: string) =>
+    e instanceof UsersApiError ? e.message : (e instanceof Error ? e.message : fallback)
+
+  const handleCreate = async (values: Parameters<typeof createUser>[0]) => {
+    try {
+      await createUser(values)
+      toast.success('Usuario creado correctamente')
+      setCreating(false)
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo crear el usuario'))
+    }
   }
 
-  const handleUpdate = (values: Parameters<typeof createUser>[0]) => {
+  const handleUpdate = async (values: Parameters<typeof createUser>[0]) => {
     if (!editing) return
-    updateUser(editing.id, values)
-    toast.success('Usuario actualizado')
-    setEditing(null)
+    try {
+      await updateUser(editing.id, values)
+      toast.success('Usuario actualizado')
+      setEditing(null)
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo actualizar el usuario'))
+    }
   }
 
-  const handleToggleState = (u: UserV2) => {
+  const handleToggleState = async (u: UserV2) => {
     const next = u.state === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-    setState(u.id, next)
-    toast.success(next === 'ACTIVE' ? 'Usuario activado' : 'Usuario desactivado')
+    try {
+      await setState(u.id, next)
+      toast.success(next === 'ACTIVE' ? 'Usuario activado' : 'Usuario desactivado')
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo cambiar el estado'))
+    }
   }
 
-  const handleResend = (u: UserV2) => {
-    resendInvitation(u.id)
-    toast.success('Invitación reenviada')
+  const handleResend = async (u: UserV2) => {
+    try {
+      await resendInvitation(u.id)
+      toast.success('Invitación reenviada')
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo reenviar la invitación'))
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleting) return
-    deleteUser(deleting.id)
-    toast.success('Usuario eliminado')
-    setDeleting(null)
-    if (viewing?.id === deleting.id) setViewing(null)
+    try {
+      await deleteUser(deleting.id)
+      toast.success('Usuario eliminado')
+      if (viewing?.id === deleting.id) setViewing(null)
+      setDeleting(null)
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo eliminar el usuario'))
+    }
   }
 
-  const handleChangeRoleConfirm = (role: UserV2['role']) => {
+  const handleChangeRoleConfirm = async (role: UserV2['role']) => {
     if (!changingRole) return
-    changeRole(changingRole.id, role)
-    toast.success('Rol actualizado')
-    setChangingRole(null)
+    try {
+      await changeRole(changingRole.id, role)
+      toast.success('Rol actualizado')
+      setChangingRole(null)
+    } catch (e) {
+      toast.error(errMsg(e, 'No se pudo cambiar el rol'))
+    }
   }
 
   return (
@@ -94,16 +125,38 @@ export default function UsuariosPage() {
         </Button>
       </header>
 
-      <UsersStats users={users} />
+      {error ? (
+        <Card>
+          <CardContent className="p-10 text-center space-y-3">
+            <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <p className="font-medium">No pudimos cargar los usuarios</p>
+              <p className="text-sm text-muted-foreground">{errMsg(error, 'Error de conexión')}</p>
+            </div>
+            <Button variant="outline" onClick={() => refetch()}>Reintentar</Button>
+          </CardContent>
+        </Card>
+      ) : isLoading ? (
+        <Card>
+          <CardContent className="p-10 text-center space-y-3">
+            <Loader2 className="h-6 w-6 mx-auto animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Cargando usuarios…</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <UsersStats users={users} />
 
-      <UsersFilters
-        filters={filters}
-        onChange={setFilters}
-        resultCount={filtered.length}
-        total={users.length}
-      />
+          <UsersFilters
+            filters={filters}
+            onChange={setFilters}
+            resultCount={filtered.length}
+            total={users.length}
+          />
 
-      {filtered.length === 0 ? (
+          {filtered.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center space-y-3">
             <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center">
@@ -142,6 +195,8 @@ export default function UsuariosPage() {
           onResendInvitation={handleResend}
           onDelete={setDeleting}
         />
+          )}
+        </>
       )}
 
       <UserFormSheet
