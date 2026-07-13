@@ -115,6 +115,8 @@ export function useUsers(params: UseUsersParams) {
     limit: params.limit,
     total: 0,
     totalPages: 1,
+    hasMore: false,
+    isEstimated: true,
   }
 
   const invalidate = () => {
