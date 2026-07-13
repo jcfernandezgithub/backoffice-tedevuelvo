@@ -58,6 +58,10 @@ export interface PaginationMeta {
   limit: number
   total: number
   totalPages: number
+  /** True when we know (or infer) that another page exists. */
+  hasMore: boolean
+  /** True when the `total` value comes from a client-side fallback. */
+  isEstimated: boolean
 }
 
 export interface PaginatedUsers {
@@ -121,11 +125,23 @@ export const usersApi = {
           : []
 
     const paginationRaw = body?.pagination ?? {}
-    const total = Number(paginationRaw.total ?? data.length)
     const effectiveLimit = Number(paginationRaw.limit ?? limit) || limit
-    const totalPages = Number(
-      paginationRaw.totalPages ?? Math.max(1, Math.ceil(total / effectiveLimit)),
-    )
+    const rawTotal = Number(paginationRaw.total ?? NaN)
+    const rawTotalPages = Number(paginationRaw.totalPages ?? NaN)
+
+    // Fallback: backend a veces devuelve total=0 aunque `data` traiga items.
+    // Inferimos paginación desde el tamaño de la página actual.
+    const backendTotalValid = Number.isFinite(rawTotal) && rawTotal >= data.length && rawTotal > 0
+    const isEstimated = !backendTotalValid
+    const total = backendTotalValid
+      ? rawTotal
+      : (page - 1) * effectiveLimit + data.length
+    const hasMore = backendTotalValid
+      ? page * effectiveLimit < rawTotal
+      : data.length === effectiveLimit
+    const totalPages = backendTotalValid && Number.isFinite(rawTotalPages) && rawTotalPages > 0
+      ? rawTotalPages
+      : Math.max(1, page + (hasMore ? 1 : 0))
     return {
       data,
       pagination: {
@@ -133,6 +149,8 @@ export const usersApi = {
         limit: effectiveLimit,
         total,
         totalPages,
+        hasMore,
+        isEstimated,
       },
     }
   },

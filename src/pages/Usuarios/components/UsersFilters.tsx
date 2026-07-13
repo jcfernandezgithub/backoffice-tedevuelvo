@@ -77,7 +77,8 @@ export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
       </div>
       <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Mostrando <span className="font-medium text-foreground">{resultCount}</span> de {total} usuarios
+          Mostrando <span className="font-medium text-foreground">{resultCount}</span>
+          {total > 0 ? <> de {total} usuarios</> : <> usuarios en esta página</>}
         </p>
         <div className="flex items-center gap-2">
           <Checkbox
