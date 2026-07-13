@@ -34,4 +34,6 @@ export interface UserFiltersV2 {
   search: string
   role: string | 'ALL'
   state: UserStateV2 | 'ALL'
+  /** Cuando true y no hay rol seleccionado, excluye usuarios CUSTOMER. */
+  backofficeOnly: boolean
 }

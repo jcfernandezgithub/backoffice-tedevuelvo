@@ -43,6 +43,28 @@ export interface UpdateUserPayload {
   status?: BackendUserStatus
 }
 
+export interface ListUsersParams {
+  page?: number
+  limit?: number
+  search?: string
+  status?: BackendUserStatus
+  roleId?: string
+  /** Frontend-only param: instruct backend to exclude a role from results. */
+  excludeRoleId?: string
+}
+
+export interface PaginationMeta {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface PaginatedUsers {
+  data: BackendUser[]
+  pagination: PaginationMeta
+}
+
 export class UsersApiError extends Error {
   status: number
   fieldErrors?: Record<string, string[]>
@@ -75,15 +97,44 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): Record<strin
 }
 
 export const usersApi = {
-  async list(): Promise<BackendUser[]> {
-    const res = await authenticatedFetch('/users')
+  async list(params: ListUsersParams = {}): Promise<PaginatedUsers> {
+    const qs = new URLSearchParams()
+    const page = params.page ?? 1
+    const limit = params.limit ?? 20
+    qs.set('page', String(page))
+    qs.set('limit', String(limit))
+    if (params.search && params.search.trim()) qs.set('search', params.search.trim())
+    if (params.status) qs.set('status', params.status)
+    if (params.roleId) qs.set('roleId', params.roleId)
+    if (params.excludeRoleId) qs.set('excludeRoleId', params.excludeRoleId)
+
+    const res = await authenticatedFetch(`/users?${qs.toString()}`)
     if (!res.ok) return parseError(res)
-    const data = await res.json()
-    // Soporta { items: [] } o array directo.
-    if (Array.isArray(data)) return data
-    if (Array.isArray(data?.items)) return data.items
-    if (Array.isArray(data?.data)) return data.data
-    return []
+    const body = await res.json()
+
+    const data: BackendUser[] = Array.isArray(body?.data)
+      ? body.data
+      : Array.isArray(body?.items)
+        ? body.items
+        : Array.isArray(body)
+          ? body
+          : []
+
+    const paginationRaw = body?.pagination ?? {}
+    const total = Number(paginationRaw.total ?? data.length)
+    const effectiveLimit = Number(paginationRaw.limit ?? limit) || limit
+    const totalPages = Number(
+      paginationRaw.totalPages ?? Math.max(1, Math.ceil(total / effectiveLimit)),
+    )
+    return {
+      data,
+      pagination: {
+        page: Number(paginationRaw.page ?? page),
+        limit: effectiveLimit,
+        total,
+        totalPages,
+      },
+    }
   },
   async create(payload: CreateUserPayload): Promise<BackendUser> {
     const res = await authenticatedFetch('/users', {
