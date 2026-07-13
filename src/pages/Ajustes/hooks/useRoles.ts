@@ -35,16 +35,18 @@ function normalize(r: any): RoleApi {
   }
 }
 
-export function useRoles() {
+export function useRoles(options: { includeCustomer?: boolean } = {}) {
+  const { includeCustomer = false } = options
   const qc = useQueryClient()
 
   const query = useQuery<RoleApi[]>({
-    queryKey: ROLES_QUERY_KEY,
+    queryKey: [...ROLES_QUERY_KEY, { includeCustomer }] as const,
     queryFn: async () => {
       const data = await rolesApi.list()
       return (Array.isArray(data) ? data : [])
         .map(normalize)
         .filter((r) => {
+          if (includeCustomer) return true
           const key = (r.label || '').toString().trim().toUpperCase()
           return key !== 'CUSTOMER'
         })
