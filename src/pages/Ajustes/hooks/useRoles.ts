@@ -42,7 +42,12 @@ export function useRoles() {
     queryKey: ROLES_QUERY_KEY,
     queryFn: async () => {
       const data = await rolesApi.list()
-      return (Array.isArray(data) ? data : []).map(normalize)
+      return (Array.isArray(data) ? data : [])
+        .map(normalize)
+        .filter((r) => {
+          const key = (r.label || '').toString().trim().toUpperCase()
+          return key !== 'CUSTOMER'
+        })
     },
     staleTime: 30_000,
   })
