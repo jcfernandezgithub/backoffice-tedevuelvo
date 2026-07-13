@@ -2,6 +2,8 @@ import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import type { UserFiltersV2 } from '../types/userTypesV2'
 import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
@@ -12,11 +14,22 @@ interface Props {
   total: number
 }
 
-export const DEFAULT_FILTERS: UserFiltersV2 = { search: '', role: 'ALL', state: 'ALL' }
+export const DEFAULT_FILTERS: UserFiltersV2 = {
+  search: '',
+  role: 'ALL',
+  state: 'ALL',
+  backofficeOnly: false,
+}
 
 export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
   const { roles } = useRoles({ includeCustomer: true })
-  const hasActive = filters.search !== '' || filters.role !== 'ALL' || filters.state !== 'ALL'
+  const hasActive =
+    filters.search !== '' ||
+    filters.role !== 'ALL' ||
+    filters.state !== 'ALL' ||
+    filters.backofficeOnly
+
+  const roleSelected = filters.role !== 'ALL'
 
   return (
     <div className="space-y-3">
@@ -62,9 +75,26 @@ export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
           Limpiar
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Mostrando <span className="font-medium text-foreground">{resultCount}</span> de {total} usuarios
-      </p>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Mostrando <span className="font-medium text-foreground">{resultCount}</span> de {total} usuarios
+        </p>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="backoffice-only"
+            checked={filters.backofficeOnly}
+            disabled={roleSelected}
+            onCheckedChange={(v) => onChange({ ...filters, backofficeOnly: v === true })}
+          />
+          <Label
+            htmlFor="backoffice-only"
+            className={`text-xs cursor-pointer select-none ${roleSelected ? 'text-muted-foreground/60' : 'text-muted-foreground'}`}
+            title={roleSelected ? 'Desactiva el filtro por rol para usar esta opción' : undefined}
+          >
+            Solo Usuarios BackOffice
+          </Label>
+        </div>
+      </div>
     </div>
   )
 }
