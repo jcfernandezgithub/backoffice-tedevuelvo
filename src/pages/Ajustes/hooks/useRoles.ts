@@ -6,15 +6,20 @@ import type { RoleDefinition } from '../services/rolesStore'
 const ROLES_QUERY_KEY = ['ajustes', 'roles'] as const
 
 function normalize(r: any): RoleApi {
-  const allowedPages = Array.isArray(r?.allowedPages) ? r.allowedPages : []
+  const label = r?.label ?? r?.name ?? ''
+  const allowedPages = Array.isArray(r?.allowedPages)
+    ? r.allowedPages
+    : Array.isArray(r?.pages)
+      ? r.pages
+      : []
   const restrictedPages = Array.isArray(r?.restrictedPages)
     ? r.restrictedPages
     : ALL_PLATFORM_PAGES.filter((p) => !allowedPages.includes(p))
   const scope = r?.scope ?? (allowedPages.length === ALL_PLATFORM_PAGES.length ? 'FULL' : 'LIMITED')
   return {
     id: r?.id ?? '',
-    label: r?.label ?? '',
-    shortLabel: r?.shortLabel ?? r?.label ?? '',
+    label,
+    shortLabel: r?.shortLabel ?? label,
     description: r?.description ?? '',
     summary: r?.summary ?? (scope === 'FULL' ? 'Acceso completo a la plataforma' : `Acceso limitado (${allowedPages.length} páginas)`),
     scope,
