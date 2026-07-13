@@ -14,6 +14,38 @@ export const ALL_PLATFORM_PAGES = [
 
 export type PlatformPage = (typeof ALL_PLATFORM_PAGES)[number]
 
+// Mapeo entre etiqueta visible (UI) y clave enum del backend.
+export const PAGE_LABEL_TO_KEY: Record<PlatformPage, string> = {
+  'Dashboard': 'DASHBOARD',
+  'Solicitudes': 'SOLICITUDES',
+  'Call Center': 'GESTION_CALLCENTER',
+  'Alianzas': 'ALIANZAS',
+  'Usuarios': 'USUARIOS',
+  'Operación': 'OPERACION',
+  'Calculadora': 'CALCULADORA',
+  'Nómina': 'NOMINA',
+  'Conciliación': 'CONCILIACION',
+  'Procesos Masivos': 'PROCESOS_MASIVOS',
+  'Ajustes': 'AJUSTES',
+}
+
+export const PAGE_KEY_TO_LABEL: Record<string, PlatformPage> = Object.entries(
+  PAGE_LABEL_TO_KEY,
+).reduce((acc, [label, key]) => {
+  acc[key] = label as PlatformPage
+  return acc
+}, {} as Record<string, PlatformPage>)
+
+export function pageLabelsToKeys(labels: PlatformPage[]): string[] {
+  return labels.map((l) => PAGE_LABEL_TO_KEY[l] ?? String(l).toUpperCase())
+}
+
+export function pageKeysToLabels(keys: string[]): PlatformPage[] {
+  return keys
+    .map((k) => PAGE_KEY_TO_LABEL[k] ?? (ALL_PLATFORM_PAGES as readonly string[]).find((l) => l === k))
+    .filter((v): v is PlatformPage => !!v)
+}
+
 export const STATE_LABELS: Record<'ACTIVE' | 'INACTIVE' | 'PENDING', string> = {
   ACTIVE: 'Activo',
   INACTIVE: 'Inactivo',
