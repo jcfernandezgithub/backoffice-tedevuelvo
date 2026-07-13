@@ -5,10 +5,13 @@ import {
   type BackendUser,
   type BackendUserStatus,
   type CreateUserPayload,
+  type ListUsersParams,
+  type PaginationMeta,
 } from '../services/usersApi'
-import type { UserFiltersV2, UserStateV2, UserV2 } from '../types/userTypesV2'
+import type { UserStateV2, UserV2 } from '../types/userTypesV2'
 
 const USERS_QUERY_KEY = ['usuarios', 'list'] as const
+const USERS_COUNT_QUERY_KEY = ['usuarios', 'count'] as const
 
 function splitFullName(fullName: string): { firstName: string; lastName: string } {
   const parts = (fullName || '').trim().split(/\s+/)
@@ -68,21 +71,56 @@ export interface CreateUserInput {
 
 export type UpdateUserInput = Partial<CreateUserInput>
 
-export function useUsers() {
+export interface UseUsersParams {
+  page: number
+  limit: number
+  search?: string
+  state?: UserStateV2
+  roleId?: string
+  excludeRoleId?: string
+}
+
+function stateToStatusOpt(state?: UserStateV2): BackendUserStatus | undefined {
+  return state ? stateToStatus(state) : undefined
+}
+
+export function useUsers(params: UseUsersParams) {
   const qc = useQueryClient()
 
-  const query = useQuery<UserV2[]>({
-    queryKey: USERS_QUERY_KEY,
+  const listParams: ListUsersParams = {
+    page: params.page,
+    limit: params.limit,
+    search: params.search,
+    status: stateToStatusOpt(params.state),
+    roleId: params.roleId,
+    excludeRoleId: params.excludeRoleId,
+  }
+
+  const query = useQuery({
+    queryKey: [...USERS_QUERY_KEY, listParams] as const,
     queryFn: async () => {
-      const data = await usersApi.list()
-      return (Array.isArray(data) ? data : []).map(normalize)
+      const res = await usersApi.list(listParams)
+      return {
+        users: res.data.map(normalize),
+        pagination: res.pagination,
+      }
     },
     staleTime: 30_000,
+    placeholderData: (prev) => prev,
   })
 
-  const users = query.data ?? []
+  const users = query.data?.users ?? []
+  const pagination: PaginationMeta = query.data?.pagination ?? {
+    page: params.page,
+    limit: params.limit,
+    total: 0,
+    totalPages: 1,
+  }
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: USERS_QUERY_KEY })
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: USERS_QUERY_KEY })
+    qc.invalidateQueries({ queryKey: USERS_COUNT_QUERY_KEY })
+  }
 
   const emailExists = useCallback(
     (email: string, exceptId?: string) =>
@@ -146,6 +184,7 @@ export function useUsers() {
   const api = useMemo(
     () => ({
       users,
+      pagination,
       isLoading: query.isLoading,
       isFetching: query.isFetching,
       error: query.error as Error | null,
@@ -167,21 +206,26 @@ export function useUsers() {
       isUpdating: updateMutation.isPending,
       isRemoving: removeMutation.isPending,
     }),
-    [users, query.isLoading, query.isFetching, query.error, query.refetch, emailExists, createMutation, updateMutation, setStateMutation, changeRoleMutation, removeMutation],
+    [users, pagination, query.isLoading, query.isFetching, query.error, query.refetch, emailExists, createMutation, updateMutation, setStateMutation, changeRoleMutation, removeMutation],
   )
 
   return api
 }
 
-export function applyFilters(users: UserV2[], filters: UserFiltersV2): UserV2[] {
-  const q = filters.search.trim().toLowerCase()
-  return users.filter((u) => {
-    if (filters.role !== 'ALL' && u.role !== filters.role) return false
-    if (filters.state !== 'ALL' && u.state !== filters.state) return false
-    if (q) {
-      const full = `${u.firstName} ${u.lastName}`.toLowerCase()
-      if (!full.includes(q) && !u.email.toLowerCase().includes(q)) return false
-    }
-    return true
+/**
+ * Lightweight count query — pide 1 registro y usa `pagination.total`.
+ */
+export function useUsersCount(params: Omit<ListUsersParams, 'page' | 'limit'> = {}) {
+  const query = useQuery({
+    queryKey: [...USERS_COUNT_QUERY_KEY, params] as const,
+    queryFn: async () => {
+      const res = await usersApi.list({ ...params, page: 1, limit: 1 })
+      return res.pagination.total
+    },
+    staleTime: 30_000,
   })
+  return {
+    total: query.data ?? 0,
+    isLoading: query.isLoading,
+  }
 }
