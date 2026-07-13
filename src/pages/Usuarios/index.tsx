@@ -70,7 +70,7 @@ export default function UsuariosPage() {
 
   const totalPages = Math.max(1, pagination.totalPages || 1)
   const canPrev = page > 1
-  const canNext = page < totalPages
+  const canNext = pagination.hasMore
 
   const errMsg = (e: unknown, fallback: string) =>
     e instanceof UsersApiError ? e.message : (e instanceof Error ? e.message : fallback)
@@ -228,12 +228,18 @@ export default function UsuariosPage() {
         />
           )}
 
-          {pagination.total > 0 && (
+          {(pagination.total > 0 || users.length > 0) && (
             <div className="flex items-center justify-between gap-3 pt-2">
               <p className="text-xs text-muted-foreground">
                 Página <span className="font-medium text-foreground">{pagination.page}</span> de{' '}
-                <span className="font-medium text-foreground">{totalPages}</span> ·{' '}
-                <span className="font-medium text-foreground">{pagination.total}</span> usuarios
+                <span className="font-medium text-foreground">
+                  {pagination.isEstimated ? (canNext ? `${totalPages}+` : totalPages) : totalPages}
+                </span>{' '}
+                ·{' '}
+                <span className="font-medium text-foreground">
+                  {pagination.isEstimated ? `${pagination.total}+` : pagination.total}
+                </span>{' '}
+                usuarios
                 {isFetching && <span className="ml-2 opacity-70">actualizando…</span>}
               </p>
               <div className="flex items-center gap-2">
