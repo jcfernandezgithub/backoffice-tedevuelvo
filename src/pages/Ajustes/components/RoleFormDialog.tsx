@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,6 +46,11 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
   const [pages, setPages] = useState<PlatformPage[]>([])
   const [labelError, setLabelError] = useState<string | null>(null)
   const [pagesError, setPagesError] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+
+  const confirmWord = isEditing ? 'actualizar' : 'crear'
+  const canConfirm = confirmText.trim().toLowerCase() === confirmWord
 
   useEffect(() => {
     if (open) {
@@ -44,6 +59,8 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
       setPages(role ? [...role.allowedPages] : [])
       setLabelError(null)
       setPagesError(null)
+      setConfirmOpen(false)
+      setConfirmText('')
     }
   }, [open, role])
 
@@ -53,7 +70,7 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
     )
   }
 
-  const handleSubmit = async () => {
+  const validate = (): boolean => {
     let ok = true
     const trimmed = label.trim()
     if (!isSystem) {
@@ -71,8 +88,17 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
       if (pages.length === 0) { setPagesError('Selecciona al menos una página'); ok = false }
       else setPagesError(null)
     }
-    if (!ok) return
+    return ok
+  }
 
+  const requestConfirm = () => {
+    if (!validate()) return
+    setConfirmText('')
+    setConfirmOpen(true)
+  }
+
+  const handleSubmit = async () => {
+    const trimmed = label.trim()
     try {
       if (isEditing && role) {
         const payload = isSystem
@@ -84,6 +110,7 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
         await createRole({ label: trimmed, description: description.trim(), allowedPages: pages })
         toast.success('Rol creado')
       }
+      setConfirmOpen(false)
       onOpenChange(false)
     } catch (e) {
       if (e instanceof RolesApiError) {
@@ -94,6 +121,7 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
       } else {
         toast.error('No se pudo guardar el rol')
       }
+      setConfirmOpen(false)
     }
   }
 
@@ -191,12 +219,55 @@ export function RoleFormDialog({ open, onOpenChange, role }: Props) {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={requestConfirm} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
             {isEditing ? 'Guardar cambios' : 'Crear rol'}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(o) => { if (!isSubmitting) setConfirmOpen(o) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isEditing ? 'Confirmar actualización del rol' : 'Confirmar creación del rol'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {isEditing
+                ? 'Estás a punto de modificar los accesos de este rol. Este cambio afecta a todos los usuarios asignados. '
+                : 'Estás a punto de crear un nuevo rol con los accesos seleccionados. '}
+              Para continuar, escribe{' '}
+              <span className="font-mono font-semibold text-foreground">{confirmWord}</span> en el campo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="role-confirm-input" className="text-xs text-muted-foreground">
+              Escribe <span className="font-mono font-semibold text-foreground">{confirmWord}</span> para confirmar
+            </Label>
+            <Input
+              id="role-confirm-input"
+              autoFocus
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={confirmWord}
+              disabled={isSubmitting}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isSubmitting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (canConfirm) handleSubmit() }}
+              disabled={!canConfirm || isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              {isEditing ? 'Sí, actualizar' : 'Sí, crear'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }
