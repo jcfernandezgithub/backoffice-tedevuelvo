@@ -20,7 +20,7 @@ function normalize(r: any): RoleApi {
     : ALL_PLATFORM_PAGES.filter((p) => !allowedPages.includes(p))
   const scope = r?.scope ?? (allowedPages.length === ALL_PLATFORM_PAGES.length ? 'FULL' : 'LIMITED')
   return {
-    id: r?.id ?? '',
+    id: (r?.id ?? r?._id ?? '') as string,
     label,
     shortLabel: r?.shortLabel ?? label,
     description: r?.description ?? '',
