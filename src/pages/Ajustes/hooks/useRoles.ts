@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { rolesApi, type CreateRolePayload, type RoleApi, type UpdateRolePayload } from '../services/rolesApi'
-import { ALL_PLATFORM_PAGES } from '@/pages/Usuarios/constants/roleAccess'
+import { ALL_PLATFORM_PAGES, pageKeysToLabels } from '@/pages/Usuarios/constants/roleAccess'
 import type { RoleDefinition } from '../services/rolesStore'
 
 const ROLES_QUERY_KEY = ['ajustes', 'roles'] as const
 
 function normalize(r: any): RoleApi {
   const label = r?.label ?? r?.name ?? ''
-  const allowedPages = Array.isArray(r?.allowedPages)
+  const rawPages = Array.isArray(r?.allowedPages)
     ? r.allowedPages
     : Array.isArray(r?.pages)
       ? r.pages
       : []
+  // El backend envía claves en mayúscula (DASHBOARD, GESTION_CALLCENTER, …).
+  // Convertimos a etiquetas visibles usadas por la UI.
+  const allowedPages = pageKeysToLabels(rawPages.map(String))
   const restrictedPages = Array.isArray(r?.restrictedPages)
-    ? r.restrictedPages
+    ? pageKeysToLabels(r.restrictedPages.map(String))
     : ALL_PLATFORM_PAGES.filter((p) => !allowedPages.includes(p))
   const scope = r?.scope ?? (allowedPages.length === ALL_PLATFORM_PAGES.length ? 'FULL' : 'LIMITED')
   return {

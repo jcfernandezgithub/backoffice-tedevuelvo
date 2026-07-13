@@ -1,5 +1,5 @@
 import { authenticatedFetch } from '@/services/apiClient'
-import type { PlatformPage } from '@/pages/Usuarios/constants/roleAccess'
+import { pageLabelsToKeys, type PlatformPage } from '@/pages/Usuarios/constants/roleAccess'
 import type { RoleDefinition } from './rolesStore'
 
 export interface RoleApi extends RoleDefinition {
@@ -57,7 +57,7 @@ export const rolesApi = {
   async create(data: CreateRolePayload): Promise<RoleApi> {
     const res = await authenticatedFetch('/roles', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(serializePayload(data)),
     })
     if (!res.ok) return parseError(res)
     return res.json()
@@ -65,7 +65,7 @@ export const rolesApi = {
   async update(id: string, data: UpdateRolePayload): Promise<RoleApi> {
     const res = await authenticatedFetch(`/roles/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify(serializePayload(data)),
     })
     if (!res.ok) return parseError(res)
     return res.json()
@@ -74,4 +74,12 @@ export const rolesApi = {
     const res = await authenticatedFetch(`/roles/${id}`, { method: 'DELETE' })
     if (!res.ok && res.status !== 204) return parseError(res)
   },
+}
+
+function serializePayload<T extends UpdateRolePayload>(data: T): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...data }
+  if (Array.isArray(data.allowedPages)) {
+    out.allowedPages = pageLabelsToKeys(data.allowedPages as PlatformPage[])
+  }
+  return out
 }
