@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { AlertCircle, Loader2, Plus, Users2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, Plus, Users2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,15 +12,38 @@ import { UserFormSheet } from './components/UserFormSheet'
 import { UserDetailsSheet } from './components/UserDetailsSheet'
 import { DeleteUserConfirm } from './components/DeleteUserConfirm'
 import { ChangeRoleDialog } from './components/ChangeRoleDialog'
-import { useUsers, applyFilters } from './hooks/useUsers'
+import { useUsers } from './hooks/useUsers'
 import { UsersApiError } from './services/usersApi'
 import type { UserFiltersV2, UserV2 } from './types/userTypesV2'
+import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
+
+const PAGE_SIZE = 20
+
+function getCustomerRoleId(roles: { id: string; label: string }[]): string | undefined {
+  return roles.find((r) => (r.label || '').trim().toUpperCase() === 'CUSTOMER')?.id
+}
 
 export default function UsuariosPage() {
   const isMobile = useIsMobile()
+  const [filters, setFilters] = useState<UserFiltersV2>(DEFAULT_FILTERS)
+  const [page, setPage] = useState(1)
+
+  const { roles: allRoles } = useRoles({ includeCustomer: true })
+  const customerRoleId = getCustomerRoleId(allRoles)
+
+  // Reset page a 1 cuando cambie cualquier filtro.
+  useEffect(() => {
+    setPage(1)
+  }, [filters.search, filters.role, filters.state, filters.backofficeOnly])
+
+  const excludeRoleId =
+    filters.backofficeOnly && filters.role === 'ALL' ? customerRoleId : undefined
+
   const {
     users,
+    pagination,
     isLoading,
+    isFetching,
     error,
     refetch,
     emailExists,
@@ -30,16 +53,24 @@ export default function UsuariosPage() {
     changeRole,
     resendInvitation,
     deleteUser,
-  } = useUsers()
+  } = useUsers({
+    page,
+    limit: PAGE_SIZE,
+    search: filters.search || undefined,
+    state: filters.state === 'ALL' ? undefined : filters.state,
+    roleId: filters.role === 'ALL' ? undefined : filters.role,
+    excludeRoleId,
+  })
 
-  const [filters, setFilters] = useState<UserFiltersV2>(DEFAULT_FILTERS)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<UserV2 | null>(null)
   const [viewing, setViewing] = useState<UserV2 | null>(null)
   const [changingRole, setChangingRole] = useState<UserV2 | null>(null)
   const [deleting, setDeleting] = useState<UserV2 | null>(null)
 
-  const filtered = useMemo(() => applyFilters(users, filters), [users, filters])
+  const totalPages = Math.max(1, pagination.totalPages || 1)
+  const canPrev = page > 1
+  const canNext = page < totalPages
 
   const errMsg = (e: unknown, fallback: string) =>
     e instanceof UsersApiError ? e.message : (e instanceof Error ? e.message : fallback)
@@ -147,16 +178,16 @@ export default function UsuariosPage() {
         </Card>
       ) : (
         <>
-          <UsersStats users={users} />
+          <UsersStats customerRoleId={customerRoleId} />
 
           <UsersFilters
             filters={filters}
             onChange={setFilters}
-            resultCount={filtered.length}
-            total={users.length}
+            resultCount={users.length}
+            total={pagination.total}
           />
 
-          {filtered.length === 0 ? (
+          {users.length === 0 ? (
         <Card>
           <CardContent className="p-10 text-center space-y-3">
             <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center">
@@ -165,7 +196,7 @@ export default function UsuariosPage() {
             <div>
               <p className="font-medium">No encontramos usuarios</p>
               <p className="text-sm text-muted-foreground">
-                {users.length === 0
+                {pagination.total === 0
                   ? 'Aún no hay usuarios registrados.'
                   : 'Prueba a ajustar los filtros o crear un nuevo usuario.'}
               </p>
@@ -177,7 +208,7 @@ export default function UsuariosPage() {
         </Card>
       ) : isMobile ? (
         <UsersMobileList
-          users={filtered}
+          users={users}
           onView={setViewing}
           onEdit={setEditing}
           onChangeRole={setChangingRole}
@@ -187,7 +218,7 @@ export default function UsuariosPage() {
         />
       ) : (
         <UsersTable
-          users={filtered}
+          users={users}
           onView={setViewing}
           onEdit={setEditing}
           onChangeRole={setChangingRole}
@@ -195,6 +226,35 @@ export default function UsuariosPage() {
           onResendInvitation={handleResend}
           onDelete={setDeleting}
         />
+          )}
+
+          {pagination.total > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-2">
+              <p className="text-xs text-muted-foreground">
+                Página <span className="font-medium text-foreground">{pagination.page}</span> de{' '}
+                <span className="font-medium text-foreground">{totalPages}</span> ·{' '}
+                <span className="font-medium text-foreground">{pagination.total}</span> usuarios
+                {isFetching && <span className="ml-2 opacity-70">actualizando…</span>}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!canPrev || isFetching}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!canNext || isFetching}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Siguiente <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
           )}
         </>
       )}
