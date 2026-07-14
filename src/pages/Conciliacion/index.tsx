@@ -93,6 +93,15 @@ function sameDate(a?: Date, b?: Date): boolean {
 
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
+function hasDraftInStorage(documentoNumero: string): boolean {
+  try {
+    const raw = localStorage.getItem(`manual-reconciliation-draft:${documentoNumero}`)
+    return !!raw && raw !== '[]'
+  } catch {
+    return false
+  }
+}
+
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return 'Sin actualizar'
   const d = new Date(iso)
@@ -236,6 +245,18 @@ export default function ConciliacionPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
+  const [draftCheckTick, setDraftCheckTick] = useState(0)
+
+  // Mapa de movimientos que tienen un borrador de conciliación manual guardado
+  // en localStorage. Se refresca cuando cambian los abonos o al cerrar el diálogo.
+  const draftDocSet = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of abonos) {
+      const doc = String(m.documento_numero ?? '').trim()
+      if (doc && hasDraftInStorage(doc)) set.add(doc)
+    }
+    return set
+  }, [abonos, draftCheckTick])
 
   const buildMovementRef = (m: CartolaMovimiento): CartolaMovementRef | null => {
     const doc = String(m.documento_numero ?? '').trim()
@@ -253,6 +274,14 @@ export default function ConciliacionPage() {
     if (!ref) return
     setSelected(ref)
     setDialogOpen(true)
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) {
+      // Al cerrar el diálogo refrescamos el indicador de borradores en la tabla.
+      setDraftCheckTick((t) => t + 1)
+    }
   }
 
   // CSV para abonos individuales
@@ -587,6 +616,7 @@ export default function ConciliacionPage() {
                       const canLink = abono > 0 && !!doc
                       const isFull = canLink && remaining <= 0.5 && applied > 0
                       const isPartial = canLink && applied > 0 && !isFull
+                      const hasDraft = doc && draftDocSet.has(doc)
                       return (
                       <TableRow key={doc || i} className={isFull ? 'bg-emerald-50/40' : isPartial ? 'bg-amber-50/40' : undefined}>
                         <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
@@ -603,7 +633,12 @@ export default function ConciliacionPage() {
                           {!canLink ? (
                             <span className="text-xs text-muted-foreground">—</span>
                           ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {hasDraft && (
+                                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
+                                  Borrador
+                                </Badge>
+                              )}
                               {isFull ? (
                                 <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                                   <CheckCircle2 className="h-3 w-3" />
@@ -620,18 +655,18 @@ export default function ConciliacionPage() {
                               )}
                               <Button
                                 size="sm"
-                                variant={applied > 0 ? 'outline' : 'default'}
+                                variant={applied > 0 || hasDraft ? 'outline' : 'default'}
                                 className="h-7 px-2 text-xs"
                                 onClick={() => openLinkDialog(m)}
                               >
                                 <Link2 className="h-3.5 w-3.5 mr-1" />
-                                {applied > 0 ? 'Ver / editar' : 'Conciliar'}
+                                {applied > 0 || hasDraft ? 'Ver / editar' : 'Conciliar'}
                               </Button>
                             </div>
                           )}
                         </TableCell>
                       </TableRow>
-                    )})
+                    )))}
                   )}
                 </TableBody>
               </Table>
