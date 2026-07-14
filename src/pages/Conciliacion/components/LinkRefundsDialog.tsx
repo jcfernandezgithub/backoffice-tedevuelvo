@@ -37,8 +37,6 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onApplied?: () => void
-  /** Filtro de N° crédito arrastrado desde la página. Prioriza y resalta coincidencias. */
-  creditoFilter?: string
 }
 
 function toNumberSafe(v: unknown): number {
@@ -46,13 +44,14 @@ function toNumberSafe(v: unknown): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, creditoFilter }: Props) {
+export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: Props) {
   const qc = useQueryClient()
   const pendingQuery = usePendingRefunds()
   const pendingRefunds = pendingQuery.data ?? []
 
   const [drafts, setDrafts] = useState<DraftMatch[]>([])
   const [search, setSearch] = useState('')
+  const [creditoSearch, setCreditoSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   // Links ya asociados al movimiento (backend).
@@ -68,9 +67,10 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
   useEffect(() => {
     if (open) {
       setDrafts([])
-      setSearch(creditoFilter?.trim() ?? '')
+      setSearch('')
+      setCreditoSearch('')
     }
-  }, [open, movement?.documentoNumero, creditoFilter])
+  }, [open, movement?.documentoNumero])
 
   // Mapa publicId → refund pendiente, para enriquecer los links existentes.
   const refundsByPublicId = useMemo(() => {
@@ -98,13 +98,16 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const cred = (creditoFilter ?? '').trim().toLowerCase()
+    const cred = creditoSearch.trim().toLowerCase()
     const list = pendingRefunds
       .filter(
         (r) =>
           !r.isFullyReconciled && !draftIds.has(r.id) && !linkedPublicIds.has(r.publicId),
       )
       .filter((r) => {
+        if (cred) {
+          if (!String(r.nroCredito ?? '').toLowerCase().includes(cred)) return false
+        }
         if (!q) return true
         return (
           r.fullName.toLowerCase().includes(q) ||
@@ -113,16 +116,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
           String(r.nroCredito ?? '').toLowerCase().includes(q)
         )
       })
-    if (cred) {
-      // Solicitudes con nroCredito coincidente primero.
-      list.sort((a, b) => {
-        const aMatch = String(a.nroCredito ?? '').toLowerCase().includes(cred) ? 0 : 1
-        const bMatch = String(b.nroCredito ?? '').toLowerCase().includes(cred) ? 0 : 1
-        return aMatch - bMatch
-      })
-    }
     return list.slice(0, 50)
-  }, [pendingRefunds, search, drafts, existingLinks, creditoFilter])
+  }, [pendingRefunds, search, creditoSearch, drafts, existingLinks])
 
   const handleClose = (next: boolean) => {
     if (!next) {
@@ -343,14 +338,26 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
               )}
             </div>
             <div className="shrink-0 p-3 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nombre, RUT o ID público..."
-                  className="pl-9"
-                />
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Nombre, RUT o ID público..."
+                    className="pl-9"
+                  />
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={creditoSearch}
+                    onChange={(e) => setCreditoSearch(e.target.value)}
+                    placeholder="N° de crédito…"
+                    className="pl-9"
+                    inputMode="numeric"
+                  />
+                </div>
               </div>
             </div>
             <ScrollArea className="flex-1 min-h-0">
@@ -368,10 +375,10 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
                   {filtered.map((r) => {
                     const suggested = Math.abs(r.remainingAmount - abono) < 0.5
                     const credMatch =
-                      !!creditoFilter &&
+                      !!creditoSearch.trim() &&
                       String(r.nroCredito ?? '')
                         .toLowerCase()
-                        .includes(creditoFilter.trim().toLowerCase())
+                        .includes(creditoSearch.trim().toLowerCase())
                     return (
                       <button
                         key={r.id}
