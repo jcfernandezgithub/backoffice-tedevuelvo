@@ -156,16 +156,44 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   // individual persiste el link y transiciona el estado en la misma llamada.
   const confirmedLinks = existingLinks
 
-  // Reset del formulario al abrir el diálogo con otro movimiento.
+  // Al abrir el diálogo intentamos recuperar el borrador del localStorage
+  // asociado al documentoNumero del movimiento. Si no existe, comenzamos
+  // limpio. Esto evita perder el trabajo si el usuario cierra accidentalmente.
   useEffect(() => {
     if (open) {
-      setDrafts([])
       setSearch('')
       setCreditoSearch('')
       setConfirming(false)
       setReviewOpen(false)
+      if (!movement?.documentoNumero) {
+        setDrafts([])
+        return
+      }
+      const stored = loadDraftsFromStorage(movement.documentoNumero)
+      if (stored) {
+        // Rehidratamos con los datos actuales del listado de pendientes.
+        const byId = new Map(pendingRefunds.map((r) => [r.publicId, r]))
+        const restored = stored
+          .map((entry) => {
+            const refund = byId.get(entry.refundId)
+            if (!refund || refund.isFullyReconciled) return null
+            return { refund, amount: entry.amount } satisfies DraftMatch
+          })
+          .filter((d): d is DraftMatch => d !== null)
+        setDrafts(restored)
+      } else {
+        setDrafts([])
+      }
     }
-  }, [open, movement?.documentoNumero])
+  }, [open, movement?.documentoNumero, pendingRefunds])
+
+  // Persistimos el borrador en cada cambio de drafts para que sobreviva a
+  // cierres accidentales del diálogo, refrescos de página o navegación.
+  useEffect(() => {
+    if (!movement?.documentoNumero) return
+    saveDraftsToStorage(movement.documentoNumero, drafts)
+  }, [drafts, movement?.documentoNumero])
+
 
   // Mapa publicId → refund pendiente, para enriquecer los links existentes.
   const refundsByPublicId = useMemo(() => {
