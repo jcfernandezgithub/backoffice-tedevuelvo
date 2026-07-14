@@ -383,17 +383,21 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             </div>
             <div className="p-2 flex flex-wrap gap-2">
               {confirmedLinks.map((l) => {
-                const refund = refundsByPublicId.get(l.refundId)
-                // Mostramos el realAmount de la solicitud (campo top-level,
-                // fuera del calculationSnapshot). Si aún no está disponible
-                // en cache, caemos al realAmount del link y por último al
-                // amountApplied para no dejar el KPI vacío.
-                const realAmount =
-                  refund?.realAmount && refund.realAmount > 0
-                    ? refund.realAmount
-                    : l.realAmount !== undefined && l.realAmount !== null
-                      ? l.realAmount
-                      : l.amountApplied
+                const pending = refundsByPublicId.get(l.refundId)
+                const fetched = confirmedRefundsMap.get(l.refundId)
+                const fullName: string | undefined =
+                  pending?.fullName ?? fetched?.fullName
+                const rut: string | undefined = pending?.rut ?? fetched?.rut
+                const publicId: string = fetched?.publicId ?? l.refundId
+                // realAmount vive como campo top-level de la solicitud.
+                const realAmountRaw =
+                  pending?.realAmount ??
+                  fetched?.realAmount ??
+                  l.realAmount ??
+                  l.amountApplied
+                const realAmount = Number(realAmountRaw) || 0
+                const loading =
+                  !pending && !fetched && confirmedRefundsQuery.isFetching
                 return (
                   <div
                     key={l.id}
@@ -402,16 +406,16 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                     <div className="flex flex-col leading-tight min-w-0">
-                      <span className="font-medium truncate max-w-[240px]">
-                        {refund?.fullName ?? l.refundId}
-                        {refund?.rut ? (
+                      <span className="font-medium truncate max-w-[280px]">
+                        {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
+                        {rut ? (
                           <span className="text-muted-foreground font-normal">
-                            {' '}· {refund.rut}
+                            {' '}· {rut}
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-muted-foreground">
-                        <span className="font-mono">{l.refundId}</span> · Devolución real{' '}
+                      <span className="text-muted-foreground truncate max-w-[280px]">
+                        <span className="font-mono">{publicId}</span> · Devolución real{' '}
                         <span className="font-medium text-emerald-700">
                           {formatCurrency(realAmount)}
                         </span>
