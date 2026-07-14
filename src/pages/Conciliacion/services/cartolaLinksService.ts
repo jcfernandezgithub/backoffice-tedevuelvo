@@ -164,25 +164,4 @@ export const cartolaLinksService = {
     await parseOrThrow(res)
   },
 
-  /**
-   * POST /bank/reconciliation/:documentoNumero/confirm
-   * Transiciona atómicamente los links `pending` del movimiento a `confirmed`
-   * y pasa las solicitudes asociadas a `payment_scheduled`.
-   * Si `linkIds` se omite, confirma todos los pending del movimiento.
-   */
-  async confirm(
-    documentoNumero: string,
-    linkIds?: string[],
-  ): Promise<{ confirmedCount: number }> {
-    if (!documentoNumero) throw new Error('El movimiento no tiene documento_numero')
-    const res = await authenticatedFetch(
-      `/bank/reconciliation/${encodeURIComponent(documentoNumero)}/confirm`,
-      {
-        method: 'POST',
-        body: JSON.stringify(linkIds && linkIds.length > 0 ? { linkIds } : {}),
-      },
-    )
-    const data = await parseOrThrow(res)
-    return { confirmedCount: Number(data?.confirmedCount ?? 0) }
-  },
 }
