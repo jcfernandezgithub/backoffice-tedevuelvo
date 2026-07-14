@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Search,
   X,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
@@ -32,6 +33,10 @@ import {
   LinkRefundsDialog,
   type CartolaMovementRef,
 } from './components/LinkRefundsDialog'
+import {
+  IndividualCsvReconcileDialog,
+  type MovementCandidate,
+} from './components/IndividualCsvReconcileDialog'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
