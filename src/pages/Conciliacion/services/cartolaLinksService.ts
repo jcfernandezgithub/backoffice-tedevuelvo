@@ -13,6 +13,9 @@ export interface CartolaLink {
   amountApplied: number
   /** Monto real de devolución que se guarda en la solicitud. */
   realAmount?: number
+  /** `pending` = borrador (aún no transiciona el estado); `confirmed` = aplicado. */
+  status: 'pending' | 'confirmed'
+  confirmedAt?: string | null
   createdAt: string
   createdBy?: string | null
 }
@@ -59,10 +62,19 @@ function safeJson(text: string): any {
 }
 
 function normalizeLink(raw: any): CartolaLink {
+  const rawStatus = String(raw?.status ?? '').toLowerCase()
+  const status: 'pending' | 'confirmed' =
+    rawStatus === 'confirmed' ? 'confirmed' : 'pending'
   return {
     id: String(raw?.id ?? raw?._id ?? ''),
     refundId: String(raw?.refundId ?? raw?.publicId ?? ''),
     amountApplied: Number(raw?.amountApplied ?? 0),
+    realAmount:
+      raw?.realAmount !== undefined && raw?.realAmount !== null
+        ? Number(raw.realAmount)
+        : undefined,
+    status,
+    confirmedAt: raw?.confirmedAt ?? null,
     createdAt: String(raw?.createdAt ?? new Date().toISOString()),
     createdBy: raw?.createdBy ?? null,
   }
@@ -151,4 +163,37 @@ export const cartolaLinksService = {
     )
     await parseOrThrow(res)
   },
+}
+
+// Extend the service with the confirm endpoint.
+;(cartolaLinksService as any).confirm = async function confirm(
+  documentoNumero: string,
+  linkIds?: string[],
+): Promise<{ confirmedCount: number }> {
+  if (!documentoNumero) throw new Error('El movimiento no tiene documento_numero')
+  const res = await authenticatedFetch(
+    `/bank/reconciliation/${encodeURIComponent(documentoNumero)}/confirm`,
+    {
+      method: 'POST',
+      body: JSON.stringify(linkIds && linkIds.length > 0 ? { linkIds } : {}),
+    },
+  )
+  const text = await res.text()
+  const data = text ? JSON.parse(text) : null
+  if (!res.ok) {
+    const msg =
+      (data && (data.message || data.error)) ||
+      `Error ${res.status} al confirmar la conciliación`
+    throw new Error(msg)
+  }
+  return { confirmedCount: Number(data?.confirmedCount ?? 0) }
+}
+
+declare module './cartolaLinksService' {
+  interface CartolaLinksService {
+    confirm(
+      documentoNumero: string,
+      linkIds?: string[],
+    ): Promise<{ confirmedCount: number }>
+  }
 }
