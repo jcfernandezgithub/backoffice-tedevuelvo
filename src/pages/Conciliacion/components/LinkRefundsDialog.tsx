@@ -383,7 +383,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       await detailQuery.refetch()
       const count = drafts.length
       setDrafts([])
+      clearDraftsFromStorage(movement.documentoNumero)
       if (statusErrors.length === 0) {
+
         toast({
           title: 'Conciliación confirmada',
           description: `${count} solicitud${count === 1 ? '' : 'es'} pasada${count === 1 ? '' : 's'} a Pago Programado.`,
