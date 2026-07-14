@@ -208,16 +208,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   }
 
   const addRefund = (r: PendingRefund) => {
-    if (availableBefore - totalApplied <= 0.5) {
-      toast({
-        title: 'Saldo del movimiento completado',
-        description: 'Ya asignaste el monto total disponible del abono.',
-        variant: 'destructive',
-      })
-      return
-    }
-    const suggest = Math.min(r.remainingAmount, Math.max(0, availableBefore - totalApplied))
-    setDrafts((prev) => [...prev, { refund: r, amount: Math.round(suggest) }])
+    // Pre-cargamos con la devolución real de la solicitud; el usuario puede
+    // editarla si necesita ajustar el monto final que se registrará.
+    setDrafts((prev) => [...prev, { refund: r, amount: Math.round(r.remainingAmount) }])
   }
 
   const updateAmount = (refundId: string, raw: string) => {
@@ -231,20 +224,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   const removeDraft = (refundId: string) => {
     setDrafts((prev) => prev.filter((d) => d.refund.id !== refundId))
-  }
-
-  const fillRemainingForLast = () => {
-    if (drafts.length === 0) return
-    const others = drafts.slice(0, -1).reduce((s, d) => s + (d.amount || 0), 0)
-    const last = drafts[drafts.length - 1]
-    const target = Math.max(0, Math.round(availableBefore - others))
-    setDrafts((prev) =>
-      prev.map((d, i) =>
-        i === prev.length - 1
-          ? { ...d, amount: Math.min(target, last.refund.remainingAmount) }
-          : d,
-      ),
-    )
   }
 
   const openReview = () => {
