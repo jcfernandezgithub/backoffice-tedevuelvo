@@ -679,7 +679,7 @@ export default function ConciliacionPage() {
       <LinkRefundsDialog
         movement={selected}
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         onApplied={refreshReconciliation}
       />
       <IndividualCsvReconcileDialog
