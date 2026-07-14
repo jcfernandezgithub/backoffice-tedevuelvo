@@ -245,6 +245,18 @@ export default function ConciliacionPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
+  const [draftCheckTick, setDraftCheckTick] = useState(0)
+
+  // Mapa de movimientos que tienen un borrador de conciliación manual guardado
+  // en localStorage. Se refresca cuando cambian los abonos o al cerrar el diálogo.
+  const draftDocSet = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of abonos) {
+      const doc = String(m.documento_numero ?? '').trim()
+      if (doc && hasDraftInStorage(doc)) set.add(doc)
+    }
+    return set
+  }, [abonos, draftCheckTick])
 
   const buildMovementRef = (m: CartolaMovimiento): CartolaMovementRef | null => {
     const doc = String(m.documento_numero ?? '').trim()
