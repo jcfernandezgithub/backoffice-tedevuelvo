@@ -114,9 +114,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       const results = await Promise.all(
         missingConfirmedIds.map(async (id) => {
           try {
-            const res = await refundAdminApi.search({ q: id, limit: 5 })
-            const match = (res.items ?? []).find((it: any) => it.publicId === id) ?? res.items?.[0]
-            return match ? [id, match] as const : null
+            const detail = await refundAdminApi.getById(id)
+            return detail ? [id, detail] as const : null
           } catch {
             return null
           }
