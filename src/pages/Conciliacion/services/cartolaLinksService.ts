@@ -29,8 +29,11 @@ export interface ReconciliationDetail {
 
 export interface ReconciliationSummary {
   totalApplied: number
+  /** Suma de realAmount de los links confirmados; si el backend no lo entrega, el frontend recae a totalApplied. */
+  totalRealAmount?: number
   count: number
 }
+
 
 export interface ApplyMatchInput {
   /** publicId de la solicitud (ej. TDV-12345) */
