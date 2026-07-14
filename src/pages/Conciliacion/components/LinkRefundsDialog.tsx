@@ -174,6 +174,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       await cartolaLinksService.removeLink(linkId)
       await detailQuery.refetch()
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
+      qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
+      qc.invalidateQueries({ queryKey: ['refund'] })
       onApplied?.()
       toast({ title: 'Asociación eliminada' })
     } catch (err: any) {
@@ -224,8 +227,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
       toast({
         title: 'Conciliación aplicada',
-        description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} asociada${drafts.length === 1 ? '' : 's'} al movimiento.`,
+        description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} pasada${drafts.length === 1 ? '' : 's'} a Pago Programado y asociada${drafts.length === 1 ? '' : 's'} al abono.`,
       })
+      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
+      qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
+      qc.invalidateQueries({ queryKey: ['refund'] })
       onApplied?.()
       handleClose(false)
     } catch (err: any) {
