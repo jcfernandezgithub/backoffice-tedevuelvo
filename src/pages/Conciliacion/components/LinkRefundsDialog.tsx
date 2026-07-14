@@ -387,6 +387,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 const fullName: string | undefined =
                   pending?.fullName ?? fetched?.fullName
                 const rut: string | undefined = pending?.rut ?? fetched?.rut
+                const nroCredito: string | undefined =
+                  pending?.nroCredito ?? fetched?.nroCredito
                 const publicId: string = fetched?.publicId ?? l.refundId
                 // realAmount vive como campo top-level de la solicitud.
                 const realAmountRaw =
@@ -410,6 +412,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                         {rut ? (
                           <span className="text-muted-foreground font-normal">
                             {' '}· {rut}
+                          </span>
+                        ) : null}
+                        {nroCredito ? (
+                          <span className="text-muted-foreground font-normal">
+                            {' '}· N° crédito {nroCredito}
                           </span>
                         ) : null}
                       </span>
