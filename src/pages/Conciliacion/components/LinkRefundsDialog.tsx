@@ -57,6 +57,23 @@ function toNumberSafe(v: unknown): number {
   return Number.isFinite(n) ? n : 0
 }
 
+function resolveCreditNumber(refund: any): string {
+  const candidates = [
+    refund?.nroCredito,
+    refund?.numeroCredito,
+    refund?.creditNumber,
+    refund?.loanNumber,
+    refund?.calculationSnapshot?.nroCredito,
+    refund?.calculationSnapshot?.nroOperacion,
+    refund?.calculationSnapshot?.numeroCredito,
+    refund?.calculationSnapshot?.creditNumber,
+    refund?.confirmedCreditData?.nroCredito,
+    refund?.confirmedCreditData?.creditNumber,
+  ]
+
+  return String(candidates.find((value) => String(value ?? '').trim()) ?? '').trim()
+}
+
 export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: Props) {
   const qc = useQueryClient()
   const pendingQuery = usePendingRefunds()
@@ -387,8 +404,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 const fullName: string | undefined =
                   pending?.fullName ?? fetched?.fullName
                 const rut: string | undefined = pending?.rut ?? fetched?.rut
-                const nroCredito: string | undefined =
-                  pending?.nroCredito ?? fetched?.nroCredito
+                const nroCredito =
+                  resolveCreditNumber(pending) || resolveCreditNumber(fetched)
                 const publicId: string = fetched?.publicId ?? l.refundId
                 // realAmount vive como campo top-level de la solicitud.
                 const realAmountRaw =
@@ -414,14 +431,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             {' '}· {rut}
                           </span>
                         ) : null}
-                        {nroCredito ? (
-                          <span className="text-muted-foreground font-normal">
-                            {' '}· N° crédito {nroCredito}
-                          </span>
-                        ) : null}
                       </span>
                       <span className="text-muted-foreground font-mono truncate text-[11px]">
-                        {publicId}
+                        {nroCredito ? `Crédito ${nroCredito} · ` : ''}{publicId}
                       </span>
                     </div>
                     <div className="ml-auto pl-2 text-right shrink-0">
