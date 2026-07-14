@@ -18,6 +18,7 @@ import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import type { PendingRefund } from '../types'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { toast } from '@/hooks/use-toast'
 
 interface DraftMatch {
@@ -245,6 +246,23 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         })),
       )
 
+      // Transición de estado a Pago Programado (mismo patrón que la
+      // conciliación CSV individual). El backend de reconciliación crea el
+      // link pero NO cambia el estado, por lo que lo hacemos explícito acá.
+      const statusErrors: string[] = []
+      for (const d of drafts) {
+        try {
+          await refundAdminApi.updateStatus(d.refund.publicId, {
+            status: 'payment_scheduled' as any,
+            realAmount: computeRealAmount(d.refund, d.amount).realAmount,
+            force: true,
+            note: `Conciliación bancaria movimiento ${movement.documentoNumero}`,
+          })
+        } catch (err: any) {
+          statusErrors.push(`${d.refund.publicId}: ${err?.message ?? 'error'}`)
+        }
+      }
+
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
       qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
       qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
@@ -252,10 +270,18 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       await detailQuery.refetch()
       const count = drafts.length
       setDrafts([])
-      toast({
-        title: 'Conciliación confirmada',
-        description: `${count} solicitud${count === 1 ? '' : 'es'} pasada${count === 1 ? '' : 's'} a Pago Programado.`,
-      })
+      if (statusErrors.length === 0) {
+        toast({
+          title: 'Conciliación confirmada',
+          description: `${count} solicitud${count === 1 ? '' : 'es'} pasada${count === 1 ? '' : 's'} a Pago Programado.`,
+        })
+      } else {
+        toast({
+          title: 'Conciliación parcial',
+          description: `Se asociaron los abonos, pero ${statusErrors.length} solicitud(es) no cambiaron de estado: ${statusErrors.join(' · ')}`,
+          variant: 'destructive',
+        })
+      }
       onApplied?.()
     } catch (err: any) {
       toast({
