@@ -564,7 +564,7 @@ export function IndividualCsvReconcileDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[min(98vw,1280px)] max-h-[94vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-[min(98vw,1280px)] h-[92vh] overflow-hidden !flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
