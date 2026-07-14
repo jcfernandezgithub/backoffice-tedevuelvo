@@ -95,7 +95,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [creditoSearch, setCreditoSearch] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
-  const [ackDiff, setAckDiff] = useState(false)
 
   // Links ya asociados al movimiento (backend).
   const detailQuery = useQuery({
@@ -118,7 +117,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setCreditoSearch('')
       setConfirming(false)
       setReviewOpen(false)
-      setAckDiff(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -274,7 +272,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
-    setAckDiff(false)
     setReviewOpen(true)
   }
 
