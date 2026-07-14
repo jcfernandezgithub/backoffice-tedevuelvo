@@ -38,13 +38,7 @@ import {
   IndividualCsvReconcileDialog,
   type MovementCandidate,
 } from './components/IndividualCsvReconcileDialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ChevronDown, FileSpreadsheet } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
