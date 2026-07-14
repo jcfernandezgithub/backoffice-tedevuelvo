@@ -97,6 +97,38 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     return map
   }, [pendingRefunds])
 
+  // Ids de solicitudes confirmadas que ya no están en el listado de
+  // pendientes (porque transicionaron a Pago Programado). Debemos ir a
+  // buscarlas al backend para poder mostrar nombre, RUT y realAmount.
+  const missingConfirmedIds = useMemo(() => {
+    return existingLinks
+      .map((l) => l.refundId)
+      .filter((id) => id && !refundsByPublicId.has(id))
+  }, [existingLinks, refundsByPublicId])
+
+  const confirmedRefundsQuery = useQuery({
+    queryKey: ['cartola-reconciliation', 'confirmed-refunds', missingConfirmedIds],
+    enabled: open && missingConfirmedIds.length > 0,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const results = await Promise.all(
+        missingConfirmedIds.map(async (id) => {
+          try {
+            const res = await refundAdminApi.search({ q: id, limit: 5 })
+            const match = (res.items ?? []).find((it: any) => it.publicId === id) ?? res.items?.[0]
+            return match ? [id, match] as const : null
+          } catch {
+            return null
+          }
+        }),
+      )
+      const map = new Map<string, any>()
+      for (const r of results) if (r) map.set(r[0], r[1])
+      return map
+    },
+  })
+  const confirmedRefundsMap = confirmedRefundsQuery.data ?? new Map<string, any>()
+
   const alreadyReconciled = useMemo(
     () => existingLinks.reduce((s, l) => s + l.amountApplied, 0),
     [existingLinks],
