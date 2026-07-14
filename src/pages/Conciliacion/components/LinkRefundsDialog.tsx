@@ -367,6 +367,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
                 <div className="divide-y pr-3">
                   {filtered.map((r) => {
                     const suggested = Math.abs(r.remainingAmount - abono) < 0.5
+                    const credMatch =
+                      !!creditoFilter &&
+                      String(r.nroCredito ?? '')
+                        .toLowerCase()
+                        .includes(creditoFilter.trim().toLowerCase())
                     return (
                       <button
                         key={r.id}
@@ -386,9 +391,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, cre
                                 Coincide
                               </Badge>
                             )}
+                            {credMatch && (
+                              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">
+                                Crédito {r.nroCredito}
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
                             {r.rut} · {r.publicId}
+                            {r.nroCredito ? ` · Créd. ${r.nroCredito}` : ''}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
