@@ -452,6 +452,7 @@ export function IndividualCsvReconcileDialog({
     }
 
     const linkErrorsByDoc = new Map<string, string>()
+    const statusErrorByRow = new Map<number, string>()
     let processed = 0
     for (const [doc, list] of byDoc.entries()) {
       processed += 1
@@ -466,6 +467,19 @@ export function IndividualCsvReconcileDialog({
             realAmount: Math.round(r.realAmount!),
           })),
         )
+        // Transición de estado a Pago Programado por solicitud
+        for (const r of list) {
+          try {
+            await refundAdminApi.updateStatus(r.refundPublicId!, {
+              status: 'payment_scheduled' as any,
+              realAmount: Math.round(r.realAmount!),
+              force: true,
+              note: `Conciliación CSV individual movimiento ${doc}`,
+            })
+          } catch (err: any) {
+            statusErrorByRow.set(r.rowNumber, err?.message ?? 'No se pudo cambiar el estado')
+          }
+        }
       } catch (err: any) {
         linkErrorsByDoc.set(doc, err?.message ?? 'No se pudo asociar al movimiento.')
       }
@@ -477,6 +491,10 @@ export function IndividualCsvReconcileDialog({
       const linkErr = linkErrorsByDoc.get(r.chosenDoc!)
       if (linkErr) {
         return { ...r, state: 'apply_error', message: linkErr }
+      }
+      const statusErr = statusErrorByRow.get(r.rowNumber)
+      if (statusErr) {
+        return { ...r, state: 'apply_error', message: `Abono asociado pero el estado no cambió: ${statusErr}` }
       }
       return {
         ...r,
