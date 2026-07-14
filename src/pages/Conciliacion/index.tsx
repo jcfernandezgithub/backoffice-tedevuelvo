@@ -25,7 +25,6 @@ import {
   CheckCircle2,
   Search,
   X,
-
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
@@ -33,12 +32,6 @@ import {
   LinkRefundsDialog,
   type CartolaMovementRef,
 } from './components/LinkRefundsDialog'
-import { CsvReconcileDialog } from './components/CsvReconcileDialog'
-import {
-  IndividualCsvReconcileDialog,
-  type MovementCandidate,
-} from './components/IndividualCsvReconcileDialog'
-import { ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
