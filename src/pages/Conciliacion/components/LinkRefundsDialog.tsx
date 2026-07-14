@@ -171,12 +171,14 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       }
       const stored = loadDraftsFromStorage(movement.documentoNumero)
       if (stored) {
-        // Rehidratamos con los datos actuales del listado de pendientes.
+        // Rehidratamos con los datos actuales del listado de pendientes y
+        // descartamos solicitudes que ya estén confirmadas o linkeadas.
         const byId = new Map(pendingRefunds.map((r) => [r.publicId, r]))
+        const linkedIds = new Set(existingLinks.map((l) => l.refundId))
         const restored = stored
           .map((entry) => {
             const refund = byId.get(entry.refundId)
-            if (!refund || refund.isFullyReconciled) return null
+            if (!refund || refund.isFullyReconciled || linkedIds.has(entry.refundId)) return null
             return { refund, amount: entry.amount } satisfies DraftMatch
           })
           .filter((d): d is DraftMatch => d !== null)
@@ -184,6 +186,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       } else {
         setDrafts([])
       }
+
     }
   }, [open, movement?.documentoNumero, pendingRefunds])
 
