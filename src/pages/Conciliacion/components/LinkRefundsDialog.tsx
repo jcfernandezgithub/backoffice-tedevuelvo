@@ -835,7 +835,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   )
                 })}
               </div>
-            </ScrollArea>
+            </div>
             <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
               <div>
                 <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
