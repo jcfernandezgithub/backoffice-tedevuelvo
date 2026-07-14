@@ -633,12 +633,7 @@ export default function ConciliacionPage() {
                           {!canLink ? (
                             <span className="text-xs text-muted-foreground">—</span>
                           ) : (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {hasDraft && (
-                                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
-                                  Borrador
-                                </Badge>
-                              )}
+                            <div className="flex items-center gap-2">
                               {isFull ? (
                                 <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                                   <CheckCircle2 className="h-3 w-3" />
@@ -655,12 +650,12 @@ export default function ConciliacionPage() {
                               )}
                               <Button
                                 size="sm"
-                                variant={applied > 0 || hasDraft ? 'outline' : 'default'}
+                                variant={applied > 0 ? 'outline' : 'default'}
                                 className="h-7 px-2 text-xs"
                                 onClick={() => openLinkDialog(m)}
                               >
                                 <Link2 className="h-3.5 w-3.5 mr-1" />
-                                {applied > 0 || hasDraft ? 'Ver / editar' : 'Conciliar'}
+                                {applied > 0 ? 'Ver / editar' : 'Conciliar'}
                               </Button>
                             </div>
                           )}
