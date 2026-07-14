@@ -732,65 +732,65 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
           <ScrollArea className="flex-1 min-h-0 pr-1">
             {/* Resumen movimiento */}
-          <div className="rounded-lg border bg-muted/40 p-3 text-sm grid grid-cols-3 gap-3">
-            <div className="col-span-3 min-w-0">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Movimiento
+            <div className="rounded-lg border bg-muted/40 p-3 text-sm grid grid-cols-3 gap-3">
+              <div className="col-span-3 min-w-0">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Movimiento
+                </div>
+                <div className="font-medium truncate" title={movement.descripcion}>
+                  {movement.descripcion || '—'}
+                </div>
+                <div className="text-[11px] text-muted-foreground font-mono">
+                  Doc. {movement.documentoNumero} · {movement.fecha}
+                </div>
               </div>
-              <div className="font-medium truncate" title={movement.descripcion}>
-                {movement.descripcion || '—'}
-              </div>
-              <div className="text-[11px] text-muted-foreground font-mono">
-                Doc. {movement.documentoNumero} · {movement.fecha}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Abono
-              </div>
-              <div className="font-semibold text-emerald-700 tabular-nums">
-                {formatCurrency(abono)}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                A conciliar
-              </div>
-              <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Saldo restante
-              </div>
-              <div
-                className={`font-semibold tabular-nums ${
-                  newAvailable > 0.5 ? 'text-amber-700' : 'text-emerald-700'
-                }`}
-              >
-                {formatCurrency(newAvailable)}
-              </div>
-            </div>
-          </div>
-
-          {/* Aviso parcial */}
-          {newAvailable > 0.5 && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-xs px-3 py-2 flex items-start gap-2">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
               <div>
-                <div className="font-medium">Conciliación parcial</div>
-                Quedará un saldo sin conciliar de{' '}
-                <span className="font-semibold">{formatCurrency(newAvailable)}</span>. Podrás
-                asociarlo a otras solicitudes más adelante.
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Abono
+                </div>
+                <div className="font-semibold text-emerald-700 tabular-nums">
+                  {formatCurrency(abono)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  A conciliar
+                </div>
+                <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Saldo restante
+                </div>
+                <div
+                  className={`font-semibold tabular-nums ${
+                    newAvailable > 0.5 ? 'text-amber-700' : 'text-emerald-700'
+                  }`}
+                >
+                  {formatCurrency(newAvailable)}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Detalle solicitudes */}
-          <div className="rounded-lg border bg-card overflow-hidden flex flex-col">
-            <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-              Solicitudes a confirmar ({drafts.length})
-            </div>
-            <div className="divide-y">
+            {/* Aviso parcial */}
+            {newAvailable > 0.5 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-xs px-3 py-2 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-medium">Conciliación parcial</div>
+                  Quedará un saldo sin conciliar de{' '}
+                  <span className="font-semibold">{formatCurrency(newAvailable)}</span>. Podrás
+                  asociarlo a otras solicitudes más adelante.
+                </div>
+              </div>
+            )}
+
+            {/* Detalle solicitudes */}
+            <div className="rounded-lg border bg-card overflow-hidden flex flex-col">
+              <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+                Solicitudes a confirmar ({drafts.length})
+              </div>
+              <div className="divide-y">
                 {drafts.map((d) => {
                   const { prima, cuotas, primaTotal, realAmount } = computeRealAmount(
                     d.refund,
@@ -835,42 +835,41 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   )
                 })}
               </div>
+              <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Total abono
+                  </div>
+                  <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Total prima
+                  </div>
+                  <div className="font-semibold tabular-nums">
+                    {formatCurrency(
+                      drafts.reduce(
+                        (s, d) => s + computeRealAmount(d.refund, d.amount).primaTotal,
+                        0,
+                      ),
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Total devolución real
+                  </div>
+                  <div className="font-semibold tabular-nums text-emerald-700">
+                    {formatCurrency(
+                      drafts.reduce(
+                        (s, d) => s + computeRealAmount(d.refund, d.amount).realAmount,
+                        0,
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Total abono
-                </div>
-                <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Total prima
-                </div>
-                <div className="font-semibold tabular-nums">
-                  {formatCurrency(
-                    drafts.reduce(
-                      (s, d) => s + computeRealAmount(d.refund, d.amount).primaTotal,
-                      0,
-                    ),
-                  )}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Total devolución real
-                </div>
-                <div className="font-semibold tabular-nums text-emerald-700">
-                  {formatCurrency(
-                    drafts.reduce(
-                      (s, d) => s + computeRealAmount(d.refund, d.amount).realAmount,
-                      0,
-                    ),
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
           </ScrollArea>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
