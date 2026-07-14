@@ -158,6 +158,7 @@ export default function ConciliacionPage() {
 
   // Filtros
   const [search, setSearch] = useState('')
+  const [credito, setCredito] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | undefined>()
   const [dateTo, setDateTo] = useState<Date | undefined>()
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(() => {
@@ -170,6 +171,7 @@ export default function ConciliacionPage() {
 
   const filteredAbonos = useMemo(() => {
     const q = search.trim().toLowerCase()
+    const qCred = credito.trim().toLowerCase()
     const fromMs = dateFrom ? new Date(dateFrom.getFullYear(), dateFrom.getMonth(), dateFrom.getDate()).getTime() : null
     const toMs = dateTo ? new Date(dateTo.getFullYear(), dateTo.getMonth(), dateTo.getDate(), 23, 59, 59).getTime() : null
     return abonos.filter((m) => {
@@ -177,6 +179,11 @@ export default function ConciliacionPage() {
         const desc = String(m.descripcion ?? '').toLowerCase()
         const doc = String(m.documento_numero ?? '').toLowerCase()
         if (!desc.includes(q) && !doc.includes(q)) return false
+      }
+      if (qCred) {
+        const desc = String(m.descripcion ?? '').toLowerCase()
+        const doc = String(m.documento_numero ?? '').toLowerCase()
+        if (!desc.includes(qCred) && !doc.includes(qCred)) return false
       }
       if (fromMs || toMs) {
         const d = parseMovDate(m.fecha_movimiento)
@@ -187,11 +194,12 @@ export default function ConciliacionPage() {
       }
       return true
     })
-  }, [abonos, search, dateFrom, dateTo])
+  }, [abonos, search, credito, dateFrom, dateTo])
 
-  const hasFilters = !!search || !!dateFrom || !!dateTo
+  const hasFilters = !!search || !!credito || !!dateFrom || !!dateTo
   const clearFilters = () => {
     setSearch('')
+    setCredito('')
     setDateFrom(undefined)
     setDateTo(undefined)
   }
@@ -496,6 +504,16 @@ export default function ConciliacionPage() {
                     className="pl-9"
                   />
                 </div>
+                <div className="relative md:w-[220px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={credito}
+                    onChange={(e) => setCredito(e.target.value)}
+                    placeholder="N° de crédito…"
+                    className="pl-9"
+                    inputMode="numeric"
+                  />
+                </div>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -667,6 +685,7 @@ export default function ConciliacionPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onApplied={refreshReconciliation}
+        creditoFilter={credito}
       />
       <CsvReconcileDialog
         movement={selected}

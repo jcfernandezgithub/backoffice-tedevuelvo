@@ -37,6 +37,8 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   onApplied?: () => void
+  /** Filtro de N° crédito arrastrado desde la página. Prioriza y resalta coincidencias. */
+  creditoFilter?: string
 }
 
 function toNumberSafe(v: unknown): number {
@@ -44,7 +46,7 @@ function toNumberSafe(v: unknown): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: Props) {
+export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied, creditoFilter }: Props) {
   const qc = useQueryClient()
   const pendingQuery = usePendingRefunds()
   const pendingRefunds = pendingQuery.data ?? []
@@ -66,9 +68,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   useEffect(() => {
     if (open) {
       setDrafts([])
-      setSearch('')
+      setSearch(creditoFilter?.trim() ?? '')
     }
-  }, [open, movement?.documentoNumero])
+  }, [open, movement?.documentoNumero, creditoFilter])
 
   // Mapa publicId → refund pendiente, para enriquecer los links existentes.
   const refundsByPublicId = useMemo(() => {
@@ -96,7 +98,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return pendingRefunds
+    const cred = (creditoFilter ?? '').trim().toLowerCase()
+    const list = pendingRefunds
       .filter(
         (r) =>
           !r.isFullyReconciled && !draftIds.has(r.id) && !linkedPublicIds.has(r.publicId),
@@ -106,11 +109,20 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         return (
           r.fullName.toLowerCase().includes(q) ||
           r.rut.toLowerCase().includes(q) ||
-          r.publicId.toLowerCase().includes(q)
+          r.publicId.toLowerCase().includes(q) ||
+          String(r.nroCredito ?? '').toLowerCase().includes(q)
         )
       })
-      .slice(0, 50)
-  }, [pendingRefunds, search, drafts, existingLinks])
+    if (cred) {
+      // Solicitudes con nroCredito coincidente primero.
+      list.sort((a, b) => {
+        const aMatch = String(a.nroCredito ?? '').toLowerCase().includes(cred) ? 0 : 1
+        const bMatch = String(b.nroCredito ?? '').toLowerCase().includes(cred) ? 0 : 1
+        return aMatch - bMatch
+      })
+    }
+    return list.slice(0, 50)
+  }, [pendingRefunds, search, drafts, existingLinks, creditoFilter])
 
   const handleClose = (next: boolean) => {
     if (!next) {
@@ -355,6 +367,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 <div className="divide-y pr-3">
                   {filtered.map((r) => {
                     const suggested = Math.abs(r.remainingAmount - abono) < 0.5
+                    const credMatch =
+                      !!creditoFilter &&
+                      String(r.nroCredito ?? '')
+                        .toLowerCase()
+                        .includes(creditoFilter.trim().toLowerCase())
                     return (
                       <button
                         key={r.id}
@@ -374,9 +391,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                                 Coincide
                               </Badge>
                             )}
+                            {credMatch && (
+                              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">
+                                Crédito {r.nroCredito}
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
                             {r.rut} · {r.publicId}
+                            {r.nroCredito ? ` · Créd. ${r.nroCredito}` : ''}
                           </div>
                         </div>
                         <div className="text-right shrink-0">
