@@ -13,6 +13,9 @@ export interface CartolaLink {
   amountApplied: number
   /** Monto real de devolución que se guarda en la solicitud. */
   realAmount?: number
+  /** `pending` = borrador (aún no transiciona el estado); `confirmed` = aplicado. */
+  status: 'pending' | 'confirmed'
+  confirmedAt?: string | null
   createdAt: string
   createdBy?: string | null
 }
@@ -59,10 +62,19 @@ function safeJson(text: string): any {
 }
 
 function normalizeLink(raw: any): CartolaLink {
+  const rawStatus = String(raw?.status ?? '').toLowerCase()
+  const status: 'pending' | 'confirmed' =
+    rawStatus === 'confirmed' ? 'confirmed' : 'pending'
   return {
     id: String(raw?.id ?? raw?._id ?? ''),
     refundId: String(raw?.refundId ?? raw?.publicId ?? ''),
     amountApplied: Number(raw?.amountApplied ?? 0),
+    realAmount:
+      raw?.realAmount !== undefined && raw?.realAmount !== null
+        ? Number(raw.realAmount)
+        : undefined,
+    status,
+    confirmedAt: raw?.confirmedAt ?? null,
     createdAt: String(raw?.createdAt ?? new Date().toISOString()),
     createdBy: raw?.createdBy ?? null,
   }
@@ -150,5 +162,27 @@ export const cartolaLinksService = {
       { method: 'DELETE' },
     )
     await parseOrThrow(res)
+  },
+
+  /**
+   * POST /bank/reconciliation/:documentoNumero/confirm
+   * Transiciona atómicamente los links `pending` del movimiento a `confirmed`
+   * y pasa las solicitudes asociadas a `payment_scheduled`.
+   * Si `linkIds` se omite, confirma todos los pending del movimiento.
+   */
+  async confirm(
+    documentoNumero: string,
+    linkIds?: string[],
+  ): Promise<{ confirmedCount: number }> {
+    if (!documentoNumero) throw new Error('El movimiento no tiene documento_numero')
+    const res = await authenticatedFetch(
+      `/bank/reconciliation/${encodeURIComponent(documentoNumero)}/confirm`,
+      {
+        method: 'POST',
+        body: JSON.stringify(linkIds && linkIds.length > 0 ? { linkIds } : {}),
+      },
+    )
+    const data = await parseOrThrow(res)
+    return { confirmedCount: Number(data?.confirmedCount ?? 0) }
   },
 }

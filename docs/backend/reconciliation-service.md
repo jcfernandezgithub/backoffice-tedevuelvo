@@ -1,6 +1,9 @@
 # Servicio de Conciliación Bancaria — Especificación para Backend
 
-Versión: 1.0 · Módulo: `Conciliación`
+Versión: 2.0 · Módulo: `Conciliación`
+
+> **Cambio v2.0** — Se separa la creación del link (borrador, sin transición de estado)
+> de la confirmación (transición atómica a `payment_scheduled`). Ver §3.3, §3.5 y §4.
 
 Este documento describe el contrato que debe implementar el backend para la asociación de movimientos bancarios (cartolas) con solicitudes de devolución.
 
@@ -10,9 +13,22 @@ Este documento describe el contrato que debe implementar el backend para la asoc
 
 Una **conciliación** vincula un movimiento bancario (identificado por `documentoNumero`) con una o más solicitudes de devolución, indicando cuánto del abono se asigna a cada solicitud.
 
-- El frontend solo permite conciliar solicitudes cuyo estado sea **Ingresado** (`submitted`).
+El flujo se compone de dos pasos explícitos:
+
+1. **Asociar (borrador)** — El usuario agrega una o más solicitudes al movimiento. El backend
+   crea los links con estado `pending` (no confirmados). La solicitud **NO** cambia de estado.
+   Estos links pueden eliminarse libremente mientras estén en `pending`.
+2. **Confirmar** — El usuario confirma la conciliación del movimiento. El backend, en una
+   transacción atómica, marca los links `pending` como `confirmed`, guarda el `realAmount` en
+   cada solicitud y transiciona el estado a **Pago Programado** (`payment_scheduled`).
+   Una vez `confirmed`, un link **NO** puede eliminarse.
+
+Reglas generales:
+
+- El frontend solo agrega solicitudes en estado **Ingresado** (`submitted`).
 - El monto asignado al movimiento (`amountApplied`) puede ser menor o igual al abono.
-- Al crear una conciliación, el backend debe guardar el monto **real** de devolución (`realAmount`) y dejar la solicitud en estado **Pago Programado** (`payment_scheduled`).
+- Un movimiento puede tener conciliación parcial: parte confirmada + saldo restante disponible
+  para nuevos borradores/confirmaciones en sesiones posteriores.
 
 ---
 
@@ -28,12 +44,16 @@ Una **conciliación** vincula un movimiento bancario (identificado por `document
 | `public_id`        | `text` NOT NULL                           | `publicId` de la solicitud (ej. `TDV-12345`).             |
 | `amount_applied`   | `numeric` NOT NULL                        | Monto del abono asignado a esta solicitud.                 |
 | `real_amount`      | `numeric` NOT NULL                        | Monto real de devolución a registrar en la solicitud.      |
+| `status`           | `text` NOT NULL DEFAULT 'pending'         | `pending` (borrador) \| `confirmed` (aplicado).            |
+| `confirmed_at`     | `timestamptz` NULL                        | Timestamp de confirmación (null mientras `pending`).       |
+| `confirmed_by`     | `uuid` NULL FK → `users.id`               | Usuario que confirmó (null mientras `pending`).            |
 | `created_at`       | `timestamptz` NOT NULL DEFAULT now()      |                                                            |
 | `created_by`       | `uuid` FK → `users.id` (opcional)         | Usuario que creó la conciliación.                          |
 
 Índices recomendados:
 - `CREATE INDEX idx_bank_reconciliation_documento ON bank_reconciliation_links (documento_numero);`
 - `CREATE INDEX idx_bank_reconciliation_refund ON bank_reconciliation_links (refund_id);`
+- `CREATE INDEX idx_bank_reconciliation_status ON bank_reconciliation_links (documento_numero, status);`
 
 ---
 
@@ -56,6 +76,9 @@ Devuelve el detalle de conciliación de un movimiento bancario.
       "id": "uuid-del-link",
       "refundId": "TDV-12345",
       "amountApplied": 640227,
+      "realAmount": 512500,
+      "status": "pending",
+      "confirmedAt": null,
       "createdAt": "2026-07-10T12:00:00.000Z",
       "createdBy": "uuid-usuario"
     }
@@ -64,6 +87,9 @@ Devuelve el detalle de conciliación de un movimiento bancario.
 ```
 
 **404** si no existe conciliación para ese movimiento.
+
+> `totalApplied` debe considerar **todos** los links (pending + confirmed) para que el
+> frontend calcule correctamente el saldo restante del movimiento.
 
 ### 3.2 `POST /api/v1/bank/reconciliation/bulk`
 
@@ -86,9 +112,9 @@ Recibe un listado de `documentoNumero` y devuelve un resumen de conciliación po
 }
 ```
 
-### 3.3 `POST /api/v1/bank/reconciliation` — Crear conciliación
+### 3.3 `POST /api/v1/bank/reconciliation` — Asociar (crea borradores)
 
-Este es el endpoint principal para asociar solicitudes a un movimiento bancario.
+Crea uno o más links en estado **`pending`**. **No** cambia el estado de la solicitud.
 
 **Request**
 ```json
@@ -104,56 +130,90 @@ Este es el endpoint principal para asociar solicitudes a un movimiento bancario.
 }
 ```
 
+Campos:
 - `publicId`: identificador público de la solicitud.
 - `amountApplied`: monto del abono que se asigna a esa solicitud.
-- `realAmount`: monto real de devolución que se guarda en la solicitud.
+- `realAmount`: monto real de devolución a guardar (se persiste ya en el link, aunque
+  todavía no se aplique a la solicitud).
 
-**Validaciones del backend (críticas)**
+**Validaciones del backend**
 
-1. **Estado de la solicitud**: la solicitud debe estar en estado **`submitted`** (Ingresado).
-   - Si el estado actual no es `submitted`, rechazar con **422**:
-     ```json
-     { "error": "La solicitud TDV-XXXX no está en estado Ingresado" }
-     ```
-   - **No** debe exigir `payment_scheduled` como estado previo.
+1. **Estado de la solicitud**: debe estar en **`submitted`** (Ingresado).
+   Rechazar con **422** si no lo está:
+   ```json
+   { "error": "La solicitud TDV-XXXX no está en estado Ingresado" }
+   ```
+2. **Movimiento**: `documentoNumero` debe existir en la cartola cargada.
+3. **Saldo disponible**: `Σ amountApplied (nuevos + existentes pending + existentes confirmed)`
+   **no** debe exceder el abono del movimiento.
+4. **Solicitud no duplicada**: rechazar si esa `publicId` ya tiene un link (pending o confirmed)
+   en cualquier movimiento.
+5. **Montos positivos**: `amountApplied > 0` y `realAmount > 0`.
 
-2. **Existencia del movimiento**: el `documentoNumero` debe existir en la cartola cargada para el rango de fechas activo.
+**Comportamiento**
 
-3. **Saldo disponible**: la suma de `amountApplied` de las solicitudes en el request, más los `amountApplied` ya existentes para ese movimiento, no debe superar el abono del movimiento.
+- Crear los registros en `bank_reconciliation_links` con `status = 'pending'`.
+- **NO** modificar el estado de la solicitud.
+- **NO** modificar `realAmount` en la solicitud todavía (se hace al confirmar).
 
-4. **Monto positivo**: cada `amountApplied` y `realAmount` debe ser mayor a 0.
+**201 Created** con los links recién creados (mismo formato de §3.1).
 
-**Proceso atómico esperado en el backend**
+### 3.5 `POST /api/v1/bank/reconciliation/:documentoNumero/confirm` — Confirmar
 
-1. Validar que todas las solicitudes estén en `submitted`.
-2. Validar que el saldo total no exceda el abono.
-3. Para cada solicitud:
-   - Registrar `realAmount` en el historial de estados y/o en el campo principal de la solicitud.
-   - Cambiar el estado de la solicitud a `payment_scheduled`.
-   - Crear el registro en `bank_reconciliation_links` con `amount_applied` y `real_amount`.
-4. Si cualquier paso falla, hacer rollback completo.
+Confirma todos los links en estado `pending` del movimiento (o un subconjunto explícito).
 
-**201 Created** si todo se procesa correctamente.
+**Request (opcional body)**
+```json
+{ "linkIds": ["uuid-1", "uuid-2"] }
+```
+- Si `linkIds` se omite, se confirman **todos** los links `pending` del movimiento.
+- Si se especifica, solo esos links son confirmados.
 
-**400/422** si fallan validaciones, con mensaje claro en `error`.
+**Proceso atómico**
+
+Para cada link seleccionado, en una única transacción:
+1. Validar que el link esté en `status = 'pending'`.
+2. Validar que la solicitud siga en `submitted`. Si no, rollback total con **422**.
+3. Guardar `real_amount` del link en el campo `realAmount` de la solicitud.
+4. Transicionar la solicitud a `payment_scheduled` (registrar en `status_history`).
+5. Actualizar el link: `status = 'confirmed'`, `confirmed_at = now()`, `confirmed_by = user`.
+
+Si cualquier paso falla → **rollback completo**, ningún cambio persiste.
+
+**200 OK**
+```json
+{
+  "documentoNumero": "123456789",
+  "confirmedCount": 2,
+  "links": [ /* mismo formato que §3.1, con status="confirmed" */ ]
+}
+```
+
+**422** si algún link ya está `confirmed` o alguna solicitud ya no está en `submitted`.
 
 ### 3.4 `DELETE /api/v1/bank/reconciliation/:id`
 
-Elimina un link de conciliación. El backend debe:
-- Eliminar el registro de `bank_reconciliation_links`.
-- **Opcional**: revertir el estado de la solicitud a `submitted` si ya no tiene otros links y no se ha pagado.
+Elimina un link de conciliación **solo si está en `status = 'pending'`**.
+
+- Si el link está `confirmed` → rechazar con **409 Conflict**:
+  ```json
+  { "error": "No se puede eliminar un link ya confirmado" }
+  ```
+- Si está `pending` → eliminar el registro. **No** modifica el estado de la solicitud
+  (nunca se había cambiado).
 
 ---
 
 ## 4. Integración con el estado de la solicitud
 
-El endpoint de conciliación debe ser el responsable de la transición de estado:
+La transición de estado se produce **solo** en el endpoint de confirmación (§3.5):
 
-- **Antes**: `submitted` (Ingresado).
-- **Después**: `payment_scheduled` (Pago Programado).
-- **realAmount**: guardar el valor de `realAmount` del request.
-
-**No** se requiere que el frontend llame por separado a un endpoint de actualización de estado. El frontend enviará `realAmount` dentro de `matches` y el backend lo aplicará junto con la creación del link.
+| Acción del usuario         | Endpoint                                | Estado del link | Estado de la solicitud       |
+| -------------------------- | --------------------------------------- | --------------- | ---------------------------- |
+| Agregar solicitud (draft)  | `POST /bank/reconciliation`             | `pending`       | `submitted` (sin cambios)    |
+| Eliminar draft             | `DELETE /bank/reconciliation/:id`       | (eliminado)     | `submitted` (sin cambios)    |
+| Confirmar conciliación     | `POST …/:documentoNumero/confirm`       | `confirmed`     | `payment_scheduled` (+ realAmount) |
+| Eliminar link confirmado   | ❌ rechazado (409)                       | —               | —                            |
 
 ---
 
@@ -166,10 +226,13 @@ El endpoint de conciliación debe ser el responsable de la transición de estado
 
 ## 6. Casos borde
 
-- **Movimiento parcialmente conciliado**: permitir nuevos links mientras la suma total no supere el abono.
-- **Solicitud ya conciliada en otro movimiento**: rechazar con **422**.
-- **Múltiples solicitudes para un mismo movimiento**: permitir; validar que la suma total no exceda el abono.
-- **Solicitud en estado `payment_scheduled` o posterior**: si llega a este endpoint (por ejemplo por un error previo), se puede aceptar si no tiene links asociados, pero lo ideal es que el frontend solo envíe solicitudes en `submitted`.
+- **Movimiento parcialmente conciliado**: permitir nuevos links (pending o confirmados) mientras
+  `Σ amountApplied ≤ abono`. Las confirmaciones anteriores permanecen intactas.
+- **Solicitud ya vinculada en otro movimiento**: rechazar con **422** en §3.3.
+- **Confirmación con solicitud fuera de `submitted`**: si alguien cambió el estado por otra vía
+  entre el `POST` y el `confirm`, rechazar toda la confirmación con **422** y no aplicar nada.
+- **Reintento de confirm**: si todos los links ya están `confirmed`, responder **200** con
+  `confirmedCount: 0` (idempotencia).
 
 ---
 
@@ -177,9 +240,10 @@ El endpoint de conciliación debe ser el responsable de la transición de estado
 
 - [ ] Endpoint `GET /bank/reconciliation/:documentoNumero` implementado.
 - [ ] Endpoint `POST /bank/reconciliation/bulk` implementado.
-- [ ] Endpoint `POST /bank/reconciliation` implementado con validación `status = submitted`.
-- [ ] Endpoint `DELETE /bank/reconciliation/:id` implementado.
-- [ ] Transición atómica a `payment_scheduled` + guardado de `realAmount` dentro del mismo endpoint.
+- [ ] Endpoint `POST /bank/reconciliation` crea links `pending` sin cambiar estado de la solicitud.
+- [ ] Endpoint `POST /bank/reconciliation/:documentoNumero/confirm` transiciona a `payment_scheduled` de forma atómica.
+- [ ] Endpoint `DELETE /bank/reconciliation/:id` rechaza (409) links ya `confirmed`.
+- [ ] Campo `status` (`pending`/`confirmed`) expuesto en la respuesta de `GET`.
 - [ ] Tabla de links con los índices recomendados.
 - [ ] Autorización por rol implementada.
 - [ ] Errores con mensaje claro en `error`.
