@@ -303,12 +303,16 @@ export default function ConciliacionPage() {
         const doc = String(m.documento_numero ?? '')
         const summary = bulkMap[doc]
         const applied = summary?.totalApplied ?? 0
-        conciliado += applied
+        // El monto que se muestra al usuario como "conciliado" es la devolución real.
+        const real = summary?.totalRealAmount
+        conciliado +=
+          real !== undefined && real !== null ? real : applied
         if (applied > 0) movsConciliados += 1
       }
     }
     return { totalAbonos, abonosCount, conciliado, movsConciliados }
   }, [abonos, bulkMap])
+
 
   return (
     <div className="container max-w-7xl mx-auto p-4 md:p-6 space-y-6">
