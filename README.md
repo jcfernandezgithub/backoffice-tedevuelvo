@@ -4,6 +4,12 @@
 
 ## Changelog
 
+### Versión 4.1.8 - 2026-07-14
+
+#### Conciliación: modo manual único
+- Se eliminó la opción **Conciliación CSV para Abonos Individuales** del header de la página `/conciliacion`.
+- Se eliminó del menú de cada movimiento la opción **Conciliar mediante CSV**, dejando solo **Conciliar manualmente** (o **Ver / editar** cuando el movimiento ya tiene vinculaciones).
+- Los componentes y servicios de conciliación CSV permanecen en el proyecto pero no se exponen en la UI actual, centralizando la operación en el flujo manual de asociación de solicitudes a abonos bancarios.
 
 ### Versión 4.1.7 - 2026-07-11
 
