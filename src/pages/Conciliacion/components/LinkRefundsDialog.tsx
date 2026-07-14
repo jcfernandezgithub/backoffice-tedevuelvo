@@ -573,19 +573,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                 Seleccionadas ({drafts.length})
               </Label>
-              {drafts.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={fillRemainingForLast}
-                  title="Asignar el saldo restante a la última solicitud"
-                >
-                  <Wand2 className="h-3.5 w-3.5 mr-1" />
-                  Ajustar saldo
-                </Button>
-              )}
             </div>
             {drafts.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-sm text-muted-foreground text-center">
@@ -597,11 +584,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
-                    const over = d.amount > d.refund.remainingAmount + 0.5
-                    const { prima, cuotas, primaTotal, realFromRefund, isEstimated, diff, matches } = computeRealSummary(
-                      d.refund,
-                      d.amount,
-                    )
+                    const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -610,7 +593,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                               {d.refund.fullName}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
-                              {d.refund.rut} · {d.refund.isEstimated ? 'Estimado' : 'Devolución real'} {formatCurrency(d.refund.remainingAmount)}
+                              {d.refund.rut}
+                              {d.refund.nroCredito ? ` · Créd. ${d.refund.nroCredito}` : ''}
                             </div>
                           </div>
                           <Button
@@ -622,81 +606,30 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={d.amount}
-                          onChange={(e) => updateAmount(d.refund.id, e.target.value)}
-                          className={`mt-1.5 h-8 w-full text-sm tabular-nums ${
-                            over ? 'border-destructive focus-visible:ring-destructive' : ''
-                          }`}
-                        />
-                        {over && (
-                          <div className="mt-1 text-[11px] text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Excede el saldo de la solicitud
-                          </div>
-                        )}
-                        {/* Devolución real (fija, de la solicitud) vs abono asignado */}
-                        <div
-                          className={`mt-2 rounded-md border px-2 py-1.5 text-[11px] leading-tight ${
-                            matches
-                              ? 'border-emerald-200 bg-emerald-50/60'
-                              : 'border-amber-300 bg-amber-50/70'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground">
-                              {isEstimated ? 'Estimado (solicitud)' : 'Devolución real (solicitud)'}
-                            </span>
-                            <span className="tabular-nums font-medium">
-                              {formatCurrency(realFromRefund)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-0.5">
-                            <span className="text-muted-foreground">Abono asignado</span>
-                            <span className="tabular-nums font-medium">
-                              {formatCurrency(d.amount)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-current/10">
-                            <span
-                              className={
-                                matches
-                                  ? 'text-emerald-800 font-medium'
-                                  : 'text-amber-800 font-medium'
-                              }
-                            >
-                              Diferencia
-                            </span>
-                            <span
-                              className={`tabular-nums font-semibold ${
-                                matches ? 'text-emerald-700' : 'text-amber-700'
-                              }`}
-                            >
-                              {matches
-                                ? 'Coincide'
-                                : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
-                            </span>
-                          </div>
-                          {!matches && (
-                            <div className="mt-1 text-[10px] text-amber-800 flex items-start gap-1">
-                              <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                              {diff > 0
-                                ? 'El abono asignado supera la devolución real de la solicitud.'
-                                : 'El abono asignado es menor a la devolución real de la solicitud.'}
-                            </div>
-                          )}
+                        {/* Devolución real (editable) */}
+                        <div className="mt-2">
+                          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {isEstimated ? 'Devolución estimada (editable)' : 'Devolución real (editable)'}
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={d.amount}
+                            onChange={(e) => updateAmount(d.refund.id, e.target.value)}
+                            className="mt-1 h-9 w-full text-sm tabular-nums font-semibold"
+                          />
                         </div>
-                        {/* Prima × cuotas como dato informativo */}
-                        <div className="mt-1.5 rounded-md border border-dashed bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1">
+                        {/* Nueva prima total (informativo) */}
+                        <div className="mt-1.5 rounded-md border border-dashed bg-muted/30 px-2 py-1.5 text-[11px] flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
                             <Info className="h-3 w-3" />
-                            Prima × cuotas (informativo)
+                            Nueva prima total
                           </span>
-                          <span className="tabular-nums">
-                            {formatCurrency(prima)} × {cuotas} ={' '}
-                            <span className="font-medium text-foreground/80">
+                          <span className="tabular-nums text-right">
+                            <span className="text-muted-foreground text-[10px]">
+                              {formatCurrency(prima)} × {cuotas} =
+                            </span>{' '}
+                            <span className="font-semibold text-foreground">
                               {formatCurrency(primaTotal)}
                             </span>
                           </span>
