@@ -718,7 +718,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
       {/* Diálogo de revisión previo a la confirmación */}
       <Dialog open={reviewOpen} onOpenChange={(v) => !confirming && setReviewOpen(v)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col gap-4">
+        <DialogContent className="max-w-2xl max-h-[92vh] h-[92vh] overflow-hidden flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -730,7 +730,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             </DialogDescription>
           </DialogHeader>
 
-          {/* Resumen movimiento */}
+          <ScrollArea className="flex-1 min-h-0 pr-1">
+            {/* Resumen movimiento */}
           <div className="rounded-lg border bg-muted/40 p-3 text-sm grid grid-cols-3 gap-3">
             <div className="col-span-3 min-w-0">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -785,12 +786,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           )}
 
           {/* Detalle solicitudes */}
-          <div className="rounded-lg border bg-card overflow-hidden flex-1 min-h-0 flex flex-col">
+          <div className="rounded-lg border bg-card overflow-hidden flex flex-col">
             <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
               Solicitudes a confirmar ({drafts.length})
             </div>
-            <ScrollArea className="flex-1 min-h-0">
-              <div className="divide-y">
+            <div className="divide-y">
                 {drafts.map((d) => {
                   const { prima, cuotas, primaTotal, realAmount } = computeRealAmount(
                     d.refund,
@@ -871,6 +871,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
             </div>
           </div>
+          </ScrollArea>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
             <Button
