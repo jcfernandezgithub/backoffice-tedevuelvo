@@ -393,6 +393,15 @@ export default function ConciliacionPage() {
                 </>
               )}
             </Button>
+            <Button
+              variant="outline"
+              onClick={openIndividualCsvDialog}
+              disabled={query.isFetching || movementCandidates.length === 0}
+              title="Conciliar múltiples abonos individuales mediante un archivo CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Conciliación CSV para Abonos Individuales
+            </Button>
           </div>
           <span className="text-xs text-muted-foreground">
             {formatLastUpdated(lastUpdatedAt)}
