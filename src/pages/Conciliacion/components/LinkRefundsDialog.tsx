@@ -13,8 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, X, Plus, Loader2, Wand2, CheckCircle2, AlertCircle, Lock, Info } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Search, X, Plus, Loader2, CheckCircle2, Lock, Info } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
@@ -24,34 +23,29 @@ import { toast } from '@/hooks/use-toast'
 
 interface DraftMatch {
   refund: PendingRefund
+  /** Devolución real editable por el usuario (es también el amountApplied al backend). */
   amount: number
 }
 
 /**
- * La devolución real es un dato fijo de la solicitud (viene confirmada del
- * cálculo o del historial). El abono asignado del movimiento bancario NO
- * la modifica: sólo comparamos ambos valores y exponemos la diferencia para
- * que el usuario decida si concilia igual o corrige el monto.
- *
- * Prima × cuotas se mantiene como dato informativo (no participa del cálculo).
+ * En conciliación manual el usuario asocia una solicitud a un movimiento
+ * bancario cuyo abono suele ser muy superior a la devolución individual
+ * (ej. depósito consolidado). No existe un "abono asignado" calculable, por
+ * lo tanto sólo trabajamos con:
+ *   - Devolución real de la solicitud (editable por el usuario)
+ *   - Nueva prima total (informativo)
  */
-const MATCH_TOLERANCE = 1 // CLP
-function computeRealSummary(refund: PendingRefund, amountApplied: number) {
+function computeRealSummary(refund: PendingRefund) {
   const prima = Number(refund.newMonthlyPremium ?? 0)
   const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
   const primaTotal = Math.max(0, Math.round(prima * cuotas))
   const realFromRefund = Math.round(Number(refund.remainingAmount) || 0)
-  const applied = Math.round(Number(amountApplied) || 0)
-  const diff = applied - realFromRefund
-  const matches = Math.abs(diff) <= MATCH_TOLERANCE
   return {
     prima,
     cuotas,
     primaTotal,
     realFromRefund,
     isEstimated: !!refund.isEstimated,
-    diff,
-    matches,
   }
 }
 
@@ -101,7 +95,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [creditoSearch, setCreditoSearch] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
-  const [ackDiff, setAckDiff] = useState(false)
 
   // Links ya asociados al movimiento (backend).
   const detailQuery = useQuery({
@@ -124,7 +117,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setCreditoSearch('')
       setConfirming(false)
       setReviewOpen(false)
-      setAckDiff(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -216,16 +208,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   }
 
   const addRefund = (r: PendingRefund) => {
-    if (availableBefore - totalApplied <= 0.5) {
-      toast({
-        title: 'Saldo del movimiento completado',
-        description: 'Ya asignaste el monto total disponible del abono.',
-        variant: 'destructive',
-      })
-      return
-    }
-    const suggest = Math.min(r.remainingAmount, Math.max(0, availableBefore - totalApplied))
-    setDrafts((prev) => [...prev, { refund: r, amount: Math.round(suggest) }])
+    // Pre-cargamos con la devolución real de la solicitud; el usuario puede
+    // editarla si necesita ajustar el monto final que se registrará.
+    setDrafts((prev) => [...prev, { refund: r, amount: Math.round(r.remainingAmount) }])
   }
 
   const updateAmount = (refundId: string, raw: string) => {
@@ -239,20 +224,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   const removeDraft = (refundId: string) => {
     setDrafts((prev) => prev.filter((d) => d.refund.id !== refundId))
-  }
-
-  const fillRemainingForLast = () => {
-    if (drafts.length === 0) return
-    const others = drafts.slice(0, -1).reduce((s, d) => s + (d.amount || 0), 0)
-    const last = drafts[drafts.length - 1]
-    const target = Math.max(0, Math.round(availableBefore - others))
-    setDrafts((prev) =>
-      prev.map((d, i) =>
-        i === prev.length - 1
-          ? { ...d, amount: Math.min(target, last.refund.remainingAmount) }
-          : d,
-      ),
-    )
   }
 
   const openReview = () => {
@@ -280,7 +251,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
-    setAckDiff(false)
     setReviewOpen(true)
   }
 
@@ -294,8 +264,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         drafts.map((d) => ({
           publicId: d.refund.publicId,
           amountApplied: d.amount,
-          // La devolución real es un dato fijo de la solicitud.
-          realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
+          // En conciliación manual la devolución real es lo que el usuario
+          // confirma (editable, pre-cargado con el valor de la solicitud).
+          realAmount: d.amount,
         })),
       )
 
@@ -307,7 +278,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         try {
           await refundAdminApi.updateStatus(d.refund.publicId, {
             status: 'payment_scheduled' as any,
-            realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
+            realAmount: d.amount,
             force: true,
             note: `Conciliación bancaria movimiento ${movement.documentoNumero}`,
           })
@@ -581,19 +552,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                 Seleccionadas ({drafts.length})
               </Label>
-              {drafts.length > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={fillRemainingForLast}
-                  title="Asignar el saldo restante a la última solicitud"
-                >
-                  <Wand2 className="h-3.5 w-3.5 mr-1" />
-                  Ajustar saldo
-                </Button>
-              )}
             </div>
             {drafts.length === 0 ? (
               <div className="flex-1 flex items-center justify-center p-6 text-sm text-muted-foreground text-center">
@@ -605,11 +563,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
-                    const over = d.amount > d.refund.remainingAmount + 0.5
-                    const { prima, cuotas, primaTotal, realFromRefund, isEstimated, diff, matches } = computeRealSummary(
-                      d.refund,
-                      d.amount,
-                    )
+                    const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -618,7 +572,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                               {d.refund.fullName}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
-                              {d.refund.rut} · {d.refund.isEstimated ? 'Estimado' : 'Devolución real'} {formatCurrency(d.refund.remainingAmount)}
+                              {d.refund.rut}
+                              {d.refund.nroCredito ? ` · Créd. ${d.refund.nroCredito}` : ''}
                             </div>
                           </div>
                           <Button
@@ -630,81 +585,30 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={d.amount}
-                          onChange={(e) => updateAmount(d.refund.id, e.target.value)}
-                          className={`mt-1.5 h-8 w-full text-sm tabular-nums ${
-                            over ? 'border-destructive focus-visible:ring-destructive' : ''
-                          }`}
-                        />
-                        {over && (
-                          <div className="mt-1 text-[11px] text-destructive flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Excede el saldo de la solicitud
-                          </div>
-                        )}
-                        {/* Devolución real (fija, de la solicitud) vs abono asignado */}
-                        <div
-                          className={`mt-2 rounded-md border px-2 py-1.5 text-[11px] leading-tight ${
-                            matches
-                              ? 'border-emerald-200 bg-emerald-50/60'
-                              : 'border-amber-300 bg-amber-50/70'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground">
-                              {isEstimated ? 'Estimado (solicitud)' : 'Devolución real (solicitud)'}
-                            </span>
-                            <span className="tabular-nums font-medium">
-                              {formatCurrency(realFromRefund)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-0.5">
-                            <span className="text-muted-foreground">Abono asignado</span>
-                            <span className="tabular-nums font-medium">
-                              {formatCurrency(d.amount)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-current/10">
-                            <span
-                              className={
-                                matches
-                                  ? 'text-emerald-800 font-medium'
-                                  : 'text-amber-800 font-medium'
-                              }
-                            >
-                              Diferencia
-                            </span>
-                            <span
-                              className={`tabular-nums font-semibold ${
-                                matches ? 'text-emerald-700' : 'text-amber-700'
-                              }`}
-                            >
-                              {matches
-                                ? 'Coincide'
-                                : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
-                            </span>
-                          </div>
-                          {!matches && (
-                            <div className="mt-1 text-[10px] text-amber-800 flex items-start gap-1">
-                              <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                              {diff > 0
-                                ? 'El abono asignado supera la devolución real de la solicitud.'
-                                : 'El abono asignado es menor a la devolución real de la solicitud.'}
-                            </div>
-                          )}
+                        {/* Devolución real (editable) */}
+                        <div className="mt-2">
+                          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {isEstimated ? 'Devolución estimada (editable)' : 'Devolución real (editable)'}
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={d.amount}
+                            onChange={(e) => updateAmount(d.refund.id, e.target.value)}
+                            className="mt-1 h-9 w-full text-sm tabular-nums font-semibold"
+                          />
                         </div>
-                        {/* Prima × cuotas como dato informativo */}
-                        <div className="mt-1.5 rounded-md border border-dashed bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
-                          <span className="inline-flex items-center gap-1">
+                        {/* Nueva prima total (informativo) */}
+                        <div className="mt-1.5 rounded-md border border-dashed bg-muted/30 px-2 py-1.5 text-[11px] flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
                             <Info className="h-3 w-3" />
-                            Prima × cuotas (informativo)
+                            Nueva prima total
                           </span>
-                          <span className="tabular-nums">
-                            {formatCurrency(prima)} × {cuotas} ={' '}
-                            <span className="font-medium text-foreground/80">
+                          <span className="tabular-nums text-right">
+                            <span className="text-muted-foreground text-[10px]">
+                              {formatCurrency(prima)} × {cuotas} =
+                            </span>{' '}
+                            <span className="font-semibold text-foreground">
                               {formatCurrency(primaTotal)}
                             </span>
                           </span>
@@ -808,19 +712,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
             </div>
 
-            {/* Aviso parcial */}
-            {newAvailable > 0.5 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-xs px-3 py-2 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <div>
-                  <div className="font-medium">Conciliación parcial</div>
-                  Quedará un saldo sin conciliar de{' '}
-                  <span className="font-semibold">{formatCurrency(newAvailable)}</span>. Podrás
-                  asociarlo a otras solicitudes más adelante.
-                </div>
-              </div>
-            )}
-
             {/* Detalle solicitudes */}
             <div className="rounded-lg border bg-card overflow-hidden flex flex-col">
               <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
@@ -828,10 +719,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
               <div className="divide-y">
                 {drafts.map((d) => {
-                  const { prima, cuotas, primaTotal, realFromRefund, isEstimated, diff, matches } = computeRealSummary(
-                    d.refund,
-                    d.amount,
-                  )
+                  const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
                   const nroCredito = resolveCreditNumber(d.refund)
                   return (
                     <div key={d.refund.id} className="px-3 py-2.5 text-sm">
@@ -844,57 +732,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            Abono asignado
+                          <div className="text-[10px] uppercase tracking-wide text-emerald-800">
+                            {isEstimated ? 'Devolución estimada' : 'Devolución real'}
                           </div>
-                          <div className="font-semibold tabular-nums">
+                          <div className="font-semibold tabular-nums text-emerald-700">
                             {formatCurrency(d.amount)}
                           </div>
                         </div>
                       </div>
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-                        <div className="rounded-md border border-emerald-200 bg-emerald-50/60 px-2 py-1">
-                          <div className="text-emerald-800 font-medium">
-                            {isEstimated ? 'Estimado' : 'Devolución real'}
-                          </div>
-                          <div className="tabular-nums font-semibold text-emerald-700">
-                            {formatCurrency(realFromRefund)}
-                          </div>
-                        </div>
-                        <div className="rounded-md border bg-muted/30 px-2 py-1">
-                          <div className="text-muted-foreground">Abono asignado</div>
-                          <div className="tabular-nums font-semibold">
-                            {formatCurrency(d.amount)}
-                          </div>
-                        </div>
-                        <div
-                          className={`rounded-md border px-2 py-1 ${
-                            matches
-                              ? 'border-emerald-200 bg-emerald-50/60'
-                              : 'border-amber-300 bg-amber-50/70'
-                          }`}
-                        >
-                          <div
-                            className={
-                              matches ? 'text-emerald-800 font-medium' : 'text-amber-800 font-medium'
-                            }
-                          >
-                            Diferencia
-                          </div>
-                          <div
-                            className={`tabular-nums font-semibold ${
-                              matches ? 'text-emerald-700' : 'text-amber-700'
-                            }`}
-                          >
-                            {matches
-                              ? 'Coincide'
-                              : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-1.5 text-[10px] text-muted-foreground flex items-center gap-1">
+                      <div className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Prima × cuotas (informativo): {formatCurrency(prima)} × {cuotas} ={' '}
+                        Nueva prima total: {formatCurrency(prima)} × {cuotas} ={' '}
                         <span className="font-medium text-foreground/80">
                           {formatCurrency(primaTotal)}
                         </span>
@@ -903,72 +751,18 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   )
                 })}
               </div>
-              <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Total abono
-                  </div>
-                  <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Total devolución real
-                  </div>
-                  <div className="font-semibold tabular-nums text-emerald-700">
-                    {formatCurrency(
-                      drafts.reduce(
-                        (s, d) => s + computeRealSummary(d.refund, d.amount).realFromRefund,
-                        0,
-                      ),
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Diferencia total
-                  </div>
-                  {(() => {
-                    const totalDiff = drafts.reduce(
-                      (s, d) => s + computeRealSummary(d.refund, d.amount).diff,
-                      0,
-                    )
-                    const ok = Math.abs(totalDiff) <= MATCH_TOLERANCE
-                    return (
-                      <div
-                        className={`font-semibold tabular-nums ${
-                          ok ? 'text-emerald-700' : 'text-amber-700'
-                        }`}
-                      >
-                        {ok
-                          ? 'Coincide'
-                          : `${totalDiff > 0 ? '+' : ''}${formatCurrency(totalDiff)}`}
-                      </div>
-                    )
-                  })()}
-                </div>
+              <div className="shrink-0 border-t bg-muted/30 px-3 py-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
+                  Total devolución real ({drafts.length})
+                </span>
+                <span className="font-semibold tabular-nums text-emerald-700 text-sm">
+                  {formatCurrency(totalApplied)}
+                </span>
               </div>
             </div>
           </ScrollArea>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-            {(() => {
-              const anyDiff = drafts.some(
-                (d) => !computeRealSummary(d.refund, d.amount).matches,
-              )
-              return anyDiff ? (
-                <label className="flex items-start gap-2 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2 py-1.5 mr-auto max-w-md">
-                  <Checkbox
-                    checked={ackDiff}
-                    onCheckedChange={(v) => setAckDiff(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    Hay diferencias entre el abono asignado y la devolución real de al menos una
-                    solicitud. Confirmo que quiero conciliar de todas formas.
-                  </span>
-                </label>
-              ) : null
-            })()}
             <Button
               variant="outline"
               onClick={() => setReviewOpen(false)}
@@ -978,10 +772,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={
-                confirming ||
-                (drafts.some((d) => !computeRealSummary(d.refund, d.amount).matches) && !ackDiff)
-              }
+              disabled={confirming}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
