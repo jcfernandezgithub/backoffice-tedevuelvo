@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, X, Plus, Loader2, Wand2, Trash2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, X, Plus, Loader2, Wand2, Trash2, CheckCircle2, AlertCircle, Lock, Clock } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
@@ -65,6 +65,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [search, setSearch] = useState('')
   const [creditoSearch, setCreditoSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   // Links ya asociados al movimiento (backend).
   const detailQuery = useQuery({
@@ -74,6 +75,14 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     staleTime: 15_000,
   })
   const existingLinks: CartolaLink[] = detailQuery.data?.links ?? []
+  const pendingLinks = useMemo(
+    () => existingLinks.filter((l) => l.status !== 'confirmed'),
+    [existingLinks],
+  )
+  const confirmedLinks = useMemo(
+    () => existingLinks.filter((l) => l.status === 'confirmed'),
+    [existingLinks],
+  )
 
   // Reset del formulario al abrir el diálogo con otro movimiento.
   useEffect(() => {
@@ -81,6 +90,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setDrafts([])
       setSearch('')
       setCreditoSearch('')
+      setConfirming(false)
+      setSubmitting(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -200,12 +211,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     }
   }
 
-  const handleApply = async () => {
+  const handleAssociate = async () => {
     if (!movement) return
     if (drafts.length === 0) {
       toast({
         title: 'Sin solicitudes',
-        description: 'Agrega al menos una solicitud para conciliar.',
+        description: 'Agrega al menos una solicitud para asociar al movimiento.',
       })
       return
     }
@@ -248,23 +259,67 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       )
 
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+      await detailQuery.refetch()
+      setDrafts([])
       toast({
-        title: 'Conciliación aplicada',
-        description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} pasada${drafts.length === 1 ? '' : 's'} a Pago Programado y asociada${drafts.length === 1 ? '' : 's'} al abono.`,
+        title: 'Solicitudes asociadas',
+        description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} agregada${drafts.length === 1 ? '' : 's'} como borrador. Confirma la conciliación para pasarlas a Pago Programado.`,
       })
-      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
-      qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
-      qc.invalidateQueries({ queryKey: ['refund'] })
       onApplied?.()
-      handleClose(false)
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err?.message ?? 'No se pudo aplicar.',
+        description: err?.message ?? 'No se pudo asociar.',
         variant: 'destructive',
       })
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleConfirm = async () => {
+    if (!movement) return
+    if (pendingLinks.length === 0) {
+      toast({
+        title: 'Nada por confirmar',
+        description: 'No hay solicitudes asociadas pendientes de confirmar.',
+      })
+      return
+    }
+    const isPartial = availableBefore > 0.5 // saldo restante > 0 después de lo ya asociado
+    if (isPartial) {
+      const ok = window.confirm(
+        `Vas a confirmar una conciliación PARCIAL.\n\n` +
+          `Abono del movimiento: ${formatCurrency(abono)}\n` +
+          `Total a confirmar: ${formatCurrency(pendingLinks.reduce((s, l) => s + l.amountApplied, 0))}\n` +
+          `Saldo que queda sin conciliar: ${formatCurrency(availableBefore)}\n\n` +
+          `Las solicitudes confirmadas pasarán a Pago Programado y no podrán desasociarse. ¿Deseas continuar?`,
+      )
+      if (!ok) return
+    }
+    try {
+      setConfirming(true)
+      const { confirmedCount } = await cartolaLinksService.confirm(movement.documentoNumero)
+      await detailQuery.refetch()
+      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
+      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
+      qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
+      qc.invalidateQueries({ queryKey: ['refund'] })
+      toast({
+        title: 'Conciliación confirmada',
+        description: `${confirmedCount || pendingLinks.length} solicitud${
+          (confirmedCount || pendingLinks.length) === 1 ? '' : 'es'
+        } pasada${(confirmedCount || pendingLinks.length) === 1 ? '' : 's'} a Pago Programado.`,
+      })
+      onApplied?.()
+    } catch (err: any) {
+      toast({
+        title: 'No se pudo confirmar',
+        description: err?.message ?? 'Error de red',
+        variant: 'destructive',
+      })
+    } finally {
+      setConfirming(false)
     }
   }
 
