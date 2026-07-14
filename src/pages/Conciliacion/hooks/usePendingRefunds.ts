@@ -3,7 +3,7 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import type { PendingRefund } from '../types'
 import type { RefundRequest } from '@/types/refund'
 
-function getRealAmount(refund: RefundRequest): number {
+function resolveAmount(refund: RefundRequest): { amount: number; isEstimated: boolean } {
   const entry = refund.statusHistory
     ?.slice()
     .reverse()
@@ -12,9 +12,9 @@ function getRealAmount(refund: RefundRequest): number {
       return (to === 'submitted' || to === 'payment_scheduled' || to === 'paid') && e.realAmount
     })
   const fromHistory = Number(entry?.realAmount ?? 0)
-  if (fromHistory > 0) return fromHistory
+  if (fromHistory > 0) return { amount: fromHistory, isEstimated: false }
   // Fallback para solicitudes en "Ingresada" que aún no tienen realAmount
-  return Number((refund as any).estimatedAmountCLP ?? 0)
+  return { amount: Number((refund as any).estimatedAmountCLP ?? 0), isEstimated: true }
 }
 
 export function usePendingRefunds() {
@@ -45,7 +45,7 @@ export function usePendingRefunds() {
         allItems = allItems.concat(...rest.map((r) => r.items ?? []))
       }
       return allItems.map((r) => {
-        const realAmount = getRealAmount(r)
+        const { amount: realAmount, isEstimated } = resolveAmount(r)
         const estimatedAmount = Number((r as any).estimatedAmountCLP ?? 0)
         // El estado de conciliación vive en el backend por movimiento;
         // este hook solo expone el saldo total a asignar.
@@ -66,6 +66,7 @@ export function usePendingRefunds() {
           estimatedAmount,
           reconciledAmount,
           remainingAmount,
+          isEstimated,
           isFullyReconciled: realAmount > 0 && remainingAmount <= 0.5,
           scheduledAt: r.updatedAt,
           nroCredito,

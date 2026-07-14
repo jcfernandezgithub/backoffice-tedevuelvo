@@ -540,7 +540,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                           </div>
                           <div className="justify-self-end text-right shrink-0 rounded-md border bg-background px-2.5 py-1 min-w-[104px]">
                             <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">
-                              Saldo
+                              {r.isEstimated ? 'Estimado' : 'Devolución real'}
                             </div>
                             <div className="text-sm font-semibold tabular-nums whitespace-nowrap leading-tight mt-1">
                               {formatCurrency(r.remainingAmount)}
@@ -609,7 +609,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                               {d.refund.fullName}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
-                              {d.refund.rut} · Saldo {formatCurrency(d.refund.remainingAmount)}
+                              {d.refund.rut} · {d.refund.isEstimated ? 'Estimado' : 'Devolución real'} {formatCurrency(d.refund.remainingAmount)}
                             </div>
                           </div>
                           <Button
