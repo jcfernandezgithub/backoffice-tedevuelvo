@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.8
+## Versión 4.1.9
 
 ## Changelog
+
+### Versión 4.1.9 - 2026-07-14
+
+#### Conciliación: borradores de conciliación manual e indicador en tabla
+- Los borradores de conciliación manual se persisten automáticamente en `localStorage` bajo la clave del número de documento del movimiento bancario (`documentoNumero`).
+- Al reabrir un movimiento se restauran las solicitudes previamente agregadas, incluso si el usuario cerró el diálogo o la sesión, sin perder la relación entre el abono y las solicitudes seleccionadas.
+- Se agregó el badge **Borrador** en la tabla de movimientos de `/conciliacion` para resaltar los abonos que tienen un borrador guardado.
+- El botón de acción de estos movimientos cambia a **Ver / editar** con variant `outline` para indicar que ya existe una asociación en progreso.
+- El borrador se limpia automáticamente solo tras confirmar la conciliación (transición a `payment_scheduled`).
 
 ### Versión 4.1.8 - 2026-07-14
 
