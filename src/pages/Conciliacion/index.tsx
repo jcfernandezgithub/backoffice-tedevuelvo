@@ -93,6 +93,15 @@ function sameDate(a?: Date, b?: Date): boolean {
 
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
+function hasDraftInStorage(documentoNumero: string): boolean {
+  try {
+    const raw = localStorage.getItem(`manual-reconciliation-draft:${documentoNumero}`)
+    return !!raw && raw !== '[]'
+  } catch {
+    return false
+  }
+}
+
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return 'Sin actualizar'
   const d = new Date(iso)
