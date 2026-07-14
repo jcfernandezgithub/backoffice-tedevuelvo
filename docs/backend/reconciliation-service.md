@@ -1,9 +1,12 @@
 # Servicio de Conciliación Bancaria — Especificación para Backend
 
-Versión: 2.0 · Módulo: `Conciliación`
+Versión: 2.1 · Módulo: `Conciliación`
 
-> **Cambio v2.0** — Se separa la creación del link (borrador, sin transición de estado)
-> de la confirmación (transición atómica a `payment_scheduled`). Ver §3.3, §3.5 y §4.
+> **Cambio v2.1** — Se elimina el flujo de dos pasos (draft + confirm). La conciliación
+> manual usa el **mismo** endpoint atómico que la conciliación CSV individual:
+> `POST /bank/reconciliation` crea el link y transiciona la solicitud a
+> `payment_scheduled` en la misma transacción. Ya no existe `/confirm` ni estado
+> `pending` en los links.
 
 Este documento describe el contrato que debe implementar el backend para la asociación de movimientos bancarios (cartolas) con solicitudes de devolución.
 
