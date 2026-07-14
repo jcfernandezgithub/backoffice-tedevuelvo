@@ -25,6 +25,18 @@ interface DraftMatch {
   amount: number
 }
 
+/**
+ * Fórmula de devolución real (idéntica a la conciliación CSV individual):
+ *   realAmount = amountApplied − (newMonthlyPremium × confirmedRemainingInstallments)
+ */
+function computeRealAmount(refund: PendingRefund, amountApplied: number) {
+  const prima = Number(refund.newMonthlyPremium ?? 0)
+  const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
+  const primaTotal = Math.max(0, Math.round(prima * cuotas))
+  const real = Math.round((amountApplied || 0) - primaTotal)
+  return { prima, cuotas, primaTotal, realAmount: real }
+}
+
 export interface CartolaMovementRef {
   documentoNumero: string
   descripcion: string
@@ -213,6 +225,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
+    const invalidReal = drafts.find(
+      (d) => computeRealAmount(d.refund, d.amount).realAmount <= 0,
+    )
+    if (invalidReal) {
+      toast({
+        title: 'Devolución no válida',
+        description: `La prima total de ${invalidReal.refund.fullName} supera o iguala el abono asignado. La devolución real quedaría en cero o negativa.`,
+        variant: 'destructive',
+      })
+      return
+    }
     try {
       setSubmitting(true)
       await cartolaLinksService.applyMatches(
@@ -220,7 +243,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         drafts.map((d) => ({
           publicId: d.refund.publicId,
           amountApplied: d.amount,
-          realAmount: d.amount,
+          realAmount: computeRealAmount(d.refund, d.amount).realAmount,
         })),
       )
 
@@ -474,6 +497,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
                     const over = d.amount > d.refund.remainingAmount + 0.5
+                    const { prima, cuotas, primaTotal, realAmount } = computeRealAmount(
+                      d.refund,
+                      d.amount,
+                    )
+                    const realInvalid = realAmount <= 0
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -509,6 +537,43 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             Excede el saldo de la solicitud
                           </div>
                         )}
+                        <div
+                          className={`mt-2 rounded-md border px-2 py-1.5 text-[11px] leading-tight ${
+                            realInvalid
+                              ? 'border-destructive/40 bg-destructive/5'
+                              : 'border-emerald-200 bg-emerald-50/60'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground">Prima nueva × cuotas</span>
+                            <span className="tabular-nums">
+                              {formatCurrency(prima)} × {cuotas} ={' '}
+                              <span className="font-medium">{formatCurrency(primaTotal)}</span>
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 mt-0.5">
+                            <span
+                              className={
+                                realInvalid ? 'text-destructive font-medium' : 'text-emerald-800 font-medium'
+                              }
+                            >
+                              Devolución real
+                            </span>
+                            <span
+                              className={`tabular-nums font-semibold ${
+                                realInvalid ? 'text-destructive' : 'text-emerald-700'
+                              }`}
+                            >
+                              {formatCurrency(realAmount)}
+                            </span>
+                          </div>
+                          {realInvalid && (
+                            <div className="mt-1 text-[10px] text-destructive flex items-start gap-1">
+                              <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                              La prima total supera el abono asignado. Ajusta el monto.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
