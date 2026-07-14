@@ -254,6 +254,39 @@ export default function ConciliacionPage() {
     setDialogOpen(true)
   }
 
+  // CSV para abonos individuales
+  const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
+  const movementCandidates: MovementCandidate[] = useMemo(() => {
+    return abonos
+      .filter((m) => (toNumber(m.abono) ?? 0) > 0)
+      .map((m) => {
+        const doc = String(m.documento_numero ?? '').trim()
+        const abono = toNumber(m.abono) ?? 0
+        const summary = doc ? bulkMap[doc] : undefined
+        const applied = summary?.totalApplied ?? 0
+        return {
+          documentoNumero: doc,
+          descripcion: String(m.descripcion ?? ''),
+          abono,
+          fecha: fmtDate(m.fecha_movimiento),
+          remaining: Math.max(0, abono - applied),
+        }
+      })
+      .filter((c) => c.documentoNumero)
+  }, [abonos, bulkMap])
+
+  const openIndividualCsvDialog = () => {
+    if (movementCandidates.length === 0) {
+      toast({
+        title: 'Sin abonos disponibles',
+        description: 'No hay abonos en el período seleccionado para conciliar por CSV.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setIndividualCsvOpen(true)
+  }
+
   // KPI global de conciliación de abonos
   const abonoStats = useMemo(() => {
     let totalAbonos = 0
