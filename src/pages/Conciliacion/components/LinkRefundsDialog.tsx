@@ -288,8 +288,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         drafts.map((d) => ({
           publicId: d.refund.publicId,
           amountApplied: d.amount,
-          // La devolución real es un dato fijo de la solicitud.
-          realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
+          // En conciliación manual la devolución real es lo que el usuario
+          // confirma (editable, pre-cargado con el valor de la solicitud).
+          realAmount: d.amount,
         })),
       )
 
@@ -301,7 +302,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         try {
           await refundAdminApi.updateStatus(d.refund.publicId, {
             status: 'payment_scheduled' as any,
-            realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
+            realAmount: d.amount,
             force: true,
             note: `Conciliación bancaria movimiento ${movement.documentoNumero}`,
           })
