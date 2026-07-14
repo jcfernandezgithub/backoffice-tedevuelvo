@@ -45,7 +45,7 @@ export function usePendingRefunds() {
         allItems = allItems.concat(...rest.map((r) => r.items ?? []))
       }
       return allItems.map((r) => {
-        const realAmount = getRealAmount(r)
+        const { amount: realAmount, isEstimated } = resolveAmount(r)
         const estimatedAmount = Number((r as any).estimatedAmountCLP ?? 0)
         // El estado de conciliación vive en el backend por movimiento;
         // este hook solo expone el saldo total a asignar.
@@ -66,6 +66,7 @@ export function usePendingRefunds() {
           estimatedAmount,
           reconciledAmount,
           remainingAmount,
+          isEstimated,
           isFullyReconciled: realAmount > 0 && remainingAmount <= 0.5,
           scheduledAt: r.updatedAt,
           nroCredito,
