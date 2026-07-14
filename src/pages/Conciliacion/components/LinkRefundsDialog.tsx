@@ -13,8 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, X, Plus, Loader2, Wand2, CheckCircle2, AlertCircle, Lock, Info } from 'lucide-react'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Search, X, Plus, Loader2, CheckCircle2, Lock, Info } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
@@ -24,34 +23,29 @@ import { toast } from '@/hooks/use-toast'
 
 interface DraftMatch {
   refund: PendingRefund
+  /** Devolución real editable por el usuario (es también el amountApplied al backend). */
   amount: number
 }
 
 /**
- * La devolución real es un dato fijo de la solicitud (viene confirmada del
- * cálculo o del historial). El abono asignado del movimiento bancario NO
- * la modifica: sólo comparamos ambos valores y exponemos la diferencia para
- * que el usuario decida si concilia igual o corrige el monto.
- *
- * Prima × cuotas se mantiene como dato informativo (no participa del cálculo).
+ * En conciliación manual el usuario asocia una solicitud a un movimiento
+ * bancario cuyo abono suele ser muy superior a la devolución individual
+ * (ej. depósito consolidado). No existe un "abono asignado" calculable, por
+ * lo tanto sólo trabajamos con:
+ *   - Devolución real de la solicitud (editable por el usuario)
+ *   - Nueva prima total (informativo)
  */
-const MATCH_TOLERANCE = 1 // CLP
-function computeRealSummary(refund: PendingRefund, amountApplied: number) {
+function computeRealSummary(refund: PendingRefund) {
   const prima = Number(refund.newMonthlyPremium ?? 0)
   const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
   const primaTotal = Math.max(0, Math.round(prima * cuotas))
   const realFromRefund = Math.round(Number(refund.remainingAmount) || 0)
-  const applied = Math.round(Number(amountApplied) || 0)
-  const diff = applied - realFromRefund
-  const matches = Math.abs(diff) <= MATCH_TOLERANCE
   return {
     prima,
     cuotas,
     primaTotal,
     realFromRefund,
     isEstimated: !!refund.isEstimated,
-    diff,
-    matches,
   }
 }
 
