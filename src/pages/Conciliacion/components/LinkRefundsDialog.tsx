@@ -83,6 +83,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [search, setSearch] = useState('')
   const [creditoSearch, setCreditoSearch] = useState('')
   const [confirming, setConfirming] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   // Links ya asociados al movimiento (backend).
   const detailQuery = useQuery({
@@ -104,6 +105,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setSearch('')
       setCreditoSearch('')
       setConfirming(false)
+      setReviewOpen(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -234,7 +236,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     )
   }
 
-  const handleConfirm = async () => {
+  const openReview = () => {
     if (!movement) return
     if (drafts.length === 0) {
       toast({
@@ -270,18 +272,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
+    setReviewOpen(true)
+  }
 
-    const isPartial = availableBefore - totalApplied > 0.5
-    if (isPartial) {
-      const ok = window.confirm(
-        `Vas a confirmar una conciliación PARCIAL.\n\n` +
-          `Abono del movimiento: ${formatCurrency(abono)}\n` +
-          `Total a confirmar: ${formatCurrency(totalApplied)}\n` +
-          `Saldo que queda sin conciliar: ${formatCurrency(availableBefore - totalApplied)}\n\n` +
-          `Las solicitudes confirmadas pasarán a Pago Programado y no podrán desasociarse. ¿Deseas continuar?`,
-      )
-      if (!ok) return
-    }
+  const handleConfirm = async () => {
+    if (!movement) return
 
     try {
       setConfirming(true)
@@ -331,6 +326,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         })
       }
       onApplied?.()
+      setReviewOpen(false)
     } catch (err: any) {
       toast({
         title: 'No se pudo confirmar',
