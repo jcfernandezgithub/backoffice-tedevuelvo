@@ -275,12 +275,26 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   const handleClose = (next: boolean) => {
     if (!next) {
-      setDrafts([])
+      // No limpiamos drafts: el borrador se persiste en localStorage por
+      // documentoNumero para que el usuario no pierda el trabajo si cierra
+      // accidentalmente el diálogo.
       setSearch('')
+      setCreditoSearch('')
       setConfirming(false)
     }
     onOpenChange(next)
   }
+
+  const discardDraft = () => {
+    if (!movement?.documentoNumero) return
+    clearDraftsFromStorage(movement.documentoNumero)
+    setDrafts([])
+    toast({
+      title: 'Borrador descartado',
+      description: 'Las solicitudes seleccionadas se han limpiado.',
+    })
+  }
+
 
   const addRefund = (r: PendingRefund) => {
     // Pre-cargamos con la devolución real de la solicitud; el usuario puede
