@@ -669,9 +669,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           <div className="flex-1 text-sm">
-            <span className="text-muted-foreground">Total a aplicar: </span>
+            <span className="text-muted-foreground">Nuevos a asociar: </span>
             <span
               className={`font-semibold ${overApplied ? 'text-destructive' : 'text-foreground'}`}
             >
@@ -682,16 +682,38 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Excede el disponible del abono
               </span>
             )}
+            {pendingLinks.length > 0 && (
+              <div className="text-xs text-amber-700 mt-0.5">
+                {pendingLinks.length} borrador{pendingLinks.length === 1 ? '' : 'es'} pendiente{pendingLinks.length === 1 ? '' : 's'} de confirmar
+              </div>
+            )}
           </div>
-          <Button variant="outline" onClick={() => handleClose(false)} disabled={submitting}>
-            Cancelar
+          <Button
+            variant="outline"
+            onClick={() => handleClose(false)}
+            disabled={submitting || confirming}
+          >
+            Cerrar
           </Button>
           <Button
-            onClick={handleApply}
-            disabled={submitting || drafts.length === 0 || overApplied}
+            variant="secondary"
+            onClick={handleAssociate}
+            disabled={submitting || confirming || drafts.length === 0 || overApplied}
+            title="Guarda las nuevas solicitudes como borrador (paso 1)"
           >
             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Aplicar conciliación
+            <Plus className="h-4 w-4 mr-1" />
+            Asociar {drafts.length > 0 ? `(${drafts.length})` : ''}
+          </Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={submitting || confirming || pendingLinks.length === 0}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            title="Transiciona los borradores a Pago Programado (paso 2)"
+          >
+            {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            Confirmar conciliación {pendingLinks.length > 0 ? `(${pendingLinks.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
