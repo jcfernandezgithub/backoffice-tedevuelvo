@@ -616,7 +616,6 @@ export default function ConciliacionPage() {
                       const canLink = abono > 0 && !!doc
                       const isFull = canLink && remaining <= 0.5 && applied > 0
                       const isPartial = canLink && applied > 0 && !isFull
-                      const hasDraft = doc && draftDocSet.has(doc)
                       return (
                       <TableRow key={doc || i} className={isFull ? 'bg-emerald-50/40' : isPartial ? 'bg-amber-50/40' : undefined}>
                         <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
