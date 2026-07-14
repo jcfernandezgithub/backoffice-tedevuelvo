@@ -126,14 +126,21 @@ export const cartolaLinksService = {
       method: 'POST',
       body: JSON.stringify({
         documentoNumero,
-        matches: matches.map((m) => ({
-          publicId: m.publicId,
-          amountApplied: Math.round(m.amountApplied),
-        })),
+        matches: matches.map((m) => {
+          const payload: Record<string, unknown> = {
+            publicId: m.publicId,
+            amountApplied: Math.round(m.amountApplied),
+          }
+          if (m.realAmount !== undefined && m.realAmount !== null) {
+            payload.realAmount = Math.round(m.realAmount)
+          }
+          return payload
+        }),
       }),
     })
     await parseOrThrow(res)
   },
+
 
   /** DELETE /bank/reconciliation/:id */
   async removeLink(linkId: string): Promise<void> {
