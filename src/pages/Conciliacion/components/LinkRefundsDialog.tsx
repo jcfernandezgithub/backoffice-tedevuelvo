@@ -371,24 +371,55 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           </div>
         </div>
 
-        {/* Solicitudes ya vinculadas */}
-        {existingLinks.length > 0 && (
+        {/* Solicitudes ya confirmadas (bloqueadas) */}
+        {confirmedLinks.length > 0 && (
           <div className="shrink-0 rounded-lg border bg-emerald-50/40 border-emerald-200">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-emerald-200 text-xs uppercase tracking-wide text-emerald-800">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Ya asociadas ({existingLinks.length})
+              <Lock className="h-3.5 w-3.5" />
+              Confirmadas — Pago Programado ({confirmedLinks.length})
             </div>
             <div className="p-2 flex flex-wrap gap-2">
-              {existingLinks.map((l) => (
+              {confirmedLinks.map((l) => (
                 <div
                   key={l.id}
-                  className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs"
+                  className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs"
+                  title="Ya confirmada: no se puede desasociar"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-medium truncate max-w-[180px]">
+                      {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {l.refundId} · {formatCurrency(l.amountApplied)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Solicitudes asociadas pendientes de confirmar (borrador, deletable) */}
+        {pendingLinks.length > 0 && (
+          <div className="shrink-0 rounded-lg border bg-amber-50/50 border-amber-200">
+            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-amber-200 text-xs uppercase tracking-wide text-amber-800">
+              <div className="flex items-center gap-2">
+                <Clock className="h-3.5 w-3.5" />
+                Asociadas pendientes de confirmar ({pendingLinks.length})
+              </div>
+              <span className="normal-case text-[11px] font-normal text-amber-700">
+                Total: {formatCurrency(pendingLinks.reduce((s, l) => s + l.amountApplied, 0))}
+              </span>
+            </div>
+            <div className="p-2 flex flex-wrap gap-2">
+              {pendingLinks.map((l) => (
+                <div
+                  key={l.id}
+                  className="flex items-center gap-2 rounded-md border border-amber-200 bg-white px-2 py-1 text-xs"
                 >
                   <div className="flex flex-col leading-tight">
-                    <span
-                      className="font-medium truncate max-w-[180px]"
-                      title={refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
-                    >
+                    <span className="font-medium truncate max-w-[180px]">
                       {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
                     </span>
                     <span className="text-muted-foreground">
@@ -400,7 +431,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                     size="icon"
                     className="h-6 w-6 text-destructive"
                     onClick={() => removeExistingLink(l.id)}
-                    title="Quitar asociación"
+                    title="Quitar borrador"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
