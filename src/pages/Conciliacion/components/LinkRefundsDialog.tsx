@@ -13,7 +13,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, X, Plus, Loader2, Wand2, CheckCircle2, AlertCircle, Lock } from 'lucide-react'
+import { Search, X, Plus, Loader2, Wand2, CheckCircle2, AlertCircle, Lock, Info } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
@@ -27,15 +28,31 @@ interface DraftMatch {
 }
 
 /**
- * Fórmula de devolución real (idéntica a la conciliación CSV individual):
- *   realAmount = amountApplied − (newMonthlyPremium × confirmedRemainingInstallments)
+ * La devolución real es un dato fijo de la solicitud (viene confirmada del
+ * cálculo o del historial). El abono asignado del movimiento bancario NO
+ * la modifica: sólo comparamos ambos valores y exponemos la diferencia para
+ * que el usuario decida si concilia igual o corrige el monto.
+ *
+ * Prima × cuotas se mantiene como dato informativo (no participa del cálculo).
  */
-function computeRealAmount(refund: PendingRefund, amountApplied: number) {
+const MATCH_TOLERANCE = 1 // CLP
+function computeRealSummary(refund: PendingRefund, amountApplied: number) {
   const prima = Number(refund.newMonthlyPremium ?? 0)
   const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
   const primaTotal = Math.max(0, Math.round(prima * cuotas))
-  const real = Math.round((amountApplied || 0) - primaTotal)
-  return { prima, cuotas, primaTotal, realAmount: real }
+  const realFromRefund = Math.round(Number(refund.remainingAmount) || 0)
+  const applied = Math.round(Number(amountApplied) || 0)
+  const diff = applied - realFromRefund
+  const matches = Math.abs(diff) <= MATCH_TOLERANCE
+  return {
+    prima,
+    cuotas,
+    primaTotal,
+    realFromRefund,
+    isEstimated: !!refund.isEstimated,
+    diff,
+    matches,
+  }
 }
 
 export interface CartolaMovementRef {
@@ -84,6 +101,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [creditoSearch, setCreditoSearch] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [ackDiff, setAckDiff] = useState(false)
 
   // Links ya asociados al movimiento (backend).
   const detailQuery = useQuery({
@@ -106,6 +124,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setCreditoSearch('')
       setConfirming(false)
       setReviewOpen(false)
+      setAckDiff(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -261,17 +280,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
-    const invalidReal = drafts.find(
-      (d) => computeRealAmount(d.refund, d.amount).realAmount <= 0,
-    )
-    if (invalidReal) {
-      toast({
-        title: 'Devolución no válida',
-        description: `La prima total de ${invalidReal.refund.fullName} supera o iguala el abono asignado. La devolución real quedaría en cero o negativa.`,
-        variant: 'destructive',
-      })
-      return
-    }
+    setAckDiff(false)
     setReviewOpen(true)
   }
 
@@ -285,7 +294,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         drafts.map((d) => ({
           publicId: d.refund.publicId,
           amountApplied: d.amount,
-          realAmount: computeRealAmount(d.refund, d.amount).realAmount,
+          // La devolución real es un dato fijo de la solicitud.
+          realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
         })),
       )
 
@@ -297,7 +307,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         try {
           await refundAdminApi.updateStatus(d.refund.publicId, {
             status: 'payment_scheduled' as any,
-            realAmount: computeRealAmount(d.refund, d.amount).realAmount,
+            realAmount: computeRealSummary(d.refund, d.amount).realFromRefund,
             force: true,
             note: `Conciliación bancaria movimiento ${movement.documentoNumero}`,
           })
