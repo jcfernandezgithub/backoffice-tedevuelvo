@@ -188,7 +188,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       }
 
     }
-  }, [open, movement?.documentoNumero, pendingRefunds])
+  }, [open, movement?.documentoNumero, pendingRefunds, existingLinks])
 
   // Persistimos el borrador en cada cambio de drafts para que sobreviva a
   // cierres accidentales del diálogo, refrescos de página o navegación.
