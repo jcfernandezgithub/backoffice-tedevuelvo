@@ -685,6 +685,7 @@ export default function ConciliacionPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onApplied={refreshReconciliation}
+        creditoFilter={credito}
       />
       <CsvReconcileDialog
         movement={selected}
