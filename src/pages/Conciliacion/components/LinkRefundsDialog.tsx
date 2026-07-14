@@ -501,7 +501,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   No hay solicitudes pendientes que coincidan.
                 </div>
               ) : (
-                <div className="divide-y pr-3">
+                <div className="divide-y">
                   {filtered.map((r) => {
                     const suggested = Math.abs(r.remainingAmount - abono) < 0.5
                     const credMatch =
@@ -515,46 +515,53 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                         type="button"
                         onClick={() => addRefund(r)}
                         disabled={isFullyAllocated}
-                        className="w-full text-left py-2.5 pl-3 pr-2 hover:bg-muted/50 transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        className="w-full text-left p-3 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate text-sm flex items-center gap-2">
-                            {r.fullName}
-                            {suggested && (
-                              <Badge
-                                variant="outline"
-                                className="border-primary/40 bg-primary/5 text-primary text-[10px]"
-                              >
-                                Coincide
-                              </Badge>
-                            )}
-                            {credMatch && (
-                              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">
-                                Crédito {r.nroCredito}
-                              </Badge>
-                            )}
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 items-center">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="font-medium truncate text-sm">
+                                {r.fullName}
+                              </span>
+                              {suggested && (
+                                <Badge
+                                  variant="outline"
+                                  className="shrink-0 border-primary/40 bg-primary/5 text-primary text-[10px]"
+                                >
+                                  Coincide
+                                </Badge>
+                              )}
+                              {credMatch && (
+                                <Badge className="shrink-0 bg-amber-500 hover:bg-amber-500 text-white text-[10px]">
+                                  Crédito
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate mt-0.5">
+                              {r.rut} · {r.publicId}
+                              {r.nroCredito ? ` · Créd. ${r.nroCredito}` : ''}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {r.rut} · {r.publicId}
-                            {r.nroCredito ? ` · Créd. ${r.nroCredito}` : ''}
+                          <div className="justify-self-end text-right shrink-0 rounded-md border bg-background px-2.5 py-1 min-w-[104px]">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground leading-none">
+                              Saldo
+                            </div>
+                            <div className="text-sm font-semibold tabular-nums whitespace-nowrap leading-tight mt-1">
+                              {formatCurrency(r.remainingAmount)}
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-sm font-medium tabular-nums whitespace-nowrap">
-                            {formatCurrency(r.remainingAmount)}
-                          </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
                           {r.reconciledAmount > 0 && (
                             <Badge variant="outline" className="text-[10px] mt-1">
                               Parcial
                             </Badge>
                           )}
+                          <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary">
+                            <Plus className="h-3.5 w-3.5" />
+                            Agregar
+                          </span>
                         </div>
-                        <span
-                          aria-hidden
-                          className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </span>
                       </button>
                     )
                   })}
