@@ -276,14 +276,6 @@ export default function ConciliacionPage() {
     setDialogOpen(true)
   }
 
-  const handleDialogOpenChange = (open: boolean) => {
-    setDialogOpen(open)
-    if (!open) {
-      // Al cerrar el diálogo refrescamos el indicador de borradores en la tabla.
-      setDraftCheckTick((t) => t + 1)
-    }
-  }
-
   // CSV para abonos individuales
   const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
   const movementCandidates: MovementCandidate[] = useMemo(() => {
