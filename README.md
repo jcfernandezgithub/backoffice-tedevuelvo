@@ -1,8 +1,9 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.7
+## Versión 4.1.8
 
 ## Changelog
+
 
 ### Versión 4.1.7 - 2026-07-11
 
