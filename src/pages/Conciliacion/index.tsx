@@ -631,7 +631,7 @@ export default function ConciliacionPage() {
                           )}
                         </TableCell>
                       </TableRow>
-                    )})}
+                    )})
                   )}
                 </TableBody>
               </Table>
