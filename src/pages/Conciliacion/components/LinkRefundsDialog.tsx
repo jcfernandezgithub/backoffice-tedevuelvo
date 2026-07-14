@@ -49,6 +49,53 @@ function computeRealSummary(refund: PendingRefund) {
   }
 }
 
+const DRAFT_STORAGE_KEY = 'manual-reconciliation-draft'
+
+interface DraftStorageEntry {
+  refundId: string
+  amount: number
+}
+
+function getDraftStorageKey(documentoNumero: string) {
+  return `${DRAFT_STORAGE_KEY}:${documentoNumero}`
+}
+
+function saveDraftsToStorage(documentoNumero: string, drafts: DraftMatch[]) {
+  try {
+    const payload: DraftStorageEntry[] = drafts.map((d) => ({
+      refundId: d.refund.publicId,
+      amount: d.amount,
+    }))
+    localStorage.setItem(getDraftStorageKey(documentoNumero), JSON.stringify(payload))
+  } catch {
+    // localStorage no crítico; fallamos silenciosamente si no hay espacio
+  }
+}
+
+function loadDraftsFromStorage(documentoNumero: string): DraftStorageEntry[] | null {
+  try {
+    const raw = localStorage.getItem(getDraftStorageKey(documentoNumero))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    return parsed.filter(
+      (p): p is DraftStorageEntry =>
+        typeof p.refundId === 'string' && typeof p.amount === 'number',
+    )
+  } catch {
+    return null
+  }
+}
+
+function clearDraftsFromStorage(documentoNumero: string) {
+  try {
+    localStorage.removeItem(getDraftStorageKey(documentoNumero))
+  } catch {
+    // ignore
+  }
+}
+
+
 export interface CartolaMovementRef {
   documentoNumero: string
   descripcion: string
@@ -109,16 +156,47 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   // individual persiste el link y transiciona el estado en la misma llamada.
   const confirmedLinks = existingLinks
 
-  // Reset del formulario al abrir el diálogo con otro movimiento.
+  // Al abrir el diálogo intentamos recuperar el borrador del localStorage
+  // asociado al documentoNumero del movimiento. Si no existe, comenzamos
+  // limpio. Esto evita perder el trabajo si el usuario cierra accidentalmente.
   useEffect(() => {
     if (open) {
-      setDrafts([])
       setSearch('')
       setCreditoSearch('')
       setConfirming(false)
       setReviewOpen(false)
+      if (!movement?.documentoNumero) {
+        setDrafts([])
+        return
+      }
+      const stored = loadDraftsFromStorage(movement.documentoNumero)
+      if (stored) {
+        // Rehidratamos con los datos actuales del listado de pendientes y
+        // descartamos solicitudes que ya estén confirmadas o linkeadas.
+        const byId = new Map(pendingRefunds.map((r) => [r.publicId, r]))
+        const linkedIds = new Set(existingLinks.map((l) => l.refundId))
+        const restored = stored
+          .map((entry) => {
+            const refund = byId.get(entry.refundId)
+            if (!refund || refund.isFullyReconciled || linkedIds.has(entry.refundId)) return null
+            return { refund, amount: entry.amount } satisfies DraftMatch
+          })
+          .filter((d): d is DraftMatch => d !== null)
+        setDrafts(restored)
+      } else {
+        setDrafts([])
+      }
+
     }
-  }, [open, movement?.documentoNumero])
+  }, [open, movement?.documentoNumero, pendingRefunds, existingLinks])
+
+  // Persistimos el borrador en cada cambio de drafts para que sobreviva a
+  // cierres accidentales del diálogo, refrescos de página o navegación.
+  useEffect(() => {
+    if (!movement?.documentoNumero) return
+    saveDraftsToStorage(movement.documentoNumero, drafts)
+  }, [drafts, movement?.documentoNumero])
+
 
   // Mapa publicId → refund pendiente, para enriquecer los links existentes.
   const refundsByPublicId = useMemo(() => {
@@ -200,12 +278,26 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   const handleClose = (next: boolean) => {
     if (!next) {
-      setDrafts([])
+      // No limpiamos drafts: el borrador se persiste en localStorage por
+      // documentoNumero para que el usuario no pierda el trabajo si cierra
+      // accidentalmente el diálogo.
       setSearch('')
+      setCreditoSearch('')
       setConfirming(false)
     }
     onOpenChange(next)
   }
+
+  const discardDraft = () => {
+    if (!movement?.documentoNumero) return
+    clearDraftsFromStorage(movement.documentoNumero)
+    setDrafts([])
+    toast({
+      title: 'Borrador descartado',
+      description: 'Las solicitudes seleccionadas se han limpiado.',
+    })
+  }
+
 
   const addRefund = (r: PendingRefund) => {
     // Pre-cargamos con la devolución real de la solicitud; el usuario puede
@@ -294,7 +386,9 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       await detailQuery.refetch()
       const count = drafts.length
       setDrafts([])
+      clearDraftsFromStorage(movement.documentoNumero)
       if (statusErrors.length === 0) {
+
         toast({
           title: 'Conciliación confirmada',
           description: `${count} solicitud${count === 1 ? '' : 'es'} pasada${count === 1 ? '' : 's'} a Pago Programado.`,
@@ -635,6 +729,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Excede el disponible del abono
               </span>
             )}
+            {drafts.length > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Info className="h-3 w-3" />
+                Borrador guardado automáticamente
+              </span>
+            )}
           </div>
           <Button
             variant="outline"
@@ -642,6 +742,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             disabled={confirming}
           >
             Cerrar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={discardDraft}
+            disabled={confirming || drafts.length === 0}
+            className="text-destructive hover:text-destructive hover:bg-destructive/5"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Descartar borrador
           </Button>
           <Button
             onClick={openReview}
@@ -654,6 +763,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             Revisar y confirmar {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
         </DialogFooter>
+
       </DialogContent>
 
       {/* Diálogo de revisión previo a la confirmación */}
