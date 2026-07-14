@@ -733,19 +733,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
             </div>
 
-            {/* Aviso parcial */}
-            {newAvailable > 0.5 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-xs px-3 py-2 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                <div>
-                  <div className="font-medium">Conciliación parcial</div>
-                  Quedará un saldo sin conciliar de{' '}
-                  <span className="font-semibold">{formatCurrency(newAvailable)}</span>. Podrás
-                  asociarlo a otras solicitudes más adelante.
-                </div>
-              </div>
-            )}
-
             {/* Detalle solicitudes */}
             <div className="rounded-lg border bg-card overflow-hidden flex flex-col">
               <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
@@ -753,10 +740,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
               <div className="divide-y">
                 {drafts.map((d) => {
-                  const { prima, cuotas, primaTotal, realFromRefund, isEstimated, diff, matches } = computeRealSummary(
-                    d.refund,
-                    d.amount,
-                  )
+                  const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
                   const nroCredito = resolveCreditNumber(d.refund)
                   return (
                     <div key={d.refund.id} className="px-3 py-2.5 text-sm">
@@ -769,57 +753,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                            Abono asignado
+                          <div className="text-[10px] uppercase tracking-wide text-emerald-800">
+                            {isEstimated ? 'Devolución estimada' : 'Devolución real'}
                           </div>
-                          <div className="font-semibold tabular-nums">
+                          <div className="font-semibold tabular-nums text-emerald-700">
                             {formatCurrency(d.amount)}
                           </div>
                         </div>
                       </div>
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-                        <div className="rounded-md border border-emerald-200 bg-emerald-50/60 px-2 py-1">
-                          <div className="text-emerald-800 font-medium">
-                            {isEstimated ? 'Estimado' : 'Devolución real'}
-                          </div>
-                          <div className="tabular-nums font-semibold text-emerald-700">
-                            {formatCurrency(realFromRefund)}
-                          </div>
-                        </div>
-                        <div className="rounded-md border bg-muted/30 px-2 py-1">
-                          <div className="text-muted-foreground">Abono asignado</div>
-                          <div className="tabular-nums font-semibold">
-                            {formatCurrency(d.amount)}
-                          </div>
-                        </div>
-                        <div
-                          className={`rounded-md border px-2 py-1 ${
-                            matches
-                              ? 'border-emerald-200 bg-emerald-50/60'
-                              : 'border-amber-300 bg-amber-50/70'
-                          }`}
-                        >
-                          <div
-                            className={
-                              matches ? 'text-emerald-800 font-medium' : 'text-amber-800 font-medium'
-                            }
-                          >
-                            Diferencia
-                          </div>
-                          <div
-                            className={`tabular-nums font-semibold ${
-                              matches ? 'text-emerald-700' : 'text-amber-700'
-                            }`}
-                          >
-                            {matches
-                              ? 'Coincide'
-                              : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-1.5 text-[10px] text-muted-foreground flex items-center gap-1">
+                      <div className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Prima × cuotas (informativo): {formatCurrency(prima)} × {cuotas} ={' '}
+                        Nueva prima total: {formatCurrency(prima)} × {cuotas} ={' '}
                         <span className="font-medium text-foreground/80">
                           {formatCurrency(primaTotal)}
                         </span>
@@ -828,72 +772,18 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                   )
                 })}
               </div>
-              <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Total abono
-                  </div>
-                  <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Total devolución real
-                  </div>
-                  <div className="font-semibold tabular-nums text-emerald-700">
-                    {formatCurrency(
-                      drafts.reduce(
-                        (s, d) => s + computeRealSummary(d.refund, d.amount).realFromRefund,
-                        0,
-                      ),
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Diferencia total
-                  </div>
-                  {(() => {
-                    const totalDiff = drafts.reduce(
-                      (s, d) => s + computeRealSummary(d.refund, d.amount).diff,
-                      0,
-                    )
-                    const ok = Math.abs(totalDiff) <= MATCH_TOLERANCE
-                    return (
-                      <div
-                        className={`font-semibold tabular-nums ${
-                          ok ? 'text-emerald-700' : 'text-amber-700'
-                        }`}
-                      >
-                        {ok
-                          ? 'Coincide'
-                          : `${totalDiff > 0 ? '+' : ''}${formatCurrency(totalDiff)}`}
-                      </div>
-                    )
-                  })()}
-                </div>
+              <div className="shrink-0 border-t bg-muted/30 px-3 py-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
+                  Total devolución real ({drafts.length})
+                </span>
+                <span className="font-semibold tabular-nums text-emerald-700 text-sm">
+                  {formatCurrency(totalApplied)}
+                </span>
               </div>
             </div>
           </ScrollArea>
 
           <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-            {(() => {
-              const anyDiff = drafts.some(
-                (d) => !computeRealSummary(d.refund, d.amount).matches,
-              )
-              return anyDiff ? (
-                <label className="flex items-start gap-2 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-md px-2 py-1.5 mr-auto max-w-md">
-                  <Checkbox
-                    checked={ackDiff}
-                    onCheckedChange={(v) => setAckDiff(v === true)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    Hay diferencias entre el abono asignado y la devolución real de al menos una
-                    solicitud. Confirmo que quiero conciliar de todas formas.
-                  </span>
-                </label>
-              ) : null
-            })()}
             <Button
               variant="outline"
               onClick={() => setReviewOpen(false)}
@@ -903,10 +793,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={
-                confirming ||
-                (drafts.some((d) => !computeRealSummary(d.refund, d.amount).matches) && !ackDiff)
-              }
+              disabled={confirming}
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
