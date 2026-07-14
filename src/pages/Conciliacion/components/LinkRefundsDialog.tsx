@@ -704,17 +704,194 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             Cerrar
           </Button>
           <Button
-            onClick={handleConfirm}
+            onClick={openReview}
             disabled={confirming || drafts.length === 0 || overApplied}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            title="Concilia las solicitudes y las pasa a Pago Programado"
+            title="Revisa el resumen antes de confirmar"
           >
             {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Confirmar conciliación {drafts.length > 0 ? `(${drafts.length})` : ''}
+            Revisar y confirmar {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Diálogo de revisión previo a la confirmación */}
+      <Dialog open={reviewOpen} onOpenChange={(v) => !confirming && setReviewOpen(v)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Revisa antes de confirmar
+            </DialogTitle>
+            <DialogDescription>
+              Verifica el detalle. Al confirmar, las solicitudes pasarán a{' '}
+              <strong>Pago Programado</strong> y no podrán desasociarse.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Resumen movimiento */}
+          <div className="rounded-lg border bg-muted/40 p-3 text-sm grid grid-cols-3 gap-3">
+            <div className="col-span-3 min-w-0">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Movimiento
+              </div>
+              <div className="font-medium truncate" title={movement.descripcion}>
+                {movement.descripcion || '—'}
+              </div>
+              <div className="text-[11px] text-muted-foreground font-mono">
+                Doc. {movement.documentoNumero} · {movement.fecha}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Abono
+              </div>
+              <div className="font-semibold text-emerald-700 tabular-nums">
+                {formatCurrency(abono)}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                A conciliar
+              </div>
+              <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Saldo restante
+              </div>
+              <div
+                className={`font-semibold tabular-nums ${
+                  newAvailable > 0.5 ? 'text-amber-700' : 'text-emerald-700'
+                }`}
+              >
+                {formatCurrency(newAvailable)}
+              </div>
+            </div>
+          </div>
+
+          {/* Aviso parcial */}
+          {newAvailable > 0.5 && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-xs px-3 py-2 flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-medium">Conciliación parcial</div>
+                Quedará un saldo sin conciliar de{' '}
+                <span className="font-semibold">{formatCurrency(newAvailable)}</span>. Podrás
+                asociarlo a otras solicitudes más adelante.
+              </div>
+            </div>
+          )}
+
+          {/* Detalle solicitudes */}
+          <div className="rounded-lg border bg-card overflow-hidden flex-1 min-h-0 flex flex-col">
+            <div className="shrink-0 px-3 py-2 border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+              Solicitudes a confirmar ({drafts.length})
+            </div>
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="divide-y">
+                {drafts.map((d) => {
+                  const { prima, cuotas, primaTotal, realAmount } = computeRealAmount(
+                    d.refund,
+                    d.amount,
+                  )
+                  const nroCredito = resolveCreditNumber(d.refund)
+                  return (
+                    <div key={d.refund.id} className="px-3 py-2.5 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-medium truncate">{d.refund.fullName}</div>
+                          <div className="text-[11px] text-muted-foreground truncate font-mono">
+                            {d.refund.rut}
+                            {nroCredito ? ` · Créd. ${nroCredito}` : ''} · {d.refund.publicId}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            Abono asignado
+                          </div>
+                          <div className="font-semibold tabular-nums">
+                            {formatCurrency(d.amount)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="rounded-md border bg-muted/30 px-2 py-1">
+                          <div className="text-muted-foreground">Prima × cuotas</div>
+                          <div className="tabular-nums">
+                            {formatCurrency(prima)} × {cuotas} ={' '}
+                            <span className="font-medium">{formatCurrency(primaTotal)}</span>
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-emerald-200 bg-emerald-50/60 px-2 py-1">
+                          <div className="text-emerald-800 font-medium">Devolución real</div>
+                          <div className="tabular-nums font-semibold text-emerald-700">
+                            {formatCurrency(realAmount)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
+            <div className="shrink-0 border-t bg-muted/30 px-3 py-2 grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Total abono
+                </div>
+                <div className="font-semibold tabular-nums">{formatCurrency(totalApplied)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Total prima
+                </div>
+                <div className="font-semibold tabular-nums">
+                  {formatCurrency(
+                    drafts.reduce(
+                      (s, d) => s + computeRealAmount(d.refund, d.amount).primaTotal,
+                      0,
+                    ),
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Total devolución real
+                </div>
+                <div className="font-semibold tabular-nums text-emerald-700">
+                  {formatCurrency(
+                    drafts.reduce(
+                      (s, d) => s + computeRealAmount(d.refund, d.amount).realAmount,
+                      0,
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <Button
+              variant="outline"
+              onClick={() => setReviewOpen(false)}
+              disabled={confirming}
+            >
+              Volver a editar
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={confirming}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Confirmar y pasar a Pago Programado
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
