@@ -48,8 +48,8 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
-import { refundAdminApi } from '@/services/refundAdminApi'
 import { Checkbox } from '@/components/ui/checkbox'
+
 import {
   computeTotals,
   downloadCsv,
