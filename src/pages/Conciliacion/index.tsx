@@ -647,6 +647,12 @@ export default function ConciliacionPage() {
         onOpenChange={setDialogOpen}
         onApplied={refreshReconciliation}
       />
+      <IndividualCsvReconcileDialog
+        open={individualCsvOpen}
+        onOpenChange={setIndividualCsvOpen}
+        movements={movementCandidates}
+        onApplied={refreshReconciliation}
+      />
     </div>
   )
 }
