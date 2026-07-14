@@ -388,15 +388,6 @@ export default function ConciliacionPage() {
                 </>
               )}
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setIndividualCsvOpen(true)}
-              disabled={abonos.length === 0 || query.isFetching}
-              title="Conciliación CSV para Abonos Individuales: busca el abono coincidente y calcula la devolución real"
-            >
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Conciliación CSV para Abonos Individuales
-            </Button>
           </div>
           <span className="text-xs text-muted-foreground">
             {formatLastUpdated(lastUpdatedAt)}
