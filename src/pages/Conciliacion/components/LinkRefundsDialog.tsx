@@ -49,6 +49,53 @@ function computeRealSummary(refund: PendingRefund) {
   }
 }
 
+const DRAFT_STORAGE_KEY = 'manual-reconciliation-draft'
+
+interface DraftStorageEntry {
+  refundId: string
+  amount: number
+}
+
+function getDraftStorageKey(documentoNumero: string) {
+  return `${DRAFT_STORAGE_KEY}:${documentoNumero}`
+}
+
+function saveDraftsToStorage(documentoNumero: string, drafts: DraftMatch[]) {
+  try {
+    const payload: DraftStorageEntry[] = drafts.map((d) => ({
+      refundId: d.refund.publicId,
+      amount: d.amount,
+    }))
+    localStorage.setItem(getDraftStorageKey(documentoNumero), JSON.stringify(payload))
+  } catch {
+    // localStorage no crítico; fallamos silenciosamente si no hay espacio
+  }
+}
+
+function loadDraftsFromStorage(documentoNumero: string): DraftStorageEntry[] | null {
+  try {
+    const raw = localStorage.getItem(getDraftStorageKey(documentoNumero))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    return parsed.filter(
+      (p): p is DraftStorageEntry =>
+        typeof p.refundId === 'string' && typeof p.amount === 'number',
+    )
+  } catch {
+    return null
+  }
+}
+
+function clearDraftsFromStorage(documentoNumero: string) {
+  try {
+    localStorage.removeItem(getDraftStorageKey(documentoNumero))
+  } catch {
+    // ignore
+  }
+}
+
+
 export interface CartolaMovementRef {
   documentoNumero: string
   descripcion: string
