@@ -11,6 +11,8 @@ export interface CartolaLink {
   /** publicId de la solicitud asociada (viene como refundId desde el backend). */
   refundId: string
   amountApplied: number
+  /** Monto real de devolución que se guarda en la solicitud. */
+  realAmount?: number
   createdAt: string
   createdBy?: string | null
 }
@@ -31,7 +33,10 @@ export interface ApplyMatchInput {
   /** publicId de la solicitud (ej. TDV-12345) */
   publicId: string
   amountApplied: number
+  /** Monto real de devolución (opcional; si no se envía, el backend puede usar amountApplied). */
+  realAmount?: number
 }
+
 
 async function parseOrThrow(res: Response): Promise<any> {
   const text = await res.text()
