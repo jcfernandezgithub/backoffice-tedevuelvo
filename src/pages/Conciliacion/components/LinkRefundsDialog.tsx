@@ -726,6 +726,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Excede el disponible del abono
               </span>
             )}
+            {drafts.length > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Info className="h-3 w-3" />
+                Borrador guardado automáticamente
+              </span>
+            )}
           </div>
           <Button
             variant="outline"
@@ -733,6 +739,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             disabled={confirming}
           >
             Cerrar
+          </Button>
+          <Button
+            variant="outline"
+            onClick={discardDraft}
+            disabled={confirming || drafts.length === 0}
+            className="text-destructive hover:text-destructive hover:bg-destructive/5"
+          >
+            <X className="h-4 w-4 mr-1" />
+            Descartar borrador
           </Button>
           <Button
             onClick={openReview}
@@ -745,6 +760,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             Revisar y confirmar {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
         </DialogFooter>
+
       </DialogContent>
 
       {/* Diálogo de revisión previo a la confirmación */}
