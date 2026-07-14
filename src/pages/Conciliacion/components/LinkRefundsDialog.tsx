@@ -380,7 +380,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <Lock className="h-3.5 w-3.5" />
               Confirmadas — Pago Programado ({confirmedLinks.length})
             </div>
-            <div className="p-2 flex flex-wrap gap-2">
+            <div className="p-2 flex flex-col gap-2">
               {confirmedLinks.map((l) => {
                 const pending = refundsByPublicId.get(l.refundId)
                 const fetched = confirmedRefundsMap.get(l.refundId)
@@ -400,12 +400,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 return (
                   <div
                     key={l.id}
-                    className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs"
+                    className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs w-full"
                     title="Ya confirmada: no se puede desasociar"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <div className="flex flex-col leading-tight min-w-0">
-                      <span className="font-medium truncate max-w-[280px]">
+                    <div className="flex flex-col leading-tight min-w-0 flex-1">
+                      <span className="font-medium truncate">
                         {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
                         {rut ? (
                           <span className="text-muted-foreground font-normal">
@@ -413,12 +413,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-muted-foreground truncate max-w-[280px]">
-                        <span className="font-mono">{publicId}</span> · Devolución real{' '}
-                        <span className="font-medium text-emerald-700">
-                          {formatCurrency(realAmount)}
-                        </span>
+                      <span className="text-muted-foreground font-mono truncate text-[11px]">
+                        {publicId}
                       </span>
+                    </div>
+                    <div className="ml-auto pl-2 text-right shrink-0">
+                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                        Devolución real
+                      </div>
+                      <div className="font-semibold text-emerald-700">
+                        {formatCurrency(realAmount)}
+                      </div>
                     </div>
                   </div>
                 )
