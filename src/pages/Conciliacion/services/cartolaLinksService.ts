@@ -11,6 +11,8 @@ export interface CartolaLink {
   /** publicId de la solicitud asociada (viene como refundId desde el backend). */
   refundId: string
   amountApplied: number
+  /** Monto real de devolución que se guarda en la solicitud. */
+  realAmount?: number
   createdAt: string
   createdBy?: string | null
 }
@@ -31,7 +33,10 @@ export interface ApplyMatchInput {
   /** publicId de la solicitud (ej. TDV-12345) */
   publicId: string
   amountApplied: number
+  /** Monto real de devolución (opcional; si no se envía, el backend puede usar amountApplied). */
+  realAmount?: number
 }
+
 
 async function parseOrThrow(res: Response): Promise<any> {
   const text = await res.text()
@@ -121,14 +126,21 @@ export const cartolaLinksService = {
       method: 'POST',
       body: JSON.stringify({
         documentoNumero,
-        matches: matches.map((m) => ({
-          publicId: m.publicId,
-          amountApplied: Math.round(m.amountApplied),
-        })),
+        matches: matches.map((m) => {
+          const payload: Record<string, unknown> = {
+            publicId: m.publicId,
+            amountApplied: Math.round(m.amountApplied),
+          }
+          if (m.realAmount !== undefined && m.realAmount !== null) {
+            payload.realAmount = Math.round(m.realAmount)
+          }
+          return payload
+        }),
       }),
     })
     await parseOrThrow(res)
   },
+
 
   /** DELETE /bank/reconciliation/:id */
   async removeLink(linkId: string): Promise<void> {

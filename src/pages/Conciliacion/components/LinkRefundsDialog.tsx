@@ -214,8 +214,13 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setSubmitting(true)
       await cartolaLinksService.applyMatches(
         movement.documentoNumero,
-        drafts.map((d) => ({ publicId: d.refund.publicId, amountApplied: d.amount })),
+        drafts.map((d) => ({
+          publicId: d.refund.publicId,
+          amountApplied: d.amount,
+          realAmount: d.amount,
+        })),
       )
+
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
       toast({
         title: 'Conciliación aplicada',
