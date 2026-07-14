@@ -609,7 +609,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                               {d.refund.fullName}
                             </div>
                             <div className="text-[11px] text-muted-foreground truncate">
-                              {d.refund.rut} · Saldo {formatCurrency(d.refund.remainingAmount)}
+                              {d.refund.rut} · {d.refund.isEstimated ? 'Estimado' : 'Devolución real'} {formatCurrency(d.refund.remainingAmount)}
                             </div>
                           </div>
                           <Button
