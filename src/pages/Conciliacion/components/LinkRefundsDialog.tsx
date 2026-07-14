@@ -606,11 +606,10 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
                     const over = d.amount > d.refund.remainingAmount + 0.5
-                    const { prima, cuotas, primaTotal, realAmount } = computeRealAmount(
+                    const { prima, cuotas, primaTotal, realFromRefund, isEstimated, diff, matches } = computeRealSummary(
                       d.refund,
                       d.amount,
                     )
-                    const realInvalid = realAmount <= 0
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -646,42 +645,69 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             Excede el saldo de la solicitud
                           </div>
                         )}
+                        {/* Devolución real (fija, de la solicitud) vs abono asignado */}
                         <div
                           className={`mt-2 rounded-md border px-2 py-1.5 text-[11px] leading-tight ${
-                            realInvalid
-                              ? 'border-destructive/40 bg-destructive/5'
-                              : 'border-emerald-200 bg-emerald-50/60'
+                            matches
+                              ? 'border-emerald-200 bg-emerald-50/60'
+                              : 'border-amber-300 bg-amber-50/70'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-muted-foreground">Prima nueva × cuotas</span>
-                            <span className="tabular-nums">
-                              {formatCurrency(prima)} × {cuotas} ={' '}
-                              <span className="font-medium">{formatCurrency(primaTotal)}</span>
+                            <span className="text-muted-foreground">
+                              {isEstimated ? 'Estimado (solicitud)' : 'Devolución real (solicitud)'}
+                            </span>
+                            <span className="tabular-nums font-medium">
+                              {formatCurrency(realFromRefund)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between gap-2 mt-0.5">
+                            <span className="text-muted-foreground">Abono asignado</span>
+                            <span className="tabular-nums font-medium">
+                              {formatCurrency(d.amount)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 mt-1 pt-1 border-t border-current/10">
                             <span
                               className={
-                                realInvalid ? 'text-destructive font-medium' : 'text-emerald-800 font-medium'
+                                matches
+                                  ? 'text-emerald-800 font-medium'
+                                  : 'text-amber-800 font-medium'
                               }
                             >
-                              Devolución real
+                              Diferencia
                             </span>
                             <span
                               className={`tabular-nums font-semibold ${
-                                realInvalid ? 'text-destructive' : 'text-emerald-700'
+                                matches ? 'text-emerald-700' : 'text-amber-700'
                               }`}
                             >
-                              {formatCurrency(realAmount)}
+                              {matches
+                                ? 'Coincide'
+                                : `${diff > 0 ? '+' : ''}${formatCurrency(diff)}`}
                             </span>
                           </div>
-                          {realInvalid && (
-                            <div className="mt-1 text-[10px] text-destructive flex items-start gap-1">
+                          {!matches && (
+                            <div className="mt-1 text-[10px] text-amber-800 flex items-start gap-1">
                               <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                              La prima total supera el abono asignado. Ajusta el monto.
+                              {diff > 0
+                                ? 'El abono asignado supera la devolución real de la solicitud.'
+                                : 'El abono asignado es menor a la devolución real de la solicitud.'}
                             </div>
                           )}
+                        </div>
+                        {/* Prima × cuotas como dato informativo */}
+                        <div className="mt-1.5 rounded-md border border-dashed bg-muted/30 px-2 py-1 text-[10px] text-muted-foreground flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Prima × cuotas (informativo)
+                          </span>
+                          <span className="tabular-nums">
+                            {formatCurrency(prima)} × {cuotas} ={' '}
+                            <span className="font-medium text-foreground/80">
+                              {formatCurrency(primaTotal)}
+                            </span>
+                          </span>
                         </div>
                       </div>
                     )
