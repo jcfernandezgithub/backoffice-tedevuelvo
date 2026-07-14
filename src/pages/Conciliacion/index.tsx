@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Search,
   X,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
@@ -32,8 +33,13 @@ import {
   LinkRefundsDialog,
   type CartolaMovementRef,
 } from './components/LinkRefundsDialog'
+import {
+  IndividualCsvReconcileDialog,
+  type MovementCandidate,
+} from './components/IndividualCsvReconcileDialog'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { toast } from '@/hooks/use-toast'
 
 function toNumber(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -249,6 +255,39 @@ export default function ConciliacionPage() {
     setDialogOpen(true)
   }
 
+  // CSV para abonos individuales
+  const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
+  const movementCandidates: MovementCandidate[] = useMemo(() => {
+    return abonos
+      .filter((m) => (toNumber(m.abono) ?? 0) > 0)
+      .map((m) => {
+        const doc = String(m.documento_numero ?? '').trim()
+        const abono = toNumber(m.abono) ?? 0
+        const summary = doc ? bulkMap[doc] : undefined
+        const applied = summary?.totalApplied ?? 0
+        return {
+          documentoNumero: doc,
+          descripcion: String(m.descripcion ?? ''),
+          abono,
+          fecha: fmtDate(m.fecha_movimiento),
+          remaining: Math.max(0, abono - applied),
+        }
+      })
+      .filter((c) => c.documentoNumero)
+  }, [abonos, bulkMap])
+
+  const openIndividualCsvDialog = () => {
+    if (movementCandidates.length === 0) {
+      toast({
+        title: 'Sin abonos disponibles',
+        description: 'No hay abonos en el período seleccionado para conciliar por CSV.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setIndividualCsvOpen(true)
+  }
+
   // KPI global de conciliación de abonos
   const abonoStats = useMemo(() => {
     let totalAbonos = 0
@@ -353,6 +392,15 @@ export default function ConciliacionPage() {
                   {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
                 </>
               )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={openIndividualCsvDialog}
+              disabled={query.isFetching || movementCandidates.length === 0}
+              title="Conciliar múltiples abonos individuales mediante un archivo CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Conciliación CSV para Abonos Individuales
             </Button>
           </div>
           <span className="text-xs text-muted-foreground">
@@ -597,6 +645,12 @@ export default function ConciliacionPage() {
         movement={selected}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        onApplied={refreshReconciliation}
+      />
+      <IndividualCsvReconcileDialog
+        open={individualCsvOpen}
+        onOpenChange={setIndividualCsvOpen}
+        movements={movementCandidates}
         onApplied={refreshReconciliation}
       />
     </div>
