@@ -29,8 +29,11 @@ export interface ReconciliationDetail {
 
 export interface ReconciliationSummary {
   totalApplied: number
+  /** Suma de realAmount de los links confirmados; si el backend no lo entrega, el frontend recae a totalApplied. */
+  totalRealAmount?: number
   count: number
 }
+
 
 export interface ApplyMatchInput {
   /** publicId de la solicitud (ej. TDV-12345) */
@@ -115,16 +118,22 @@ export const cartolaLinksService = {
     const data = await parseOrThrow(res)
     const map = (data?.byDocumentoNumero ?? {}) as Record<
       string,
-      { totalApplied?: number; count?: number }
+      { totalApplied?: number; totalRealAmount?: number; count?: number }
     >
     const out: Record<string, ReconciliationSummary> = {}
     for (const key of Object.keys(map)) {
+      const totalApplied = Number(map[key]?.totalApplied ?? 0)
+      const rawReal = map[key]?.totalRealAmount
+      const totalRealAmount =
+        rawReal !== undefined && rawReal !== null ? Number(rawReal) : undefined
       out[key] = {
-        totalApplied: Number(map[key]?.totalApplied ?? 0),
+        totalApplied,
+        totalRealAmount,
         count: Number(map[key]?.count ?? 0),
       }
     }
     return out
+
   },
 
   /** POST /bank/reconciliation */

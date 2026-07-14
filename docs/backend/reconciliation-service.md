@@ -109,11 +109,16 @@ Recibe un listado de `documentoNumero` y devuelve un resumen de conciliación po
 ```json
 {
   "byDocumentoNumero": {
-    "123456789": { "totalApplied": 640227, "count": 1 },
-    "987654321": { "totalApplied": 0, "count": 0 }
+    "123456789": { "totalApplied": 640227, "totalRealAmount": 512500, "count": 1 },
+    "987654321": { "totalApplied": 0, "totalRealAmount": 0, "count": 0 }
   }
 }
 ```
+
+> `totalApplied` es la suma de `amountApplied` usada para controlar el saldo restante del
+> movimiento. `totalRealAmount` es la suma de `realAmount` de los links confirmados y es el
+> valor que el frontend muestra al usuario como "Conciliado".
+
 
 ### 3.3 `POST /api/v1/bank/reconciliation` — Asociar (crea borradores)
 
