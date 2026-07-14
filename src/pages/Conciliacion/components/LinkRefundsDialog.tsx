@@ -345,47 +345,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           </div>
         )}
 
-        {/* Solicitudes asociadas pendientes de confirmar (borrador, deletable) */}
-        {pendingLinks.length > 0 && (
-          <div className="shrink-0 rounded-lg border bg-amber-50/50 border-amber-200">
-            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-amber-200 text-xs uppercase tracking-wide text-amber-800">
-              <div className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5" />
-                Asociadas pendientes de confirmar ({pendingLinks.length})
-              </div>
-              <span className="normal-case text-[11px] font-normal text-amber-700">
-                Total: {formatCurrency(pendingLinks.reduce((s, l) => s + l.amountApplied, 0))}
-              </span>
-            </div>
-            <div className="p-2 flex flex-wrap gap-2">
-              {pendingLinks.map((l) => (
-                <div
-                  key={l.id}
-                  className="flex items-center gap-2 rounded-md border border-amber-200 bg-white px-2 py-1 text-xs"
-                >
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-medium truncate max-w-[180px]">
-                      {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {l.refundId} · {formatCurrency(l.amountApplied)}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive"
-                    onClick={() => removeExistingLink(l.id)}
-                    title="Quitar borrador"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Body en 2 columnas */}
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-7 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
@@ -616,7 +575,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
         <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           <div className="flex-1 text-sm">
-            <span className="text-muted-foreground">Nuevos a asociar: </span>
+            <span className="text-muted-foreground">Nuevos a conciliar: </span>
             <span
               className={`font-semibold ${overApplied ? 'text-destructive' : 'text-foreground'}`}
             >
@@ -627,38 +586,23 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Excede el disponible del abono
               </span>
             )}
-            {pendingLinks.length > 0 && (
-              <div className="text-xs text-amber-700 mt-0.5">
-                {pendingLinks.length} borrador{pendingLinks.length === 1 ? '' : 'es'} pendiente{pendingLinks.length === 1 ? '' : 's'} de confirmar
-              </div>
-            )}
           </div>
           <Button
             variant="outline"
             onClick={() => handleClose(false)}
-            disabled={submitting || confirming}
+            disabled={confirming}
           >
             Cerrar
           </Button>
           <Button
-            variant="secondary"
-            onClick={handleAssociate}
-            disabled={submitting || confirming || drafts.length === 0 || overApplied}
-            title="Guarda las nuevas solicitudes como borrador (paso 1)"
-          >
-            {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <Plus className="h-4 w-4 mr-1" />
-            Asociar {drafts.length > 0 ? `(${drafts.length})` : ''}
-          </Button>
-          <Button
             onClick={handleConfirm}
-            disabled={submitting || confirming || pendingLinks.length === 0}
+            disabled={confirming || drafts.length === 0 || overApplied}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            title="Transiciona los borradores a Pago Programado (paso 2)"
+            title="Concilia las solicitudes y las pasa a Pago Programado"
           >
             {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Confirmar conciliación {pendingLinks.length > 0 ? `(${pendingLinks.length})` : ''}
+            Confirmar conciliación {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
