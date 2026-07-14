@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Search, X, Plus, Loader2, Wand2, Trash2, CheckCircle2, AlertCircle, Lock, Clock } from 'lucide-react'
+import { Search, X, Plus, Loader2, Wand2, CheckCircle2, AlertCircle, Lock } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { cartolaLinksService, type CartolaLink } from '../services/cartolaLinksService'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
@@ -64,7 +64,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const [drafts, setDrafts] = useState<DraftMatch[]>([])
   const [search, setSearch] = useState('')
   const [creditoSearch, setCreditoSearch] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   // Links ya asociados al movimiento (backend).
@@ -75,14 +74,10 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     staleTime: 15_000,
   })
   const existingLinks: CartolaLink[] = detailQuery.data?.links ?? []
-  const pendingLinks = useMemo(
-    () => existingLinks.filter((l) => l.status !== 'confirmed'),
-    [existingLinks],
-  )
-  const confirmedLinks = useMemo(
-    () => existingLinks.filter((l) => l.status === 'confirmed'),
-    [existingLinks],
-  )
+  // Todos los links del backend ya representan conciliaciones aplicadas
+  // (Pago Programado): el mismo endpoint `applyMatches` que usa la CSV
+  // individual persiste el link y transiciona el estado en la misma llamada.
+  const confirmedLinks = existingLinks
 
   // Reset del formulario al abrir el diálogo con otro movimiento.
   useEffect(() => {
@@ -91,7 +86,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       setSearch('')
       setCreditoSearch('')
       setConfirming(false)
-      setSubmitting(false)
     }
   }, [open, movement?.documentoNumero])
 
@@ -146,7 +140,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     if (!next) {
       setDrafts([])
       setSearch('')
-      setSubmitting(false)
+      setConfirming(false)
     }
     onOpenChange(next)
   }
@@ -191,32 +185,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
     )
   }
 
-  const removeExistingLink = async (linkId: string) => {
-    if (!movement) return
-    try {
-      await cartolaLinksService.removeLink(linkId)
-      await detailQuery.refetch()
-      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
-      qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
-      qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
-      qc.invalidateQueries({ queryKey: ['refund'] })
-      onApplied?.()
-      toast({ title: 'Asociación eliminada' })
-    } catch (err: any) {
-      toast({
-        title: 'No se pudo eliminar',
-        description: err?.message ?? 'Error de red',
-        variant: 'destructive',
-      })
-    }
-  }
-
-  const handleAssociate = async () => {
+  const handleConfirm = async () => {
     if (!movement) return
     if (drafts.length === 0) {
       toast({
         title: 'Sin solicitudes',
-        description: 'Agrega al menos una solicitud para asociar al movimiento.',
+        description: 'Agrega al menos una solicitud para conciliar el movimiento.',
       })
       return
     }
@@ -247,8 +221,21 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       })
       return
     }
+
+    const isPartial = availableBefore - totalApplied > 0.5
+    if (isPartial) {
+      const ok = window.confirm(
+        `Vas a confirmar una conciliación PARCIAL.\n\n` +
+          `Abono del movimiento: ${formatCurrency(abono)}\n` +
+          `Total a confirmar: ${formatCurrency(totalApplied)}\n` +
+          `Saldo que queda sin conciliar: ${formatCurrency(availableBefore - totalApplied)}\n\n` +
+          `Las solicitudes confirmadas pasarán a Pago Programado y no podrán desasociarse. ¿Deseas continuar?`,
+      )
+      if (!ok) return
+    }
+
     try {
-      setSubmitting(true)
+      setConfirming(true)
       await cartolaLinksService.applyMatches(
         movement.documentoNumero,
         drafts.map((d) => ({
@@ -259,57 +246,15 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
       )
 
       qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
-      await detailQuery.refetch()
-      setDrafts([])
-      toast({
-        title: 'Solicitudes asociadas',
-        description: `${drafts.length} solicitud${drafts.length === 1 ? '' : 'es'} agregada${drafts.length === 1 ? '' : 's'} como borrador. Confirma la conciliación para pasarlas a Pago Programado.`,
-      })
-      onApplied?.()
-    } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: err?.message ?? 'No se pudo asociar.',
-        variant: 'destructive',
-      })
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleConfirm = async () => {
-    if (!movement) return
-    if (pendingLinks.length === 0) {
-      toast({
-        title: 'Nada por confirmar',
-        description: 'No hay solicitudes asociadas pendientes de confirmar.',
-      })
-      return
-    }
-    const isPartial = availableBefore > 0.5 // saldo restante > 0 después de lo ya asociado
-    if (isPartial) {
-      const ok = window.confirm(
-        `Vas a confirmar una conciliación PARCIAL.\n\n` +
-          `Abono del movimiento: ${formatCurrency(abono)}\n` +
-          `Total a confirmar: ${formatCurrency(pendingLinks.reduce((s, l) => s + l.amountApplied, 0))}\n` +
-          `Saldo que queda sin conciliar: ${formatCurrency(availableBefore)}\n\n` +
-          `Las solicitudes confirmadas pasarán a Pago Programado y no podrán desasociarse. ¿Deseas continuar?`,
-      )
-      if (!ok) return
-    }
-    try {
-      setConfirming(true)
-      const { confirmedCount } = await cartolaLinksService.confirm(movement.documentoNumero)
-      await detailQuery.refetch()
-      qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
       qc.invalidateQueries({ queryKey: ['conciliacion', 'pending-refunds'] })
       qc.invalidateQueries({ queryKey: ['refund-admin-search'] })
       qc.invalidateQueries({ queryKey: ['refund'] })
+      await detailQuery.refetch()
+      const count = drafts.length
+      setDrafts([])
       toast({
         title: 'Conciliación confirmada',
-        description: `${confirmedCount || pendingLinks.length} solicitud${
-          (confirmedCount || pendingLinks.length) === 1 ? '' : 'es'
-        } pasada${(confirmedCount || pendingLinks.length) === 1 ? '' : 's'} a Pago Programado.`,
+        description: `${count} solicitud${count === 1 ? '' : 'es'} pasada${count === 1 ? '' : 's'} a Pago Programado.`,
       })
       onApplied?.()
     } catch (err: any) {
@@ -394,47 +339,6 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                       {l.refundId} · {formatCurrency(l.amountApplied)}
                     </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Solicitudes asociadas pendientes de confirmar (borrador, deletable) */}
-        {pendingLinks.length > 0 && (
-          <div className="shrink-0 rounded-lg border bg-amber-50/50 border-amber-200">
-            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-amber-200 text-xs uppercase tracking-wide text-amber-800">
-              <div className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5" />
-                Asociadas pendientes de confirmar ({pendingLinks.length})
-              </div>
-              <span className="normal-case text-[11px] font-normal text-amber-700">
-                Total: {formatCurrency(pendingLinks.reduce((s, l) => s + l.amountApplied, 0))}
-              </span>
-            </div>
-            <div className="p-2 flex flex-wrap gap-2">
-              {pendingLinks.map((l) => (
-                <div
-                  key={l.id}
-                  className="flex items-center gap-2 rounded-md border border-amber-200 bg-white px-2 py-1 text-xs"
-                >
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-medium truncate max-w-[180px]">
-                      {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {l.refundId} · {formatCurrency(l.amountApplied)}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive"
-                    onClick={() => removeExistingLink(l.id)}
-                    title="Quitar borrador"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               ))}
             </div>
@@ -671,7 +575,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
         <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           <div className="flex-1 text-sm">
-            <span className="text-muted-foreground">Nuevos a asociar: </span>
+            <span className="text-muted-foreground">Nuevos a conciliar: </span>
             <span
               className={`font-semibold ${overApplied ? 'text-destructive' : 'text-foreground'}`}
             >
@@ -682,38 +586,23 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Excede el disponible del abono
               </span>
             )}
-            {pendingLinks.length > 0 && (
-              <div className="text-xs text-amber-700 mt-0.5">
-                {pendingLinks.length} borrador{pendingLinks.length === 1 ? '' : 'es'} pendiente{pendingLinks.length === 1 ? '' : 's'} de confirmar
-              </div>
-            )}
           </div>
           <Button
             variant="outline"
             onClick={() => handleClose(false)}
-            disabled={submitting || confirming}
+            disabled={confirming}
           >
             Cerrar
           </Button>
           <Button
-            variant="secondary"
-            onClick={handleAssociate}
-            disabled={submitting || confirming || drafts.length === 0 || overApplied}
-            title="Guarda las nuevas solicitudes como borrador (paso 1)"
-          >
-            {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            <Plus className="h-4 w-4 mr-1" />
-            Asociar {drafts.length > 0 ? `(${drafts.length})` : ''}
-          </Button>
-          <Button
             onClick={handleConfirm}
-            disabled={submitting || confirming || pendingLinks.length === 0}
+            disabled={confirming || drafts.length === 0 || overApplied}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            title="Transiciona los borradores a Pago Programado (paso 2)"
+            title="Concilia las solicitudes y las pasa a Pago Programado"
           >
             {confirming && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <CheckCircle2 className="h-4 w-4 mr-1" />
-            Confirmar conciliación {pendingLinks.length > 0 ? `(${pendingLinks.length})` : ''}
+            Confirmar conciliación {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>
