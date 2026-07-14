@@ -134,7 +134,7 @@ export function IndividualCsvReconcileDialog({
   onApplied,
 }: Props) {
   const qc = useQueryClient()
-  const { user } = useAuth()
+  useAuth()
   const pendingQuery = usePendingRefunds()
   const inputRef = useRef<HTMLInputElement | null>(null)
 
