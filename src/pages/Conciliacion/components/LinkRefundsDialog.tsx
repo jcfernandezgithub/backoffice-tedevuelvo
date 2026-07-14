@@ -362,7 +362,14 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                       {refundsByPublicId.get(l.refundId)?.fullName ?? l.refundId}
                     </span>
                     <span className="text-muted-foreground">
-                      {l.refundId} · {formatCurrency(l.amountApplied)}
+                      {l.refundId} · Devolución real{' '}
+                      <span className="font-medium text-emerald-700">
+                        {formatCurrency(
+                          l.realAmount !== undefined && l.realAmount !== null
+                            ? l.realAmount
+                            : l.amountApplied,
+                        )}
+                      </span>
                     </span>
                   </div>
                 </div>
