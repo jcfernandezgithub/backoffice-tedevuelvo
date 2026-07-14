@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, Trash2, ShieldCheck, Lock, Users, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, Trash2, ShieldCheck, Lock, Users, ExternalLink, Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -22,9 +22,10 @@ import { useRoles, type RoleDefinition } from '../hooks/useRoles'
 import { useMockUsers } from '@/pages/Usuarios/hooks/useMockUsers'
 import { ALL_PLATFORM_PAGES } from '@/pages/Usuarios/constants/roleAccess'
 import { RoleFormDialog } from './RoleFormDialog'
+import { RolesApiError } from '../services/rolesApi'
 
 export function RolesSection() {
-  const { roles, removeRole } = useRoles()
+  const { roles, isLoading, error, refetch, isFetching, removeRole, isRemoving } = useRoles()
   const { users } = useMockUsers()
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<RoleDefinition | null>(null)
@@ -41,12 +42,17 @@ export function RolesSection() {
   const canConfirmDelete =
     !!deleting && deleteConfirmText.trim().toLowerCase() === expectedConfirm.toLowerCase()
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting || !canConfirmDelete) return
-    removeRole(deleting.id)
-    toast.success('Rol eliminado')
-    setDeleting(null)
-    setDeleteConfirmText('')
+    try {
+      await removeRole(deleting.id)
+      toast.success('Rol eliminado')
+      setDeleting(null)
+      setDeleteConfirmText('')
+    } catch (e) {
+      const msg = e instanceof RolesApiError ? e.message : 'No se pudo eliminar el rol'
+      toast.error(msg)
+    }
   }
 
   return (
@@ -67,8 +73,33 @@ export function RolesSection() {
         </div>
 
         <div className="grid gap-3">
-          {roles.map((r) => {
-            const count = usersByRole[r.id] ?? 0
+          {isLoading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground p-6 justify-center">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando roles…
+            </div>
+          )}
+          {!isLoading && error && (
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+              <div className="flex items-start gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium">No se pudieron cargar los roles</p>
+                  <p className="text-destructive/80 text-xs mt-1">{error.message}</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isFetching ? 'animate-spin' : ''}`} /> Reintentar
+                </Button>
+              </div>
+            </div>
+          )}
+          {!isLoading && !error && roles.length === 0 && (
+            <div className="text-sm text-muted-foreground text-center p-6 border border-dashed rounded-md">
+              Aún no hay roles configurados. Crea el primero para comenzar.
+            </div>
+          )}
+          {!isLoading && !error && roles.map((r) => {
+            const backendCount = (r as any).usersAssigned as number | undefined
+            const count = typeof backendCount === 'number' ? backendCount : (usersByRole[r.id] ?? 0)
             const isFull = r.scope === 'FULL'
             const cannotDelete = r.isSystem || count > 0
             const deleteReason = r.isSystem
@@ -156,7 +187,7 @@ export function RolesSection() {
         <AlertDialog
           open={!!deleting}
           onOpenChange={(o) => {
-            if (!o) {
+            if (!o && !isRemoving) {
               setDeleting(null)
               setDeleteConfirmText('')
             }
@@ -183,13 +214,15 @@ export function RolesSection() {
               />
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogCancel disabled={isRemoving}>Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
-                disabled={!canConfirmDelete}
+                disabled={!canConfirmDelete || isRemoving}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Eliminar rol
+                {isRemoving ? (
+                  <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Eliminando…</>
+                ) : 'Eliminar rol'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

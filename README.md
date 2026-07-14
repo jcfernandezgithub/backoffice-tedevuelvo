@@ -1,8 +1,31 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.7
+## Versión 4.2.0
 
 ## Changelog
+
+### Versión 4.2.0 - 2026-07-14
+
+#### Conciliación individual (CSV): scroll para listas largas
+- Se corrigió el diálogo de **Conciliación CSV para Abonos Individuales** para que genere un scrollbar cuando el listado de solicitudes a conciliar supera la altura de la pantalla.
+- Se ajustó el `DialogContent` a una altura fija (`h-[92vh]`) con layout flex, permitiendo que la tabla interna ocupe el espacio disponible y el usuario pueda revisar todas las filas sin que el contenido se corte.
+- Se mantiene el encabezado del wizard y los botones de acción siempre visibles mientras se navega por el listado.
+
+### Versión 4.1.9 - 2026-07-14
+
+#### Conciliación: borradores de conciliación manual e indicador en tabla
+- Los borradores de conciliación manual se persisten automáticamente en `localStorage` bajo la clave del número de documento del movimiento bancario (`documentoNumero`).
+- Al reabrir un movimiento se restauran las solicitudes previamente agregadas, incluso si el usuario cerró el diálogo o la sesión, sin perder la relación entre el abono y las solicitudes seleccionadas.
+- Se agregó el badge **Borrador** en la tabla de movimientos de `/conciliacion` para resaltar los abonos que tienen un borrador guardado.
+- El botón de acción de estos movimientos cambia a **Ver / editar** con variant `outline` para indicar que ya existe una asociación en progreso.
+- El borrador se limpia automáticamente solo tras confirmar la conciliación (transición a `payment_scheduled`).
+
+### Versión 4.1.8 - 2026-07-14
+
+#### Conciliación: modo manual único
+- Se eliminó la opción **Conciliación CSV para Abonos Individuales** del header de la página `/conciliacion`.
+- Se eliminó del menú de cada movimiento la opción **Conciliar mediante CSV**, dejando solo **Conciliar manualmente** (o **Ver / editar** cuando el movimiento ya tiene vinculaciones).
+- Los componentes y servicios de conciliación CSV permanecen en el proyecto pero no se exponen en la UI actual, centralizando la operación en el flujo manual de asociación de solicitudes a abonos bancarios.
 
 ### Versión 4.1.7 - 2026-07-11
 

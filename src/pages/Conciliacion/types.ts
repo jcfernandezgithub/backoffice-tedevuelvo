@@ -39,6 +39,8 @@ export interface PendingRefund {
   estimatedAmount: number
   reconciledAmount: number // suma de matches existentes
   remainingAmount: number
+  /** Indica si remainingAmount proviene del estimatedAmountCLP (true) o de un realAmount confirmado (false). */
+  isEstimated: boolean
   isFullyReconciled: boolean
   scheduledAt: string
   nroCredito?: string

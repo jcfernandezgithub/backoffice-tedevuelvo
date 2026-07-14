@@ -12,11 +12,19 @@ interface Props {
   total: number
 }
 
-export const DEFAULT_FILTERS: UserFiltersV2 = { search: '', role: 'ALL', state: 'ALL' }
+export const DEFAULT_FILTERS: UserFiltersV2 = {
+  search: '',
+  role: 'ALL',
+  state: 'ALL',
+  backofficeOnly: false,
+}
 
 export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
-  const { roles } = useRoles()
-  const hasActive = filters.search !== '' || filters.role !== 'ALL' || filters.state !== 'ALL'
+  const { roles } = useRoles({ includeCustomer: true })
+  const hasActive =
+    filters.search !== '' ||
+    filters.role !== 'ALL' ||
+    filters.state !== 'ALL'
 
   return (
     <div className="space-y-3">
@@ -63,7 +71,8 @@ export function UsersFilters({ filters, onChange, resultCount, total }: Props) {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Mostrando <span className="font-medium text-foreground">{resultCount}</span> de {total} usuarios
+        Mostrando <span className="font-medium text-foreground">{resultCount}</span>
+        {total > 0 ? <> de {total} usuarios</> : <> usuarios en esta página</>}
       </p>
     </div>
   )

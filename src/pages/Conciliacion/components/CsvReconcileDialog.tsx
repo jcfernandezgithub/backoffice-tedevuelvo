@@ -48,8 +48,8 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
-import { refundAdminApi } from '@/services/refundAdminApi'
 import { Checkbox } from '@/components/ui/checkbox'
+
 import {
   computeTotals,
   downloadCsv,
@@ -204,88 +204,38 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     setProgress(2)
     setProgressLabel('Preparando…')
 
-    const noteBase = `Conciliación CSV — movimiento ${movement.documentoNumero}${
-      file?.name ? ` (${file.name})` : ''
-    }`
-
-    // Snapshot para no perder cambios de aprobación mientras corre el proceso.
     const targets = approvedRows.slice()
-    const total = targets.length
-
-    // Paso 1: por cada solicitud, actualizar estado a Pago Programado con realAmount.
-    type StepResult = { row: ProcessedRow; ok: boolean; error?: string }
-    const results: StepResult[] = []
-    for (let i = 0; i < targets.length; i++) {
-      const r = targets[i]
-      setProgressLabel(
-        `Actualizando ${i + 1}/${total} · ${r.matchedPublicId ?? r.numero_operacion}`,
-      )
-      setProgress(Math.round(((i + 1) / (total + 1)) * 80))
-      try {
-        if (!r.matchedPublicId) throw new Error('Solicitud sin publicId.')
-        await refundAdminApi.updateStatus(r.matchedPublicId, {
-          status: 'payment_scheduled',
-          realAmount: Math.round(r.monto),
-          note: noteBase,
-          by: user?.email ?? user?.nombre ?? undefined,
-          force: true,
-        })
-        results.push({ row: r, ok: true })
-      } catch (err: any) {
-        results.push({
-          row: r,
-          ok: false,
-          error: err?.message ?? 'No se pudo actualizar el estado de la solicitud.',
-        })
-      }
-    }
-
-    // Paso 2: link movimiento↔solicitud SOLO para los que pasaron el paso 1.
-    const okRows = results.filter((x) => x.ok).map((x) => x.row)
     let linkError: string | null = null
-    if (okRows.length > 0) {
-      setProgressLabel('Asociando solicitudes al movimiento…')
-      setProgress(92)
-      try {
-        await cartolaLinksService.applyMatches(
-          movement.documentoNumero,
-          okRows.map((r) => ({
-            publicId: r.matchedPublicId!,
-            amountApplied: Math.round(r.monto),
-          })),
-        )
-      } catch (err: any) {
-        linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
-      }
+
+    setProgressLabel('Asociando solicitudes al movimiento…')
+    setProgress(80)
+    try {
+      await cartolaLinksService.applyMatches(
+        movement.documentoNumero,
+        targets.map((r) => ({
+          publicId: r.matchedPublicId!,
+          amountApplied: Math.round(r.monto),
+          realAmount: Math.round(r.monto),
+        })),
+      )
+    } catch (err: any) {
+      linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
     }
 
-    // Paso 3: componer nuevo array de filas con status por fila.
-    const outcomeByRow = new Map<number, StepResult>()
-    for (const r of results) outcomeByRow.set(r.row.rowNumber, r)
     const nextRows: ProcessedRow[] = rows.map((r) => {
       if (r.status !== 'valid') return r
-      const outcome = outcomeByRow.get(r.rowNumber)
-      if (!outcome) return r // no aprobada por el usuario, se queda como 'valid'
-      if (!outcome.ok) {
-        return {
-          ...r,
-          status: 'apply_error',
-          detail: outcome.error ?? 'Error al actualizar el estado.',
-        }
-      }
+      if (!targets.some((t) => t.rowNumber === r.rowNumber)) return r
       if (linkError) {
         return {
           ...r,
-          status: 'status_updated_no_link',
-          detail: `Solicitud pasada a Pago Programado con monto ${formatCurrency(
-            r.monto,
-          )}, pero no se pudo asociar al movimiento: ${linkError}`,
+          status: 'apply_error',
+          detail: linkError,
         }
       }
       return {
         ...r,
         status: 'reconciled',
-        detail: `Pago Programado con monto real ${formatCurrency(
+        detail: `Solicitud pasada a Pago Programado con monto real ${formatCurrency(
           r.monto,
         )} y asociada al movimiento ${movement.documentoNumero}.`,
       }
@@ -295,16 +245,10 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     setProgress(100)
     setProgressLabel('Listo')
 
-    // Overall + toasts.
     const okCount = nextRows.filter((r) => r.status === 'reconciled').length
-    const partialCount = nextRows.filter((r) => r.status === 'status_updated_no_link').length
     const errCount = nextRows.filter((r) => r.status === 'apply_error').length
     const overall: CsvHistoryEntry['overallStatus'] =
-      errCount === 0 && partialCount === 0
-        ? 'success'
-        : okCount === 0
-          ? 'error'
-          : 'partial'
+      errCount === 0 ? 'success' : okCount === 0 ? 'error' : 'partial'
     persistHistory(nextRows, overall)
 
     qc.invalidateQueries({ queryKey: ['cartola-reconciliation'] })
@@ -313,7 +257,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     qc.invalidateQueries({ queryKey: ['refund'] })
     onApplied?.()
 
-    if (okCount > 0 && errCount === 0 && partialCount === 0) {
+    if (okCount > 0 && errCount === 0) {
       toast({
         title: 'Conciliación aplicada',
         description: `${okCount} solicitud${okCount === 1 ? '' : 'es'} programada${okCount === 1 ? '' : 's'} para pago y asociada${okCount === 1 ? '' : 's'} al movimiento.`,
@@ -321,7 +265,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     } else if (okCount > 0) {
       toast({
         title: 'Conciliación parcial',
-        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${partialCount} sin asociar · ${errCount} con error.`,
+        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${errCount} con error.`,
       })
     } else {
       toast({
@@ -334,6 +278,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     setStep('result')
     setProcessing(false)
   }
+
 
   const persistHistory = (finalRows: ProcessedRow[], overall: CsvHistoryEntry['overallStatus']) => {
     if (!movement || !file) return

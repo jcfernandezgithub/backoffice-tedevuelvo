@@ -22,6 +22,7 @@ export interface UserV2 {
   email: string
   phone?: string
   role: RoleV2
+  roleName?: string
   state: UserStateV2
   lastLoginAt?: string
   createdAt: string
@@ -33,4 +34,6 @@ export interface UserFiltersV2 {
   search: string
   role: string | 'ALL'
   state: UserStateV2 | 'ALL'
+  /** Cuando true y no hay rol seleccionado, excluye usuarios CUSTOMER. */
+  backofficeOnly: boolean
 }

@@ -29,7 +29,7 @@ export function UsersMobileList(props: Props) {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex flex-wrap gap-2">
-                  <RoleBadge role={u.role} />
+                  <RoleBadge role={u.role} roleName={u.roleName} />
                   <StateBadge state={u.state} />
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>

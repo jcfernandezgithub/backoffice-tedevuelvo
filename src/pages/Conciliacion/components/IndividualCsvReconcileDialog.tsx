@@ -40,7 +40,7 @@ import {
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/formatters'
 import { toast } from '@/hooks/use-toast'
-import { useAuth } from '@/state/AuthContext'
+
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -134,7 +134,7 @@ export function IndividualCsvReconcileDialog({
   onApplied,
 }: Props) {
   const qc = useQueryClient()
-  const { user } = useAuth()
+  
   const pendingQuery = usePendingRefunds()
   const inputRef = useRef<HTMLInputElement | null>(null)
 
@@ -442,79 +442,64 @@ export function IndividualCsvReconcileDialog({
     setProgress(2)
     setProgressLabel('Preparando…')
     const targets = approvedRows.slice()
-    const total = targets.length
-
-    type StepResult = { row: Row; ok: boolean; error?: string }
-    const results: StepResult[] = []
-    for (let i = 0; i < targets.length; i++) {
-      const r = targets[i]
-      setProgressLabel(`Actualizando ${i + 1}/${total} · ${r.refundPublicId ?? r.numero_operacion}`)
-      setProgress(Math.round(((i + 1) / (total + 1)) * 70))
-      try {
-        await refundAdminApi.updateStatus(r.refundPublicId!, {
-          status: 'payment_scheduled',
-          realAmount: r.realAmount!,
-          note: `Conciliación CSV individual — abono ${r.chosenDoc}${file?.name ? ` (${file.name})` : ''} · devolución ${formatCurrency(r.realAmount!)} = abono ${formatCurrency(r.monto)} − prima total ${formatCurrency(r.primaTotal ?? 0)}`,
-          by: user?.email ?? user?.nombre ?? undefined,
-          force: true,
-        })
-        results.push({ row: r, ok: true })
-      } catch (err: any) {
-        results.push({
-          row: r,
-          ok: false,
-          error: err?.message ?? 'No se pudo actualizar el estado.',
-        })
-      }
-    }
 
     // Agrupar por movimiento para asociar
-    const byDoc = new Map<string, StepResult[]>()
-    for (const s of results) {
-      if (!s.ok) continue
-      const list = byDoc.get(s.row.chosenDoc!) ?? []
-      list.push(s)
-      byDoc.set(s.row.chosenDoc!, list)
+    const byDoc = new Map<string, Row[]>()
+    for (const r of targets) {
+      const list = byDoc.get(r.chosenDoc!) ?? []
+      list.push(r)
+      byDoc.set(r.chosenDoc!, list)
     }
 
-    setProgressLabel('Asociando al movimiento…')
-    setProgress(85)
     const linkErrorsByDoc = new Map<string, string>()
+    const statusErrorByRow = new Map<number, string>()
+    let processed = 0
     for (const [doc, list] of byDoc.entries()) {
+      processed += 1
+      setProgressLabel(`Asociando ${processed}/${byDoc.size} movimiento${byDoc.size === 1 ? '' : 's'}…`)
+      setProgress(Math.round((processed / byDoc.size) * 90))
       try {
         await cartolaLinksService.applyMatches(
           doc,
-          list.map((s) => ({
-            publicId: s.row.refundPublicId!,
-            amountApplied: Math.round(s.row.monto),
+          list.map((r) => ({
+            publicId: r.refundPublicId!,
+            amountApplied: Math.round(r.monto),
+            realAmount: Math.round(r.realAmount!),
           })),
         )
+        // Transición de estado a Pago Programado por solicitud
+        for (const r of list) {
+          try {
+            await refundAdminApi.updateStatus(r.refundPublicId!, {
+              status: 'payment_scheduled' as any,
+              realAmount: Math.round(r.realAmount!),
+              force: true,
+              note: `Conciliación CSV individual movimiento ${doc}`,
+            })
+          } catch (err: any) {
+            statusErrorByRow.set(r.rowNumber, err?.message ?? 'No se pudo cambiar el estado')
+          }
+        }
       } catch (err: any) {
         linkErrorsByDoc.set(doc, err?.message ?? 'No se pudo asociar al movimiento.')
       }
     }
 
-    const outcomeByRow = new Map<number, StepResult>()
-    for (const s of results) outcomeByRow.set(s.row.rowNumber, s)
-
+    const targetRowNumbers = new Set(targets.map((r) => r.rowNumber))
     const nextRows: Row[] = rows.map((r) => {
-      const outcome = outcomeByRow.get(r.rowNumber)
-      if (!outcome) return r
-      if (!outcome.ok) {
-        return { ...r, state: 'apply_error', message: outcome.error ?? 'Error al actualizar.' }
-      }
+      if (!targetRowNumbers.has(r.rowNumber)) return r
       const linkErr = linkErrorsByDoc.get(r.chosenDoc!)
       if (linkErr) {
-        return {
-          ...r,
-          state: 'status_updated_no_link',
-          message: `Solicitud pasada a Pago Programado con devolución ${formatCurrency(r.realAmount!)}, pero no se pudo asociar al movimiento ${r.chosenDoc}: ${linkErr}`,
-        }
+        return { ...r, state: 'apply_error', message: linkErr }
+      }
+      const statusErr = statusErrorByRow.get(r.rowNumber)
+      if (statusErr) {
+        return { ...r, state: 'apply_error', message: `Abono asociado pero el estado no cambió: ${statusErr}` }
       }
       return {
         ...r,
         state: 'reconciled',
-        message: `Pago Programado con devolución ${formatCurrency(r.realAmount!)} y asociada al abono ${r.chosenDoc}.`,
+        message: `Solicitud pasada a Pago Programado con devolución ${formatCurrency(r.realAmount!)} y asociada al abono ${r.chosenDoc}.`,
       }
     })
 
@@ -529,9 +514,8 @@ export function IndividualCsvReconcileDialog({
     onApplied?.()
 
     const okCount = nextRows.filter((r) => r.state === 'reconciled').length
-    const partialCount = nextRows.filter((r) => r.state === 'status_updated_no_link').length
     const errCount = nextRows.filter((r) => r.state === 'apply_error').length
-    if (okCount > 0 && errCount === 0 && partialCount === 0) {
+    if (okCount > 0 && errCount === 0) {
       toast({
         title: 'Conciliación aplicada',
         description: `${okCount} solicitud${okCount === 1 ? '' : 'es'} programada${okCount === 1 ? '' : 's'} para pago.`,
@@ -539,7 +523,7 @@ export function IndividualCsvReconcileDialog({
     } else if (okCount > 0) {
       toast({
         title: 'Conciliación parcial',
-        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${partialCount} sin asociar · ${errCount} con error.`,
+        description: `${okCount} correcta${okCount === 1 ? '' : 's'} · ${errCount} con error.`,
       })
     } else {
       toast({
@@ -551,6 +535,7 @@ export function IndividualCsvReconcileDialog({
     setStep('result')
     setProcessing(false)
   }
+
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -579,7 +564,7 @@ export function IndividualCsvReconcileDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[min(98vw,1280px)] max-h-[94vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-[min(98vw,1280px)] h-[92vh] overflow-hidden !flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />

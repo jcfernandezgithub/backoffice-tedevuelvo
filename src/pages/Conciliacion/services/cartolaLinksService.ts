@@ -11,6 +11,11 @@ export interface CartolaLink {
   /** publicId de la solicitud asociada (viene como refundId desde el backend). */
   refundId: string
   amountApplied: number
+  /** Monto real de devolución que se guarda en la solicitud. */
+  realAmount?: number
+  /** `pending` = borrador (aún no transiciona el estado); `confirmed` = aplicado. */
+  status: 'pending' | 'confirmed'
+  confirmedAt?: string | null
   createdAt: string
   createdBy?: string | null
 }
@@ -24,14 +29,20 @@ export interface ReconciliationDetail {
 
 export interface ReconciliationSummary {
   totalApplied: number
+  /** Suma de realAmount de los links confirmados; si el backend no lo entrega, el frontend recae a totalApplied. */
+  totalRealAmount?: number
   count: number
 }
+
 
 export interface ApplyMatchInput {
   /** publicId de la solicitud (ej. TDV-12345) */
   publicId: string
   amountApplied: number
+  /** Monto real de devolución (opcional; si no se envía, el backend puede usar amountApplied). */
+  realAmount?: number
 }
+
 
 async function parseOrThrow(res: Response): Promise<any> {
   const text = await res.text()
@@ -54,10 +65,19 @@ function safeJson(text: string): any {
 }
 
 function normalizeLink(raw: any): CartolaLink {
+  const rawStatus = String(raw?.status ?? '').toLowerCase()
+  const status: 'pending' | 'confirmed' =
+    rawStatus === 'confirmed' ? 'confirmed' : 'pending'
   return {
     id: String(raw?.id ?? raw?._id ?? ''),
     refundId: String(raw?.refundId ?? raw?.publicId ?? ''),
     amountApplied: Number(raw?.amountApplied ?? 0),
+    realAmount:
+      raw?.realAmount !== undefined && raw?.realAmount !== null
+        ? Number(raw.realAmount)
+        : undefined,
+    status,
+    confirmedAt: raw?.confirmedAt ?? null,
     createdAt: String(raw?.createdAt ?? new Date().toISOString()),
     createdBy: raw?.createdBy ?? null,
   }
@@ -98,16 +118,22 @@ export const cartolaLinksService = {
     const data = await parseOrThrow(res)
     const map = (data?.byDocumentoNumero ?? {}) as Record<
       string,
-      { totalApplied?: number; count?: number }
+      { totalApplied?: number; totalRealAmount?: number; count?: number }
     >
     const out: Record<string, ReconciliationSummary> = {}
     for (const key of Object.keys(map)) {
+      const totalApplied = Number(map[key]?.totalApplied ?? 0)
+      const rawReal = map[key]?.totalRealAmount
+      const totalRealAmount =
+        rawReal !== undefined && rawReal !== null ? Number(rawReal) : undefined
       out[key] = {
-        totalApplied: Number(map[key]?.totalApplied ?? 0),
+        totalApplied,
+        totalRealAmount,
         count: Number(map[key]?.count ?? 0),
       }
     }
     return out
+
   },
 
   /** POST /bank/reconciliation */
@@ -121,14 +147,21 @@ export const cartolaLinksService = {
       method: 'POST',
       body: JSON.stringify({
         documentoNumero,
-        matches: matches.map((m) => ({
-          publicId: m.publicId,
-          amountApplied: Math.round(m.amountApplied),
-        })),
+        matches: matches.map((m) => {
+          const payload: Record<string, unknown> = {
+            publicId: m.publicId,
+            amountApplied: Math.round(m.amountApplied),
+          }
+          if (m.realAmount !== undefined && m.realAmount !== null) {
+            payload.realAmount = Math.round(m.realAmount)
+          }
+          return payload
+        }),
       }),
     })
     await parseOrThrow(res)
   },
+
 
   /** DELETE /bank/reconciliation/:id */
   async removeLink(linkId: string): Promise<void> {
@@ -139,4 +172,5 @@ export const cartolaLinksService = {
     )
     await parseOrThrow(res)
   },
+
 }

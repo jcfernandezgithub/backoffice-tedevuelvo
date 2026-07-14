@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   Search,
   X,
-
+  FileSpreadsheet,
 } from 'lucide-react'
 import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
 import { cartolaLinksService } from './services/cartolaLinksService'
@@ -33,20 +33,13 @@ import {
   LinkRefundsDialog,
   type CartolaMovementRef,
 } from './components/LinkRefundsDialog'
-import { CsvReconcileDialog } from './components/CsvReconcileDialog'
 import {
   IndividualCsvReconcileDialog,
   type MovementCandidate,
 } from './components/IndividualCsvReconcileDialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ChevronDown, FileSpreadsheet } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { toast } from '@/hooks/use-toast'
 
 function toNumber(v: unknown): number | null {
   if (v === null || v === undefined || v === '') return null
@@ -99,6 +92,15 @@ function sameDate(a?: Date, b?: Date): boolean {
 }
 
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
+
+function hasDraftInStorage(documentoNumero: string): boolean {
+  try {
+    const raw = localStorage.getItem(`manual-reconciliation-draft:${documentoNumero}`)
+    return !!raw && raw !== '[]'
+  } catch {
+    return false
+  }
+}
 
 function formatLastUpdated(iso: string | null): string {
   if (!iso) return 'Sin actualizar'
@@ -243,26 +245,18 @@ export default function ConciliacionPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
-  const [csvOpen, setCsvOpen] = useState(false)
-  const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
+  const [draftCheckTick, setDraftCheckTick] = useState(0)
 
-  const movementCandidates: MovementCandidate[] = useMemo(() => {
-    return abonos
-      .map((m) => {
-        const doc = String(m.documento_numero ?? '').trim()
-        const abono = toNumber(m.abono) ?? 0
-        if (!doc || abono <= 0) return null
-        const applied = bulkMap[doc]?.totalApplied ?? 0
-        return {
-          documentoNumero: doc,
-          descripcion: String(m.descripcion ?? ''),
-          abono,
-          fecha: fmtDate(m.fecha_movimiento),
-          remaining: Math.max(0, abono - applied),
-        } as MovementCandidate
-      })
-      .filter((x): x is MovementCandidate => x !== null)
-  }, [abonos, bulkMap])
+  // Mapa de movimientos que tienen un borrador de conciliación manual guardado
+  // en localStorage. Se refresca cuando cambian los abonos o al cerrar el diálogo.
+  const draftDocSet = useMemo(() => {
+    const set = new Set<string>()
+    for (const m of abonos) {
+      const doc = String(m.documento_numero ?? '').trim()
+      if (doc && hasDraftInStorage(doc)) set.add(doc)
+    }
+    return set
+  }, [abonos, draftCheckTick])
 
   const buildMovementRef = (m: CartolaMovimiento): CartolaMovementRef | null => {
     const doc = String(m.documento_numero ?? '').trim()
@@ -282,11 +276,45 @@ export default function ConciliacionPage() {
     setDialogOpen(true)
   }
 
-  const openCsvDialog = (m: CartolaMovimiento) => {
-    const ref = buildMovementRef(m)
-    if (!ref) return
-    setSelected(ref)
-    setCsvOpen(true)
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open)
+    if (!open) {
+      // Al cerrar el diálogo refrescamos el indicador de borradores en la tabla.
+      setDraftCheckTick((t) => t + 1)
+    }
+  }
+
+  // CSV para abonos individuales
+  const [individualCsvOpen, setIndividualCsvOpen] = useState(false)
+  const movementCandidates: MovementCandidate[] = useMemo(() => {
+    return abonos
+      .filter((m) => (toNumber(m.abono) ?? 0) > 0)
+      .map((m) => {
+        const doc = String(m.documento_numero ?? '').trim()
+        const abono = toNumber(m.abono) ?? 0
+        const summary = doc ? bulkMap[doc] : undefined
+        const applied = summary?.totalApplied ?? 0
+        return {
+          documentoNumero: doc,
+          descripcion: String(m.descripcion ?? ''),
+          abono,
+          fecha: fmtDate(m.fecha_movimiento),
+          remaining: Math.max(0, abono - applied),
+        }
+      })
+      .filter((c) => c.documentoNumero)
+  }, [abonos, bulkMap])
+
+  const openIndividualCsvDialog = () => {
+    if (movementCandidates.length === 0) {
+      toast({
+        title: 'Sin abonos disponibles',
+        description: 'No hay abonos en el período seleccionado para conciliar por CSV.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setIndividualCsvOpen(true)
   }
 
   // KPI global de conciliación de abonos
@@ -303,12 +331,16 @@ export default function ConciliacionPage() {
         const doc = String(m.documento_numero ?? '')
         const summary = bulkMap[doc]
         const applied = summary?.totalApplied ?? 0
-        conciliado += applied
+        // El monto que se muestra al usuario como "conciliado" es la devolución real.
+        const real = summary?.totalRealAmount
+        conciliado +=
+          real !== undefined && real !== null ? real : applied
         if (applied > 0) movsConciliados += 1
       }
     }
     return { totalAbonos, abonosCount, conciliado, movsConciliados }
   }, [abonos, bulkMap])
+
 
   return (
     <div className="container max-w-7xl mx-auto p-4 md:p-6 space-y-6">
@@ -392,9 +424,9 @@ export default function ConciliacionPage() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setIndividualCsvOpen(true)}
-              disabled={abonos.length === 0 || query.isFetching}
-              title="Conciliación CSV para Abonos Individuales: busca el abono coincidente y calcula la devolución real"
+              onClick={openIndividualCsvDialog}
+              disabled={query.isFetching || movementCandidates.length === 0}
+              title="Conciliar múltiples abonos individuales mediante un archivo CSV"
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Conciliación CSV para Abonos Individuales
@@ -584,6 +616,7 @@ export default function ConciliacionPage() {
                       const canLink = abono > 0 && !!doc
                       const isFull = canLink && remaining <= 0.5 && applied > 0
                       const isPartial = canLink && applied > 0 && !isFull
+                      const hasDraft = doc && draftDocSet.has(doc)
                       return (
                       <TableRow key={doc || i} className={isFull ? 'bg-emerald-50/40' : isPartial ? 'bg-amber-50/40' : undefined}>
                         <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
@@ -600,7 +633,12 @@ export default function ConciliacionPage() {
                           {!canLink ? (
                             <span className="text-xs text-muted-foreground">—</span>
                           ) : (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {hasDraft && (
+                                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
+                                  Borrador
+                                </Badge>
+                              )}
                               {isFull ? (
                                 <Badge className="bg-emerald-600 hover:bg-emerald-600 gap-1">
                                   <CheckCircle2 className="h-3 w-3" />
@@ -615,39 +653,15 @@ export default function ConciliacionPage() {
                                   Sin conciliar
                                 </Badge>
                               )}
-                              <div className="inline-flex rounded-md shadow-sm">
-                                <Button
-                                  size="sm"
-                                  variant={applied > 0 ? 'outline' : 'default'}
-                                  className="h-7 px-2 text-xs rounded-r-none"
-                                  onClick={() => openLinkDialog(m)}
-                                >
-                                  <Link2 className="h-3.5 w-3.5 mr-1" />
-                                  {applied > 0 ? 'Ver / editar' : 'Conciliar'}
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant={applied > 0 ? 'outline' : 'default'}
-                                      className="h-7 px-1.5 rounded-l-none border-l"
-                                      aria-label="Más acciones de conciliación"
-                                    >
-                                      <ChevronDown className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openLinkDialog(m)}>
-                                      <Link2 className="h-3.5 w-3.5 mr-2" />
-                                      Conciliar manualmente
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => openCsvDialog(m)}>
-                                      <FileSpreadsheet className="h-3.5 w-3.5 mr-2" />
-                                      Conciliar mediante CSV
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
+                              <Button
+                                size="sm"
+                                variant={applied > 0 || hasDraft ? 'outline' : 'default'}
+                                className="h-7 px-2 text-xs"
+                                onClick={() => openLinkDialog(m)}
+                              >
+                                <Link2 className="h-3.5 w-3.5 mr-1" />
+                                {applied > 0 || hasDraft ? 'Ver / editar' : 'Conciliar'}
+                              </Button>
                             </div>
                           )}
                         </TableCell>
@@ -665,13 +679,7 @@ export default function ConciliacionPage() {
       <LinkRefundsDialog
         movement={selected}
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onApplied={refreshReconciliation}
-      />
-      <CsvReconcileDialog
-        movement={selected}
-        open={csvOpen}
-        onOpenChange={setCsvOpen}
+        onOpenChange={handleDialogOpenChange}
         onApplied={refreshReconciliation}
       />
       <IndividualCsvReconcileDialog
