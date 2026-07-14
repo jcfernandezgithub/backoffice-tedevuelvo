@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.1.9
+## Versión 4.2.0
 
 ## Changelog
+
+### Versión 4.2.0 - 2026-07-14
+
+#### Conciliación individual (CSV): scroll para listas largas
+- Se corrigió el diálogo de **Conciliación CSV para Abonos Individuales** para que genere un scrollbar cuando el listado de solicitudes a conciliar supera la altura de la pantalla.
+- Se ajustó el `DialogContent` a una altura fija (`h-[92vh]`) con layout flex, permitiendo que la tabla interna ocupe el espacio disponible y el usuario pueda revisar todas las filas sin que el contenido se corte.
+- Se mantiene el encabezado del wizard y los botones de acción siempre visibles mientras se navega por el listado.
 
 ### Versión 4.1.9 - 2026-07-14
 
