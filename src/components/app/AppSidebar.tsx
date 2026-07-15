@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
+import { ROUTE_TO_PAGE_KEY } from '@/lib/pageAccess'
 import {
   Sidebar,
   SidebarContent,
@@ -38,9 +39,15 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
 
-  const isCallCenterUser = user?.email === 'admin@callcenter.cl'
-  
-  const visibleItems = items.filter(item => {
+  const pages = user?.pages
+  const visibleItems = items.filter((item) => {
+    // Si el backend entrega pages, ese es el único filtro.
+    if (pages && pages.length > 0) {
+      const key = ROUTE_TO_PAGE_KEY[item.url]
+      return key ? pages.includes(key) : false
+    }
+    // Fallback legacy mientras algunos usuarios no traigan pages en el token.
+    const isCallCenterUser = user?.email === 'admin@callcenter.cl'
     if (isCallCenterUser) {
       return item.callCenterOnly || item.url === '/calculadora'
     }
