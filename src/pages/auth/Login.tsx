@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
 import { Mail, Lock, ArrowRight } from 'lucide-react'
 import logoTedevuelvo from '@/assets/logo-tedevuelvo.png'
+import { firstAllowedRoute } from '@/lib/pageAccess'
+import { authService } from '@/services/authService'
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -27,8 +29,14 @@ export default function Login() {
     try {
       await login(values.email, values.password)
       toast({ title: 'Bienvenido', description: 'Ingreso exitoso' })
-      const email = values.email.trim().toLowerCase()
-      const targetRoute = email === 'admin@callcenter.cl' ? '/gestion-callcenter' : '/operacion'
+      const current = authService.getCurrent()
+      let targetRoute = '/operacion'
+      if (current?.pages && current.pages.length > 0) {
+        targetRoute = firstAllowedRoute(current.pages)
+      } else {
+        const email = values.email.trim().toLowerCase()
+        targetRoute = email === 'admin@callcenter.cl' ? '/gestion-callcenter' : '/operacion'
+      }
       navigate(targetRoute, { replace: true })
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' })
@@ -162,7 +170,7 @@ export default function Login() {
 
             <div className="mt-8 pt-6 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
-              Versión 4.2.0 • © {new Date().getFullYear()} Te devuelvo
+              Versión 4.2.1 • © {new Date().getFullYear()} Te devuelvo
               </p>
             </div>
           </div>

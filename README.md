@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.0
+## Versión 4.2.1
 
 ## Changelog
+
+### Versión 4.2.1 - 2026-07-15
+
+#### Accesos por página desde el login
+- El servicio de login ahora retorna la lista `pages` asociada al rol del usuario; el frontend la utiliza para filtrar las opciones de menú y proteger el acceso a rutas.
+- Se agregó el helper `firstAllowedRoute` en `src/lib/pageAccess.ts` para redirigir al usuario a la primera página permitida tras autenticarse.
+- `AppSidebar` filtra dinámicamente sus ítems según `user.pages`; las rutas protegidas (`ProtectedRoute` y `AdminRoute`) bloquean el acceso a páginas no autorizadas y redirigen a la primera disponible.
+- Se mantiene compatibilidad con tokens que no incluyan `pages`, usando como fallback el comportamiento anterior basado en email/rol.
 
 ### Versión 4.2.0 - 2026-07-14
 

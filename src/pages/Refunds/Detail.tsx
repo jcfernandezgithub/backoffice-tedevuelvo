@@ -739,8 +739,10 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   <Label>Usuario</Label>
                   <Input
                     value={updateForm.by || ''}
-                    onChange={(e) => setUpdateForm({ ...updateForm, by: e.target.value })}
                     placeholder="admin@tedevuelvo.cl"
+                    readOnly
+                    disabled
+                    className="bg-muted cursor-not-allowed"
                   />
                 </div>
 
