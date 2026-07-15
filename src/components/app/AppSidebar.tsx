@@ -20,7 +20,7 @@ const items = [
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
