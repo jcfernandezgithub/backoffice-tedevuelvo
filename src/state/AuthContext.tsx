@@ -11,13 +11,15 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-// Refrescar el token 1 minuto antes de que expire (4 minutos)
-const REFRESH_INTERVAL = 4 * 60 * 1000
+// Verificar cada minuto si el token está por expirar; solo se refresca cuando falta poco.
+const REFRESH_CHECK_INTERVAL = 60 * 1000
+const MAX_REFRESH_FAILURES = 3
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Usuario | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const failuresRef = useRef<number>(0)
 
   // Configurar auto-refresh del token
   useEffect(() => {
@@ -25,21 +27,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = authService.getCurrent()
       
       if (currentUser) {
-        // Verificar si el token está por expirar y refrescarlo de inmediato
+        // Cargar el usuario actual siempre; el timer se encargará de refrescar cuando toque.
+        setUser(currentUser)
         if (authService.isTokenExpiringSoon()) {
           try {
             const { user: refreshedUser } = await authService.refresh()
             setUser(refreshedUser)
-            startRefreshTimer()
-          } catch {
-            // Si falla, cerrar sesión
-            await authService.logout()
-            setUser(null)
+          } catch (error) {
+            console.warn('[Auth] Refresh inicial falló, se reintentará automáticamente', error)
           }
-        } else {
-          setUser(currentUser)
-          startRefreshTimer()
         }
+        startRefreshTimer()
       } else {
         setUser(null)
       }
@@ -57,27 +55,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const startRefreshTimer = () => {
-    // Limpiar timer anterior si existe
     if (refreshTimerRef.current) {
       clearInterval(refreshTimerRef.current)
     }
 
-    // Configurar refresh automático cada 4 minutos
     refreshTimerRef.current = setInterval(async () => {
+      // Solo refrescamos si el token está a punto de expirar.
+      if (!authService.isTokenExpiringSoon()) {
+        return
+      }
       try {
         const { user: refreshedUser } = await authService.refresh()
         setUser(refreshedUser)
+        failuresRef.current = 0
       } catch (error) {
-        console.error('Error al refrescar token:', error)
-        // Si falla el refresh, cerrar sesión
-        await authService.logout()
-        setUser(null)
-        if (refreshTimerRef.current) {
-          clearInterval(refreshTimerRef.current)
+        failuresRef.current += 1
+        console.warn(
+          `[Auth] Fallo al refrescar token (intento ${failuresRef.current}/${MAX_REFRESH_FAILURES})`,
+          error,
+        )
+        // Solo cerramos sesión si el token ya expiró Y agotamos los reintentos.
+        // Así evitamos deslogueos por errores transitorios de red (Render cold-start, etc.).
+        if (
+          failuresRef.current >= MAX_REFRESH_FAILURES &&
+          !authService.getAccessToken()
+        ) {
+          if (refreshTimerRef.current) clearInterval(refreshTimerRef.current)
+          await authService.logout()
+          setUser(null)
+          window.location.href = '/login'
         }
-        window.location.href = '/login'
       }
-    }, REFRESH_INTERVAL)
+    }, REFRESH_CHECK_INTERVAL)
   }
 
   const value = useMemo<AuthContextValue>(() => ({
@@ -85,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async login(email, password) {
       const { user } = await authService.login(email, password)
       setUser(user)
-      // Iniciar el refresh automático después del login
+      failuresRef.current = 0
       startRefreshTimer()
     },
     async logout() {
