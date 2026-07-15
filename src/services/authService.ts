@@ -13,7 +13,13 @@ interface LoginResponse {
     id: string
     email: string
     fullName: string
-    roles: string[]
+    roles?: string[]
+    role?: {
+      name?: string
+      normalizedName?: string
+      pages?: string[]
+    } | string
+    pages?: string[]
   }
   accessToken: string
   refreshToken: string
@@ -26,6 +32,28 @@ const mapRoleToFrontend = (roles: string[]): Rol => {
   if (safe.includes('alianzas')) return 'ALIANZAS'
   if (safe.includes('callcenter') || safe.includes('call_center')) return 'CALLCENTER'
   return 'READONLY'
+}
+
+const extractRoles = (u: LoginResponse['user']): string[] => {
+  if (Array.isArray(u.roles) && u.roles.length) return u.roles
+  if (u.role && typeof u.role === 'object') {
+    const n = u.role.normalizedName || u.role.name
+    if (n) return [n]
+  }
+  if (typeof u.role === 'string') return [u.role]
+  return []
+}
+
+const extractPages = (data: LoginResponse): string[] => {
+  const u = data.user
+  if (Array.isArray(u.pages)) return u.pages
+  if (u.role && typeof u.role === 'object' && Array.isArray(u.role.pages)) return u.role.pages
+  // Fallback: decodificar JWT
+  try {
+    const payload = JSON.parse(atob(data.accessToken.split('.')[1]))
+    if (Array.isArray(payload.pages)) return payload.pages
+  } catch { /* noop */ }
+  return []
 }
 
 export const authService = {
@@ -77,8 +105,9 @@ export const authService = {
       id: data.user.id,
       nombre: data.user.fullName,
       email: data.user.email,
-      rol: mapRoleToFrontend(data.user.roles ?? []),
+      rol: mapRoleToFrontend(extractRoles(data.user)),
       activo: true,
+      pages: extractPages(data),
     }
 
     save(AUTH_KEY, user)
@@ -119,8 +148,9 @@ export const authService = {
       id: data.user.id,
       nombre: data.user.fullName,
       email: data.user.email,
-      rol: mapRoleToFrontend(data.user.roles ?? []),
+      rol: mapRoleToFrontend(extractRoles(data.user)),
       activo: true,
+      pages: extractPages(data),
     }
 
     save(AUTH_KEY, updatedUser)
