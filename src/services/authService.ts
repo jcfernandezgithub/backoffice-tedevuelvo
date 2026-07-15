@@ -121,20 +121,28 @@ export const authService = {
       throw new Error('No hay sesión para renovar')
     }
 
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: user.id, refreshToken }),
-    })
+    let response: Response
+    try {
+      response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, refreshToken }),
+      })
+    } catch (networkErr) {
+      // Error de red (offline / cold-start). No invalidamos la sesión: dejamos reintentar.
+      throw new Error('Refresh network error')
+    }
 
     if (!response.ok) {
-      // Si falla el refresh, limpiar todo
-      save(AUTH_KEY, null)
-      save(ACCESS_TOKEN_KEY, null)
-      save(REFRESH_TOKEN_KEY, null)
-      throw new Error('Sesión expirada')
+      // Solo consideramos la sesión inválida cuando el backend rechaza credenciales.
+      if (response.status === 401 || response.status === 403) {
+        save(AUTH_KEY, null)
+        save(ACCESS_TOKEN_KEY, null)
+        save(REFRESH_TOKEN_KEY, null)
+        throw new Error('Sesión expirada')
+      }
+      // 5xx u otros → transitorio, no tocamos storage.
+      throw new Error(`Refresh failed (${response.status})`)
     }
 
     const data: LoginResponse = await response.json()
@@ -143,14 +151,16 @@ export const authService = {
     save(ACCESS_TOKEN_KEY, data.accessToken)
     save(REFRESH_TOKEN_KEY, data.refreshToken)
 
-    // Actualizar usuario
+    // Actualizar usuario preservando datos previos cuando el refresh venga incompleto.
+    const rolesFromResponse = extractRoles(data.user)
+    const pagesFromResponse = extractPages(data)
     const updatedUser: Usuario = {
-      id: data.user.id,
-      nombre: data.user.fullName,
-      email: data.user.email,
-      rol: mapRoleToFrontend(extractRoles(data.user)),
+      id: data.user?.id ?? user.id,
+      nombre: data.user?.fullName ?? user.nombre,
+      email: data.user?.email ?? user.email,
+      rol: rolesFromResponse.length ? mapRoleToFrontend(rolesFromResponse) : user.rol,
       activo: true,
-      pages: extractPages(data),
+      pages: pagesFromResponse.length ? pagesFromResponse : (user.pages ?? []),
     }
 
     save(AUTH_KEY, updatedUser)
