@@ -6,6 +6,7 @@ export interface Usuario {
   email: string
   rol: Rol
   activo: boolean
+  pages?: string[]
 }
 
 export type TipoAlianza = 'RRHH' | 'SINDICATO' | 'BROKER' | 'OTRO'
