@@ -37,6 +37,14 @@ import {
   IndividualCsvReconcileDialog,
   type MovementCandidate,
 } from './components/IndividualCsvReconcileDialog'
+import { CsvReconcileDialog } from './components/CsvReconcileDialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { toast } from '@/hooks/use-toast'
@@ -246,6 +254,8 @@ export default function ConciliacionPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
   const [draftCheckTick, setDraftCheckTick] = useState(0)
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false)
+  const [csvSelected, setCsvSelected] = useState<CartolaMovementRef | null>(null)
 
   // Mapa de movimientos que tienen un borrador de conciliación manual guardado
   // en localStorage. Se refresca cuando cambian los abonos o al cerrar el diálogo.
@@ -274,6 +284,13 @@ export default function ConciliacionPage() {
     if (!ref) return
     setSelected(ref)
     setDialogOpen(true)
+  }
+
+  const openCsvDialogForMovement = (m: CartolaMovimiento) => {
+    const ref = buildMovementRef(m)
+    if (!ref) return
+    setCsvSelected(ref)
+    setCsvDialogOpen(true)
   }
 
   const handleDialogOpenChange = (open: boolean) => {
