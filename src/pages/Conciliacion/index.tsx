@@ -734,6 +734,15 @@ export default function ConciliacionPage() {
         movements={movementCandidates}
         onApplied={refreshReconciliation}
       />
+      <CsvReconcileDialog
+        movement={csvSelected}
+        open={csvDialogOpen}
+        onOpenChange={(o) => {
+          setCsvDialogOpen(o)
+          if (!o) setDraftCheckTick((t) => t + 1)
+        }}
+        onApplied={refreshReconciliation}
+      />
     </div>
   )
 }
