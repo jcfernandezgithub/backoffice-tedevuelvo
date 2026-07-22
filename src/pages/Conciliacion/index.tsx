@@ -37,6 +37,14 @@ import {
   IndividualCsvReconcileDialog,
   type MovementCandidate,
 } from './components/IndividualCsvReconcileDialog'
+import { CsvReconcileDialog } from './components/CsvReconcileDialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChevronDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { toast } from '@/hooks/use-toast'
@@ -246,6 +254,8 @@ export default function ConciliacionPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selected, setSelected] = useState<CartolaMovementRef | null>(null)
   const [draftCheckTick, setDraftCheckTick] = useState(0)
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false)
+  const [csvSelected, setCsvSelected] = useState<CartolaMovementRef | null>(null)
 
   // Mapa de movimientos que tienen un borrador de conciliación manual guardado
   // en localStorage. Se refresca cuando cambian los abonos o al cerrar el diálogo.
@@ -274,6 +284,13 @@ export default function ConciliacionPage() {
     if (!ref) return
     setSelected(ref)
     setDialogOpen(true)
+  }
+
+  const openCsvDialogForMovement = (m: CartolaMovimiento) => {
+    const ref = buildMovementRef(m)
+    if (!ref) return
+    setCsvSelected(ref)
+    setCsvDialogOpen(true)
   }
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -658,15 +675,39 @@ export default function ConciliacionPage() {
                                   Sin conciliar
                                 </Badge>
                               )}
-                              <Button
-                                size="sm"
-                                variant={applied > 0 || hasDraft ? 'outline' : 'default'}
-                                className="h-7 px-2 text-xs"
-                                onClick={() => openLinkDialog(m)}
-                              >
-                                <Link2 className="h-3.5 w-3.5 mr-1" />
-                                {applied > 0 || hasDraft ? 'Ver / editar' : 'Conciliar'}
-                              </Button>
+                              <div className="inline-flex rounded-md shadow-sm">
+                                <Button
+                                  size="sm"
+                                  variant={applied > 0 || hasDraft ? 'outline' : 'default'}
+                                  className="h-7 px-2 text-xs rounded-r-none"
+                                  onClick={() => openLinkDialog(m)}
+                                >
+                                  <Link2 className="h-3.5 w-3.5 mr-1" />
+                                  {applied > 0 || hasDraft ? 'Ver / editar' : 'Conciliar'}
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant={applied > 0 || hasDraft ? 'outline' : 'default'}
+                                      className="h-7 px-1.5 rounded-l-none border-l-0"
+                                      aria-label="Más opciones de conciliación"
+                                    >
+                                      <ChevronDown className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => openLinkDialog(m)}>
+                                      <Link2 className="h-4 w-4 mr-2" />
+                                      Conciliar manualmente
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => openCsvDialogForMovement(m)}>
+                                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                      Conciliar mediante CSV
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                           )}
                         </TableCell>
@@ -691,6 +732,15 @@ export default function ConciliacionPage() {
         open={individualCsvOpen}
         onOpenChange={setIndividualCsvOpen}
         movements={movementCandidates}
+        onApplied={refreshReconciliation}
+      />
+      <CsvReconcileDialog
+        movement={csvSelected}
+        open={csvDialogOpen}
+        onOpenChange={(o) => {
+          setCsvDialogOpen(o)
+          if (!o) setDraftCheckTick((t) => t + 1)
+        }}
         onApplied={refreshReconciliation}
       />
     </div>
