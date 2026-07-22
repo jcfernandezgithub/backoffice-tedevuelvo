@@ -618,7 +618,7 @@ export default function ConciliacionPage() {
                       const isPartial = canLink && applied > 0 && !isFull
                       const hasDraft = doc && draftDocSet.has(doc)
                       return (
-                      <TableRow key={doc || i} className={isFull ? 'bg-emerald-50/40' : isPartial ? 'bg-amber-50/40' : undefined}>
+                      <TableRow key={doc || i} className={isFull || isPartial ? 'bg-emerald-50/40' : undefined}>
                         <TableCell className="whitespace-nowrap text-sm">{fmtDate(m.fecha_movimiento)}</TableCell>
                         <TableCell className="text-sm">
                           <div>{m.descripcion || '—'}</div>
@@ -645,8 +645,13 @@ export default function ConciliacionPage() {
                                   {count} solicitud{count === 1 ? '' : 'es'}
                                 </Badge>
                               ) : isPartial ? (
-                                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 gap-1">
-                                  Parcial · {count}
+                                <Badge
+                                  variant="outline"
+                                  className="border-emerald-300 bg-emerald-50 text-emerald-700 gap-1"
+                                  title="Conciliación completada. El saldo restante del abono no requiere acción."
+                                >
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  {count} solicitud{count === 1 ? '' : 'es'}
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-muted-foreground">
