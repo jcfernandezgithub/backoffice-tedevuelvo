@@ -24,7 +24,10 @@ export function useExportAllRefunds() {
       let firstPageResult
       
       if (filters.useSearchEndpoint && filters.searchFilters) {
-        firstPageResult = await refundAdminApi.search({
+        // El listado de Solicitudes usa search-by-updated-at cuando hay filtros
+        // aplicados (status/fecha). La exportación debe usar el mismo endpoint
+        // para que el total del botón y el dataset exportado coincidan.
+        firstPageResult = await refundAdminApi.searchByUpdatedAt({
           ...filters.searchFilters,
           page: 1,
           limit: PAGE_LIMIT,
@@ -38,10 +41,16 @@ export function useExportAllRefunds() {
       }
 
       const total = firstPageResult.total
-      const totalPages = Math.ceil(total / PAGE_LIMIT)
-      
-      console.log(`[ExportAll] Total: ${total}, Pages: ${totalPages}`)
-      
+      // Usar el pageSize REAL devuelto por el backend (por si aplica un cap
+      // menor al solicitado, ej. 20). De lo contrario se calcularían menos
+      // páginas de las necesarias y la exportación quedaría incompleta.
+      const effectivePageSize = firstPageResult.pageSize && firstPageResult.pageSize > 0
+        ? firstPageResult.pageSize
+        : (firstPageResult.items?.length || PAGE_LIMIT)
+      const totalPages = Math.max(1, Math.ceil(total / effectivePageSize))
+
+      console.log(`[ExportAll] Total: ${total}, PageSize: ${effectivePageSize}, Pages: ${totalPages}`)
+
       if (totalPages <= 1) {
         setProgress(100)
         setIsExporting(false)
@@ -62,16 +71,16 @@ export function useExportAllRefunds() {
           batch.map(async (pageNum) => {
             try {
               if (filters.useSearchEndpoint && filters.searchFilters) {
-                return await refundAdminApi.search({
+                return await refundAdminApi.searchByUpdatedAt({
                   ...filters.searchFilters,
                   page: pageNum,
-                  limit: PAGE_LIMIT,
+                  limit: effectivePageSize,
                 })
               } else {
                 return await refundAdminApi.list({
                   ...filters.listFilters,
                   page: pageNum,
-                  pageSize: PAGE_LIMIT,
+                  pageSize: effectivePageSize,
                 })
               }
             } catch (error) {
@@ -93,9 +102,16 @@ export function useExportAllRefunds() {
         setProgress(Math.round((completedPages / totalPages) * 100))
       }
 
-      console.log(`[ExportAll] Fetched ${allItems.length} items`)
+      // Dedupe por id por si el backend repite registros entre páginas
+      const seen = new Set<string>()
+      const deduped = allItems.filter((r) => {
+        if (!r?.id || seen.has(r.id)) return false
+        seen.add(r.id)
+        return true
+      })
+      console.log(`[ExportAll] Fetched ${allItems.length} items (${deduped.length} únicos de ${total})`)
       setIsExporting(false)
-      return allItems
+      return deduped
 
     } catch (error) {
       console.error('[ExportAll] Error:', error)
