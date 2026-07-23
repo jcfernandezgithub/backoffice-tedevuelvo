@@ -249,6 +249,12 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const newAvailable = Math.max(0, availableBefore - totalApplied)
   const overApplied = totalApplied > availableBefore + 0.5
   const isFullyAllocated = availableBefore > 0 && newAvailable <= 0.5 && !overApplied
+  // El movimiento ya fue conciliado por completo (no queda saldo disponible
+  // y existen links confirmados). En ese caso, ocultamos la sección para
+  // "agregar nuevas solicitudes" y dejamos que la lista de confirmadas ocupe
+  // todo el espacio disponible con scroll.
+  const movementFullyReconciled =
+    confirmedLinks.length > 0 && availableBefore <= 0.5
 
   const draftIds = new Set(drafts.map((d) => d.refund.id))
   const linkedPublicIds = new Set(existingLinks.map((l) => l.refundId))
@@ -463,7 +469,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
         {/* Solicitudes ya confirmadas (bloqueadas) */}
         {confirmedLinks.length > 0 && (
-          <div className="shrink-0 rounded-lg border bg-emerald-50/40 border-emerald-200 flex flex-col max-h-[40vh]">
+          <div
+            className={`rounded-lg border bg-emerald-50/40 border-emerald-200 flex flex-col ${
+              movementFullyReconciled ? 'flex-1 min-h-0' : 'shrink-0 max-h-[40vh]'
+            }`}
+          >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-emerald-200 text-xs uppercase tracking-wide text-emerald-800">
               <Lock className="h-3.5 w-3.5" />
               Confirmadas — Pago Programado ({confirmedLinks.length})
@@ -525,6 +535,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
         )}
 
         {/* Body en 2 columnas */}
+        {!movementFullyReconciled && (
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-7 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
             <div className="shrink-0 px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2">
@@ -717,9 +728,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             )}
           </div>
         </div>
+        )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           <div className="flex-1 text-sm">
+            {movementFullyReconciled ? (
+              <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                Movimiento totalmente conciliado
+              </span>
+            ) : (
+              <>
             <span className="text-muted-foreground">Nuevos a conciliar: </span>
             <span
               className={`font-semibold ${overApplied ? 'text-destructive' : 'text-foreground'}`}
@@ -737,6 +756,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Borrador guardado automáticamente
               </span>
             )}
+              </>
+            )}
           </div>
           <Button
             variant="outline"
@@ -745,6 +766,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           >
             Cerrar
           </Button>
+          {!movementFullyReconciled && (
           <Button
             variant="outline"
             onClick={discardDraft}
@@ -754,6 +776,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             <X className="h-4 w-4 mr-1" />
             Descartar borrador
           </Button>
+          )}
+          {!movementFullyReconciled && (
           <Button
             onClick={openReview}
             disabled={confirming || drafts.length === 0 || overApplied}
@@ -764,6 +788,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             <CheckCircle2 className="h-4 w-4 mr-1" />
             Revisar y confirmar {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
+          )}
         </DialogFooter>
 
       </DialogContent>
