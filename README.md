@@ -12,6 +12,12 @@
 - Si una solicitud no puede obtener folio, se detiene la generación y se notifica al usuario para evitar enviar registros sin certificado.
 - Este cambio alinea el archivo de altas con el folio generado por el backend y visibilizado en el certificado de cobertura.
 
+#### Exportación Excel: corrección del total de registros exportados
+- Se corrigió la exportación a Excel de **Solicitudes** (`ExportToExcelDialog` / `useExportAllRefunds`) que exportaba solo 70 registros en lugar de todos los filtrados en la lista (por ejemplo, 478).
+- El hook ahora detecta el `pageSize` real devuelto por el backend y calcula la cantidad correcta de páginas a consultar.
+- Se unificó el endpoint de exportación con el endpoint del listado filtrado por fecha de actualización (`search-by-updated-at`), garantizando que el archivo contenga exactamente los mismos registros que se visualizan en la UI.
+- Este ajuste evita discrepancias entre el contador del botón y el contenido final del Excel.
+
 ### Versión 4.2.2 - 2026-07-23
 
 #### Conciliación CSV: desambiguación por póliza en abonos individuales y a nivel de movimiento
