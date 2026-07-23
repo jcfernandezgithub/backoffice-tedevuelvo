@@ -253,8 +253,14 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   // y existen links confirmados). En ese caso, ocultamos la sección para
   // "agregar nuevas solicitudes" y dejamos que la lista de confirmadas ocupe
   // todo el espacio disponible con scroll.
+  // Consideramos el movimiento totalmente conciliado cuando el saldo remanente
+  // es despreciable en términos absolutos (< 1 CLP) o relativos (< 1% del abono
+  // original). Esto cubre los casos donde quedan residuos por redondeo tras
+  // descontar primas TDV de varias solicitudes.
   const movementFullyReconciled =
-    confirmedLinks.length > 0 && availableBefore <= 0.5
+    confirmedLinks.length > 0 &&
+    (availableBefore <= 0.5 ||
+      availableBefore / Math.max(abono, 1) < 0.01)
 
   const draftIds = new Set(drafts.map((d) => d.refund.id))
   const linkedPublicIds = new Set(existingLinks.map((l) => l.refundId))
@@ -423,7 +429,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Conciliar movimiento bancario</DialogTitle>
           <DialogDescription>
