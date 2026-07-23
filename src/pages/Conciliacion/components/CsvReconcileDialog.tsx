@@ -195,6 +195,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     [validRows],
   )
   const totalToApply = approvedRows.reduce((s, r) => s + r.monto, 0)
+  const totalRealAmount = approvedRows.reduce((s, r) => s + montoRealDevolucion(r), 0)
+  const totalPrimaTDV = approvedRows.reduce((s, r) => s + primaTotalTDV(r), 0)
   const abono = movement?.abono ?? 0
   const overApplied = totalToApply > abono + 0.5
   const hasStructuralErrors = totals.format_error > 0 || totals.duplicated_in_csv > 0
@@ -232,7 +234,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
         targets.map((r) => ({
           publicId: r.matchedPublicId!,
           amountApplied: Math.round(r.monto),
-          realAmount: Math.round(r.monto),
+          realAmount: montoRealDevolucion(r),
         })),
       )
     } catch (err: any) {
@@ -253,8 +255,10 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
         ...r,
         status: 'reconciled',
         detail: `Solicitud pasada a Pago Programado con monto real ${formatCurrency(
-          r.monto,
-        )} y asociada al movimiento ${movement.documentoNumero}.`,
+          montoRealDevolucion(r),
+        )} (abono CSV ${formatCurrency(r.monto)} − prima TDV ${formatCurrency(
+          primaTotalTDV(r),
+        )}) y asociada al movimiento ${movement.documentoNumero}.`,
       }
     })
 
@@ -818,9 +822,18 @@ function RowsTable({
               <TableHead>N° Operación</TableHead>
               <TableHead className="text-right">Estimado sistema</TableHead>
               <TableHead className="text-right">
-                Monto CSV
+                Abono CSV
+              </TableHead>
+              <TableHead className="text-right">
+                Prima TDV
                 <div className="text-[10px] font-normal text-muted-foreground">
-                  se guardará como monto real
+                  prima × cuotas pend.
+                </div>
+              </TableHead>
+              <TableHead className="text-right">
+                Monto real
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  se guardará en la solicitud
                 </div>
               </TableHead>
               <TableHead>Estado</TableHead>
