@@ -429,7 +429,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Conciliar movimiento bancario</DialogTitle>
           <DialogDescription>
