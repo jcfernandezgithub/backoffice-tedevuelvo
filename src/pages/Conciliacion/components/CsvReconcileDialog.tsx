@@ -783,8 +783,7 @@ function RowsTable({
 }: RowsTableProps) {
   const cols = selectable ? 8 : 7
   return (
-    <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-      <ScrollArea className="h-full w-full">
+    <div className="flex-1 min-h-0 rounded-md border overflow-auto">
         <Table className="min-w-[1200px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
@@ -916,7 +915,6 @@ function RowsTable({
             )}
           </TableBody>
         </Table>
-      </ScrollArea>
     </div>
   )
 }
