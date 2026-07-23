@@ -253,6 +253,8 @@ export function matchAgainstSystem(
         matchedRefundId: refund.id,
         matchedEstimated: refund.estimatedAmount,
         matchedFullName: refund.fullName,
+        matchedNewMonthlyPremium: refund.newMonthlyPremium,
+        matchedRemainingInstallments: refund.confirmedRemainingInstallments,
         detail: `La solicitud ${refund.publicId} ya está asociada a este movimiento.`,
       }
     }
@@ -264,6 +266,8 @@ export function matchAgainstSystem(
         matchedRefundId: refund.id,
         matchedEstimated: refund.estimatedAmount,
         matchedFullName: refund.fullName,
+        matchedNewMonthlyPremium: refund.newMonthlyPremium,
+        matchedRemainingInstallments: refund.confirmedRemainingInstallments,
         matchedLinkedMovement: linkedDoc,
         detail: `La solicitud ${refund.publicId} ya está asociada al movimiento ${linkedDoc}.`,
       }
@@ -275,6 +279,8 @@ export function matchAgainstSystem(
       matchedRefundId: refund.id,
       matchedEstimated: refund.estimatedAmount,
       matchedFullName: refund.fullName,
+      matchedNewMonthlyPremium: refund.newMonthlyPremium,
+      matchedRemainingInstallments: refund.confirmedRemainingInstallments,
       approved: true,
       detail: 'Coincide con una solicitud Ingresada. Lista para conciliar.',
     }
