@@ -66,6 +66,23 @@ import {
 } from '../services/csvReconcileService'
 import type { CartolaMovementRef } from './LinkRefundsDialog'
 
+/**
+ * Prima total TDV que se descuenta del monto informado en el CSV para
+ * obtener el monto real de devolución que se guarda en la solicitud.
+ *   primaTotalTDV = newMonthlyPremium × cuotasPendientes
+ *   montoReal     = max(0, montoCSV − primaTotalTDV)
+ */
+function primaTotalTDV(r: ProcessedRow): number {
+  const prima = Number(r.matchedNewMonthlyPremium ?? 0)
+  const cuotas = Number(r.matchedRemainingInstallments ?? 0)
+  if (!prima || !cuotas) return 0
+  return Math.round(prima * cuotas)
+}
+
+function montoRealDevolucion(r: ProcessedRow): number {
+  return Math.max(0, Math.round(r.monto - primaTotalTDV(r)))
+}
+
 interface Props {
   movement: CartolaMovementRef | null
   open: boolean
