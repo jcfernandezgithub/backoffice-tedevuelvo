@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.1
+## Versión 4.2.2
 
 ## Changelog
+
+### Versión 4.2.2 - 2026-07-23
+
+#### Conciliación CSV: desambiguación por póliza en abonos individuales y a nivel de movimiento
+- Se corrigió la validación **Coincidencia duplicada en sistema** en los dos flujos de conciliación CSV (a nivel de movimiento y abonos individuales).
+- Cuando varias solicitudes comparten el mismo **número de crédito** (por ejemplo, una solicitud de desgravamen y otra de cesantía sobre el mismo crédito), el sistema ahora las desambigua usando el número de **póliza** (`poliza`) del CSV.
+- El backend expone `nroPoliza` en la estructura de solicitudes pendientes para permitir esta comparación.
+- Si el CSV no trae póliza o no es suficiente para desambiguar, se mantiene el mensaje de advertencia indicando al usuario que agregue la columna o concilie manualmente.
+- Esta mejora reduce falsos positivos de duplicados y permite conciliar masivamente operaciones que agrupan ambos seguros.
 
 ### Versión 4.2.1 - 2026-07-15
 
