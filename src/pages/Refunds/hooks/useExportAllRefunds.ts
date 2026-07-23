@@ -24,7 +24,10 @@ export function useExportAllRefunds() {
       let firstPageResult
       
       if (filters.useSearchEndpoint && filters.searchFilters) {
-        firstPageResult = await refundAdminApi.search({
+        // El listado de Solicitudes usa search-by-updated-at cuando hay filtros
+        // aplicados (status/fecha). La exportación debe usar el mismo endpoint
+        // para que el total del botón y el dataset exportado coincidan.
+        firstPageResult = await refundAdminApi.searchByUpdatedAt({
           ...filters.searchFilters,
           page: 1,
           limit: PAGE_LIMIT,
@@ -68,7 +71,7 @@ export function useExportAllRefunds() {
           batch.map(async (pageNum) => {
             try {
               if (filters.useSearchEndpoint && filters.searchFilters) {
-                return await refundAdminApi.search({
+                return await refundAdminApi.searchByUpdatedAt({
                   ...filters.searchFilters,
                   page: pageNum,
                   limit: effectivePageSize,
