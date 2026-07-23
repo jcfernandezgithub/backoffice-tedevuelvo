@@ -201,7 +201,18 @@ export function IndividualCsvReconcileDialog({
           }
         }
         const key = normalizeOp(p.numero_operacion)
-        const matches = (refundsByOp.get(key) ?? []) as any[]
+        let matches = (refundsByOp.get(key) ?? []) as any[]
+        // Cuando varias solicitudes comparten nº de operación (típicamente
+        // desgravamen + cesantía del mismo crédito) se desambigua por póliza.
+        if (matches.length > 1) {
+          const polizaKey = normalizeOp(p.poliza ?? '')
+          if (polizaKey) {
+            const byPoliza = matches.filter(
+              (m) => normalizeOp(m?.nroPoliza ?? '') === polizaKey,
+            )
+            if (byPoliza.length >= 1) matches = byPoliza
+          }
+        }
         if (matches.length === 0) {
           return {
             ...p,
@@ -216,7 +227,7 @@ export function IndividualCsvReconcileDialog({
           return {
             ...p,
             state: 'not_found',
-            message: `Hay ${matches.length} solicitudes con ese número de operación. Concilia manualmente.`,
+            message: `Hay ${matches.length} solicitudes con ese nº de operación y no fue posible desambiguar por póliza. Agrega la columna "poliza" al CSV o concilia manualmente.`,
             candidateDocs: [],
             approved: false,
           }
