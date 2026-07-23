@@ -44,6 +44,8 @@ export interface PendingRefund {
   isFullyReconciled: boolean
   scheduledAt: string
   nroCredito?: string
+  /** Nº de póliza del seguro asociado — desde calculationSnapshot. Permite desambiguar entre desgravamen y cesantía cuando comparten nroCredito. */
+  nroPoliza?: string
   /** Prima mensual del nuevo seguro (Te Devuelvo) — desde calculationSnapshot. */
   newMonthlyPremium?: number
   /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
