@@ -249,6 +249,18 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
   const newAvailable = Math.max(0, availableBefore - totalApplied)
   const overApplied = totalApplied > availableBefore + 0.5
   const isFullyAllocated = availableBefore > 0 && newAvailable <= 0.5 && !overApplied
+  // El movimiento ya fue conciliado por completo (no queda saldo disponible
+  // y existen links confirmados). En ese caso, ocultamos la sección para
+  // "agregar nuevas solicitudes" y dejamos que la lista de confirmadas ocupe
+  // todo el espacio disponible con scroll.
+  // Consideramos el movimiento totalmente conciliado cuando el saldo remanente
+  // es despreciable en términos absolutos (< 1 CLP) o relativos (< 1% del abono
+  // original). Esto cubre los casos donde quedan residuos por redondeo tras
+  // descontar primas TDV de varias solicitudes.
+  const movementFullyReconciled =
+    confirmedLinks.length > 0 &&
+    (availableBefore <= 0.5 ||
+      availableBefore / Math.max(abono, 1) < 0.01)
 
   const draftIds = new Set(drafts.map((d) => d.refund.id))
   const linkedPublicIds = new Set(existingLinks.map((l) => l.refundId))
@@ -417,7 +429,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-5xl max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-5xl h-[92vh] max-h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle>Conciliar movimiento bancario</DialogTitle>
           <DialogDescription>
@@ -463,66 +475,73 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
         {/* Solicitudes ya confirmadas (bloqueadas) */}
         {confirmedLinks.length > 0 && (
-          <div className="shrink-0 rounded-lg border bg-emerald-50/40 border-emerald-200">
+          <div
+            className={`rounded-lg border bg-emerald-50/40 border-emerald-200 flex flex-col ${
+              movementFullyReconciled ? 'flex-1 min-h-0' : 'shrink-0 max-h-[40vh]'
+            }`}
+          >
             <div className="flex items-center gap-2 px-3 py-2 border-b border-emerald-200 text-xs uppercase tracking-wide text-emerald-800">
               <Lock className="h-3.5 w-3.5" />
               Confirmadas — Pago Programado ({confirmedLinks.length})
             </div>
-            <div className="p-2 flex flex-col gap-2">
-              {confirmedLinks.map((l) => {
-                const pending = refundsByPublicId.get(l.refundId)
-                const fetched = confirmedRefundsMap.get(l.refundId)
-                const fullName: string | undefined =
-                  pending?.fullName ?? fetched?.fullName
-                const rut: string | undefined = pending?.rut ?? fetched?.rut
-                const nroCredito =
-                  resolveCreditNumber(pending) || resolveCreditNumber(fetched)
-                const publicId: string = fetched?.publicId ?? l.refundId
-                // realAmount vive como campo top-level de la solicitud.
-                const realAmountRaw =
-                  pending?.realAmount ??
-                  fetched?.realAmount ??
-                  l.realAmount ??
-                  l.amountApplied
-                const realAmount = Number(realAmountRaw) || 0
-                const loading =
-                  !pending && !fetched && confirmedRefundsQuery.isFetching
-                return (
-                  <div
-                    key={l.id}
-                    className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs w-full"
-                    title="Ya confirmada: no se puede desasociar"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <div className="flex flex-col leading-tight min-w-0 flex-1">
-                      <span className="font-medium truncate">
-                        {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
-                        {rut ? (
-                          <span className="text-muted-foreground font-normal">
-                            {' '}· {rut}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-muted-foreground font-mono truncate text-[11px]">
-                        {nroCredito ? `Crédito ${nroCredito} · ` : ''}{publicId}
-                      </span>
-                    </div>
-                    <div className="ml-auto pl-2 text-right shrink-0">
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Devolución real
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-2 flex flex-col gap-2">
+                {confirmedLinks.map((l) => {
+                  const pending = refundsByPublicId.get(l.refundId)
+                  const fetched = confirmedRefundsMap.get(l.refundId)
+                  const fullName: string | undefined =
+                    pending?.fullName ?? fetched?.fullName
+                  const rut: string | undefined = pending?.rut ?? fetched?.rut
+                  const nroCredito =
+                    resolveCreditNumber(pending) || resolveCreditNumber(fetched)
+                  const publicId: string = fetched?.publicId ?? l.refundId
+                  // realAmount vive como campo top-level de la solicitud.
+                  const realAmountRaw =
+                    pending?.realAmount ??
+                    fetched?.realAmount ??
+                    l.realAmount ??
+                    l.amountApplied
+                  const realAmount = Number(realAmountRaw) || 0
+                  const loading =
+                    !pending && !fetched && confirmedRefundsQuery.isFetching
+                  return (
+                    <div
+                      key={l.id}
+                      className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs w-full"
+                      title="Ya confirmada: no se puede desasociar"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <div className="flex flex-col leading-tight min-w-0 flex-1">
+                        <span className="font-medium truncate">
+                          {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
+                          {rut ? (
+                            <span className="text-muted-foreground font-normal">
+                              {' '}· {rut}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="text-muted-foreground font-mono truncate text-[11px]">
+                          {nroCredito ? `Crédito ${nroCredito} · ` : ''}{publicId}
+                        </span>
                       </div>
-                      <div className="font-semibold text-emerald-700">
-                        {formatCurrency(realAmount)}
+                      <div className="ml-auto pl-2 text-right shrink-0">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Devolución real
+                        </div>
+                        <div className="font-semibold text-emerald-700">
+                          {formatCurrency(realAmount)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
         {/* Body en 2 columnas */}
+        {!movementFullyReconciled && (
         <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 gap-4">
           <div className="md:col-span-7 flex flex-col min-h-0 rounded-lg border bg-card overflow-hidden">
             <div className="shrink-0 px-3 py-2 border-b bg-muted/30 flex items-center justify-between gap-2">
@@ -715,9 +734,17 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             )}
           </div>
         </div>
+        )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           <div className="flex-1 text-sm">
+            {movementFullyReconciled ? (
+              <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                Movimiento totalmente conciliado
+              </span>
+            ) : (
+              <>
             <span className="text-muted-foreground">Nuevos a conciliar: </span>
             <span
               className={`font-semibold ${overApplied ? 'text-destructive' : 'text-foreground'}`}
@@ -735,6 +762,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                 Borrador guardado automáticamente
               </span>
             )}
+              </>
+            )}
           </div>
           <Button
             variant="outline"
@@ -743,6 +772,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
           >
             Cerrar
           </Button>
+          {!movementFullyReconciled && (
           <Button
             variant="outline"
             onClick={discardDraft}
@@ -752,6 +782,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             <X className="h-4 w-4 mr-1" />
             Descartar borrador
           </Button>
+          )}
+          {!movementFullyReconciled && (
           <Button
             onClick={openReview}
             disabled={confirming || drafts.length === 0 || overApplied}
@@ -762,6 +794,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
             <CheckCircle2 className="h-4 w-4 mr-1" />
             Revisar y confirmar {drafts.length > 0 ? `(${drafts.length})` : ''}
           </Button>
+          )}
         </DialogFooter>
 
       </DialogContent>

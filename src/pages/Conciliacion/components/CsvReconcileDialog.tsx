@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Dialog,
@@ -48,6 +48,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { Checkbox } from '@/components/ui/checkbox'
 
 import {
@@ -65,6 +66,23 @@ import {
   type ProcessedRow,
 } from '../services/csvReconcileService'
 import type { CartolaMovementRef } from './LinkRefundsDialog'
+
+/**
+ * Prima total TDV que se descuenta del monto informado en el CSV para
+ * obtener el monto real de devolución que se guarda en la solicitud.
+ *   primaTotalTDV = newMonthlyPremium × cuotasPendientes
+ *   montoReal     = max(0, montoCSV − primaTotalTDV)
+ */
+function primaTotalTDV(r: ProcessedRow): number {
+  const prima = Number(r.matchedNewMonthlyPremium ?? 0)
+  const cuotas = Number(r.matchedRemainingInstallments ?? 0)
+  if (!prima || !cuotas) return 0
+  return Math.round(prima * cuotas)
+}
+
+function montoRealDevolucion(r: ProcessedRow): number {
+  return Math.max(0, Math.round(r.monto - primaTotalTDV(r)))
+}
 
 interface Props {
   movement: CartolaMovementRef | null
@@ -178,6 +196,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
     [validRows],
   )
   const totalToApply = approvedRows.reduce((s, r) => s + r.monto, 0)
+  const totalRealAmount = approvedRows.reduce((s, r) => s + montoRealDevolucion(r), 0)
+  const totalPrimaTDV = approvedRows.reduce((s, r) => s + primaTotalTDV(r), 0)
   const abono = movement?.abono ?? 0
   const overApplied = totalToApply > abono + 0.5
   const hasStructuralErrors = totals.format_error > 0 || totals.duplicated_in_csv > 0
@@ -206,6 +226,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
     const targets = approvedRows.slice()
     let linkError: string | null = null
+    const statusErrorByRow = new Map<number, string>()
 
     setProgressLabel('Asociando solicitudes al movimiento…')
     setProgress(80)
@@ -215,9 +236,24 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
         targets.map((r) => ({
           publicId: r.matchedPublicId!,
           amountApplied: Math.round(r.monto),
-          realAmount: Math.round(r.monto),
+          realAmount: montoRealDevolucion(r),
         })),
       )
+      // Transición de estado a Pago Programado por solicitud
+      setProgressLabel('Actualizando estado de las solicitudes…')
+      setProgress(92)
+      for (const r of targets) {
+        try {
+          await refundAdminApi.updateStatus(r.matchedPublicId!, {
+            status: 'payment_scheduled' as any,
+            realAmount: montoRealDevolucion(r),
+            force: true,
+            note: `Conciliación CSV movimiento ${movement.documentoNumero}`,
+          })
+        } catch (err: any) {
+          statusErrorByRow.set(r.rowNumber, err?.message ?? 'No se pudo cambiar el estado')
+        }
+      }
     } catch (err: any) {
       linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
     }
@@ -232,12 +268,22 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           detail: linkError,
         }
       }
+      const statusErr = statusErrorByRow.get(r.rowNumber)
+      if (statusErr) {
+        return {
+          ...r,
+          status: 'apply_error',
+          detail: `Abono asociado pero el estado no cambió: ${statusErr}`,
+        }
+      }
       return {
         ...r,
         status: 'reconciled',
         detail: `Solicitud pasada a Pago Programado con monto real ${formatCurrency(
-          r.monto,
-        )} y asociada al movimiento ${movement.documentoNumero}.`,
+          montoRealDevolucion(r),
+        )} (abono CSV ${formatCurrency(r.monto)} − prima TDV ${formatCurrency(
+          primaTotalTDV(r),
+        )}) y asociada al movimiento ${movement.documentoNumero}.`,
       }
     })
 
@@ -317,7 +363,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[min(96vw,1200px)] max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-[min(96vw,1200px)] h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -594,7 +640,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
               <>
                 {approvedRows.length} de {validRows.length} aprobada
                 {approvedRows.length === 1 ? '' : 's'} · Suma {formatCurrency(totalToApply)} /{' '}
-                Abono {formatCurrency(abono)}
+                Abono {formatCurrency(abono)} · Real a guardar{' '}
+                <strong>{formatCurrency(totalRealAmount)}</strong>
                 {hasStructuralErrors && ' · hay filas con errores estructurales'}
               </>
             )}
@@ -661,16 +708,34 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                     Cada solicitud pasará a estado <strong>Pago Programado</strong>.
                   </li>
                   <li>
-                    El <strong>monto del CSV</strong> quedará guardado como{' '}
+                    Al <strong>monto del CSV</strong> se le descontará la{' '}
+                    <strong>prima total TDV</strong> (prima mensual × cuotas
+                    pendientes) y ese resultado se guardará como{' '}
                     <strong>monto real de devolución</strong> de la solicitud.
                   </li>
                   <li>
                     Se registrará una entrada en el historial de la solicitud.
                   </li>
                 </ul>
-                <div className="rounded-md bg-muted/60 p-2 text-xs">
-                  Total a aplicar: <strong>{formatCurrency(totalToApply)}</strong> · Abono
-                  disponible: <strong>{formatCurrency(abono)}</strong>
+                <div className="rounded-md bg-muted/60 p-2 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Abono disponible</span>
+                    <strong className="tabular-nums">{formatCurrency(abono)}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Suma abonos CSV</span>
+                    <strong className="tabular-nums">{formatCurrency(totalToApply)}</strong>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>− Prima total TDV</span>
+                    <span className="tabular-nums">−{formatCurrency(totalPrimaTDV)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
+                    <span className="font-medium">Total a guardar como monto real</span>
+                    <strong className="tabular-nums text-emerald-700">
+                      {formatCurrency(totalRealAmount)}
+                    </strong>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Esta acción no se puede deshacer automáticamente.
@@ -781,11 +846,10 @@ function RowsTable({
   onToggleAll,
   onToggleRow,
 }: RowsTableProps) {
-  const cols = selectable ? 8 : 7
+  const cols = selectable ? 9 : 8
   return (
-    <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-      <ScrollArea className="h-full">
-        <Table>
+    <div className="flex-1 min-h-0 rounded-md border overflow-auto">
+        <Table className="min-w-[1120px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               {selectable && (
@@ -802,13 +866,21 @@ function RowsTable({
               <TableHead>N° Operación</TableHead>
               <TableHead className="text-right">Estimado sistema</TableHead>
               <TableHead className="text-right">
-                Monto CSV
+                Abono CSV
+              </TableHead>
+              <TableHead className="text-right">
+                Prima TDV
                 <div className="text-[10px] font-normal text-muted-foreground">
-                  se guardará como monto real
+                  prima × cuotas pend.
+                </div>
+              </TableHead>
+              <TableHead className="text-right">
+                Monto real
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  se guardará en la solicitud
                 </div>
               </TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Detalle</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -824,99 +896,143 @@ function RowsTable({
                 const diff = est > 0 ? r.monto - est : 0
                 const diffPct = est > 0 ? (diff / est) * 100 : 0
                 const hasDiff = est > 0 && Math.abs(diff) > 0.5
+                const prima = primaTotalTDV(r)
+                const real = montoRealDevolucion(r)
+                const primaKnown =
+                  Boolean(r.matchedNewMonthlyPremium) &&
+                  Boolean(r.matchedRemainingInstallments)
                 return (
-                  <TableRow
-                    key={r.rowNumber}
-                    className={r.approved === false ? 'opacity-60' : undefined}
-                  >
-                    {selectable && (
-                      <TableCell>
-                        {r.status === 'valid' ? (
-                          <Checkbox
-                            checked={r.approved !== false}
-                            onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
-                            aria-label={`Aprobar fila ${r.rowNumber}`}
-                          />
+                  <Fragment key={r.rowNumber}>
+                    <TableRow className={r.approved === false ? 'opacity-60' : undefined}>
+                      {selectable && (
+                        <TableCell>
+                          {r.status === 'valid' ? (
+                            <Checkbox
+                              checked={r.approved !== false}
+                              onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
+                              aria-label={`Aprobar fila ${r.rowNumber}`}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground/50 text-xs">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
+                      <TableCell className="text-sm max-w-[240px]">
+                        {r.matchedPublicId ? (
+                          <div className="flex flex-col">
+                            <span className="font-mono text-xs text-primary">
+                              {r.matchedPublicId}
+                            </span>
+                            <span className="truncate text-xs" title={r.matchedFullName}>
+                              {r.matchedFullName || r.nombre_cliente || '—'}
+                            </span>
+                            {r.rut && (
+                              <span className="text-[10px] font-mono text-muted-foreground">
+                                {r.rut}
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-muted-foreground/50 text-xs">—</span>
+                          <div className="flex flex-col">
+                            <span
+                              className="truncate text-xs"
+                              title={r.nombre_cliente}
+                            >
+                              {r.nombre_cliente || '—'}
+                            </span>
+                            {r.rut && (
+                              <span className="text-[10px] font-mono text-muted-foreground">
+                                {r.rut}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </TableCell>
-                    )}
-                    <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
-                    <TableCell className="text-sm max-w-[240px]">
-                      {r.matchedPublicId ? (
-                        <div className="flex flex-col">
-                          <span className="font-mono text-xs text-primary">
-                            {r.matchedPublicId}
+                      <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                        {est > 0 ? formatCurrency(est) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-medium tabular-nums">
+                            {formatCurrency(r.monto)}
                           </span>
-                          <span className="truncate text-xs" title={r.matchedFullName}>
-                            {r.matchedFullName || r.nombre_cliente || '—'}
-                          </span>
-                          {r.rut && (
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              {r.rut}
+                          {hasDiff && (
+                            <span
+                              className={`text-[10px] tabular-nums ${
+                                diff > 0 ? 'text-amber-700' : 'text-sky-700'
+                              }`}
+                              title="Diferencia respecto al monto estimado del sistema"
+                            >
+                              {diff > 0 ? '+' : ''}
+                              {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
+                              {diffPct.toFixed(1)}%)
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <span
-                            className="truncate text-xs"
-                            title={r.nombre_cliente}
-                          >
-                            {r.nombre_cliente || '—'}
-                          </span>
-                          {r.rut && (
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              {r.rut}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {primaKnown ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              −{formatCurrency(prima)}
                             </span>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
-                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                      {est > 0 ? formatCurrency(est) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm font-medium tabular-nums">
-                          {formatCurrency(r.monto)}
-                        </span>
-                        {hasDiff && (
+                            <span
+                              className="text-[10px] text-muted-foreground tabular-nums"
+                              title="Prima mensual TDV × cuotas pendientes"
+                            >
+                              {formatCurrency(r.matchedNewMonthlyPremium ?? 0)} ×{' '}
+                              {r.matchedRemainingInstallments ?? 0}
+                            </span>
+                          </div>
+                        ) : (
                           <span
-                            className={`text-[10px] tabular-nums ${
-                              diff > 0 ? 'text-amber-700' : 'text-sky-700'
-                            }`}
-                            title="Diferencia respecto al monto estimado del sistema"
+                            className="text-[10px] text-amber-700"
+                            title="No hay prima o cuotas pendientes en el snapshot; no se descuenta prima."
                           >
-                            {diff > 0 ? '+' : ''}
-                            {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
-                            {diffPct.toFixed(1)}%)
+                            sin dato
                           </span>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
-                      >
-                        {STATUS_LABELS[r.status]}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className="text-xs text-muted-foreground min-w-[280px] max-w-[420px] whitespace-normal break-words align-top"
-                      title={r.detail}
-                    >
-                      {r.detail}
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-semibold tabular-nums text-emerald-700">
+                            {formatCurrency(real)}
+                          </span>
+                          {primaKnown && (
+                            <span className="text-[10px] text-muted-foreground">
+                              monto real de devolución
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+                        >
+                          {STATUS_LABELS[r.status]}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className={r.approved === false ? 'opacity-60 hover:bg-transparent' : 'hover:bg-transparent'}>
+                      <TableCell colSpan={cols} className="bg-muted/20 px-4 py-3">
+                        <div className="rounded-md border bg-background p-3">
+                          <div className="mb-1 text-[10px] font-medium uppercase text-muted-foreground">
+                            Detalle
+                          </div>
+                          <p className="text-xs leading-relaxed text-muted-foreground whitespace-normal break-words">
+                            {r.detail || 'Sin detalle adicional.'}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
                 )
               })
             )}
           </TableBody>
         </Table>
-      </ScrollArea>
     </div>
   )
 }
