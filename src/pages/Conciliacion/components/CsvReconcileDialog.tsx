@@ -915,7 +915,6 @@ function RowsTable({
             )}
           </TableBody>
         </Table>
-      </ScrollArea>
     </div>
   )
 }
