@@ -463,62 +463,64 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
 
         {/* Solicitudes ya confirmadas (bloqueadas) */}
         {confirmedLinks.length > 0 && (
-          <div className="shrink-0 rounded-lg border bg-emerald-50/40 border-emerald-200">
+          <div className="shrink-0 rounded-lg border bg-emerald-50/40 border-emerald-200 flex flex-col max-h-[40vh]">
             <div className="flex items-center gap-2 px-3 py-2 border-b border-emerald-200 text-xs uppercase tracking-wide text-emerald-800">
               <Lock className="h-3.5 w-3.5" />
               Confirmadas — Pago Programado ({confirmedLinks.length})
             </div>
-            <div className="p-2 flex flex-col gap-2">
-              {confirmedLinks.map((l) => {
-                const pending = refundsByPublicId.get(l.refundId)
-                const fetched = confirmedRefundsMap.get(l.refundId)
-                const fullName: string | undefined =
-                  pending?.fullName ?? fetched?.fullName
-                const rut: string | undefined = pending?.rut ?? fetched?.rut
-                const nroCredito =
-                  resolveCreditNumber(pending) || resolveCreditNumber(fetched)
-                const publicId: string = fetched?.publicId ?? l.refundId
-                // realAmount vive como campo top-level de la solicitud.
-                const realAmountRaw =
-                  pending?.realAmount ??
-                  fetched?.realAmount ??
-                  l.realAmount ??
-                  l.amountApplied
-                const realAmount = Number(realAmountRaw) || 0
-                const loading =
-                  !pending && !fetched && confirmedRefundsQuery.isFetching
-                return (
-                  <div
-                    key={l.id}
-                    className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs w-full"
-                    title="Ya confirmada: no se puede desasociar"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <div className="flex flex-col leading-tight min-w-0 flex-1">
-                      <span className="font-medium truncate">
-                        {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
-                        {rut ? (
-                          <span className="text-muted-foreground font-normal">
-                            {' '}· {rut}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-muted-foreground font-mono truncate text-[11px]">
-                        {nroCredito ? `Crédito ${nroCredito} · ` : ''}{publicId}
-                      </span>
-                    </div>
-                    <div className="ml-auto pl-2 text-right shrink-0">
-                      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                        Devolución real
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="p-2 flex flex-col gap-2">
+                {confirmedLinks.map((l) => {
+                  const pending = refundsByPublicId.get(l.refundId)
+                  const fetched = confirmedRefundsMap.get(l.refundId)
+                  const fullName: string | undefined =
+                    pending?.fullName ?? fetched?.fullName
+                  const rut: string | undefined = pending?.rut ?? fetched?.rut
+                  const nroCredito =
+                    resolveCreditNumber(pending) || resolveCreditNumber(fetched)
+                  const publicId: string = fetched?.publicId ?? l.refundId
+                  // realAmount vive como campo top-level de la solicitud.
+                  const realAmountRaw =
+                    pending?.realAmount ??
+                    fetched?.realAmount ??
+                    l.realAmount ??
+                    l.amountApplied
+                  const realAmount = Number(realAmountRaw) || 0
+                  const loading =
+                    !pending && !fetched && confirmedRefundsQuery.isFetching
+                  return (
+                    <div
+                      key={l.id}
+                      className="flex items-center gap-2 rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs w-full"
+                      title="Ya confirmada: no se puede desasociar"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      <div className="flex flex-col leading-tight min-w-0 flex-1">
+                        <span className="font-medium truncate">
+                          {fullName ?? (loading ? 'Cargando…' : 'Solicitud')}
+                          {rut ? (
+                            <span className="text-muted-foreground font-normal">
+                              {' '}· {rut}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="text-muted-foreground font-mono truncate text-[11px]">
+                          {nroCredito ? `Crédito ${nroCredito} · ` : ''}{publicId}
+                        </span>
                       </div>
-                      <div className="font-semibold text-emerald-700">
-                        {formatCurrency(realAmount)}
+                      <div className="ml-auto pl-2 text-right shrink-0">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Devolución real
+                        </div>
+                        <div className="font-semibold text-emerald-700">
+                          {formatCurrency(realAmount)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
