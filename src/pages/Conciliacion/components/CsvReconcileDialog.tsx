@@ -615,7 +615,8 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
               <>
                 {approvedRows.length} de {validRows.length} aprobada
                 {approvedRows.length === 1 ? '' : 's'} · Suma {formatCurrency(totalToApply)} /{' '}
-                Abono {formatCurrency(abono)}
+                Abono {formatCurrency(abono)} · Real a guardar{' '}
+                <strong>{formatCurrency(totalRealAmount)}</strong>
                 {hasStructuralErrors && ' · hay filas con errores estructurales'}
               </>
             )}
@@ -682,16 +683,34 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
                     Cada solicitud pasará a estado <strong>Pago Programado</strong>.
                   </li>
                   <li>
-                    El <strong>monto del CSV</strong> quedará guardado como{' '}
+                    Al <strong>monto del CSV</strong> se le descontará la{' '}
+                    <strong>prima total TDV</strong> (prima mensual × cuotas
+                    pendientes) y ese resultado se guardará como{' '}
                     <strong>monto real de devolución</strong> de la solicitud.
                   </li>
                   <li>
                     Se registrará una entrada en el historial de la solicitud.
                   </li>
                 </ul>
-                <div className="rounded-md bg-muted/60 p-2 text-xs">
-                  Total a aplicar: <strong>{formatCurrency(totalToApply)}</strong> · Abono
-                  disponible: <strong>{formatCurrency(abono)}</strong>
+                <div className="rounded-md bg-muted/60 p-2 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Abono disponible</span>
+                    <strong className="tabular-nums">{formatCurrency(abono)}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Suma abonos CSV</span>
+                    <strong className="tabular-nums">{formatCurrency(totalToApply)}</strong>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>− Prima total TDV</span>
+                    <span className="tabular-nums">−{formatCurrency(totalPrimaTDV)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1">
+                    <span className="font-medium">Total a guardar como monto real</span>
+                    <strong className="tabular-nums text-emerald-700">
+                      {formatCurrency(totalRealAmount)}
+                    </strong>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Esta acción no se puede deshacer automáticamente.
