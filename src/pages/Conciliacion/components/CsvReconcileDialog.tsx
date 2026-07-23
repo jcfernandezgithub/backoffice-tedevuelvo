@@ -802,10 +802,10 @@ function RowsTable({
   onToggleAll,
   onToggleRow,
 }: RowsTableProps) {
-  const cols = selectable ? 7 : 6
+  const cols = selectable ? 9 : 8
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-auto">
-        <Table className="min-w-[980px]">
+        <Table className="min-w-[1120px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               {selectable && (
@@ -852,6 +852,11 @@ function RowsTable({
                 const diff = est > 0 ? r.monto - est : 0
                 const diffPct = est > 0 ? (diff / est) * 100 : 0
                 const hasDiff = est > 0 && Math.abs(diff) > 0.5
+                const prima = primaTotalTDV(r)
+                const real = montoRealDevolucion(r)
+                const primaKnown =
+                  Boolean(r.matchedNewMonthlyPremium) &&
+                  Boolean(r.matchedRemainingInstallments)
                 return (
                   <Fragment key={r.rowNumber}>
                     <TableRow className={r.approved === false ? 'opacity-60' : undefined}>
@@ -919,6 +924,41 @@ function RowsTable({
                               {diff > 0 ? '+' : ''}
                               {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
                               {diffPct.toFixed(1)}%)
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {primaKnown ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs tabular-nums text-muted-foreground">
+                              −{formatCurrency(prima)}
+                            </span>
+                            <span
+                              className="text-[10px] text-muted-foreground tabular-nums"
+                              title="Prima mensual TDV × cuotas pendientes"
+                            >
+                              {formatCurrency(r.matchedNewMonthlyPremium ?? 0)} ×{' '}
+                              {r.matchedRemainingInstallments ?? 0}
+                            </span>
+                          </div>
+                        ) : (
+                          <span
+                            className="text-[10px] text-amber-700"
+                            title="No hay prima o cuotas pendientes en el snapshot; no se descuenta prima."
+                          >
+                            sin dato
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-semibold tabular-nums text-emerald-700">
+                            {formatCurrency(real)}
+                          </span>
+                          {primaKnown && (
+                            <span className="text-[10px] text-muted-foreground">
+                              monto real de devolución
                             </span>
                           )}
                         </div>
