@@ -99,9 +99,16 @@ export function useExportAllRefunds() {
         setProgress(Math.round((completedPages / totalPages) * 100))
       }
 
-      console.log(`[ExportAll] Fetched ${allItems.length} items`)
+      // Dedupe por id por si el backend repite registros entre páginas
+      const seen = new Set<string>()
+      const deduped = allItems.filter((r) => {
+        if (!r?.id || seen.has(r.id)) return false
+        seen.add(r.id)
+        return true
+      })
+      console.log(`[ExportAll] Fetched ${allItems.length} items (${deduped.length} únicos de ${total})`)
       setIsExporting(false)
-      return allItems
+      return deduped
 
     } catch (error) {
       console.error('[ExportAll] Error:', error)
