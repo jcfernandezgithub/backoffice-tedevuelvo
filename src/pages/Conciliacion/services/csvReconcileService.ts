@@ -210,7 +210,20 @@ export function matchAgainstSystem(
     if (row.status === 'format_error' || row.status === 'duplicated_in_csv') return row
 
     const key = normalizeOp(row.numero_operacion)
-    const matches = byOp.get(key) ?? []
+    let matches = byOp.get(key) ?? []
+
+    // Cuando varias solicitudes comparten nroCredito (típicamente desgravamen +
+    // cesantía sobre el mismo crédito) desambiguar por número de póliza si el
+    // CSV lo trae.
+    if (matches.length > 1) {
+      const polizaKey = normalizeOp(row.poliza)
+      if (polizaKey) {
+        const byPoliza = matches.filter(
+          (m) => normalizeOp((m as any).nroPoliza ?? '') === polizaKey,
+        )
+        if (byPoliza.length >= 1) matches = byPoliza
+      }
+    }
 
     if (matches.length === 0) {
       return {
@@ -223,7 +236,7 @@ export function matchAgainstSystem(
       return {
         ...row,
         status: 'duplicated_in_system',
-        detail: `Hay ${matches.length} solicitudes con el mismo número de operación. Concilia manualmente.`,
+        detail: `Hay ${matches.length} solicitudes con el mismo número de operación y no fue posible desambiguar por póliza. Agrega la columna "poliza" al CSV o concilia manualmente.`,
       }
     }
     const refund = matches[0]
