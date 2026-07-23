@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Dialog,
@@ -781,10 +781,10 @@ function RowsTable({
   onToggleAll,
   onToggleRow,
 }: RowsTableProps) {
-  const cols = selectable ? 8 : 7
+  const cols = selectable ? 7 : 6
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-auto">
-        <Table className="min-w-[1200px]">
+        <Table className="min-w-[980px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               {selectable && (
@@ -807,7 +807,6 @@ function RowsTable({
                 </div>
               </TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Detalle</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -824,92 +823,97 @@ function RowsTable({
                 const diffPct = est > 0 ? (diff / est) * 100 : 0
                 const hasDiff = est > 0 && Math.abs(diff) > 0.5
                 return (
-                  <TableRow
-                    key={r.rowNumber}
-                    className={r.approved === false ? 'opacity-60' : undefined}
-                  >
-                    {selectable && (
-                      <TableCell>
-                        {r.status === 'valid' ? (
-                          <Checkbox
-                            checked={r.approved !== false}
-                            onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
-                            aria-label={`Aprobar fila ${r.rowNumber}`}
-                          />
+                  <Fragment key={r.rowNumber}>
+                    <TableRow className={r.approved === false ? 'opacity-60' : undefined}>
+                      {selectable && (
+                        <TableCell>
+                          {r.status === 'valid' ? (
+                            <Checkbox
+                              checked={r.approved !== false}
+                              onCheckedChange={(v) => onToggleRow?.(r.rowNumber, v === true)}
+                              aria-label={`Aprobar fila ${r.rowNumber}`}
+                            />
+                          ) : (
+                            <span className="text-muted-foreground/50 text-xs">—</span>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
+                      <TableCell className="text-sm max-w-[240px]">
+                        {r.matchedPublicId ? (
+                          <div className="flex flex-col">
+                            <span className="font-mono text-xs text-primary">
+                              {r.matchedPublicId}
+                            </span>
+                            <span className="truncate text-xs" title={r.matchedFullName}>
+                              {r.matchedFullName || r.nombre_cliente || '—'}
+                            </span>
+                            {r.rut && (
+                              <span className="text-[10px] font-mono text-muted-foreground">
+                                {r.rut}
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-muted-foreground/50 text-xs">—</span>
+                          <div className="flex flex-col">
+                            <span
+                              className="truncate text-xs"
+                              title={r.nombre_cliente}
+                            >
+                              {r.nombre_cliente || '—'}
+                            </span>
+                            {r.rut && (
+                              <span className="text-[10px] font-mono text-muted-foreground">
+                                {r.rut}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </TableCell>
-                    )}
-                    <TableCell className="text-xs tabular-nums">{r.rowNumber}</TableCell>
-                    <TableCell className="text-sm max-w-[240px]">
-                      {r.matchedPublicId ? (
-                        <div className="flex flex-col">
-                          <span className="font-mono text-xs text-primary">
-                            {r.matchedPublicId}
+                      <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                        {est > 0 ? formatCurrency(est) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm font-medium tabular-nums">
+                            {formatCurrency(r.monto)}
                           </span>
-                          <span className="truncate text-xs" title={r.matchedFullName}>
-                            {r.matchedFullName || r.nombre_cliente || '—'}
-                          </span>
-                          {r.rut && (
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              {r.rut}
+                          {hasDiff && (
+                            <span
+                              className={`text-[10px] tabular-nums ${
+                                diff > 0 ? 'text-amber-700' : 'text-sky-700'
+                              }`}
+                              title="Diferencia respecto al monto estimado del sistema"
+                            >
+                              {diff > 0 ? '+' : ''}
+                              {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
+                              {diffPct.toFixed(1)}%)
                             </span>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex flex-col">
-                          <span
-                            className="truncate text-xs"
-                            title={r.nombre_cliente}
-                          >
-                            {r.nombre_cliente || '—'}
-                          </span>
-                          {r.rut && (
-                            <span className="text-[10px] font-mono text-muted-foreground">
-                              {r.rut}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs font-mono">{r.numero_operacion || '—'}</TableCell>
-                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                      {est > 0 ? formatCurrency(est) : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="text-sm font-medium tabular-nums">
-                          {formatCurrency(r.monto)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
+                        >
+                          {STATUS_LABELS[r.status]}
                         </span>
-                        {hasDiff && (
-                          <span
-                            className={`text-[10px] tabular-nums ${
-                              diff > 0 ? 'text-amber-700' : 'text-sky-700'
-                            }`}
-                            title="Diferencia respecto al monto estimado del sistema"
-                          >
-                            {diff > 0 ? '+' : ''}
-                            {formatCurrency(diff)} ({diffPct > 0 ? '+' : ''}
-                            {diffPct.toFixed(1)}%)
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] ${STATUS_STYLES[r.status]}`}
-                      >
-                        {STATUS_LABELS[r.status]}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className="text-xs text-muted-foreground min-w-[320px] w-[360px] whitespace-normal break-words align-top pr-4"
-                      title={r.detail}
-                    >
-                      {r.detail}
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className={r.approved === false ? 'opacity-60 hover:bg-transparent' : 'hover:bg-transparent'}>
+                      <TableCell colSpan={cols} className="bg-muted/20 px-4 py-3">
+                        <div className="rounded-md border bg-background p-3">
+                          <div className="mb-1 text-[10px] font-medium uppercase text-muted-foreground">
+                            Detalle
+                          </div>
+                          <p className="text-xs leading-relaxed text-muted-foreground whitespace-normal break-words">
+                            {r.detail || 'Sin detalle adicional.'}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </Fragment>
                 )
               })
             )}
