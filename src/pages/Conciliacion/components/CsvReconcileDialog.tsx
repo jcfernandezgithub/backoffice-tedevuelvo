@@ -785,7 +785,7 @@ function RowsTable({
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
       <ScrollArea className="h-full w-full">
-        <Table className="min-w-[1050px]">
+        <Table className="min-w-[1200px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               {selectable && (
@@ -905,7 +905,7 @@ function RowsTable({
                       </span>
                     </TableCell>
                     <TableCell
-                      className="text-xs text-muted-foreground min-w-[280px] max-w-[420px] whitespace-normal break-words align-top"
+                      className="text-xs text-muted-foreground min-w-[320px] w-[360px] whitespace-normal break-words align-top pr-4"
                       title={r.detail}
                     >
                       {r.detail}
