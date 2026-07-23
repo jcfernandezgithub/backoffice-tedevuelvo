@@ -13,6 +13,19 @@
 - Si el CSV no trae póliza o no es suficiente para desambiguar, se mantiene el mensaje de advertencia indicando al usuario que agregue la columna o concilie manualmente.
 - Esta mejora reduce falsos positivos de duplicados y permite conciliar masivamente operaciones que agrupan ambos seguros.
 
+#### Conciliación CSV: cálculo real de devolución y transición forzada a Pago Programado
+- El wizard de conciliación CSV a nivel de movimiento ya no guarda el monto informado en la planilla directamente como `realAmount`.
+- Ahora se calcula la **devolución real** como: `monto CSV − (prima mensual TDV × cuotas pendientes confirmadas)`.
+- La tabla de vista previa despliega el desglose completo: **Abono CSV**, **− Prima TDV** y **Monto real** resaltado, para que el usuario revise el valor antes de confirmar.
+- Al confirmar, cada solicitud pasa a estado **Pago Programado** enviando `force: true` en el `PATCH`, permitiendo la transición directa desde **Ingresada** sin depender de las validaciones normales del flujo de estados.
+- El monto real calculado se guarda en el snapshot y se registra en el historial de la solicitud.
+
+#### Conciliación manual: UX para movimientos totalmente conciliados y scroll independiente
+- Al abrir un movimiento bancario ya conciliado (disponible < 1 % del abono, cubriendo residuos por redondeo de primas), la sección **Agregar solicitud** y el panel de selección se ocultan automáticamente.
+- El listado de solicitudes confirmadas (Pago Programado) ocupa todo el alto disponible del diálogo e incluye un **scrollbar** para revisar cualquier cantidad de solicitudes sin que el contenido se corte.
+- El footer muestra el mensaje **"Movimiento totalmente conciliado"** y solo presenta el botón **Cerrar**, eliminando las acciones de borrador y confirmación que no aplican en este estado.
+- Para movimientos parcialmente conciliados, la sección de confirmadas conserva una altura máxima controlada (`max-h-[40vh]`) para mantener el resto del formulario visible.
+
 ### Versión 4.2.1 - 2026-07-15
 
 #### Accesos por página desde el login
