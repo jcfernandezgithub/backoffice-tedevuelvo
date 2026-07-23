@@ -317,7 +317,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-[min(96vw,1200px)] max-h-[92vh] overflow-hidden flex flex-col gap-4">
+      <DialogContent className="max-w-[min(96vw,1200px)] h-[92vh] overflow-hidden flex flex-col gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
@@ -784,8 +784,8 @@ function RowsTable({
   const cols = selectable ? 8 : 7
   return (
     <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-      <ScrollArea className="h-full">
-        <Table>
+      <ScrollArea className="h-full w-full">
+        <Table className="min-w-[1050px]">
           <TableHeader className="sticky top-0 bg-background z-10">
             <TableRow>
               {selectable && (
