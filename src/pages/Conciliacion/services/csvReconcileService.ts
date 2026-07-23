@@ -39,6 +39,10 @@ export interface ProcessedRow {
   matchedEstimated?: number
   /** Nombre completo del cliente asociado (para mostrar en la tabla). */
   matchedFullName?: string
+  /** Prima mensual del nuevo seguro TDV — desde calculationSnapshot. */
+  matchedNewMonthlyPremium?: number
+  /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
+  matchedRemainingInstallments?: number
   /** Aprobado explícitamente por el usuario para conciliar. */
   approved?: boolean
   matchedLinkedMovement?: string
