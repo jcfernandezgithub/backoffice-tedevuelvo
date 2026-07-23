@@ -48,6 +48,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { usePendingRefunds } from '../hooks/usePendingRefunds'
 import { cartolaLinksService } from '../services/cartolaLinksService'
+import { refundAdminApi } from '@/services/refundAdminApi'
 import { Checkbox } from '@/components/ui/checkbox'
 
 import {
@@ -225,6 +226,7 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
 
     const targets = approvedRows.slice()
     let linkError: string | null = null
+    const statusErrorByRow = new Map<number, string>()
 
     setProgressLabel('Asociando solicitudes al movimiento…')
     setProgress(80)
@@ -237,6 +239,21 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           realAmount: montoRealDevolucion(r),
         })),
       )
+      // Transición de estado a Pago Programado por solicitud
+      setProgressLabel('Actualizando estado de las solicitudes…')
+      setProgress(92)
+      for (const r of targets) {
+        try {
+          await refundAdminApi.updateStatus(r.matchedPublicId!, {
+            status: 'payment_scheduled' as any,
+            realAmount: montoRealDevolucion(r),
+            force: true,
+            note: `Conciliación CSV movimiento ${movement.documentoNumero}`,
+          })
+        } catch (err: any) {
+          statusErrorByRow.set(r.rowNumber, err?.message ?? 'No se pudo cambiar el estado')
+        }
+      }
     } catch (err: any) {
       linkError = err?.message ?? 'No se pudo asociar al movimiento bancario.'
     }
@@ -249,6 +266,14 @@ export function CsvReconcileDialog({ movement, open, onOpenChange, onApplied }: 
           ...r,
           status: 'apply_error',
           detail: linkError,
+        }
+      }
+      const statusErr = statusErrorByRow.get(r.rowNumber)
+      if (statusErr) {
+        return {
+          ...r,
+          status: 'apply_error',
+          detail: `Abono asociado pero el estado no cambió: ${statusErr}`,
         }
       }
       return {
