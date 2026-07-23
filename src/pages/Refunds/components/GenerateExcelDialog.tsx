@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+import { refundAdminApi } from '@/services/refundAdminApi'
 
 interface RefundExcelData {
   policyNumber: string
@@ -119,7 +120,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     }
   }
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const missingData = selectedRefunds.filter(refund => {
       const data = refundData[refund.id] || EMPTY_REFUND_DATA
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
@@ -129,6 +130,34 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       toast({
         title: 'Error',
         description: `Debes completar la información de ${missingData.length} solicitud(es)`,
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Asignar/obtener nroFolio para cada solicitud en paralelo
+    let folioByRefundId: Record<string, string> = {}
+    try {
+      const results = await Promise.all(
+        selectedRefunds.map(async (r) => {
+          try {
+            const res = await refundAdminApi.assignFolio(r.publicId)
+            return [r.id, res.nroFolio] as const
+          } catch {
+            return [r.id, ''] as const
+          }
+        })
+      )
+      folioByRefundId = Object.fromEntries(results)
+    } catch {
+      // continua con folios vacíos si algo falla
+    }
+
+    const missingFolio = selectedRefunds.filter((r) => !folioByRefundId[r.id])
+    if (missingFolio.length > 0) {
+      toast({
+        title: 'Error al asignar folios',
+        description: `No se pudo obtener el folio de ${missingFolio.length} solicitud(es)`,
         variant: 'destructive',
       })
       return
@@ -194,7 +223,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         'Ramo comercial': 'Desgravamen',
         Producto: 'Fallecimiento',
         'Poliza N°': data.policyNumber,
-        'Número del certificado (Folio)': refund.id,
+        'Número del certificado (Folio)': folioByRefundId[refund.id] || '',
         'Rut Cliente': rutNumber,
         'DV Cliente': rutDV,
         Nombre_Cliente: refund.fullName,
