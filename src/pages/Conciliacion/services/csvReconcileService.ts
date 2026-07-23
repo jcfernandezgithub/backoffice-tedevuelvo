@@ -39,6 +39,10 @@ export interface ProcessedRow {
   matchedEstimated?: number
   /** Nombre completo del cliente asociado (para mostrar en la tabla). */
   matchedFullName?: string
+  /** Prima mensual del nuevo seguro TDV — desde calculationSnapshot. */
+  matchedNewMonthlyPremium?: number
+  /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
+  matchedRemainingInstallments?: number
   /** Aprobado explícitamente por el usuario para conciliar. */
   approved?: boolean
   matchedLinkedMovement?: string
@@ -249,6 +253,8 @@ export function matchAgainstSystem(
         matchedRefundId: refund.id,
         matchedEstimated: refund.estimatedAmount,
         matchedFullName: refund.fullName,
+        matchedNewMonthlyPremium: refund.newMonthlyPremium,
+        matchedRemainingInstallments: refund.confirmedRemainingInstallments,
         detail: `La solicitud ${refund.publicId} ya está asociada a este movimiento.`,
       }
     }
@@ -260,6 +266,8 @@ export function matchAgainstSystem(
         matchedRefundId: refund.id,
         matchedEstimated: refund.estimatedAmount,
         matchedFullName: refund.fullName,
+        matchedNewMonthlyPremium: refund.newMonthlyPremium,
+        matchedRemainingInstallments: refund.confirmedRemainingInstallments,
         matchedLinkedMovement: linkedDoc,
         detail: `La solicitud ${refund.publicId} ya está asociada al movimiento ${linkedDoc}.`,
       }
@@ -271,6 +279,8 @@ export function matchAgainstSystem(
       matchedRefundId: refund.id,
       matchedEstimated: refund.estimatedAmount,
       matchedFullName: refund.fullName,
+      matchedNewMonthlyPremium: refund.newMonthlyPremium,
+      matchedRemainingInstallments: refund.confirmedRemainingInstallments,
       approved: true,
       detail: 'Coincide con una solicitud Ingresada. Lista para conciliar.',
     }
