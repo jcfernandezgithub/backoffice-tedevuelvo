@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.2
+## Versión 4.2.3
 
 ## Changelog
+
+### Versión 4.2.3 - 2026-07-23
+
+#### Altas CIA: folio real de certificado en exportación
+- En la generación del archivo Excel de **Altas CIA** (`GenerateExcelDialog`), la columna **"Número del certificado (Folio)"** ahora usa el `nroFolio` real de la solicitud en lugar de un identificador interno.
+- Antes de generar el archivo, el frontend obtiene/assigna el folio de cada solicitud seleccionada vía `refundAdminApi.assignFolio` (ejecutado en paralelo).
+- Si una solicitud no puede obtener folio, se detiene la generación y se notifica al usuario para evitar enviar registros sin certificado.
+- Este cambio alinea el archivo de altas con el folio generado por el backend y visibilizado en el certificado de cobertura.
 
 ### Versión 4.2.2 - 2026-07-23
 
