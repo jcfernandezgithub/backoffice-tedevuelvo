@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.3
+## Versión 4.2.4
 
 ## Changelog
+
+### Versión 4.2.4 - 2026-07-24
+
+#### Calculadora: actualización de tasas Banco de Chile
+- Se actualizaron las tasas de cesantía para **Banco de Chile** en los archivos JSON de tasas (`tasas_cesantia_banco.json` y `tasas_formateadas_te_devuelvo.json`).
+- El nuevo valor homologado para Banco de Chile es **0,00189 mensual** para todos los tramos, alineando el cálculo con la condición comercial vigente.
+- La calculadora utiliza estas tasas directamente desde el JSON local, por lo que la simulación de devolución para clientes de Banco de Chile refleja inmediatamente la nueva tasa sin requerir cambios adicionales en el código.
 
 ### Versión 4.2.3 - 2026-07-23
 
