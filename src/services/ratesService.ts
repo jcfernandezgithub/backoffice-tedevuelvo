@@ -98,6 +98,11 @@ async function handle(res: Response, action: string) {
   if (!res.ok) {
     const message = body?.message;
     const detail = Array.isArray(message) ? message.join(', ') : message || text || res.statusText;
+    if (res.status === 403) {
+      throw new Error(
+        `No se pudo ${action}: tu usuario no tiene permisos de escritura sobre tasas (403). ${detail || ''}`.trim(),
+      );
+    }
     throw new Error(`No se pudo ${action}: ${detail}`);
   }
   return body;
