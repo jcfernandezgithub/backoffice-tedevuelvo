@@ -110,12 +110,109 @@ async function handle(res: Response, action: string) {
 
 const enc = encodeURIComponent;
 
+// ── Normalización de respuestas ──────────────────────────────────────────────
+// El backend puede responder envuelto ({ data }, { items }, { results }) o como
+// arreglo de documentos ([{ banco, tramos: [...] }]). Normalizamos todo al
+// formato Record que consumen la calculadora y la UI.
+
+function unwrap(raw: any): any {
+  if (!raw) return raw;
+  if (Array.isArray(raw)) return raw;
+  for (const k of ['data', 'items', 'results', 'records']) {
+    if (raw[k] !== undefined) return raw[k];
+  }
+  return raw;
+}
+
+function num(v: any): number {
+  const n = typeof v === 'string' ? Number(v) : v;
+  return Number.isFinite(n) ? n : 0;
+}
+
+function normalizeMonthly(raw: any): Record<string, MonthlyRateRanges> {
+  const src = unwrap(raw);
+  if (!src) return {};
+  const out: Record<string, MonthlyRateRanges> = {};
+
+  const buildRanges = (tramos: any): MonthlyRateRanges => {
+    const ranges: MonthlyRateRanges = {};
+    if (Array.isArray(tramos)) {
+      tramos.forEach((t: any, i: number) => {
+        const name = t?.tramo ?? t?.nombre ?? t?.name ?? `Tramo ${i + 1}`;
+        ranges[name] = {
+          desde: num(t?.desde),
+          hasta: t?.hasta === null || t?.hasta === undefined ? null : num(t.hasta),
+          tasa_mensual: num(t?.tasa_mensual ?? t?.tasa),
+        };
+      });
+    } else if (tramos && typeof tramos === 'object') {
+      for (const [name, t] of Object.entries<any>(tramos)) {
+        if (!t || typeof t !== 'object') continue;
+        ranges[name] = {
+          desde: num(t?.desde),
+          hasta: t?.hasta === null || t?.hasta === undefined ? null : num(t.hasta),
+          tasa_mensual: num(t?.tasa_mensual ?? t?.tasa),
+        };
+      }
+    }
+    return ranges;
+  };
+
+  if (Array.isArray(src)) {
+    for (const doc of src) {
+      const owner = doc?.banco ?? doc?.nombre ?? doc?.name ?? doc?.entidad;
+      if (!owner) continue;
+      out[owner] = buildRanges(doc?.tramos ?? doc?.rangos ?? doc);
+    }
+    return out;
+  }
+
+  for (const [owner, value] of Object.entries<any>(src)) {
+    const ranges = buildRanges(value?.tramos ?? value);
+    if (Object.keys(ranges).length) out[owner] = ranges;
+  }
+  return out;
+}
+
+function normalizeMatrix(raw: any): BankRateMatrixResponse {
+  const src = unwrap(raw);
+  if (!src) return {};
+  if (!Array.isArray(src)) return src as BankRateMatrixResponse;
+  const out: BankRateMatrixResponse = {};
+  for (const doc of src) {
+    const bank = doc?.banco ?? doc?.nombre ?? doc?.name;
+    if (!bank) continue;
+    const groups: AgeGroupRates = {};
+    const gruposEdad = doc?.gruposEdad ?? doc?.grupos ?? [];
+    for (const g of Array.isArray(gruposEdad) ? gruposEdad : []) {
+      const gname = g?.grupo ?? g?.nombre ?? g?.name;
+      if (!gname) continue;
+      const amounts: AmountRates = {};
+      for (const m of Array.isArray(g?.montos) ? g.montos : []) {
+        const terms: TermRates = {};
+        for (const p of Array.isArray(m?.plazos) ? m.plazos : []) {
+          terms[String(p?.plazo)] = num(p?.tasa);
+        }
+        amounts[String(num(m?.monto))] = terms;
+      }
+      groups[gname] = amounts;
+    }
+    out[bank] = groups;
+  }
+  return out;
+}
+
+function nonEmpty<T extends object>(value: T, fallback: T): T {
+  return value && Object.keys(value).length > 0 ? value : fallback;
+}
+
 // ── API ──────────────────────────────────────────────────────────────────────
 
 export const ratesService = {
   // Tasas bancarias mensuales (cesantía)
   async listBankRates(): Promise<BankRatesResponse> {
-    const data = (await handle(await authenticatedFetch('/bank-rates'), 'cargar tasas bancarias')) || {};
+    const raw = await handle(await authenticatedFetch('/bank-rates'), 'cargar tasas bancarias');
+    const data = nonEmpty(normalizeMonthly(raw), getBankCesantiaRates());
     writeCache('bank', data);
     return data as BankRatesResponse;
   },
@@ -152,7 +249,8 @@ export const ratesService = {
 
   // Tasas Te Devuelvo
   async listTeDevuelvoRates(): Promise<TeDevuelvoRatesResponse> {
-    const data = (await handle(await authenticatedFetch('/te-devuelvo-rates'), 'cargar tasas Te Devuelvo')) || {};
+    const raw = await handle(await authenticatedFetch('/te-devuelvo-rates'), 'cargar tasas Te Devuelvo');
+    const data = nonEmpty(normalizeMonthly(raw), getTdvCesantiaRates());
     writeCache('tdv', data);
     return data as TeDevuelvoRatesResponse;
   },
@@ -189,7 +287,8 @@ export const ratesService = {
 
   // Matriz bancaria (desgravamen)
   async listBankRateMatrix(): Promise<BankRateMatrixResponse> {
-    const data = (await handle(await authenticatedFetch('/bank-rate-matrix'), 'cargar la matriz de tasas')) || {};
+    const raw = await handle(await authenticatedFetch('/bank-rate-matrix'), 'cargar la matriz de tasas');
+    const data = nonEmpty(normalizeMatrix(raw), getBankRateMatrix());
     writeCache('matrix', data);
     return data as BankRateMatrixResponse;
   },
