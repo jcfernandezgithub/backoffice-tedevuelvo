@@ -203,6 +203,7 @@ const obtenerRangoTramo = (tramo: string): { desde: number; hasta: number | null
 
 const obtenerTasaCesantiaBanco = (banco: string, monto: number): number | null => {
   try {
+    const tasasCesantiaBanco = getBankCesantiaRates();
     const tramo = obtenerTramo(monto);
     const key = resolveInstitutionKey(banco, Object.keys(tasasCesantiaBanco));
     if (!key) {
@@ -221,10 +222,11 @@ const obtenerTasaCesantiaBanco = (banco: string, monto: number): number | null =
 };
 
 const obtenerTasaCesantiaPreferencial = (monto: number): number => {
+  const tasasCesantiaTeDevuelvo = getTdvCesantiaRates();
   const tramo = obtenerTramo(monto);
-  const datos = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA;
+  const datos = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA ?? {};
   const datosTramo = datos[tramo as keyof typeof datos];
-  return datosTramo.tasa_mensual;
+  return datosTramo?.tasa_mensual ?? 0;
 };
 
 const obtenerTasaBanco = (
@@ -234,6 +236,7 @@ const obtenerTasaBanco = (
   cuotas: number,
 ): { tasa: number; cuotasUtilizadas: number; montoRedondeado: number } | null => {
   try {
+    const tasasSeguro = getBankRateMatrix();
     const tramo = edad <= 55 ? "hasta_55" : "desde_56";
     const montoRedondeado = Math.round(monto / 1000000) * 1000000;
     const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 100000000);
