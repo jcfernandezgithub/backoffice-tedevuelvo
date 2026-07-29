@@ -27,9 +27,13 @@ import AjustesPage from "@/pages/Ajustes";
 import NominaDevoluciones from "@/pages/NominaDevoluciones";
 import ConciliacionPage from "@/pages/Conciliacion";
 import ProcesosMasivosPage from "@/pages/ProcesosMasivos";
+import { usePreloadRates } from "@/hooks/useRates";
+
 const queryClient = new QueryClient();
 
-const Shell = () => (
+const Shell = () => {
+  usePreloadRates();
+  return (
   <SidebarProvider>
     <div className="flex min-h-screen w-full">
       <AppSidebar />
@@ -41,7 +45,8 @@ const Shell = () => (
       </SidebarInset>
     </div>
   </SidebarProvider>
-);
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

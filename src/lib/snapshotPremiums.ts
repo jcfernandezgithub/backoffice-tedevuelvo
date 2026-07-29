@@ -14,7 +14,7 @@
  *      newMonthlyPremium     = saldoInsoluto × tasaTDV
  *      monthlySaving         = currentMonthlyPremium − newMonthlyPremium
  */
-import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+import { getBankRateMatrix } from '@/services/ratesService'
 import { obtenerTasaPreferencialTDV } from '@/lib/calculadoraUtils'
 
 const MAPEO_INSTITUCIONES: Record<string, string> = {
@@ -62,7 +62,7 @@ export function getRatesForSnapshot(
 
   let tasaBanco: number | null = null
   try {
-    const datosBanco = (tasasSeguro as any)[bancoKey]
+    const datosBanco = (getBankRateMatrix() as any)[bancoKey]
     if (datosBanco) {
       const datosTramo = datosBanco[tramo]
       const montoRedondeado = Math.min(

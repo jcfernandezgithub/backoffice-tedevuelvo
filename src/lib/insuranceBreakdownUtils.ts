@@ -1,5 +1,4 @@
-import tasasCesantiaBanco from '@/data/tasas_cesantia_banco.json'
-import tasasCesantiaTeDevuelvo from '@/data/tasas_cesantia_te_devuelvo.json'
+import { getBankCesantiaRates, getTdvCesantiaRates } from '@/services/ratesService'
 
 /** Maps institutionId (lowercase) to cesantía JSON key */
 const INSTITUTION_MAP: Record<string, string> = {
@@ -99,13 +98,13 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   let cesantiaTasaBanco = 0
   let cesantiaTasaTDV = 0
 
-  const bankData = tasasCesantiaBanco[bankKey as keyof typeof tasasCesantiaBanco]
+  const bankData = getBankCesantiaRates()[bankKey]
   if (bankData) {
     const tramoData = bankData[tramo as keyof typeof bankData] as any
     if (tramoData) cesantiaTasaBanco = tramoData.tasa_mensual
   }
 
-  const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
+  const tdvData = getTdvCesantiaRates().TE_DEVUELVO_CESANTIA ?? {}
   const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
   if (tdvTramo) cesantiaTasaTDV = tdvTramo.tasa_mensual
 
@@ -181,7 +180,7 @@ export function computePureCesantiaTotalTDV(snapshot: any): number | null {
   if (!saldoInsoluto || !remainingInstallments) return null
 
   const tramo = getTramo(saldoInsoluto)
-  const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
+  const tdvData = getTdvCesantiaRates().TE_DEVUELVO_CESANTIA ?? {}
   const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
   const tasaTDV = tdvTramo?.tasa_mensual || 0
   if (!tasaTDV) return null
