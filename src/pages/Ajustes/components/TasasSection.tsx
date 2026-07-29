@@ -65,14 +65,6 @@ function sortTramoKeys(keys: string[]): string[] {
   });
 }
 
-function toTramoInputs(ranges: MonthlyRateRanges): RateRangeInput[] {
-  return sortTramoKeys(Object.keys(ranges)).map((tramo, i) => ({
-    tramo,
-    orden: i + 1,
-    ...ranges[tramo],
-  }));
-}
-
 function getTasaColorClass(tasa: number, minTasa: number, maxTasa: number): string {
   if (maxTasa === minTasa) return '';
   const ratio = (tasa - minTasa) / (maxTasa - minTasa);
