@@ -45,7 +45,8 @@ const Shell = () => {
       </SidebarInset>
     </div>
   </SidebarProvider>
-);
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
