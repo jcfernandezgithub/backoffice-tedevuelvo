@@ -1,6 +1,8 @@
-import tasasSeguro from "../data/tasas_formateadas_te_devuelvo.json";
-import tasasCesantiaBanco from "../data/tasas_cesantia_banco.json";
-import tasasCesantiaTeDevuelvo from "../data/tasas_cesantia_te_devuelvo.json";
+import {
+  getBankRateMatrix,
+  getBankCesantiaRates,
+  getTdvCesantiaRates,
+} from "@/services/ratesService";
 import { formatCurrency } from "./formatters";
 
 // ============================================================================
