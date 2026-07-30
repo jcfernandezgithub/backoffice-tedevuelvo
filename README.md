@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.4
+## Versión 4.2.5
 
 ## Changelog
+
+### Versión 4.2.5 - 2026-07-30
+
+#### Gestión de tasas para cálculo en vivo (Ajustes)
+- Se reemplazó el uso de los archivos JSON estáticos (`tasas_cesantia_banco.json`, `tasas_cesantia_te_devuelvo.json`) por un servicio backend dedicado para obtener tasas de cesantía y desgravamen.
+- Nueva sección **Tasas para Cálculo** en `/ajustes` (antes *Tasas de referencia*) que permite visualizar, editar y mantener los tramos de cesantía y la matriz de tasas de desgravamen de forma centralizada.
+- El servicio `ratesService` normaliza las respuestas del backend, gestiona caché en memoria y `localStorage`, y expone hooks (`useRates`) para consumo en la calculadora y el desglose de primas.
+- La calculadora y el desglose de seguros ahora obtienen las tasas en tiempo real desde el servicio, manteniendo un fallback a los JSON locales cuando no hay conectividad.
+- Los cambios de tasas son inmediatamente aplicados a la simulación de devoluciones tanto en el portal **Te Devuelvo** como en la **Calculadora interna**.
+
+#### Confirmación de ediciones críticas de tasas
+- Antes de guardar cualquier modificación a tramos de cesantía o celdas de desgravamen, el sistema muestra un diálogo de confirmación con:
+  - Diferencia visual (antes/después) de los valores modificados.
+  - Aviso explícito del impacto inmediato en el portal público y la calculadora interna.
+  - Checkbox obligatorio de reconocimiento para habilitar el botón **Aplicar cambio**.
+- Esta mejora reduce el riesgo de modificar valores sensibles que afectan el cálculo de devoluciones en producción.
+
+#### Simplificación de matriz de desgravamen
+- Se eliminó la funcionalidad **Eliminar matriz** de la sección de tasas de desgravamen, manteniendo solo la edición de celdas existentes.
+- Se limpiaron mutadores y métodos del servicio que ya no son necesarios.
 
 ### Versión 4.2.4 - 2026-07-24
 
