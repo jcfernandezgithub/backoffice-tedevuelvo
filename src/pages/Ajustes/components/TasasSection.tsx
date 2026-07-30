@@ -842,15 +842,6 @@ function TablaDesgravamenBancos() {
           <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
             <Plus className="h-3.5 w-3.5" /> Nuevo banco
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 text-destructive hover:text-destructive"
-            disabled={!bancoSeleccionado}
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Eliminar matriz
-          </Button>
         </div>
       </div>
 
