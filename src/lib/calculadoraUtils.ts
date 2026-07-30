@@ -102,7 +102,7 @@ const normalizar = (s: string): string =>
  * acentos, y variaciones frecuentes (Chile ↔ BANCO CHILE, Forum ↔ FORUM
  * SERVICIOS FINANCIEROS, Chevrolet SF ↔ CHEVROLET, etc.).
  */
-const resolveInstitutionKey = (
+export const resolveInstitutionKey = (
   input: string,
   availableKeys: string[],
 ): string | null => {

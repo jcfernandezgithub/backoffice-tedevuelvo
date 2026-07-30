@@ -1,4 +1,5 @@
 import { getBankCesantiaRates, getTdvCesantiaRates } from '@/services/ratesService'
+import { resolveInstitutionKey } from '@/lib/calculadoraUtils'
 
 /** Maps institutionId (lowercase) to cesantía JSON key */
 const INSTITUTION_MAP: Record<string, string> = {
@@ -92,13 +93,23 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   const desgDevolucion = (desgPrimaBanco - desgPrimaTDV) * remainingInstallments
 
   // --- Cesantía (on-the-fly) ---
-  const bankKey = INSTITUTION_MAP[(institutionId || '').toLowerCase()] || (institutionId || '').toUpperCase()
+  const rawInstitution =
+    institutionId || snapshot.institution || snapshot.institutionName || snapshot.banco || ''
+  const bankRates = getBankCesantiaRates()
+  const mapped = INSTITUTION_MAP[String(rawInstitution).toLowerCase()]
+  const bankKey =
+    (mapped && bankRates[mapped] ? mapped : null) ||
+    resolveInstitutionKey(String(rawInstitution), Object.keys(bankRates)) ||
+    String(rawInstitution).toUpperCase()
   const tramo = getTramo(saldoInsoluto)
 
   let cesantiaTasaBanco = 0
   let cesantiaTasaTDV = 0
 
-  const bankData = getBankCesantiaRates()[bankKey]
+  const bankData = bankRates[bankKey]
+  if (!bankData) {
+    console.warn('[breakdown] Sin tasas de cesantía para institución:', rawInstitution)
+  }
   if (bankData) {
     const tramoData = bankData[tramo as keyof typeof bankData] as any
     if (tramoData) cesantiaTasaBanco = tramoData.tasa_mensual
