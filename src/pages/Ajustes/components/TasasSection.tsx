@@ -911,7 +911,7 @@ function TablaDesgravamenBancos() {
                         {typeof tasa === 'number' ? (
                           <button
                             className={`inline-block font-mono text-xs font-semibold px-2 py-1 rounded-md hover:ring-2 hover:ring-primary/40 transition-all ${colorClass}`}
-                            onClick={() => setCellEdit({ monto, plazo: c, valor: String(tasa * 100) })}
+                            onClick={() => setCellEdit({ monto, plazo: c, valor: String(tasa * 100), original: tasa })}
                             title="Editar tasa"
                           >
                             {(tasa * 100).toFixed(4)}%
@@ -963,14 +963,41 @@ function TablaDesgravamenBancos() {
               onChange={(e) => setCellEdit((p) => (p ? { ...p, valor: e.target.value } : p))}
             />
           </div>
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-muted-foreground">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <span>Cambio crítico: impacta de inmediato los cálculos de devolución en el portal Te Devuelvo y la Calculadora.</span>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCellEdit(null)}>Cancelar</Button>
-            <Button onClick={handleSaveCell} disabled={updateMatrixRate.isPending}>
-              {updateMatrixRate.isPending ? 'Guardando…' : 'Guardar'}
+            <Button
+              onClick={() => {
+                if (!cellEdit || !isFinite(Number(cellEdit.valor)) || cellEdit.valor.trim() === '') {
+                  toast.error('Tasa inválida');
+                  return;
+                }
+                setConfirmCell(true);
+              }}
+              disabled={updateMatrixRate.isPending}
+            >
+              {updateMatrixRate.isPending ? 'Guardando…' : 'Revisar y guardar'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CriticalRateConfirmDialog
+        open={confirmCell}
+        onOpenChange={setConfirmCell}
+        context={`Desgravamen · ${bancoSeleccionado} · ${tramoEdad === 'hasta_55' ? '18–55 años' : '56+ años'}${cellEdit ? ` · ${formatMontoCLP(cellEdit.monto)} · ${cellEdit.plazo} cuotas` : ''}`}
+        rows={cellEdit ? [{
+          label: 'Prima única',
+          before: `${(cellEdit.original * 100).toFixed(4)}%`,
+          after: `${(Number(cellEdit.valor) || 0).toFixed(4)}%`,
+          changed: Number(cellEdit.valor) !== cellEdit.original * 100,
+        }] : []}
+        onConfirm={handleSaveCell}
+        pending={updateMatrixRate.isPending}
+      />
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
 
