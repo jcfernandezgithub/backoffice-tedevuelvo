@@ -96,6 +96,5 @@ export function useRatesMutations() {
         ratesService.updateMatrixRate(v.bankName, v.ageGroup, v.amount, v.term, v.tasa),
       onSuccess: invalidate,
     }),
-    deleteMatrix: useMutation({ mutationFn: (bankName: string) => ratesService.deleteBankRateMatrix(bankName), onSuccess: invalidate }),
   };
 }

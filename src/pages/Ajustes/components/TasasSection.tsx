@@ -751,14 +751,13 @@ function CreateMatrixDialog({
 
 function TablaDesgravamenBancos() {
   const matrixQuery = useBankRateMatrix();
-  const { updateMatrixRate, deleteMatrix } = useRatesMutations();
+  const { updateMatrixRate } = useRatesMutations();
   const data = matrixQuery.data ?? {};
   const bancos = Object.keys(data);
 
   const [bancoSeleccionado, setBancoSeleccionado] = useState<string>('');
   const [tramoEdad, setTramoEdad] = useState<'hasta_55' | 'desde_56'>('hasta_55');
   const [creating, setCreating] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [cellEdit, setCellEdit] = useState<{ monto: number; plazo: number; valor: string; original: number } | null>(null);
   const [confirmCell, setConfirmCell] = useState(false);
 
@@ -804,16 +803,6 @@ function TablaDesgravamenBancos() {
     }
   };
 
-  const handleDeleteMatrix = async () => {
-    try {
-      await deleteMatrix.mutateAsync(bancoSeleccionado);
-      toast.success('Matriz eliminada');
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setConfirmDelete(false);
-    }
-  };
 
   if (matrixQuery.isLoading) return <TableSkeleton rows={8} />;
   if (matrixQuery.isError) return <ErrorState message={errMsg(matrixQuery.error)} onRetry={() => matrixQuery.refetch()} />;
@@ -852,15 +841,6 @@ function TablaDesgravamenBancos() {
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
             <Plus className="h-3.5 w-3.5" /> Nuevo banco
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 text-destructive hover:text-destructive"
-            disabled={!bancoSeleccionado}
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Eliminar matriz
           </Button>
         </div>
       </div>
@@ -1000,21 +980,6 @@ function TablaDesgravamenBancos() {
       />
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
-
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar matriz de {bancoSeleccionado}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se eliminarán todas las tasas de desgravamen de este banco. Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMatrix}>Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

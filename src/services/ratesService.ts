@@ -339,12 +339,6 @@ export const ratesService = {
       'actualizar la tasa',
     );
   },
-  async deleteBankRateMatrix(bankName: string) {
-    return handle(
-      await authenticatedFetch(`/bank-rate-matrix/${enc(bankName)}`, { method: 'DELETE' }),
-      'eliminar la matriz',
-    );
-  },
 };
 
 export { writeCache as setRatesCache };
