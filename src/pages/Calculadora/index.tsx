@@ -488,6 +488,24 @@ export default function CalculadoraPage() {
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Estima cuánto podrías ahorrar en tus seguros de desgravamen y cesantía asociados a créditos de consumo.
         </p>
+        <div className="mt-3 flex justify-center">
+          {ratesLoading ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              Cargando tasas vigentes…
+            </span>
+          ) : ratesError ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              No se pudieron cargar las tasas del servicio; se usan las últimas conocidas
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-primary" />
+              Tasas cargadas desde el servicio
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
