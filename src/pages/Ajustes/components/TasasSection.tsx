@@ -759,7 +759,8 @@ function TablaDesgravamenBancos() {
   const [tramoEdad, setTramoEdad] = useState<'hasta_55' | 'desde_56'>('hasta_55');
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [cellEdit, setCellEdit] = useState<{ monto: number; plazo: number; valor: string } | null>(null);
+  const [cellEdit, setCellEdit] = useState<{ monto: number; plazo: number; valor: string; original: number } | null>(null);
+  const [confirmCell, setConfirmCell] = useState(false);
 
   useEffect(() => {
     if (bancos.length > 0 && !bancos.includes(bancoSeleccionado)) setBancoSeleccionado(bancos[0]);
@@ -796,6 +797,7 @@ function TablaDesgravamenBancos() {
         bankName: bancoSeleccionado, ageGroup: tramoEdad, amount: cellEdit.monto, term: cellEdit.plazo, tasa,
       });
       toast.success('Tasa actualizada');
+      setConfirmCell(false);
       setCellEdit(null);
     } catch (e) {
       toast.error(errMsg(e));
