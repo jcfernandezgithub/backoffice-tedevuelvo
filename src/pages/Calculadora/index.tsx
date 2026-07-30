@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
 import { calcularDevolucion, CalculationResult } from "@/lib/calculadoraUtils";
 import { usePublicInstitutions } from "@/hooks/useInstitutions";
+import { useBankCesantiaRates, useBankRateMatrix, useTdvCesantiaRates } from "@/hooks/useRates";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +73,12 @@ export default function CalculadoraPage() {
   const { user } = useAuth();
   const isCallcenter = user?.email?.trim().toLowerCase() === "admin@callcenter.cl";
   const { data: institutions = [], isLoading: institutionsLoading } = usePublicInstitutions();
+  // Tasas obtenidas desde el servicio (GET /bank-rate-matrix, /bank-rates, /te-devuelvo-rates).
+  const matrixQuery = useBankRateMatrix();
+  const bankCesantiaQuery = useBankCesantiaRates();
+  const tdvCesantiaQuery = useTdvCesantiaRates();
+  const ratesLoading = matrixQuery.isLoading || bankCesantiaQuery.isLoading || tdvCesantiaQuery.isLoading;
+  const ratesError = matrixQuery.isError || bankCesantiaQuery.isError || tdvCesantiaQuery.isError;
   const institutionOptions = (institutions ?? [])
     .filter((i) => i.active)
     .sort((a, b) => a.label.localeCompare(b.label));
@@ -481,6 +488,24 @@ export default function CalculadoraPage() {
         <p className="text-muted-foreground max-w-2xl mx-auto">
           Estima cuánto podrías ahorrar en tus seguros de desgravamen y cesantía asociados a créditos de consumo.
         </p>
+        <div className="mt-3 flex justify-center">
+          {ratesLoading ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              Cargando tasas vigentes…
+            </span>
+          ) : ratesError ? (
+            <span className="inline-flex items-center gap-2 rounded-full border border-destructive/40 bg-destructive/10 px-3 py-1 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3" />
+              No se pudieron cargar las tasas del servicio; se usan las últimas conocidas
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+              <Check className="h-3 w-3 text-primary" />
+              Tasas cargadas desde el servicio
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -896,8 +921,13 @@ export default function CalculadoraPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" className="flex-1" size="lg" disabled={isCalculating}>
-                    {isCalculating ? (
+                  <Button type="submit" className="flex-1" size="lg" disabled={isCalculating || ratesLoading}>
+                    {ratesLoading ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Cargando tasas...
+                      </>
+                    ) : isCalculating ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
                         Calculando...
