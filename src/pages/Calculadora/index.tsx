@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
 import { calcularDevolucion, CalculationResult } from "@/lib/calculadoraUtils";
 import { usePublicInstitutions } from "@/hooks/useInstitutions";
+import { useBankCesantiaRates, useBankRateMatrix, useTdvCesantiaRates } from "@/hooks/useRates";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +73,12 @@ export default function CalculadoraPage() {
   const { user } = useAuth();
   const isCallcenter = user?.email?.trim().toLowerCase() === "admin@callcenter.cl";
   const { data: institutions = [], isLoading: institutionsLoading } = usePublicInstitutions();
+  // Tasas obtenidas desde el servicio (GET /bank-rate-matrix, /bank-rates, /te-devuelvo-rates).
+  const matrixQuery = useBankRateMatrix();
+  const bankCesantiaQuery = useBankCesantiaRates();
+  const tdvCesantiaQuery = useTdvCesantiaRates();
+  const ratesLoading = matrixQuery.isLoading || bankCesantiaQuery.isLoading || tdvCesantiaQuery.isLoading;
+  const ratesError = matrixQuery.isError || bankCesantiaQuery.isError || tdvCesantiaQuery.isError;
   const institutionOptions = (institutions ?? [])
     .filter((i) => i.active)
     .sort((a, b) => a.label.localeCompare(b.label));
