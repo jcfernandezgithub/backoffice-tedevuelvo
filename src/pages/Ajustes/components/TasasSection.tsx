@@ -751,14 +751,13 @@ function CreateMatrixDialog({
 
 function TablaDesgravamenBancos() {
   const matrixQuery = useBankRateMatrix();
-  const { updateMatrixRate, deleteMatrix } = useRatesMutations();
+  const { updateMatrixRate } = useRatesMutations();
   const data = matrixQuery.data ?? {};
   const bancos = Object.keys(data);
 
   const [bancoSeleccionado, setBancoSeleccionado] = useState<string>('');
   const [tramoEdad, setTramoEdad] = useState<'hasta_55' | 'desde_56'>('hasta_55');
   const [creating, setCreating] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [cellEdit, setCellEdit] = useState<{ monto: number; plazo: number; valor: string; original: number } | null>(null);
   const [confirmCell, setConfirmCell] = useState(false);
 
