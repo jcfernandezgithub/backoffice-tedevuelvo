@@ -71,12 +71,26 @@ function writeCache(name: CacheName, value: unknown) {
 
 /** Tasas de cesantía por banco (sincrónico, para los cálculos). */
 export function getBankCesantiaRates(): BankRatesResponse {
-  return readCache<BankRatesResponse>('bank', fallbackBankCesantia as unknown as BankRatesResponse);
+  const fb = fallbackBankCesantia as unknown as BankRatesResponse;
+  const cached = readCache<BankRatesResponse>('bank', fb);
+  // Fusionamos: el servicio manda, pero si una institución no viene en la
+  // respuesta (o llega vacía) usamos la tasa estática para no mostrar $0.
+  const merged: BankRatesResponse = { ...fb };
+  for (const [bank, ranges] of Object.entries(cached || {})) {
+    if (ranges && Object.keys(ranges).length > 0) merged[bank] = ranges;
+  }
+  return merged;
 }
 
 /** Tasas de cesantía Te Devuelvo (sincrónico). */
 export function getTdvCesantiaRates(): TeDevuelvoRatesResponse {
-  return readCache<TeDevuelvoRatesResponse>('tdv', fallbackTdvCesantia as unknown as TeDevuelvoRatesResponse);
+  const fb = fallbackTdvCesantia as unknown as TeDevuelvoRatesResponse;
+  const cached = readCache<TeDevuelvoRatesResponse>('tdv', fb);
+  const merged: TeDevuelvoRatesResponse = { ...fb };
+  for (const [owner, ranges] of Object.entries(cached || {})) {
+    if (ranges && Object.keys(ranges).length > 0) merged[owner] = ranges;
+  }
+  return merged;
 }
 
 /** Matriz bancaria de desgravamen (sincrónico). */
