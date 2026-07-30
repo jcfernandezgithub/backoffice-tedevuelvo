@@ -803,16 +803,6 @@ function TablaDesgravamenBancos() {
     }
   };
 
-  const handleDeleteMatrix = async () => {
-    try {
-      await deleteMatrix.mutateAsync(bancoSeleccionado);
-      toast.success('Matriz eliminada');
-    } catch (e) {
-      toast.error(errMsg(e));
-    } finally {
-      setConfirmDelete(false);
-    }
-  };
 
   if (matrixQuery.isLoading) return <TableSkeleton rows={8} />;
   if (matrixQuery.isError) return <ErrorState message={errMsg(matrixQuery.error)} onRetry={() => matrixQuery.refetch()} />;
