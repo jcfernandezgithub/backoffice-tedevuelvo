@@ -987,7 +987,7 @@ export function TasasSection() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Tasas de Referencia</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Tasas para Cálculo</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Tasas mensuales utilizadas para el cálculo de devoluciones de seguros.
             Se administran en línea y alimentan directamente la calculadora y los certificados.
