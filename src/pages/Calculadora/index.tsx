@@ -921,8 +921,13 @@ export default function CalculadoraPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" className="flex-1" size="lg" disabled={isCalculating}>
-                    {isCalculating ? (
+                  <Button type="submit" className="flex-1" size="lg" disabled={isCalculating || ratesLoading}>
+                    {ratesLoading ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Cargando tasas...
+                      </>
+                    ) : isCalculating ? (
                       <>
                         <span className="animate-spin mr-2">⏳</span>
                         Calculando...
