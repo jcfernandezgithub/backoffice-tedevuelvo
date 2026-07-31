@@ -1,8 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.4
+## Versión 4.2.5
 
 ## Changelog
+
+### Versión 4.2.5 - 2026-07-30
+
+#### Gestión de tasas para cálculo en vivo (Ajustes)
+- Se reemplazó el uso de los archivos JSON estáticos (`tasas_cesantia_banco.json`, `tasas_cesantia_te_devuelvo.json`) por un servicio backend dedicado para obtener tasas de cesantía y desgravamen.
+- Nueva sección **Tasas para Cálculo** en `/ajustes` (antes *Tasas de referencia*) que permite visualizar, editar y mantener los tramos de cesantía y la matriz de tasas de desgravamen de forma centralizada.
+- El servicio `ratesService` normaliza las respuestas del backend, gestiona caché en memoria y `localStorage`, y expone hooks (`useRates`) para consumo en la calculadora y el desglose de primas.
+- La calculadora y el desglose de seguros ahora obtienen las tasas en tiempo real desde el servicio, manteniendo un fallback a los JSON locales cuando no hay conectividad.
+- Los cambios de tasas son inmediatamente aplicados a la simulación de devoluciones tanto en el portal **Te Devuelvo** como en la **Calculadora interna**.
+
+#### Confirmación de ediciones críticas de tasas
+- Antes de guardar cualquier modificación a tramos de cesantía o celdas de desgravamen, el sistema muestra un diálogo de confirmación con:
+  - Diferencia visual (antes/después) de los valores modificados.
+  - Aviso explícito del impacto inmediato en el portal público y la calculadora interna.
+  - Checkbox obligatorio de reconocimiento para habilitar el botón **Aplicar cambio**.
+- Esta mejora reduce el riesgo de modificar valores sensibles que afectan el cálculo de devoluciones en producción.
+
+#### Simplificación de matriz de desgravamen
+- Se eliminó la funcionalidad **Eliminar matriz** de la sección de tasas de desgravamen, manteniendo solo la edición de celdas existentes.
+- Se limpiaron mutadores y métodos del servicio que ya no son necesarios.
 
 ### Versión 4.2.4 - 2026-07-24
 
@@ -787,10 +807,10 @@
 
 #### Página de Ajustes — Rediseño y nueva sección Tasas
 - **Navegación tipo sidebar**: Rediseño completo con panel lateral fijo y área de contenido dinámica, escalable para futuras secciones.
-  - Grupos de navegación: **Operación** (Objetivos por etapa, Plan de cumplimiento) y **Cálculos** (Tasas de referencia).
+  - Grupos de navegación: **Operación** (Objetivos por etapa, Plan de cumplimiento) y **Cálculos** (Tasas para Cálculo).
   - Breadcrumb sticky en el encabezado del contenido para orientación contextual.
   - Ítem activo destacado con `bg-primary text-primary-foreground` y flecha indicadora.
-- **Nueva sección "Tasas de referencia"** (grupo Cálculos, read-only con badge "Edición próximamente"):
+- **Nueva sección "Tasas para Cálculo"** (grupo Cálculos, read-only con badge "Edición próximamente"):
   - Tab **Desgravamen bancario**: Tabla interactiva con heatmap de colores (verde → rojo) por monto de crédito, plazo (cuotas) y tramo de edad. Selector de banco y toggle de edad 18–55 / 56+ con estado activo claramente visible.
   - Tab **Desgravamen TDV**: Tabla con los 2 tramos oficiales (Tramo 1: hasta 55 años `0.2970400%`, Tramo 2: desde 56 años `0.3737900%`), expresados en porcentaje con 7 decimales.
   - Tab **Cesantía**: Tabla comparativa Banco vs TDV con los 5 tramos de monto. Nueva columna "Ahorro TDV" con el diferencial porcentual promedio por institución. Tooltip por celda con el % de ahorro exacto del tramo al hacer hover.

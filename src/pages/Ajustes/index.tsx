@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'tasas',
-    label: 'Tasas de referencia',
+    label: 'Tasas para Cálculo',
     description: 'Cesantía y desgravamen',
     icon: Percent,
     group: 'Cálculos',

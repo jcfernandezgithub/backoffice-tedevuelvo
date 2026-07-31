@@ -35,7 +35,7 @@ import {
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
 import { getPlanByAmount, POL347_CONFIG } from './pdfGenerators/pol347Config'
-import tasasSeguro from '@/data/tasas_formateadas_te_devuelvo.json'
+import { getBankRateMatrix } from '@/services/ratesService'
 
 // Mapeo de instituciones (igual que en calculadoraUtils)
 const MAPEO_INSTITUCIONES: { [key: string]: string } = {
@@ -94,6 +94,7 @@ const obtenerTasaBancoFromJSON = (
     const montoRedondeado = Math.round(monto / 1000000) * 1000000
     const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 60000000)
 
+    const tasasSeguro = getBankRateMatrix() as any
     if (!tasasSeguro[bancoMapeado as keyof typeof tasasSeguro]) {
       console.warn(`Banco no encontrado en JSON: ${bancoMapeado} (original: ${banco})`)
       return null

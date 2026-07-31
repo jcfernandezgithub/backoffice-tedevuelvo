@@ -1,5 +1,5 @@
-import tasasCesantiaBanco from '@/data/tasas_cesantia_banco.json'
-import tasasCesantiaTeDevuelvo from '@/data/tasas_cesantia_te_devuelvo.json'
+import { getBankCesantiaRates, getTdvCesantiaRates } from '@/services/ratesService'
+import { resolveInstitutionKey } from '@/lib/calculadoraUtils'
 
 /** Maps institutionId (lowercase) to cesantía JSON key */
 const INSTITUTION_MAP: Record<string, string> = {
@@ -35,6 +35,32 @@ function getTramo(monto: number): string {
   if (monto <= 5000000) return 'tramo_3'
   if (monto <= 7000000) return 'tramo_4'
   return 'tramo_5'
+}
+
+/**
+ * Obtiene la tasa mensual de un set de tramos tolerando variaciones de nombre
+ * ("tramo_1", "Tramo 1", "TRAMO1", ...). Si no hay coincidencia por nombre,
+ * busca el tramo cuyo rango [desde, hasta] contenga el monto y, como último
+ * recurso, usa el último tramo disponible.
+ */
+function getTasaMensual(ranges: any, monto: number): number {
+  if (!ranges || typeof ranges !== 'object') return 0
+  const wanted = getTramo(monto)
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const entries = Object.entries<any>(ranges)
+
+  const byName = entries.find(([k]) => norm(k) === norm(wanted))
+  if (byName && Number(byName[1]?.tasa_mensual)) return Number(byName[1].tasa_mensual)
+
+  const byRange = entries.find(([, v]) => {
+    const desde = Number(v?.desde ?? 0)
+    const hasta = v?.hasta === null || v?.hasta === undefined ? Infinity : Number(v.hasta)
+    return monto >= desde && monto <= hasta
+  })
+  if (byRange && Number(byRange[1]?.tasa_mensual)) return Number(byRange[1].tasa_mensual)
+
+  const last = entries[entries.length - 1]
+  return Number(last?.[1]?.tasa_mensual) || 0
 }
 
 export interface BreakdownResult {
@@ -93,21 +119,33 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
   const desgDevolucion = (desgPrimaBanco - desgPrimaTDV) * remainingInstallments
 
   // --- Cesantía (on-the-fly) ---
-  const bankKey = INSTITUTION_MAP[(institutionId || '').toLowerCase()] || (institutionId || '').toUpperCase()
-  const tramo = getTramo(saldoInsoluto)
+  const rawInstitution =
+    institutionId ||
+    snapshot.institution ||
+    snapshot.institutionName ||
+    snapshot.banco ||
+    snapshot.bankName ||
+    snapshot.entidad ||
+    snapshot.confirmedInstitution ||
+    ''
+  const bankRates = getBankCesantiaRates()
+  const mapped = INSTITUTION_MAP[String(rawInstitution).toLowerCase()]
+  const bankKey =
+    (mapped && bankRates[mapped] ? mapped : null) ||
+    resolveInstitutionKey(String(rawInstitution), Object.keys(bankRates)) ||
+    String(rawInstitution).toUpperCase()
 
   let cesantiaTasaBanco = 0
   let cesantiaTasaTDV = 0
 
-  const bankData = tasasCesantiaBanco[bankKey as keyof typeof tasasCesantiaBanco]
-  if (bankData) {
-    const tramoData = bankData[tramo as keyof typeof bankData] as any
-    if (tramoData) cesantiaTasaBanco = tramoData.tasa_mensual
+  const bankData = bankRates[bankKey]
+  if (!bankData) {
+    console.warn('[breakdown] Sin tasas de cesantía para institución:', rawInstitution)
   }
+  cesantiaTasaBanco = getTasaMensual(bankData, saldoInsoluto)
 
-  const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
-  const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
-  if (tdvTramo) cesantiaTasaTDV = tdvTramo.tasa_mensual
+  const tdvData = getTdvCesantiaRates().TE_DEVUELVO_CESANTIA ?? {}
+  cesantiaTasaTDV = getTasaMensual(tdvData, saldoInsoluto)
 
   const cesantiaPrimaBanco = Math.round(saldoInsoluto * cesantiaTasaBanco)
   const cesantiaPrimaTDV = Math.round(saldoInsoluto * cesantiaTasaTDV)
@@ -180,10 +218,8 @@ export function computePureCesantiaTotalTDV(snapshot: any): number | null {
     snapshot.confirmedRemainingInstallments || snapshot.remainingInstallments
   if (!saldoInsoluto || !remainingInstallments) return null
 
-  const tramo = getTramo(saldoInsoluto)
-  const tdvData = tasasCesantiaTeDevuelvo.TE_DEVUELVO_CESANTIA
-  const tdvTramo = tdvData[tramo as keyof typeof tdvData] as any
-  const tasaTDV = tdvTramo?.tasa_mensual || 0
+  const tdvData = getTdvCesantiaRates().TE_DEVUELVO_CESANTIA ?? {}
+  const tasaTDV = getTasaMensual(tdvData, saldoInsoluto)
   if (!tasaTDV) return null
 
   return Math.round(saldoInsoluto * tasaTDV * remainingInstallments)
