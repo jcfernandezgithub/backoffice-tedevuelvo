@@ -56,15 +56,15 @@ class RefundAdminApiClient {
     }
   }
 
-  async search(params: SearchParams): Promise<AdminListResponse> {
-    return this.searchInternal(params, 'search')
+  async search(params: SearchParams, signal?: AbortSignal): Promise<AdminListResponse> {
+    return this.searchInternal(params, 'search', signal)
   }
 
-  async searchByUpdatedAt(params: SearchParams): Promise<AdminListResponse> {
-    return this.searchInternal(params, 'search-by-updated-at')
+  async searchByUpdatedAt(params: SearchParams, signal?: AbortSignal): Promise<AdminListResponse> {
+    return this.searchInternal(params, 'search-by-updated-at', signal)
   }
 
-  private async searchInternal(params: SearchParams, endpoint: 'search' | 'search-by-updated-at'): Promise<AdminListResponse> {
+  private async searchInternal(params: SearchParams, endpoint: 'search' | 'search-by-updated-at', signal?: AbortSignal): Promise<AdminListResponse> {
     const query = new URLSearchParams()
     
     if (params.q) query.append('q', params.q)
@@ -85,6 +85,7 @@ class RefundAdminApiClient {
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${endpoint}?${query}`, {
       headers: await this.getAuthHeaders(),
+      signal,
     })
 
     if (response.status === 401) {
