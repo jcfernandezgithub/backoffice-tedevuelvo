@@ -10,7 +10,7 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { computeBreakdown } from '@/lib/insuranceBreakdownUtils'
 import { formatCLPNumber } from '@/lib/formatters'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
-import { useExportAllRefunds } from '../hooks/useExportAllRefunds'
+import { useExportAllRefunds, ExportAllResult } from '../hooks/useExportAllRefunds'
 import { SearchParams } from '@/services/refundAdminApi'
 import { AdminQueryParams } from '@/types/refund'
 import { Progress } from '@/components/ui/progress'
@@ -239,6 +239,7 @@ export function ExportToExcelDialog({
   const handleExport = async () => {
     try {
       let dataToExport: RefundRequest[]
+      let exportResult: ExportAllResult | null = null
 
       if (hasSelection) {
         // Si tenemos el dataset completo (selección "todas las páginas"), usarlo
@@ -249,23 +250,24 @@ export function ExportToExcelDialog({
         // Fallback: si la selección excede lo cargado localmente, hacer fetch completo
         // y luego filtrar por IDs seleccionados
         if (dataToExport.length < selectedRefunds.size) {
-          const all = await fetchAllRefunds({
+          exportResult = await fetchAllRefunds({
             searchFilters,
             listFilters,
             useSearchEndpoint,
           })
-          dataToExport = all.filter(r => selectedRefunds.has(r.id))
+          dataToExport = exportResult.items.filter(r => selectedRefunds.has(r.id))
         }
       } else if (historicalStatusMode) {
         // En modo histórico los datos ya están filtrados localmente — usar directamente
         dataToExport = refunds
       } else {
         // Exportar TODO usando paginación paralela
-        dataToExport = await fetchAllRefunds({
+        exportResult = await fetchAllRefunds({
           searchFilters,
           listFilters,
           useSearchEndpoint,
         })
+        dataToExport = exportResult.items
       }
 
       if (dataToExport.length === 0) {
@@ -288,10 +290,18 @@ export function ExportToExcelDialog({
       const fileName = `solicitudes_export_${new Date().toISOString().split('T')[0]}_${new Date().getTime()}`
       exportXLSX(excelData, fileName)
 
-      toast({
-        title: 'Exportación exitosa',
-        description: `Se exportaron ${dataToExport.length} solicitudes a Excel`,
-      })
+      if (exportResult && exportResult.failedPages.length > 0) {
+        toast({
+          title: 'Exportación parcial',
+          description: `Se exportaron ${dataToExport.length} de ~${exportResult.expectedTotal} solicitudes (${exportResult.failedPages.length} página(s) no respondieron). Vuelve a intentarlo para obtener el archivo completo.`,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Exportación exitosa',
+          description: `Se exportaron ${dataToExport.length} solicitudes a Excel`,
+        })
+      }
 
       setOpen(false)
     } catch (error) {
