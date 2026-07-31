@@ -306,9 +306,13 @@ export function ExportToExcelDialog({
       setOpen(false)
     } catch (error) {
       console.error('Error exporting:', error)
+      const detail = error instanceof Error ? error.message : ''
+      const isBackendSortError = /sort exceeded memory limit|allowDiskUse/i.test(detail)
       toast({
         title: 'Error en la exportación',
-        description: 'No se pudo exportar el archivo. Inténtalo nuevamente.',
+        description: isBackendSortError
+          ? 'El servidor no pudo ordenar los registros (límite de memoria de MongoDB). El backend debe agregar allowDiskUse(true) o un índice en updatedAt.'
+          : 'No se pudo exportar el archivo. Inténtalo nuevamente.',
         variant: 'destructive',
       })
     }

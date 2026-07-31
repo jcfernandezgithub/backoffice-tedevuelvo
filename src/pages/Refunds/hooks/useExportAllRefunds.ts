@@ -32,6 +32,13 @@ function dedupeById(items: RefundRequest[]): RefundRequest[] {
   })
 }
 
+// Errores que no tiene sentido reintentar: fallan siempre (determinísticos).
+// Ej: "Sort exceeded memory limit" de Mongo (falta índice/allowDiskUse en backend).
+function isNonRetryableError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return /sort exceeded memory limit|allowDiskUse|unauthorized/i.test(msg)
+}
+
 export function useExportAllRefunds() {
   const [isExporting, setIsExporting] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -68,6 +75,9 @@ export function useExportAllRefunds() {
         try {
           return await fetchPage(filters, pageNum, pageSize)
         } catch (error) {
+          if (isNonRetryableError(error)) {
+            throw error
+          }
           if (attempt < MAX_RETRIES) {
             await sleep(600 * 2 ** attempt)
           } else {
