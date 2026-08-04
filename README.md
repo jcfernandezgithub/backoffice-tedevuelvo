@@ -13,6 +13,20 @@
 - Nueva firma compuesta de Augustar (timbre circular + firma manuscrita C. Nieto) aplicada en la sección de firmas del certificado; se ajustó el encuadre para preservar su proporción original.
 - Se eliminó el generador legacy en desuso de la Póliza 344 (`generatePrimePDF`, ~1.100 líneas muertas) y toda la configuración de la Póliza 347.
 
+#### Valor mínimo de devolución (mínimo valor de simulación)
+- Nueva sección **Valor mínimo de devolución** en `/ajustes` que administra el monto mínimo a partir del cual una simulación genera devolución. La configuración se persiste en el servidor (`/policy-minimum-value`) y solo permite **una configuración activa o inactiva** (se eliminaron los botones de crear/eliminar una vez existe el registro).
+- El servicio `policyMinimumValueService` expone validación pública (`POST /policy-minimum-value/validate`), listado y CRUD administrador; el hook `usePolicyMinimumValueConfigs` gestiona la caché en React Query.
+- En **Solicitudes** y **Call Center** se agregó el toggle **Filtrado por mínima devolución**: al activarlo se consulta el mínimo vigente y se envía como parámetro `minimumEstimatedAmountCLP` al endpoint `search-by-updated-at`, filtrando las solicitudes cuyo monto estimado no alcanza el mínimo.
+- En **Call Center** el filtro es **obligatorio y siempre activo**: el toggle arranca prendido, no se puede apagar y la primera búsqueda al cargar la página siempre se ejecuta con el mínimo aplicado.
+- Sección de **Test Playground** en Ajustes que permite probar un valor y previsualizar el mensaje exacto que se mostrará en el portal Te Devuelvo cuando la devolución queda bajo el mínimo.
+- Si el servicio de mínimo retorna `404` (sin configuración), las búsquedas se ejecutan sin el parámetro, preservando el comportamiento anterior.
+
+#### Validación con IA (configuración server-backed)
+- Se migró la configuración de validación con IA desde `localStorage` a un **servicio backend** (`/ai-image-validation`), con dos flags globales: `imageValidationEnabled` (validación de cédula) y `docsValidationEnabled` (validación de documentos de crédito tipo *Otros*).
+- El servicio `aiImageValidationService` y el hook `useAiValidationConfig` exponen la consulta pública (`publicFetch`) y la actualización administradora (`authenticatedFetch`, rol ADMIN) con **guardado optimista por campo** y reversión automática si el `PATCH` falla.
+- Nueva sección **Validación con IA** en `/ajustes` con tarjetas independientes por flag, estado visual (activada/desactivada), indicador de guardado por interruptor y aviso de revisión manual cuando un flag está apagado.
+- En el **cambio de estado a Documentos recibidos** (Detalle de solicitud), los flags ahora se leen del servidor en tiempo real: si `imageValidationEnabled` está activo se ejecuta la validación visual de la cédula, y si `docsValidationEnabled` está activo se valida sobre los documentos de tipo *Otros*; el operador puede continuar bajo su responsabilidad si el resultado no es concluyente.
+
 ### Versión 4.2.5 - 2026-07-30
 
 #### Gestión de tasas para cálculo en vivo (Ajustes)
