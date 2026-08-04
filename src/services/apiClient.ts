@@ -1,6 +1,20 @@
 import { authService } from './authService'
 
-const API_BASE_URL = "https://tedevuelvo-app-be.onrender.com/api/v1"
+export const API_BASE_URL = "https://tedevuelvo-app-be.onrender.com/api/v1"
+
+/**
+ * Fetch sin autenticación para endpoints públicos (lectura de
+ * configuraciones globales, validaciones abiertas, etc.).
+ * No adjunta token ni intenta refresh.
+ */
+export async function publicFetch(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const headers = new Headers(options.headers)
+  headers.set('Content-Type', 'application/json')
+  return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers })
+}
 
 let isRefreshing = false
 let refreshPromise: Promise<void> | null = null
