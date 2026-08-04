@@ -231,7 +231,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // Toggle "Filtrado por mínima devolución": al activarse consulta la
   // configuración pública de valor mínimo. Si el servicio responde 404
   // (sin configuración), la búsqueda se ejecuta sin el parámetro.
-  const [minRefundFilter, setMinRefundFilter] = useState(false)
+  // En Call Center el filtro es OBLIGATORIO: siempre activo y no editable.
+  const [minRefundFilter, setMinRefundFilter] = useState(isCallCenter)
   const queryClient = useQueryClient()
 
   const fetchActiveMinRefundConfig = async () => {
@@ -597,7 +598,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setNroCreditoFilter('')
     setInstitutionFilter('all')
     setHistoricalStatusMode(false)
-    setMinRefundFilter(false)
+    setMinRefundFilter(isCallCenter)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
@@ -801,6 +802,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         const newParams = new URLSearchParams(searchParams)
         newParams.delete('autoSearch')
         setSearchParams(newParams, { replace: true })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+    // Call Center: la primera carga siempre filtra por mínima devolución.
+    // Disparamos la búsqueda automáticamente al montar la página.
+    if (isCallCenter) {
+      const timer = setTimeout(() => {
+        handleSearch()
       }, 100)
       return () => clearTimeout(timer)
     }
@@ -1314,12 +1323,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                   id="min-refund-filter"
                   checked={minRefundFilter}
                   onCheckedChange={setMinRefundFilter}
+                  disabled={isCallCenter}
                 />
                 <label
                   htmlFor="min-refund-filter"
-                  className={`flex items-center gap-1.5 text-sm cursor-pointer select-none ${
-                    minRefundFilter ? 'text-foreground font-medium' : 'text-muted-foreground'
-                  }`}
+                  className={`flex items-center gap-1.5 text-sm select-none ${
+                    isCallCenter ? 'cursor-not-allowed' : 'cursor-pointer'
+                  } ${minRefundFilter ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
                 >
                   <Flag className="h-3.5 w-3.5" />
                   Filtrado por mínima devolución
@@ -1332,6 +1342,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                     : minRefundValue != null && minRefundValue > 0
                       ? `Solo solicitudes con devolución estimada desde $${formatCLPNumber(minRefundValue)}`
                       : 'Sin valor mínimo configurado: se listan todas las solicitudes'}
+                </span>
+              )}
+              {isCallCenter && (
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                  Obligatorio en Call Center
                 </span>
               )}
             </div>
