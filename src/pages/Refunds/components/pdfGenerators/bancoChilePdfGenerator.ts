@@ -1,10 +1,10 @@
 /**
  * Generador de PDF para Certificado de Cobertura - BANCO DE CHILE
- * Póliza N° 347 (vigente desde mayo 2026). Reemplaza pólizas 342 y 344.
+ * Póliza N° 353 (vigente desde mayo 2026). Reemplaza póliza 347.
  *
- * Layout copia fiel del PDF Pol347_BCO_CHILE.pdf (10 páginas):
+ * Layout copia fiel del PDF Pol353_BCO_CHILE.pdf (10 páginas):
  *   Páginas 1-3: Carátula uniforme (códigos CMF, contratante, asegurado,
- *                tipo de póliza, planes 1/2/3, coberturas, beneficiarios,
+ *                tipo de póliza, planes 1/2/3/4, coberturas, beneficiarios,
  *                condiciones, exclusiones, sistema de notificación,
  *                definiciones).
  *   Página 4:    Solicitud de Incorporación / Certificado de Cobertura
@@ -55,7 +55,7 @@ export interface BancoChileCertificateData {
 
 /** Compatibilidad con código que aún importa BANCO_CHILE_CONFIG. */
 export const BANCO_CHILE_CONFIG = {
-  pol347: {
+  pol353: {
     numero: POL353_CONFIG.numero,
     codigoCMF: POL353_CONFIG.codigoCMF,
     vigenciaInicio: POL353_CONFIG.vigenciaInicio,
@@ -109,7 +109,7 @@ export const isBancoChile = (institution: string | undefined | null): boolean =>
   )
 }
 
-/** Determina si una entidad utiliza la plantilla Pol347 de Banco de Chile
+/** Determina si una entidad utiliza la plantilla Pol353 de Banco de Chile
  *  (mismo layout: bloque "Beneficiario Irrevocable Designado" y label "Tasa Bruta Mensual").
  *  Aplica a Banco de Chile y a Chevrolet SF. */
 export const usesBancoChileTemplate = (institution: string | undefined | null): boolean => {
@@ -120,7 +120,7 @@ export const usesBancoChileTemplate = (institution: string | undefined | null): 
 }
 
 /**
- * Devuelve la TBM (por mil) usada en Banco de Chile (Pol347).
+ * Devuelve la TBM (por mil) usada en Banco de Chile (Pol353).
  * Ahora se calcula según Plan y edad — `isPrime` se ignora (legacy).
  */
 export const getBancoChileTasaBrutaMensual = (
@@ -283,7 +283,7 @@ const generatePol353PDF = async (
   doc.text('NO', margin + 107, y)
   y += 10
 
-  // PLAN y PRIMA — 3 planes con checkbox según monto
+  // PLAN y PRIMA — 4 planes con checkbox según monto
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.text('PLAN', margin, y)
@@ -291,13 +291,12 @@ const generatePol353PDF = async (
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  for (let p: Pol353Plan = 1; p <= 3; p = (p + 1) as Pol353Plan) {
+  for (let p: Pol353Plan = 1; p <= 4; p = (p + 1) as Pol353Plan) {
     drawCheckbox(margin, y, plan === p)
     doc.text(`Plan ${p}`, margin + 7, y)
     doc.rect(margin + 50, y - 3, 50, 5, 'S')
     if (plan === p) doc.text(primaFmt, margin + 52, y)
     y += 6
-    if (p === 3) break
   }
   y += 4
 
@@ -767,11 +766,11 @@ const generatePol353PDF = async (
   )
   y += 5
 
-  // Tabla de tasas (3 planes)
+  // Tabla de tasas (4 planes)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
   doc.setFillColor(230, 230, 230)
-  const colW = [40, 35, 35, 35]
+  const colW = [40, 32, 32, 32, 32]
   let cx = margin
   const drawCell = (text: string, w: number, fill = false) => {
     if (fill) doc.setFillColor(230, 230, 230)
@@ -783,6 +782,7 @@ const generatePol353PDF = async (
   drawCell('Plan 1', colW[1], true)
   drawCell('Plan 2', colW[2], true)
   drawCell('Plan 3', colW[3], true)
+  drawCell('Plan 4', colW[4], true)
   y += 5
   doc.setFont('helvetica', 'normal')
   cx = margin
@@ -790,12 +790,14 @@ const generatePol353PDF = async (
   drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][0]), colW[1])
   drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][1]), colW[2])
   drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][2]), colW[3])
+  drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][3]), colW[4])
   y += 5
   cx = margin
   drawCell('56 – 65 años', colW[0])
   drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][0]), colW[1])
   drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][1]), colW[2])
   drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][2]), colW[3])
+  drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][3]), colW[4])
   y += 8
 
   sectionHeader('Asegurados')
@@ -872,6 +874,7 @@ const generatePol353PDF = async (
     ['Plan 1', 'Saldo Insoluto. Monto inicial con tope máximo de $20.000.000 Pesos'],
     ['Plan 2', 'Saldo Insoluto. Monto inicial entre $20.000.001 y $60.000.000 Pesos'],
     ['Plan 3', 'Saldo Insoluto. Monto inicial entre $60.000.001 y $100.000.000 Pesos'],
+    ['Plan 4', 'Saldo Insoluto. Monto inicial entre $100.000.001 y $150.000.000 Pesos'],
   ]
   planRows.forEach((row, idx) => {
     cx = margin
@@ -980,23 +983,26 @@ const generatePol353PDF = async (
   doc.setFontSize(7)
   doc.setFillColor(230, 230, 230)
   cx = margin
-  drawCell('Rango Edad', 30, true)
-  drawCell('Plan 1', 30, true)
-  drawCell('Plan 2', 30, true)
-  drawCell('Plan 3', 30, true)
+  drawCell('Rango Edad', 24, true)
+  drawCell('Plan 1', 27, true)
+  drawCell('Plan 2', 27, true)
+  drawCell('Plan 3', 27, true)
+  drawCell('Plan 4', 27, true)
   y += 4
   doc.setFont('helvetica', 'normal')
   cx = margin
-  drawCell('18 – 55', 30)
-  drawCell('39,30% + IVA', 30)
-  drawCell('43,77% + IVA', 30)
-  drawCell('38,21% + IVA', 30)
+  drawCell('18 – 55', 24)
+  drawCell('39,30% + IVA', 27)
+  drawCell('43,77% + IVA', 27)
+  drawCell('38,21% + IVA', 27)
+  drawCell('38,21% + IVA', 27)
   y += 4
   cx = margin
-  drawCell('56 – 65', 30)
-  drawCell('40,16% + IVA', 30)
-  drawCell('37,27% + IVA', 30)
-  drawCell('34,93% + IVA', 30)
+  drawCell('56 – 65', 24)
+  drawCell('40,16% + IVA', 27)
+  drawCell('37,27% + IVA', 27)
+  drawCell('34,93% + IVA', 27)
+  drawCell('34,93% + IVA', 27)
   y += 7
 
   doc.setFont('helvetica', 'bold')
@@ -1039,18 +1045,20 @@ const generatePol353PDF = async (
   doc.setFontSize(7)
   doc.setFillColor(230, 230, 230)
   cx = margin
-  drawCell('Rango Edad', 30, true)
-  drawCell('Plan 1', 30, true)
-  drawCell('Plan 2', 30, true)
-  drawCell('Plan 3', 30, true)
+  drawCell('Rango Edad', 24, true)
+  drawCell('Plan 1', 27, true)
+  drawCell('Plan 2', 27, true)
+  drawCell('Plan 3', 27, true)
+  drawCell('Plan 4', 27, true)
   y += 4
   doc.setFont('helvetica', 'normal')
   for (const r of ['18 – 55', '56 – 65']) {
     cx = margin
-    drawCell(r, 30)
-    drawCell('15% + IVA', 30)
-    drawCell('15% + IVA', 30)
-    drawCell('15% + IVA', 30)
+    drawCell(r, 24)
+    drawCell('15% + IVA', 27)
+    drawCell('15% + IVA', 27)
+    drawCell('15% + IVA', 27)
+    drawCell('15% + IVA', 27)
     y += 4
   }
   y += 5
@@ -1173,22 +1181,25 @@ const generatePol353PDF = async (
   y += 8
   const sigW = 40
   const sigH = 15
+  // Firma AuguStar Póliza 353: compuesto timbre + firma manuscrita (aspecto ≈ 2,16:1)
+  const augW = 40
+  const augH = 18.5
   const col1X = margin + 20
-  const col2X = pageWidth - margin - 20 - sigW
+  const col2X = pageWidth - margin - 20 - augW
   if (firmaTdvBase64) {
     try { doc.addImage(firmaTdvBase64, 'PNG', col1X, y, sigW, sigH) } catch { /* noop */ }
   }
   if (firmaAugustarBase64) {
-    try { doc.addImage(firmaAugustarBase64, 'JPEG', col2X, y, sigW, sigH) } catch { /* noop */ }
+    try { doc.addImage(firmaAugustarBase64, 'PNG', col2X, y, augW, augH) } catch { /* noop */ }
   }
-  y += sigH + 2
+  y += Math.max(sigH, augH) + 2
   doc.setLineWidth(0.3)
   doc.line(col1X - 5, y, col1X + sigW + 5, y)
-  doc.line(col2X - 5, y, col2X + sigW + 5, y)
+  doc.line(col2X - 5, y, col2X + augW + 5, y)
   y += 4
   doc.setFontSize(8)
   doc.text('TDV SERVICIOS SPA', col1X + sigW / 2, y, { align: 'center' })
-  doc.text('AuguStar Seguros de Vida S.A.', col2X + sigW / 2, y, { align: 'center' })
+  doc.text('AuguStar Seguros de Vida S.A.', col2X + augW / 2, y, { align: 'center' })
 
   // ════════════════════════════════════════════════════════════════════════
   // PÁGINA 10 — Procedimiento de Liquidación de Siniestros (Circular 2106)
@@ -1266,7 +1277,7 @@ const generatePol353PDF = async (
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Genera el certificado Pol347 para Banco de Chile (con beneficiario fijo).
+ * Genera el certificado Pol353 para Banco de Chile (con beneficiario fijo).
  */
 export const generateBancoChilePol353PDF = (
   refund: RefundRequest,
@@ -1281,7 +1292,7 @@ export const generateBancoChilePol353PDF = (
   })
 
 /**
- * Genera el certificado genérico Pol347 (no Banco de Chile). El beneficiario
+ * Genera el certificado genérico Pol353 (no Banco de Chile). El beneficiario
  * irrevocable se toma desde formData.
  */
 export const generateGenericPol353PDF = (
@@ -1297,7 +1308,7 @@ export const generateGenericPol353PDF = (
   })
 
 /**
- * Genera el certificado Pol347 para Chevrolet SF (mismo layout que Banco de Chile,
+ * Genera el certificado Pol353 para Chevrolet SF (mismo layout que Banco de Chile,
  * pero el beneficiario irrevocable es el ingresado en el formulario, sin fallback fijo).
  */
 export const generateChevroletSfPol353PDF = (
@@ -1313,6 +1324,6 @@ export const generateChevroletSfPol353PDF = (
   })
 
 // ─── Aliases legacy ───────────────────────────────────────────────────────
-// Compatibilidad con imports antiguos: ambos llaman al mismo generador Pol347.
+// Compatibilidad con imports antiguos: ambos llaman al mismo generador Pol353.
 export const generateBancoChilePrimePDF = generateBancoChilePol353PDF
 export const generateBancoChileStandardPDF = generateBancoChilePol353PDF
