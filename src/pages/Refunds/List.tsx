@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { authService } from '@/services/authService'
@@ -232,13 +232,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   // configuración pública de valor mínimo. Si el servicio responde 404
   // (sin configuración), la búsqueda se ejecuta sin el parámetro.
   const [minRefundFilter, setMinRefundFilter] = useState(false)
+  const queryClient = useQueryClient()
+
+  const fetchActiveMinRefundConfig = async () => {
+    const configs = await policyMinimumValueService.list() // 404 → []
+    return configs.find(c => c.isActive) ?? configs[0] ?? null
+  }
 
   const { data: minRefundConfig, isLoading: isMinRefundLoading } = useQuery({
     queryKey: ['policy-minimum-value-active'],
-    queryFn: async () => {
-      const configs = await policyMinimumValueService.list() // 404 → []
-      return configs.find(c => c.isActive) ?? configs[0] ?? null
-    },
+    queryFn: fetchActiveMinRefundConfig,
     enabled: minRefundFilter,
     staleTime: 5 * 60 * 1000,
     retry: false,
@@ -424,7 +427,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   // Ejecuta la búsqueda con los filtros locales actuales usando el endpoint search
-  const handleSearch = () => {
+  const handleSearch = async () => {
     // Determinar valor de signatureStatus para el servidor
     let signatureStatusValue: 'signed' | null | undefined = undefined
     if (mandateFilter === 'signed') {
@@ -453,6 +456,27 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       hasBankInfoValue = 0
     }
     
+    // Filtrado por mínima devolución: si el toggle está activo, resolvemos el
+    // valor mínimo AHORA (esperando la carga si está en curso). Si el servicio
+    // no tiene configuración (404) o falla, la búsqueda se ejecuta sin el
+    // parámetro, tal como lo hace actualmente.
+    let minimumEstimatedAmountCLP: number | undefined = undefined
+    if (minRefundFilter) {
+      try {
+        const cfg = await queryClient.fetchQuery({
+          queryKey: ['policy-minimum-value-active'],
+          queryFn: fetchActiveMinRefundConfig,
+          staleTime: 5 * 60 * 1000,
+          retry: false,
+        })
+        if (cfg && cfg.minimumValue > 0) {
+          minimumEstimatedAmountCLP = cfg.minimumValue
+        }
+      } catch {
+        // Sin configuración disponible → no enviar el parámetro.
+      }
+    }
+
     const newSearchFilters: SearchParams = {
       q: localFilters.search || undefined,
       // En modo histórico, NO enviamos el status al servidor para traer todas las solicitudes
@@ -484,13 +508,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       isPartner: isPartnerValue,
       hasBankInfo: hasBankInfoValue,
       partnerId: allianceFilter !== 'all' ? allianceFilter : undefined,
-      // Filtrado por mínima devolución: solo si el toggle está activo y el
-      // servicio de configuración entregó un valor (404 → sin parámetro).
-      ...(minRefundFilter && minRefundValue != null && minRefundValue > 0
-        ? { minimumEstimatedAmountCLP: minRefundValue }
+      ...(minimumEstimatedAmountCLP !== undefined
+        ? { minimumEstimatedAmountCLP }
         : {}),
     }
-    
+
+    // Invalidar primero: garantiza que cada clic en Buscar ejecute la búsqueda
+    // aunque los filtros sean idénticos a los de la búsqueda anterior (la key
+    // cacheada estaría fresca por staleTime y React Query no re-fetchería).
+    queryClient.invalidateQueries({ queryKey: ['refunds-search'] })
     setSearchFilters(newSearchFilters)
     setUseSearchEndpoint(true)
     
