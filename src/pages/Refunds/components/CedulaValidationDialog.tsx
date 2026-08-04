@@ -33,10 +33,7 @@ import {
   type CreditoValidationResponse,
   type CreditoValidationMessage,
 } from '@/lib/creditoValidation'
-import {
-  useAIValidationSettings,
-  useCreditoDocsValidationSettings,
-} from '@/hooks/useAIValidationSettings'
+import { useAiValidationConfig } from '@/hooks/useAiValidationConfig'
 import type { RefundDocument } from '@/types/refund'
 import { cn } from '@/lib/utils'
 
@@ -134,8 +131,11 @@ export function CedulaValidationDialog({
   const [creditoResults, setCreditoResults] = useState<CreditoDocResult[]>([])
   const [creditoProgress, setCreditoProgress] = useState<{ current: number; total: number; fileName?: string }>({ current: 0, total: 0 })
   const [creditoConfirmForce, setCreditoConfirmForce] = useState(false)
-  const { enabled: cedulaEnabled } = useAIValidationSettings()
-  const { enabled: creditoEnabled } = useCreditoDocsValidationSettings()
+  // Flags desde el servicio (servidor): imageValidationEnabled gobierna la
+  // validación de cédula y docsValidationEnabled la de documentos de crédito.
+  const { config: aiValidationConfig } = useAiValidationConfig()
+  const cedulaEnabled = aiValidationConfig.imageValidationEnabled
+  const creditoEnabled = aiValidationConfig.docsValidationEnabled
 
   const reset = () => {
     setPhase('idle')

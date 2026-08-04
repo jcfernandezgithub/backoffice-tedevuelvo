@@ -4,7 +4,6 @@ import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
 import { AIValidationSection } from './components/AIValidationSection';
-import { AiImageValidationSection } from './components/AiImageValidationSection';
 import { PolicyMinimumValueSection } from './components/PolicyMinimumValueSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
 import { RolesSection } from './components/RolesSection';
@@ -17,7 +16,6 @@ import {
   Sparkles,
   Building2,
   ShieldCheck,
-  ScanSearch,
   BadgeDollarSign,
 } from 'lucide-react';
 
@@ -76,18 +74,10 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'ai-validation',
     label: 'Validación con IA',
-    description: 'Cédula en docs recibidos',
+    description: 'Imágenes y documentos',
     icon: Sparkles,
     group: 'Automatización',
     component: <AIValidationSection />,
-  },
-  {
-    id: 'ai-image-validation',
-    label: 'Validación de imágenes IA',
-    description: 'Interruptor global del servicio',
-    icon: ScanSearch,
-    group: 'Automatización',
-    component: <AiImageValidationSection />,
   },
   {
     id: 'roles',

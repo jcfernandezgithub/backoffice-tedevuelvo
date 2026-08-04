@@ -48,7 +48,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
-import { useAIValidationSettings, useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
+import { useAiValidationConfig } from '@/hooks/useAiValidationConfig'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -250,9 +250,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const [cedulaValidationOpen, setCedulaValidationOpen] = useState(false)
   const [cedulaValidated, setCedulaValidated] = useState(false)
   const [cedulaValidationForced, setCedulaValidationForced] = useState(false)
-  const { enabled: aiValidationEnabled } = useAIValidationSettings()
-  const { enabled: creditoValidationEnabled } = useCreditoDocsValidationSettings()
-  const anyAIValidationEnabled = aiValidationEnabled || creditoValidationEnabled
+  // Flags de validación con IA: la fuente de verdad es el servidor
+  // (GET /ai-image-validation), ya no parámetros locales del front.
+  const { config: aiValidationConfig } = useAiValidationConfig()
+  const anyAIValidationEnabled =
+    aiValidationConfig.imageValidationEnabled || aiValidationConfig.docsValidationEnabled
 
   // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
   // o si cambia la solicitud actual.
