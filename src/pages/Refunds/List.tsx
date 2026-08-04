@@ -484,6 +484,11 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       isPartner: isPartnerValue,
       hasBankInfo: hasBankInfoValue,
       partnerId: allianceFilter !== 'all' ? allianceFilter : undefined,
+      // Filtrado por mínima devolución: solo si el toggle está activo y el
+      // servicio de configuración entregó un valor (404 → sin parámetro).
+      ...(minRefundFilter && minRefundValue != null && minRefundValue > 0
+        ? { minimumEstimatedAmountCLP: minRefundValue }
+        : {}),
     }
     
     setSearchFilters(newSearchFilters)
@@ -566,6 +571,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setNroCreditoFilter('')
     setInstitutionFilter('all')
     setHistoricalStatusMode(false)
+    setMinRefundFilter(false)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
@@ -1272,6 +1278,34 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               {historicalStatusMode && (
                 <span className="text-xs text-muted-foreground">
                   Mostrando el estado que tenían las solicitudes en la fecha seleccionada
+                </span>
+              )}
+            </div>
+            {/* Toggle Filtrado por mínima devolución */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="min-refund-filter"
+                  checked={minRefundFilter}
+                  onCheckedChange={setMinRefundFilter}
+                />
+                <label
+                  htmlFor="min-refund-filter"
+                  className={`flex items-center gap-1.5 text-sm cursor-pointer select-none ${
+                    minRefundFilter ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Flag className="h-3.5 w-3.5" />
+                  Filtrado por mínima devolución
+                </label>
+              </div>
+              {minRefundFilter && (
+                <span className="text-xs text-muted-foreground">
+                  {isMinRefundLoading
+                    ? 'Consultando valor mínimo configurado…'
+                    : minRefundValue != null && minRefundValue > 0
+                      ? `Solo solicitudes con devolución estimada desde $${formatCLPNumber(minRefundValue)}`
+                      : 'Sin valor mínimo configurado: se listan todas las solicitudes'}
                 </span>
               )}
             </div>
