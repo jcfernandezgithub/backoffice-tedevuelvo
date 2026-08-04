@@ -36,6 +36,7 @@ export interface SearchParams {
   isPartner?: 0 | 1
   hasBankInfo?: 0 | 1
   partnerId?: string
+  minimumEstimatedAmountCLP?: number
 }
 
 export interface SearchResponse {
@@ -82,6 +83,9 @@ class RefundAdminApiClient {
     if (params.isPartner !== undefined) query.append('isPartner', String(params.isPartner))
     if (params.hasBankInfo !== undefined) query.append('hasBankInfo', String(params.hasBankInfo))
     if (params.partnerId) query.append('partnerId', params.partnerId)
+    if (params.minimumEstimatedAmountCLP !== undefined && params.minimumEstimatedAmountCLP !== null) {
+      query.append('minimumEstimatedAmountCLP', String(params.minimumEstimatedAmountCLP))
+    }
 
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${endpoint}?${query}`, {
       headers: await this.getAuthHeaders(),
