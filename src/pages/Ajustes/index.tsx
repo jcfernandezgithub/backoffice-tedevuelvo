@@ -50,9 +50,9 @@ const NAV_ITEMS: NavItem[] = [
     component: <PlanCumplimientoForm />,
   },
   {
-    id: 'valor-minimo-poliza',
-    label: 'Valor mínimo de póliza',
-    description: 'Filtro por monto de póliza',
+    id: 'valor-minimo-devolucion',
+    label: 'Valor mínimo de devolución',
+    description: 'Filtro por monto de devolución',
     icon: BadgeDollarSign,
     group: 'Operación',
     component: <PolicyMinimumValueSection />,
