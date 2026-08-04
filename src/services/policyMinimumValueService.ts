@@ -1,10 +1,10 @@
 import { authenticatedFetch, publicFetch } from './apiClient';
 
 /**
- * Configuración del filtro de valor mínimo de póliza.
+ * Configuración del filtro de valor mínimo de devolución.
  *
  * Regla de negocio (la aplica el backend): si `value <= minimumValue`,
- * la póliza debe filtrarse. El límite NUNCA se fija en el frontend; se
+ * la devolución debe filtrarse. El límite NUNCA se fija en el frontend; se
  * lee de la configuración activa que devuelve cada respuesta.
  *
  * Endpoints:
@@ -102,7 +102,7 @@ export const policyMinimumValueService = {
         method: 'POST',
         body: JSON.stringify({ value }),
       }),
-      'validar el valor de la póliza',
+      'validar el valor de la devolución',
     );
     return raw as PolicyMinimumValueResult;
   },

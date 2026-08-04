@@ -135,7 +135,7 @@ function PolicyConfigFormDialog({
             {editTarget ? 'Editar configuración' : 'Nueva configuración'}
           </DialogTitle>
           <DialogDescription>
-            Regla aplicada por el backend: si el valor de la póliza es{' '}
+            Regla aplicada por el backend: si el valor de la devolución es{' '}
             <span className="font-medium">menor o igual</span> al mínimo, se filtra.
           </DialogDescription>
         </DialogHeader>
@@ -182,7 +182,7 @@ function PolicyConfigFormDialog({
             <Textarea
               id="pmv-msg"
               rows={3}
-              placeholder="El valor de la póliza es igual o menor al mínimo establecido."
+              placeholder="El valor de la devolución es igual o menor al mínimo establecido."
               value={form.message}
               onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
             />
@@ -286,7 +286,7 @@ export function PolicyMinimumValueSection() {
               <Input
                 inputMode="numeric"
                 className="pl-7"
-                placeholder="Ingresa un valor de póliza, ej: 18.000"
+                placeholder="Ingresa un monto de devolución, ej: 18.000"
                 value={testDigits ? formatCLPNumber(testDigits) : ''}
                 onChange={(e) => {
                   setTestDigits(e.target.value.replace(/\D/g, ''));
@@ -341,8 +341,8 @@ export function PolicyMinimumValueSection() {
                   )}
                 >
                   {testResult.shouldFilter
-                    ? 'La póliza sería filtrada'
-                    : 'La póliza sería aceptada'}
+                    ? 'La devolución sería filtrada'
+                    : 'La devolución sería aceptada'}
                 </p>
               </div>
               {testResult.message && (
@@ -377,7 +377,7 @@ export function PolicyMinimumValueSection() {
             <Info className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               Regla vigente: valor <span className="font-medium">menor o igual</span> al mínimo
-              → la póliza se filtra. El límite lo define siempre el backend; este panel solo lo
+              → la devolución se filtra. El límite lo define siempre el backend; este panel solo lo
               administra.
             </p>
           </div>
@@ -395,7 +395,7 @@ export function PolicyMinimumValueSection() {
             <p className="text-xs text-muted-foreground leading-tight mt-1">
               {configs?.length
                 ? `${configs.length} registro${configs.length === 1 ? '' : 's'}`
-                : 'Valores mínimos de póliza'}
+                : 'Valores mínimos de devolución'}
             </p>
           </div>
           <Button
@@ -514,7 +514,7 @@ export function PolicyMinimumValueSection() {
               <span className="font-medium">
                 {deleteTarget ? formatCurrency(deleteTarget.minimumValue) : ''}
               </span>
-              . Si es la configuración activa, el filtro de pólizas dejará de aplicarse hasta
+              . Si es la configuración activa, el filtro de devoluciones dejará de aplicarse hasta
               que exista otra. Esta acción no se puede deshacer.
             </AlertDialogDescription>
           </AlertDialogHeader>
