@@ -4,6 +4,8 @@ import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
 import { AIValidationSection } from './components/AIValidationSection';
+import { AiImageValidationSection } from './components/AiImageValidationSection';
+import { PolicyMinimumValueSection } from './components/PolicyMinimumValueSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
 import { RolesSection } from './components/RolesSection';
 import {
@@ -15,6 +17,8 @@ import {
   Sparkles,
   Building2,
   ShieldCheck,
+  ScanSearch,
+  BadgeDollarSign,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -46,6 +50,14 @@ const NAV_ITEMS: NavItem[] = [
     component: <PlanCumplimientoForm />,
   },
   {
+    id: 'valor-minimo-poliza',
+    label: 'Valor mínimo de póliza',
+    description: 'Filtro por monto de póliza',
+    icon: BadgeDollarSign,
+    group: 'Operación',
+    component: <PolicyMinimumValueSection />,
+  },
+  {
     id: 'tasas',
     label: 'Tasas para Cálculo',
     description: 'Cesantía y desgravamen',
@@ -68,6 +80,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Sparkles,
     group: 'Automatización',
     component: <AIValidationSection />,
+  },
+  {
+    id: 'ai-image-validation',
+    label: 'Validación de imágenes IA',
+    description: 'Interruptor global del servicio',
+    icon: ScanSearch,
+    group: 'Automatización',
+    component: <AiImageValidationSection />,
   },
   {
     id: 'roles',
