@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.5
+## Versión 4.2.6
 
 ## Changelog
+
+### Versión 4.2.6 - 2026-08-04
+
+#### Certificado de cobertura Póliza N° 353 (reemplaza a Póliza 347)
+- Todos los certificados de desgravamen nuevos (flujo individual y procesos masivos) se emiten ahora bajo la **Póliza Colectiva N° 353** (POL 2 2015 0573), reemplazando por completo a la Póliza 347. La vigencia se mantiene: 04/05/2026 al 03/05/2029.
+- Nueva configuración `pol353Config` con **4 planes** de capital asegurado: se agrega el **Plan 4** para saldos insolutos entre $100.000.001 y $150.000.000 (TBM 0,8800 para 18–55 años y 1,0000 para 56–65 años), elevando el capital máximo asegurable a $150.000.000.
+- Se actualizaron las carátulas y cuerpos del certificado (Banco de Chile, Chevrolet SF y genérico): tabla de tasas con 4 planes, tabla de capitales por plan, y comisiones de cobranza e intermediación con columna Plan 4 (cobranza Plan 4 igual a Plan 3: 38,21% + IVA / 34,93% + IVA; intermediación 15% + IVA en todos los planes).
+- Nueva firma compuesta de Augustar (timbre circular + firma manuscrita C. Nieto) aplicada en la sección de firmas del certificado; se ajustó el encuadre para preservar su proporción original.
+- Se eliminó el generador legacy en desuso de la Póliza 344 (`generatePrimePDF`, ~1.100 líneas muertas) y toda la configuración de la Póliza 347.
 
 ### Versión 4.2.5 - 2026-07-30
 
