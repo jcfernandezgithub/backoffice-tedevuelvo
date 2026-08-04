@@ -386,24 +386,13 @@ export function PolicyMinimumValueSection() {
             <BadgeDollarSign className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold leading-tight">Configuraciones</p>
+            <p className="text-sm font-semibold leading-tight">Configuración</p>
             <p className="text-xs text-muted-foreground leading-tight mt-1">
               {configs?.length
-                ? `${configs.length} registro${configs.length === 1 ? '' : 's'}`
-                : 'Valores mínimos de devolución'}
+                ? 'Una sola configuración, activa o inactiva'
+                : 'Valor mínimo de devolución'}
             </p>
           </div>
-          <Button
-            size="sm"
-            className="gap-2 shrink-0"
-            onClick={() => {
-              setEditTarget(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Nueva configuración
-          </Button>
         </div>
 
         <CardContent className="p-0">
@@ -431,11 +420,22 @@ export function PolicyMinimumValueSection() {
               <div className="h-11 w-11 rounded-full bg-muted grid place-items-center">
                 <Inbox className="h-5 w-5 text-muted-foreground" />
               </div>
-              <p className="text-sm font-semibold">Sin configuraciones</p>
+              <p className="text-sm font-semibold">Sin configuración</p>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Aún no hay valores mínimos registrados. Crea la primera configuración para
+                Aún no hay un valor mínimo registrado. Crea la configuración para
                 activar el filtro.
               </p>
+              <Button
+                size="sm"
+                className="gap-2 mt-1"
+                onClick={() => {
+                  setEditTarget(null);
+                  setFormOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Crear configuración
+              </Button>
             </div>
           ) : (
             <ul className="divide-y divide-border/60">
@@ -477,14 +477,6 @@ export function PolicyMinimumValueSection() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget(c)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </li>
               ))}
@@ -499,47 +491,6 @@ export function PolicyMinimumValueSection() {
         onOpenChange={setFormOpen}
         editTarget={editTarget}
       />
-
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar esta configuración?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se eliminará el valor mínimo de{' '}
-              <span className="font-medium">
-                {deleteTarget ? formatCurrency(deleteTarget.minimumValue) : ''}
-              </span>
-              . Si es la configuración activa, el filtro de devoluciones dejará de aplicarse hasta
-              que exista otra. Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={remove.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (!deleteTarget) return;
-                remove.mutate(deleteTarget.id, {
-                  onSuccess: () => {
-                    toast.success('Configuración eliminada');
-                    setDeleteTarget(null);
-                  },
-                  onError: (err: Error) =>
-                    toast.error('No se pudo eliminar', { description: err.message }),
-                });
-              }}
-            >
-              {remove.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Eliminar'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
