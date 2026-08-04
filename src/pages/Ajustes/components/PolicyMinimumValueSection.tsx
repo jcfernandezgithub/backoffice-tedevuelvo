@@ -213,11 +213,10 @@ function PolicyConfigFormDialog({
 
 export function PolicyMinimumValueSection() {
   const { data: configs, isLoading, isError, error, refetch } = usePolicyMinimumValueConfigs();
-  const { update, remove } = usePolicyMinimumValueMutations();
+  const { update } = usePolicyMinimumValueMutations();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PolicyMinimumValueConfig | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<PolicyMinimumValueConfig | null>(null);
 
   // Playground de validación
   const [testDigits, setTestDigits] = useState('');
