@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { authService } from '@/services/authService'
+import { policyMinimumValueService } from '@/services/policyMinimumValueService'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
@@ -226,6 +227,24 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   })
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
   const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
+
+  // Toggle "Filtrado por mínima devolución": al activarse consulta la
+  // configuración pública de valor mínimo. Si el servicio responde 404
+  // (sin configuración), la búsqueda se ejecuta sin el parámetro.
+  const [minRefundFilter, setMinRefundFilter] = useState(false)
+
+  const { data: minRefundConfig, isLoading: isMinRefundLoading } = useQuery({
+    queryKey: ['policy-minimum-value-active'],
+    queryFn: async () => {
+      const configs = await policyMinimumValueService.list() // 404 → []
+      return configs.find(c => c.isActive) ?? configs[0] ?? null
+    },
+    enabled: minRefundFilter,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+
+  const minRefundValue = minRefundConfig?.minimumValue ?? null
 
   // En modo histórico también usamos el endpoint de búsqueda por updatedAt
   // (mismos filtros, misma respuesta que /search pero filtrando por updatedAt)
