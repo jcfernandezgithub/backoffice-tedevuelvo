@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Ban,
   Inbox,
+  MessageSquareText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -346,9 +347,15 @@ export function PolicyMinimumValueSection() {
                 </p>
               </div>
               {testResult.message && (
-                <p className="text-xs text-foreground/80 leading-relaxed">
-                  {testResult.message}
-                </p>
+                <div className="rounded-lg border bg-background px-4 py-3 shadow-sm space-y-1.5">
+                  <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <MessageSquareText className="h-3.5 w-3.5 shrink-0" />
+                    Mensaje que se mostrará en TeDevuelvo
+                  </p>
+                  <p className="text-sm font-medium leading-relaxed text-foreground">
+                    “{testResult.message}”
+                  </p>
+                </div>
               )}
               <div className="grid grid-cols-3 gap-3 pt-1">
                 <div>
