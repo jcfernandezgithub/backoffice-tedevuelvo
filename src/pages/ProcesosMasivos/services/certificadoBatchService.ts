@@ -5,9 +5,9 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import {
   isBancoChile,
   usesBancoChileTemplate,
-  generateBancoChilePol347PDF,
-  generateGenericPol347PDF,
-  generateChevroletSfPol347PDF,
+  generateBancoChilePol353PDF,
+  generateGenericPol353PDF,
+  generateChevroletSfPol353PDF,
   type BancoChileCertificateData,
 } from '@/pages/Refunds/components/pdfGenerators/bancoChilePdfGenerator'
 import {
@@ -416,7 +416,7 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
   }
 
   // Determinar tipo de seguro: cesantía pura usa el formato Southbridge,
-  // todo lo demás (desgravamen / ambos) usa el formato Pol347.
+  // todo lo demás (desgravamen / ambos) usa el formato Pol353.
   const insuranceType = getInsuranceType(refund)
   const isPureCesantia = insuranceType === 'cesantia'
   const targetKind = isPureCesantia ? CERTIFICATE_KIND_CESANTIA : CERTIFICATE_KIND
@@ -544,11 +544,11 @@ export async function processSingleRow(row: CertificadoCsvRow): Promise<Certific
     } else {
       const { augustar, tdv, cng } = await preloadFirmas()
       if (isBC) {
-        pdfBlob = await generateBancoChilePol347PDF(refund, formData, augustar, tdv, cng)
+        pdfBlob = await generateBancoChilePol353PDF(refund, formData, augustar, tdv, cng)
       } else if (usesChileTpl) {
-        pdfBlob = await generateChevroletSfPol347PDF(refund, formData, augustar, tdv, cng)
+        pdfBlob = await generateChevroletSfPol353PDF(refund, formData, augustar, tdv, cng)
       } else {
-        pdfBlob = await generateGenericPol347PDF(refund, formData, augustar, tdv, cng)
+        pdfBlob = await generateGenericPol353PDF(refund, formData, augustar, tdv, cng)
       }
     }
   } catch (err: any) {

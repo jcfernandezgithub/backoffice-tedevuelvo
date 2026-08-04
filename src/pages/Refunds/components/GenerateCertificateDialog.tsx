@@ -28,9 +28,9 @@ import firmaCngImg from '@/assets/firma-cng.jpeg'
 import { 
   isBancoChile, 
   usesBancoChileTemplate,
-  generateBancoChilePol347PDF,
-  generateGenericPol347PDF,
-  generateChevroletSfPol347PDF,
+  generateBancoChilePol353PDF,
+  generateGenericPol353PDF,
+  generateChevroletSfPol353PDF,
   getBancoChileTasaBrutaMensual,
   BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
@@ -654,16 +654,16 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
 
       // Generador unificado Pol347 (Banco de Chile / Chevrolet SF / genérico)
       if (isBancoChileRefund) {
-        pdfBlob = await generateBancoChilePol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+        pdfBlob = await generateBancoChilePol353PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
       } else if (isChevroletSf) {
-        pdfBlob = await generateChevroletSfPol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+        pdfBlob = await generateChevroletSfPol353PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
       } else {
-        pdfBlob = await generateGenericPol347PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
+        pdfBlob = await generateGenericPol353PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
       }
 
       // Descarga local
       if (pdfBlob) {
-        const fileName = `Cert_Cobertura_Desgravamen_Pol347_${refund.rut.replace(/\./g, '').replace('-', '_')}_${formData.folio || new Date().toISOString().split('T')[0]}.pdf`
+        const fileName = `Cert_Cobertura_Desgravamen_Pol353_${refund.rut.replace(/\./g, '').replace('-', '_')}_${formData.folio || new Date().toISOString().split('T')[0]}.pdf`
         const url = URL.createObjectURL(pdfBlob)
         const a = document.createElement('a')
         a.href = url

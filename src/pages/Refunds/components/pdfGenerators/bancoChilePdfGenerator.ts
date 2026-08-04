@@ -22,18 +22,18 @@
  *   Nombre: Banco de Chile  /  RUT: 97.004.000-5
  *
  * Datos dinámicos provienen de `refund` (snapshot) y `formData` (campos del
- * diálogo). Plan, TBM y Prima Única se calculan con `pol347Config`.
+ * diálogo). Plan, TBM y Prima Única se calculan con `pol353Config`.
  */
 
 import jsPDF from 'jspdf'
 import { RefundRequest } from '@/types/refund'
 import {
-  POL347_CONFIG,
-  calcPrimaUnicaPol347,
+  POL353_CONFIG,
+  calcPrimaUnicaPol353,
   formatCLP,
   formatTasa,
-  type Pol347Plan,
-} from './pol347Config'
+  type Pol353Plan,
+} from './pol353Config'
 
 export interface BancoChileCertificateData {
   folio: string
@@ -56,12 +56,12 @@ export interface BancoChileCertificateData {
 /** Compatibilidad con código que aún importa BANCO_CHILE_CONFIG. */
 export const BANCO_CHILE_CONFIG = {
   pol347: {
-    numero: POL347_CONFIG.numero,
-    codigoCMF: POL347_CONFIG.codigoCMF,
-    vigenciaInicio: POL347_CONFIG.vigenciaInicio,
-    vigenciaFin: POL347_CONFIG.vigenciaFin,
-    capitalMaximo: POL347_CONFIG.capitalMaximo,
-    corredor: POL347_CONFIG.corredor,
+    numero: POL353_CONFIG.numero,
+    codigoCMF: POL353_CONFIG.codigoCMF,
+    vigenciaInicio: POL353_CONFIG.vigenciaInicio,
+    vigenciaFin: POL353_CONFIG.vigenciaFin,
+    capitalMaximo: POL353_CONFIG.capitalMaximo,
+    corredor: POL353_CONFIG.corredor,
   },
 }
 
@@ -128,7 +128,7 @@ export const getBancoChileTasaBrutaMensual = (
   age?: number,
   saldoInsoluto: number = 0,
 ): number => {
-  const { tbm } = calcPrimaUnicaPol347(saldoInsoluto, age, 1)
+  const { tbm } = calcPrimaUnicaPol353(saldoInsoluto, age, 1)
   return tbm
 }
 
@@ -136,7 +136,7 @@ export const getBancoChileTasaBrutaMensual = (
 // Generador principal
 // ─────────────────────────────────────────────────────────────────────────────
 
-const generatePol347PDF = async (
+const generatePol353PDF = async (
   refund: RefundRequest,
   formData: BancoChileCertificateData,
   firmaAugustarBase64: string,
@@ -185,7 +185,7 @@ const generatePol347PDF = async (
     refund.calculationSnapshot?.remainingInstallments ||
     0
   const age = refund.calculationSnapshot?.age
-  const { plan, tbm, primaUnica } = calcPrimaUnicaPol347(saldoInsoluto, age, nper)
+  const { plan, tbm, primaUnica } = calcPrimaUnicaPol353(saldoInsoluto, age, nper)
   const saldoFmt = formatCLP(saldoInsoluto)
   const primaFmt = formatCLP(primaUnica)
 
@@ -212,9 +212,9 @@ const generatePol347PDF = async (
   y += 4
   doc.setFont('helvetica', 'normal')
   doc.rect(margin, y - 3, 80, 6, 'S')
-  doc.text(POL347_CONFIG.codigoCMF, margin + 2, y + 1)
+  doc.text(POL353_CONFIG.codigoCMF, margin + 2, y + 1)
   doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
-  doc.text(POL347_CONFIG.numero, pageWidth - margin - 38, y + 1)
+  doc.text(POL353_CONFIG.numero, pageWidth - margin - 38, y + 1)
   y += 10
 
   // Contratante
@@ -224,9 +224,9 @@ const generatePol347PDF = async (
   y += 4
   doc.setFont('helvetica', 'normal')
   doc.rect(margin, y - 3, 100, 6, 'S')
-  doc.text(POL347_CONFIG.contratante.nombre, margin + 2, y + 1)
+  doc.text(POL353_CONFIG.contratante.nombre, margin + 2, y + 1)
   doc.rect(pageWidth - margin - 40, y - 3, 35, 6, 'S')
-  doc.text(POL347_CONFIG.contratante.rut, pageWidth - margin - 38, y + 1)
+  doc.text(POL353_CONFIG.contratante.rut, pageWidth - margin - 38, y + 1)
   y += 10
 
   // Asegurado
@@ -269,7 +269,7 @@ const generatePol347PDF = async (
   drawCheckbox(margin, y, false)
   doc.text('Individual', margin + 7, y)
   doc.rect(margin + 35, y - 3, 30, 5, 'S')
-  doc.text(POL347_CONFIG.vigenciaInicio, margin + 37, y)
+  doc.text(POL353_CONFIG.vigenciaInicio, margin + 37, y)
   doc.text('Inicio', margin + 70, y)
   drawCheckbox(margin + 100, y, true)
   doc.text('SI', margin + 107, y)
@@ -277,7 +277,7 @@ const generatePol347PDF = async (
   drawCheckbox(margin, y, true)
   doc.text('Colectiva', margin + 7, y)
   doc.rect(margin + 35, y - 3, 30, 5, 'S')
-  doc.text(POL347_CONFIG.vigenciaFin, margin + 37, y)
+  doc.text(POL353_CONFIG.vigenciaFin, margin + 37, y)
   doc.text('Termino', margin + 70, y)
   drawCheckbox(margin + 100, y, false)
   doc.text('NO', margin + 107, y)
@@ -291,7 +291,7 @@ const generatePol347PDF = async (
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  for (let p: Pol347Plan = 1; p <= 3; p = (p + 1) as Pol347Plan) {
+  for (let p: Pol353Plan = 1; p <= 3; p = (p + 1) as Pol353Plan) {
     drawCheckbox(margin, y, plan === p)
     doc.text(`Plan ${p}`, margin + 7, y)
     doc.rect(margin + 50, y - 3, 50, 5, 'S')
@@ -617,7 +617,7 @@ const generatePol347PDF = async (
   doc.setFontSize(9)
   doc.text(`Fecha: ${todayFormatted()}`, margin, y)
   doc.text(`Folio: ${formData.folio || '____________'}`, 70, y)
-  doc.text(`Nro. Póliza: ${POL347_CONFIG.numero}`, 140, y)
+  doc.text(`Nro. Póliza: ${POL353_CONFIG.numero}`, 140, y)
   y += 8
 
   sectionHeader('Certificado de Cobertura', 220)
@@ -700,22 +700,22 @@ const generatePol347PDF = async (
   sectionHeader('Antecedentes de la Compañía Aseguradora')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text(POL347_CONFIG.aseguradora.nombre, margin, y)
-  doc.text(`RUT: ${POL347_CONFIG.aseguradora.rut}`, 120, y)
+  doc.text(POL353_CONFIG.aseguradora.nombre, margin, y)
+  doc.text(`RUT: ${POL353_CONFIG.aseguradora.rut}`, 120, y)
   y += 6
 
   sectionHeader('Antecedentes del Contratante')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text(POL347_CONFIG.contratante.nombre, margin, y)
-  doc.text(`RUT: ${POL347_CONFIG.contratante.rut}`, 120, y)
+  doc.text(POL353_CONFIG.contratante.nombre, margin, y)
+  doc.text(`RUT: ${POL353_CONFIG.contratante.rut}`, 120, y)
   y += 6
 
   sectionHeader('Antecedentes del Corredor')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
-  doc.text(POL347_CONFIG.corredor.nombre, margin, y)
-  doc.text(`RUT: ${POL347_CONFIG.corredor.rut}`, 120, y)
+  doc.text(POL353_CONFIG.corredor.nombre, margin, y)
+  doc.text(`RUT: ${POL353_CONFIG.corredor.rut}`, 120, y)
   y += 7
 
   sectionHeader('Datos del Seguro')
@@ -787,15 +787,15 @@ const generatePol347PDF = async (
   doc.setFont('helvetica', 'normal')
   cx = margin
   drawCell('18 – 55 años', colW[0])
-  drawCell(formatTasa(POL347_CONFIG.tasas['18-55'][0]), colW[1])
-  drawCell(formatTasa(POL347_CONFIG.tasas['18-55'][1]), colW[2])
-  drawCell(formatTasa(POL347_CONFIG.tasas['18-55'][2]), colW[3])
+  drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][0]), colW[1])
+  drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][1]), colW[2])
+  drawCell(formatTasa(POL353_CONFIG.tasas['18-55'][2]), colW[3])
   y += 5
   cx = margin
   drawCell('56 – 65 años', colW[0])
-  drawCell(formatTasa(POL347_CONFIG.tasas['56-65'][0]), colW[1])
-  drawCell(formatTasa(POL347_CONFIG.tasas['56-65'][1]), colW[2])
-  drawCell(formatTasa(POL347_CONFIG.tasas['56-65'][2]), colW[3])
+  drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][0]), colW[1])
+  drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][1]), colW[2])
+  drawCell(formatTasa(POL353_CONFIG.tasas['56-65'][2]), colW[3])
   y += 8
 
   sectionHeader('Asegurados')
@@ -829,7 +829,7 @@ const generatePol347PDF = async (
   doc.rect(margin, y - 3, 100, 5, 'S')
   doc.rect(margin + 100, y - 3, 60, 5, 'S')
   doc.text('Cobertura de Fallecimiento', margin + 2, y)
-  doc.text(POL347_CONFIG.codigoCMF, margin + 102, y)
+  doc.text(POL353_CONFIG.codigoCMF, margin + 102, y)
   y += 7
 
   doc.setFontSize(7)
@@ -879,7 +879,7 @@ const generatePol347PDF = async (
     drawCell(row[1], planColW[1])
     // Tercera columna con marca si corresponde
     doc.rect(cx, y - 3, planColW[2], 5, 'S')
-    if (plan === ((idx + 1) as Pol347Plan)) doc.text('X', cx + planColW[2] / 2, y, { align: 'center' })
+    if (plan === ((idx + 1) as Pol353Plan)) doc.text('X', cx + planColW[2] / 2, y, { align: 'center' })
     cx += planColW[2]
     y += 5
   })
@@ -890,7 +890,7 @@ const generatePol347PDF = async (
 
   sectionHeader('Plazo Crédito')
   doc.setFont('helvetica', 'normal')
-  writeWrapped(`El plazo del crédito asociado al presente seguro no podrá superar los ${POL347_CONFIG.plazoMaximoMeses} meses.`)
+  writeWrapped(`El plazo del crédito asociado al presente seguro no podrá superar los ${POL353_CONFIG.plazoMaximoMeses} meses.`)
 
   sectionHeader('Interés Asegurable')
   doc.setFont('helvetica', 'normal')
@@ -905,9 +905,9 @@ const generatePol347PDF = async (
   sectionHeader('Requisitos de Asegurabilidad')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text(`Edad Mínima de Ingreso: ${POL347_CONFIG.edadMinimaIngreso} años`, margin, y); y += 3
-  doc.text(`Edad Máxima de Ingreso: ${POL347_CONFIG.edadMaximaIngreso} años y 364 días`, margin, y); y += 3
-  doc.text(`Edad máxima de Permanencia: ${POL347_CONFIG.edadMaximaPermanenciaTexto}`, margin, y); y += 4
+  doc.text(`Edad Mínima de Ingreso: ${POL353_CONFIG.edadMinimaIngreso} años`, margin, y); y += 3
+  doc.text(`Edad Máxima de Ingreso: ${POL353_CONFIG.edadMaximaIngreso} años y 364 días`, margin, y); y += 3
+  doc.text(`Edad máxima de Permanencia: ${POL353_CONFIG.edadMaximaPermanenciaTexto}`, margin, y); y += 4
   writeWrapped(
     'La edad del asegurado al inicio del crédito más el plazo del crédito, no deberá superar la edad máxima de permanencia.',
   )
@@ -968,7 +968,7 @@ const generatePol347PDF = async (
   sectionHeader('Comisiones')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text(`Recaudador: ${POL347_CONFIG.contratante.nombre}, Rut: ${POL347_CONFIG.contratante.rut}`, margin, y); y += 4
+  doc.text(`Recaudador: ${POL353_CONFIG.contratante.nombre}, Rut: ${POL353_CONFIG.contratante.rut}`, margin, y); y += 4
   doc.setFont('helvetica', 'bold')
   doc.text('Comisión de Cobranza:', margin, y)
   doc.setFont('helvetica', 'normal')
@@ -1020,7 +1020,7 @@ const generatePol347PDF = async (
   )
   doc.text('Dónde: Costos Fijos t = 3% × Prima Cliente Bruta t', margin, y); y += 5
   doc.setFontSize(7)
-  doc.text(`Corredor: ${POL347_CONFIG.corredor.nombre.toUpperCase()}, Rut: ${POL347_CONFIG.corredor.rut}`, margin, y)
+  doc.text(`Corredor: ${POL353_CONFIG.corredor.nombre.toUpperCase()}, Rut: ${POL353_CONFIG.corredor.rut}`, margin, y)
 
   // ════════════════════════════════════════════════════════════════════════
   // PÁGINA 7 — Comisión Intermediación + Denuncia Siniestro
@@ -1118,7 +1118,7 @@ const generatePol347PDF = async (
   doc.text('a) Ha sido previa y completamente informado y ha aceptado las condiciones señaladas en esta Solicitud de Incorporación y Certificado de Cobertura.', margin + 8, y); y += 3
   doc.text('b) Ha tomado conocimiento de su derecho a decidir libremente sobre la contratación voluntaria del seguro.', margin + 8, y); y += 3
   doc.text('c) Ha ejercido su derecho a la libre elección de la compañía aseguradora.', margin + 8, y); y += 3
-  doc.text(`d) Que el contratante colectivo de la Póliza N°${POL347_CONFIG.numero} es ${POL347_CONFIG.contratante.nombre}.`, margin + 8, y); y += 5
+  doc.text(`d) Que el contratante colectivo de la Póliza N°${POL353_CONFIG.numero} es ${POL353_CONFIG.contratante.nombre}.`, margin + 8, y); y += 5
 
   writeNumbered(
     '2.',
@@ -1127,7 +1127,7 @@ const generatePol347PDF = async (
 
   writeNumbered(
     '3.',
-    `Vigencia de la Póliza Colectiva: La póliza colectiva tendrá vigencia desde el ${POL347_CONFIG.vigenciaInicioLargo} hasta el ${POL347_CONFIG.vigenciaFinLargo} y se renovará tácita y sucesivamente en los mismos términos, por periodos de 1 año cada uno, salvo voluntad en contrario dada por el contratante o la aseguradora, según corresponda, por medio de carta certificada notarial enviado al domicilio de la parte correspondiente.`,
+    `Vigencia de la Póliza Colectiva: La póliza colectiva tendrá vigencia desde el ${POL353_CONFIG.vigenciaInicioLargo} hasta el ${POL353_CONFIG.vigenciaFinLargo} y se renovará tácita y sucesivamente en los mismos términos, por periodos de 1 año cada uno, salvo voluntad en contrario dada por el contratante o la aseguradora, según corresponda, por medio de carta certificada notarial enviado al domicilio de la parte correspondiente.`,
   )
 
   writeNumbered(
@@ -1268,14 +1268,14 @@ const generatePol347PDF = async (
 /**
  * Genera el certificado Pol347 para Banco de Chile (con beneficiario fijo).
  */
-export const generateBancoChilePol347PDF = (
+export const generateBancoChilePol353PDF = (
   refund: RefundRequest,
   formData: BancoChileCertificateData,
   firmaAugustarBase64: string,
   firmaTdvBase64: string,
   firmaCngBase64: string,
 ): Promise<Blob> =>
-  generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
+  generatePol353PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
     useBancoChileTemplate: true,
     useBancoChileBeneficiaryFallback: true,
   })
@@ -1284,14 +1284,14 @@ export const generateBancoChilePol347PDF = (
  * Genera el certificado genérico Pol347 (no Banco de Chile). El beneficiario
  * irrevocable se toma desde formData.
  */
-export const generateGenericPol347PDF = (
+export const generateGenericPol353PDF = (
   refund: RefundRequest,
   formData: BancoChileCertificateData,
   firmaAugustarBase64: string,
   firmaTdvBase64: string,
   firmaCngBase64: string,
 ): Promise<Blob> =>
-  generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
+  generatePol353PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
     useBancoChileTemplate: false,
     useBancoChileBeneficiaryFallback: false,
   })
@@ -1300,19 +1300,19 @@ export const generateGenericPol347PDF = (
  * Genera el certificado Pol347 para Chevrolet SF (mismo layout que Banco de Chile,
  * pero el beneficiario irrevocable es el ingresado en el formulario, sin fallback fijo).
  */
-export const generateChevroletSfPol347PDF = (
+export const generateChevroletSfPol353PDF = (
   refund: RefundRequest,
   formData: BancoChileCertificateData,
   firmaAugustarBase64: string,
   firmaTdvBase64: string,
   firmaCngBase64: string,
 ): Promise<Blob> =>
-  generatePol347PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
+  generatePol353PDF(refund, formData, firmaAugustarBase64, firmaTdvBase64, firmaCngBase64, {
     useBancoChileTemplate: true,
     useBancoChileBeneficiaryFallback: false,
   })
 
 // ─── Aliases legacy ───────────────────────────────────────────────────────
 // Compatibilidad con imports antiguos: ambos llaman al mismo generador Pol347.
-export const generateBancoChilePrimePDF = generateBancoChilePol347PDF
-export const generateBancoChileStandardPDF = generateBancoChilePol347PDF
+export const generateBancoChilePrimePDF = generateBancoChilePol353PDF
+export const generateBancoChileStandardPDF = generateBancoChilePol353PDF
