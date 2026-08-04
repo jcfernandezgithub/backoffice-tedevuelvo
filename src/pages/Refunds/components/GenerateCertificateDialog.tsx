@@ -22,19 +22,16 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import jsPDF from 'jspdf'
-import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
+import firmaAugustarImg from '@/assets/firma-augustar-353.png'
 import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
-import { 
-  isBancoChile, 
+import {
+  isBancoChile,
   usesBancoChileTemplate,
   generateBancoChilePol353PDF,
   generateGenericPol353PDF,
   generateChevroletSfPol353PDF,
-  getBancoChileTasaBrutaMensual,
-  BANCO_CHILE_CONFIG
 } from './pdfGenerators/bancoChilePdfGenerator'
-import { getPlanByAmount, POL347_CONFIG } from './pdfGenerators/pol347Config'
 import { getBankRateMatrix } from '@/services/ratesService'
 
 // Mapeo de instituciones (igual que en calculadoraUtils)
@@ -354,7 +351,7 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
       canvas.height = img.height
       const ctx = canvas.getContext('2d')
       ctx?.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/jpeg'))
+      resolve(canvas.toDataURL('image/png'))
     }
     img.onerror = reject
     img.src = src
@@ -608,15 +605,6 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   // Check if Prime format should be used (saldo insoluto > 20 million)
   const isPrimeFormat = getSaldoInsolutoValue() > 20000000
 
-  // Tasa Bruta Mensual para Póliza 344 (Prime)
-  const getTasaBrutaMensualPrime = (age?: number): number => {
-    if (!age) return 0.3440
-    if (age >= 18 && age <= 55) return 0.3440
-    if (age >= 56 && age <= 65) return 0.3430
-    return 0.3440
-  }
-
-
   const uploadCertificateToClient = async (pdfBlob: Blob) => {
     const docsPublicId = (refund as any).cloned && (refund as any).siblingId
       ? (refund as any).siblingId
@@ -652,7 +640,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
       let pdfBlob: Blob | undefined
 
 
-      // Generador unificado Pol347 (Banco de Chile / Chevrolet SF / genérico)
+      // Generador unificado Pol353 (Banco de Chile / Chevrolet SF / genérico)
       if (isBancoChileRefund) {
         pdfBlob = await generateBancoChilePol353PDF(refund, formData, firmaBase64, firmaTdvBase64, firmaCngBase64)
       } else if (isChevroletSf) {
@@ -744,7 +732,7 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
               </Badge>
             )}
             <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
-              Póliza 347
+              Póliza 353
             </Badge>
           </DialogTitle>
         </DialogHeader>

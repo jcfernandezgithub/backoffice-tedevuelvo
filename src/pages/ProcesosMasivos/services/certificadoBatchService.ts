@@ -1,4 +1,4 @@
-import firmaAugustarImg from '@/assets/firma-augustar.jpeg'
+import firmaAugustarImg from '@/assets/firma-augustar-353.png'
 import firmaTdvImg from '@/assets/firma-tdv.png'
 import firmaCngImg from '@/assets/firma-cng.jpeg'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -340,7 +340,7 @@ function loadImageAsBase64(src: string, mime: 'image/jpeg' | 'image/png' = 'imag
 export function preloadFirmas(): Promise<{ augustar: string; tdv: string; cng: string }> {
   if (!firmasPromise) {
     firmasPromise = Promise.all([
-      loadImageAsBase64(firmaAugustarImg, 'image/jpeg').catch(() => ''),
+      loadImageAsBase64(firmaAugustarImg, 'image/png').catch(() => ''),
       loadImageAsBase64(firmaTdvImg, 'image/png').catch(() => ''),
       loadImageAsBase64(firmaCngImg, 'image/jpeg').catch(() => ''),
     ]).then(([augustar, tdv, cng]) => ({ augustar, tdv, cng }))
