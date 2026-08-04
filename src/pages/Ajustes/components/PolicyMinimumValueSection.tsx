@@ -3,7 +3,6 @@ import {
   BadgeDollarSign,
   Plus,
   Pencil,
-  Trash2,
   Loader2,
   RefreshCw,
   CloudOff,
@@ -32,15 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
 import {
   usePolicyMinimumValueConfigs,
   usePolicyMinimumValueMutations,
