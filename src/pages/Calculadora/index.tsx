@@ -300,7 +300,7 @@ export default function CalculadoraPage() {
       if (!isCallcenter) {
         doc.setTextColor(80);
         doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-        doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 1000).toFixed(4)}‰`, 25, y); y += 5;
 
         if (resultado.desgravamen.cuotasUtilizadas) {
           doc.text(`Cuotas utilizadas para tasa: ${resultado.desgravamen.cuotasUtilizadas}`, 25, y); y += 5;
@@ -357,8 +357,8 @@ export default function CalculadoraPage() {
 
       if (!isCallcenter) {
         doc.setTextColor(80);
-        doc.text(`Tasa banco: ${(ces.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-        doc.text(`Tasa preferencial: ${(ces.tasaPreferencial * 100).toFixed(4)}%`, 25, y); y += 5;
+        doc.text(`Tasa banco: ${(ces.tasaBanco * 1000).toFixed(4)}‰`, 25, y); y += 5;
+        doc.text(`Tasa preferencial: ${(ces.tasaPreferencial * 1000).toFixed(4)}‰`, 25, y); y += 5;
         doc.text(`Cuotas pendientes: ${cuotasPend}`, 25, y); y += 5;
         doc.text(`Tramo: ${ces.tramoUsado}`, 25, y); y += 5;
 
@@ -1134,7 +1134,7 @@ export default function CalculadoraPage() {
                                   <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
 
                                   <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 100).toFixed(4)}%</span>
+                                  <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
 
@@ -1190,10 +1190,10 @@ export default function CalculadoraPage() {
                               {!isCallcenter && (
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
-                                  <span className="font-mono">{(resultado.cesantia.tasaBanco * 100).toFixed(4)}%</span>
+                                  <span className="font-mono">{(resultado.cesantia.tasaBanco * 1000).toFixed(4)}‰</span>
 
                                   <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 100).toFixed(4)}%</span>
+                                  <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
                             </div>

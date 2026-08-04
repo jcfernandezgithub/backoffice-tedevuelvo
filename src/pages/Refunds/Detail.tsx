@@ -1102,7 +1102,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   <div>
                                     <p className="text-xs text-muted-foreground">Tasa única (Southbridge)</p>
-                                    <p className="font-mono font-semibold text-sm">{TASA_CESANTIA.toFixed(4)}%</p>
+                                    <p className="font-mono font-semibold text-sm">{(TASA_CESANTIA * 10).toFixed(4)}‰</p>
                                   </div>
                                 </div>
                               )
@@ -1110,6 +1110,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const formatTasa = (t: number | null) => t !== null ? `${(t * 100).toFixed(4)}%` : 'N/A'
+                            const formatTasaPorMil = (t: number | null) => t !== null ? `${(t * 1000).toFixed(4)}‰` : 'N/A'
                             return (
                               <div className="col-span-2 mt-1 p-3 rounded-md bg-muted/60 border border-dashed border-muted-foreground/20">
                                 <div className="flex items-center gap-1.5 mb-2">
@@ -1123,7 +1124,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   <div>
                                     <p className="text-xs text-muted-foreground">Tasa preferencial TDV</p>
-                                    <p className="font-mono font-semibold text-sm text-emerald-600 dark:text-emerald-400">{formatTasa(tasaTDV)}</p>
+                                    <p className="font-mono font-semibold text-sm text-emerald-600 dark:text-emerald-400">{formatTasaPorMil(tasaTDV)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -1335,7 +1336,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     <div className="space-y-1">
                                       <p className="text-[11px] text-muted-foreground font-medium">Prima total cesantía (referencial)</p>
                                       <div className="p-2 rounded bg-background border text-xs">
-                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {TASA_CESANTIA.toFixed(4)}% × {remaining}</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {(TASA_CESANTIA * 10).toFixed(4)}‰ × {remaining}</p>
                                         <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(primaCesantia)}</p>
                                       </div>
                                     </div>
