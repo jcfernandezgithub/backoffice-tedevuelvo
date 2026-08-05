@@ -180,7 +180,7 @@ export default function CertificadosCoberturaWizard() {
             <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
               <p className="font-medium text-foreground">Notas importantes</p>
               <ul className="list-disc pl-4 space-y-0.5">
-                <li>Se genera un certificado <strong>Póliza 347 Desgravamen</strong> por fila, usando el formato según institución (Banco de Chile, Chevrolet SF o genérico).</li>
+                <li>Se genera un certificado <strong>Póliza 353 Desgravamen</strong> por fila, usando el formato según institución (Banco de Chile, Chevrolet SF o genérico).</li>
                 <li>El <strong>folio</strong> se asigna automáticamente si la solicitud no lo tiene.</li>
                 <li>Se omiten solicitudes en estado anterior a <code>docs_received</code>, sin mandato firmado, sin cuotas pendientes en el snapshot, o que ya tengan un certificado cargado.</li>
                 <li>Para <strong>Chevrolet SF</strong> los campos <code>beneficiarioNombre</code> y <code>beneficiarioRut</code> son obligatorios. En Banco de Chile el beneficiario se fija en el template.</li>

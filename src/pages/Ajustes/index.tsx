@@ -4,6 +4,7 @@ import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
 import { TasasSection } from './components/TasasSection';
 import { AIValidationSection } from './components/AIValidationSection';
+import { PolicyMinimumValueSection } from './components/PolicyMinimumValueSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
 import { RolesSection } from './components/RolesSection';
 import {
@@ -15,6 +16,7 @@ import {
   Sparkles,
   Building2,
   ShieldCheck,
+  BadgeDollarSign,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -46,6 +48,14 @@ const NAV_ITEMS: NavItem[] = [
     component: <PlanCumplimientoForm />,
   },
   {
+    id: 'valor-minimo-devolucion',
+    label: 'Valor mínimo de devolución',
+    description: 'Filtro por monto de devolución',
+    icon: BadgeDollarSign,
+    group: 'Operación',
+    component: <PolicyMinimumValueSection />,
+  },
+  {
     id: 'tasas',
     label: 'Tasas para Cálculo',
     description: 'Cesantía y desgravamen',
@@ -64,7 +74,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'ai-validation',
     label: 'Validación con IA',
-    description: 'Cédula en docs recibidos',
+    description: 'Imágenes y documentos',
     icon: Sparkles,
     group: 'Automatización',
     component: <AIValidationSection />,

@@ -6,19 +6,23 @@ import {
 import { formatCurrency } from "./formatters";
 
 // ============================================================================
-// Tasas preferenciales TDV - Plan 3 (mensual ‰ sobre saldo insoluto)
+// Tasas preferenciales TDV (mensual ‰ sobre saldo insoluto) - Póliza 353
 // ----------------------------------------------------------------------------
 // Tramo 1: saldo ≤ $20M       → 0.34‰ (18-55) | 0.44‰ (56-64)
 // Tramo 2: $20M < saldo ≤ $60M → 0.44‰ (todas las edades)
 // Tramo 3: $60M < saldo ≤ $100M → 0.44‰ (18-55) | 0.50‰ (56-64)
+// Tramo 4: saldo > $100M      → 0.88‰ (18-55) | 1.00‰ (56-64)
 // ============================================================================
 const TASA_TDV_TRAMO_1_JOVEN = 0.00034; // ≤ $20M, 18-55
 const TASA_TDV_TRAMO_1_MAYOR = 0.00044; // ≤ $20M, 56-64
 const TASA_TDV_TRAMO_2 = 0.00044;       // $20M - $60M (cualquier edad)
 const TASA_TDV_TRAMO_3_JOVEN = 0.00044; // $60M - $100M, 18-55
 const TASA_TDV_TRAMO_3_MAYOR = 0.00050; // $60M - $100M, 56-64
+const TASA_TDV_TRAMO_4_JOVEN = 0.00088; // > $100M, 18-55
+const TASA_TDV_TRAMO_4_MAYOR = 0.001;   // > $100M, 56-64
 const UMBRAL_TRAMO_1 = 20_000_000;
 const UMBRAL_TRAMO_2 = 60_000_000;
+const UMBRAL_TRAMO_3 = 100_000_000;
 // Margen aplicado dentro de `calcularDevolucion`. Se mantiene en 0 para que
 // los montos devueltos sean "crudos" (devolución = seguro restante banco -
 // seguro restante preferencial). El margen de seguridad ahora se aplica
@@ -28,7 +32,7 @@ const UMBRAL_TRAMO_2 = 60_000_000;
 const REFUND_MARGIN_PERCENTAGE = 0;
 
 /**
- * Selección de tasa preferencial TDV (Plan 3) para desgravamen.
+ * Selección de tasa preferencial TDV para desgravamen (Póliza 353).
  * @param saldoInsoluto Saldo insoluto del crédito en CLP
  * @param edad Edad del asegurado en años
  */
@@ -36,7 +40,8 @@ export const obtenerTasaPreferencialTDV = (saldoInsoluto: number, edad: number):
   const esMayor = edad >= 56;
   if (saldoInsoluto <= UMBRAL_TRAMO_1) return esMayor ? TASA_TDV_TRAMO_1_MAYOR : TASA_TDV_TRAMO_1_JOVEN;
   if (saldoInsoluto <= UMBRAL_TRAMO_2) return TASA_TDV_TRAMO_2;
-  return esMayor ? TASA_TDV_TRAMO_3_MAYOR : TASA_TDV_TRAMO_3_JOVEN;
+  if (saldoInsoluto <= UMBRAL_TRAMO_3) return esMayor ? TASA_TDV_TRAMO_3_MAYOR : TASA_TDV_TRAMO_3_JOVEN;
+  return esMayor ? TASA_TDV_TRAMO_4_MAYOR : TASA_TDV_TRAMO_4_JOVEN;
 };
 
 // Mapeo de instituciones

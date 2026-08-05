@@ -48,7 +48,7 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
-import { useAIValidationSettings, useCreditoDocsValidationSettings } from '@/hooks/useAIValidationSettings'
+import { useAiValidationConfig } from '@/hooks/useAiValidationConfig'
 
 const statusLabels: Record<RefundStatus, string> = {
   simulated: 'Simulado',
@@ -250,9 +250,11 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
   const [cedulaValidationOpen, setCedulaValidationOpen] = useState(false)
   const [cedulaValidated, setCedulaValidated] = useState(false)
   const [cedulaValidationForced, setCedulaValidationForced] = useState(false)
-  const { enabled: aiValidationEnabled } = useAIValidationSettings()
-  const { enabled: creditoValidationEnabled } = useCreditoDocsValidationSettings()
-  const anyAIValidationEnabled = aiValidationEnabled || creditoValidationEnabled
+  // Flags de validación con IA: la fuente de verdad es el servidor
+  // (GET /ai-image-validation), ya no parámetros locales del front.
+  const { config: aiValidationConfig } = useAiValidationConfig()
+  const anyAIValidationEnabled =
+    aiValidationConfig.imageValidationEnabled || aiValidationConfig.docsValidationEnabled
 
   // Reset el flag de validación si cambia el estado destino (deja de ser docs_received)
   // o si cambia la solicitud actual.
@@ -1100,7 +1102,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   <div>
                                     <p className="text-xs text-muted-foreground">Tasa única (Southbridge)</p>
-                                    <p className="font-mono font-semibold text-sm">{TASA_CESANTIA.toFixed(4)}%</p>
+                                    <p className="font-mono font-semibold text-sm">{(TASA_CESANTIA * 10).toFixed(4)}‰</p>
                                   </div>
                                 </div>
                               )
@@ -1108,6 +1110,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             const snap = { ...refund.calculationSnapshot, institutionId: refund.institutionId }
                             const { tasaBanco, tasaTDV } = getRatesForSnapshot(snap)
                             const formatTasa = (t: number | null) => t !== null ? `${(t * 100).toFixed(4)}%` : 'N/A'
+                            const formatTasaPorMil = (t: number | null) => t !== null ? `${(t * 1000).toFixed(4)}‰` : 'N/A'
                             return (
                               <div className="col-span-2 mt-1 p-3 rounded-md bg-muted/60 border border-dashed border-muted-foreground/20">
                                 <div className="flex items-center gap-1.5 mb-2">
@@ -1121,7 +1124,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                   </div>
                                   <div>
                                     <p className="text-xs text-muted-foreground">Tasa preferencial TDV</p>
-                                    <p className="font-mono font-semibold text-sm text-emerald-600 dark:text-emerald-400">{formatTasa(tasaTDV)}</p>
+                                    <p className="font-mono font-semibold text-sm text-emerald-600 dark:text-emerald-400">{formatTasaPorMil(tasaTDV)}</p>
                                   </div>
                                 </div>
                               </div>
@@ -1333,7 +1336,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     <div className="space-y-1">
                                       <p className="text-[11px] text-muted-foreground font-medium">Prima total cesantía (referencial)</p>
                                       <div className="p-2 rounded bg-background border text-xs">
-                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {TASA_CESANTIA.toFixed(4)}% × {remaining}</p>
+                                        <p className="font-mono text-[11px] text-muted-foreground">${formatCLPNumber(saldo)} × {(TASA_CESANTIA * 10).toFixed(4)}‰ × {remaining}</p>
                                         <p className="font-mono font-semibold mt-0.5">= ${formatCLPNumber(primaCesantia)}</p>
                                       </div>
                                     </div>

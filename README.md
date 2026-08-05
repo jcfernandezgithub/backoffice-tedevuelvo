@@ -1,8 +1,49 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.5
+## Versión 4.2.7
 
 ## Changelog
+
+### Versión 4.2.7 - 2026-08-05
+
+#### Calculadora: nuevo Tramo 4 en tasa preferencial TDV
+- Se actualizó `obtenerTasaPreferencialTDV()` (`calculadoraUtils.ts`) para incorporar el **Tramo 4** de la Póliza 353 en el cálculo de la prima preferencial Te Devuelvo:
+  - **Tramo 1** (sin cambios): saldo ≤ $20.000.000 → 0,34‰ (18–55) | 0,44‰ (56–64).
+  - **Tramo 2** (sin cambios): $20.000.000 < saldo ≤ $60.000.000 → 0,44‰ (todas las edades).
+  - **Tramo 3** (acotado): $60.000.000 < saldo ≤ $100.000.000 → 0,44‰ (18–55) | 0,50‰ (56–64).
+  - **Tramo 4** (nuevo): saldo > $100.000.000 → 0,88‰ (18–55) | 1,00‰ (56–64).
+- Antes de este cambio, todo saldo sobre $60M caía en el Tramo 3; ahora los créditos sobre $100M aplican la tasa del Tramo 4, alineando la calculadora y el detalle de solicitudes (`snapshotPremiums`) con las tasas del certificado de cobertura Póliza 353.
+- Se verificaron los casos borde ($60.000.001, $100.000.000 y $100.000.001) para asegurar la asignación correcta de tramo.
+
+#### Presentación: tasas preferenciales en por mil (‰)
+- Las tasas preferenciales de **desgravamen TDV** y **cesantía TDV** ahora se muestran con el símbolo **por mil (‰)** en lugar de porcentaje (%), ya que son tasas mensuales por mil sobre el saldo insoluto:
+  - Calculadora: etiquetas de tasa preferencial en el detalle del cálculo y en el PDF descargable.
+  - Detalle de solicitud: "Tasa preferencial TDV" y tasa de cesantía en el desglose de primas.
+- La **tasa banco de desgravamen se mantiene en %** (ej: 5,6376%), ya que representa la prima única como fracción del monto total del crédito, no una tasa mensual por mil.
+- El cambio es solo de presentación: los factores de cálculo (ej: 1,00‰ = 0,001) no se modificaron.
+
+### Versión 4.2.6 - 2026-08-04
+
+#### Certificado de cobertura Póliza N° 353 (reemplaza a Póliza 347)
+- Todos los certificados de desgravamen nuevos (flujo individual y procesos masivos) se emiten ahora bajo la **Póliza Colectiva N° 353** (POL 2 2015 0573), reemplazando por completo a la Póliza 347. La vigencia se mantiene: 04/05/2026 al 03/05/2029.
+- Nueva configuración `pol353Config` con **4 planes** de capital asegurado: se agrega el **Plan 4** para saldos insolutos entre $100.000.001 y $150.000.000 (TBM 0,8800 para 18–55 años y 1,0000 para 56–65 años), elevando el capital máximo asegurable a $150.000.000.
+- Se actualizaron las carátulas y cuerpos del certificado (Banco de Chile, Chevrolet SF y genérico): tabla de tasas con 4 planes, tabla de capitales por plan, y comisiones de cobranza e intermediación con columna Plan 4 (cobranza Plan 4 igual a Plan 3: 38,21% + IVA / 34,93% + IVA; intermediación 15% + IVA en todos los planes).
+- Nueva firma compuesta de Augustar (timbre circular + firma manuscrita C. Nieto) aplicada en la sección de firmas del certificado; se ajustó el encuadre para preservar su proporción original.
+- Se eliminó el generador legacy en desuso de la Póliza 344 (`generatePrimePDF`, ~1.100 líneas muertas) y toda la configuración de la Póliza 347.
+
+#### Valor mínimo de devolución (mínimo valor de simulación)
+- Nueva sección **Valor mínimo de devolución** en `/ajustes` que administra el monto mínimo a partir del cual una simulación genera devolución. La configuración se persiste en el servidor (`/policy-minimum-value`) y solo permite **una configuración activa o inactiva** (se eliminaron los botones de crear/eliminar una vez existe el registro).
+- El servicio `policyMinimumValueService` expone validación pública (`POST /policy-minimum-value/validate`), listado y CRUD administrador; el hook `usePolicyMinimumValueConfigs` gestiona la caché en React Query.
+- En **Solicitudes** y **Call Center** se agregó el toggle **Filtrado por mínima devolución**: al activarlo se consulta el mínimo vigente y se envía como parámetro `minimumEstimatedAmountCLP` al endpoint `search-by-updated-at`, filtrando las solicitudes cuyo monto estimado no alcanza el mínimo.
+- En **Call Center** el filtro es **obligatorio y siempre activo**: el toggle arranca prendido, no se puede apagar y la primera búsqueda al cargar la página siempre se ejecuta con el mínimo aplicado.
+- Sección de **Test Playground** en Ajustes que permite probar un valor y previsualizar el mensaje exacto que se mostrará en el portal Te Devuelvo cuando la devolución queda bajo el mínimo.
+- Si el servicio de mínimo retorna `404` (sin configuración), las búsquedas se ejecutan sin el parámetro, preservando el comportamiento anterior.
+
+#### Validación con IA (configuración server-backed)
+- Se migró la configuración de validación con IA desde `localStorage` a un **servicio backend** (`/ai-image-validation`), con dos flags globales: `imageValidationEnabled` (validación de cédula) y `docsValidationEnabled` (validación de documentos de crédito tipo *Otros*).
+- El servicio `aiImageValidationService` y el hook `useAiValidationConfig` exponen la consulta pública (`publicFetch`) y la actualización administradora (`authenticatedFetch`, rol ADMIN) con **guardado optimista por campo** y reversión automática si el `PATCH` falla.
+- Nueva sección **Validación con IA** en `/ajustes` con tarjetas independientes por flag, estado visual (activada/desactivada), indicador de guardado por interruptor y aviso de revisión manual cuando un flag está apagado.
+- En el **cambio de estado a Documentos recibidos** (Detalle de solicitud), los flags ahora se leen del servidor en tiempo real: si `imageValidationEnabled` está activo se ejecuta la validación visual de la cédula, y si `docsValidationEnabled` está activo se valida sobre los documentos de tipo *Otros*; el operador puede continuar bajo su responsabilidad si el resultado no es concluyente.
 
 ### Versión 4.2.5 - 2026-07-30
 

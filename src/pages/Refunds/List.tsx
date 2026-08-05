@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
 import { authService } from '@/services/authService'
+import { policyMinimumValueService } from '@/services/policyMinimumValueService'
 import { alianzasService } from '@/services/alianzasService'
 import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
 import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
@@ -227,6 +228,28 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
   const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
 
+  // Toggle "Filtrado por mínima devolución": al activarse consulta la
+  // configuración pública de valor mínimo. Si el servicio responde 404
+  // (sin configuración), la búsqueda se ejecuta sin el parámetro.
+  // En Call Center el filtro es OBLIGATORIO: siempre activo y no editable.
+  const [minRefundFilter, setMinRefundFilter] = useState(isCallCenter)
+  const queryClient = useQueryClient()
+
+  const fetchActiveMinRefundConfig = async () => {
+    const configs = await policyMinimumValueService.list() // 404 → []
+    return configs.find(c => c.isActive) ?? configs[0] ?? null
+  }
+
+  const { data: minRefundConfig, isLoading: isMinRefundLoading } = useQuery({
+    queryKey: ['policy-minimum-value-active'],
+    queryFn: fetchActiveMinRefundConfig,
+    enabled: minRefundFilter,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+
+  const minRefundValue = minRefundConfig?.minimumValue ?? null
+
   // En modo histórico también usamos el endpoint de búsqueda por updatedAt
   // (mismos filtros, misma respuesta que /search pero filtrando por updatedAt)
 
@@ -405,7 +428,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   // Ejecuta la búsqueda con los filtros locales actuales usando el endpoint search
-  const handleSearch = () => {
+  const handleSearch = async () => {
     // Determinar valor de signatureStatus para el servidor
     let signatureStatusValue: 'signed' | null | undefined = undefined
     if (mandateFilter === 'signed') {
@@ -434,6 +457,27 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       hasBankInfoValue = 0
     }
     
+    // Filtrado por mínima devolución: si el toggle está activo, resolvemos el
+    // valor mínimo AHORA (esperando la carga si está en curso). Si el servicio
+    // no tiene configuración (404) o falla, la búsqueda se ejecuta sin el
+    // parámetro, tal como lo hace actualmente.
+    let minimumEstimatedAmountCLP: number | undefined = undefined
+    if (minRefundFilter) {
+      try {
+        const cfg = await queryClient.fetchQuery({
+          queryKey: ['policy-minimum-value-active'],
+          queryFn: fetchActiveMinRefundConfig,
+          staleTime: 5 * 60 * 1000,
+          retry: false,
+        })
+        if (cfg && cfg.minimumValue > 0) {
+          minimumEstimatedAmountCLP = cfg.minimumValue
+        }
+      } catch {
+        // Sin configuración disponible → no enviar el parámetro.
+      }
+    }
+
     const newSearchFilters: SearchParams = {
       q: localFilters.search || undefined,
       // En modo histórico, NO enviamos el status al servidor para traer todas las solicitudes
@@ -465,8 +509,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       isPartner: isPartnerValue,
       hasBankInfo: hasBankInfoValue,
       partnerId: allianceFilter !== 'all' ? allianceFilter : undefined,
+      ...(minimumEstimatedAmountCLP !== undefined
+        ? { minimumEstimatedAmountCLP }
+        : {}),
     }
-    
+
+    // Invalidar primero: garantiza que cada clic en Buscar ejecute la búsqueda
+    // aunque los filtros sean idénticos a los de la búsqueda anterior (la key
+    // cacheada estaría fresca por staleTime y React Query no re-fetchería).
+    queryClient.invalidateQueries({ queryKey: ['refunds-search'] })
     setSearchFilters(newSearchFilters)
     setUseSearchEndpoint(true)
     
@@ -547,6 +598,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setNroCreditoFilter('')
     setInstitutionFilter('all')
     setHistoricalStatusMode(false)
+    setMinRefundFilter(isCallCenter)
     setAppliedLocalFilters({
       origin: 'all',
       bank: 'all',
@@ -750,6 +802,14 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         const newParams = new URLSearchParams(searchParams)
         newParams.delete('autoSearch')
         setSearchParams(newParams, { replace: true })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+    // Call Center: la primera carga siempre filtra por mínima devolución.
+    // Disparamos la búsqueda automáticamente al montar la página.
+    if (isCallCenter) {
+      const timer = setTimeout(() => {
+        handleSearch()
       }, 100)
       return () => clearTimeout(timer)
     }
@@ -1253,6 +1313,40 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               {historicalStatusMode && (
                 <span className="text-xs text-muted-foreground">
                   Mostrando el estado que tenían las solicitudes en la fecha seleccionada
+                </span>
+              )}
+            </div>
+            {/* Toggle Filtrado por mínima devolución */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="min-refund-filter"
+                  checked={minRefundFilter}
+                  onCheckedChange={setMinRefundFilter}
+                  disabled={isCallCenter}
+                />
+                <label
+                  htmlFor="min-refund-filter"
+                  className={`flex items-center gap-1.5 text-sm select-none ${
+                    isCallCenter ? 'cursor-not-allowed' : 'cursor-pointer'
+                  } ${minRefundFilter ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+                >
+                  <Flag className="h-3.5 w-3.5" />
+                  Filtrado por mínima devolución
+                </label>
+              </div>
+              {minRefundFilter && (
+                <span className="text-xs text-muted-foreground">
+                  {isMinRefundLoading
+                    ? 'Consultando valor mínimo configurado…'
+                    : minRefundValue != null && minRefundValue > 0
+                      ? `Solo solicitudes con devolución estimada desde $${formatCLPNumber(minRefundValue)}`
+                      : 'Sin valor mínimo configurado: se listan todas las solicitudes'}
+                </span>
+              )}
+              {isCallCenter && (
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                  Obligatorio en Call Center
                 </span>
               )}
             </div>
