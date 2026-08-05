@@ -1,8 +1,26 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.6
+## Versión 4.2.7
 
 ## Changelog
+
+### Versión 4.2.7 - 2026-08-05
+
+#### Calculadora: nuevo Tramo 4 en tasa preferencial TDV
+- Se actualizó `obtenerTasaPreferencialTDV()` (`calculadoraUtils.ts`) para incorporar el **Tramo 4** de la Póliza 353 en el cálculo de la prima preferencial Te Devuelvo:
+  - **Tramo 1** (sin cambios): saldo ≤ $20.000.000 → 0,34‰ (18–55) | 0,44‰ (56–64).
+  - **Tramo 2** (sin cambios): $20.000.000 < saldo ≤ $60.000.000 → 0,44‰ (todas las edades).
+  - **Tramo 3** (acotado): $60.000.000 < saldo ≤ $100.000.000 → 0,44‰ (18–55) | 0,50‰ (56–64).
+  - **Tramo 4** (nuevo): saldo > $100.000.000 → 0,88‰ (18–55) | 1,00‰ (56–64).
+- Antes de este cambio, todo saldo sobre $60M caía en el Tramo 3; ahora los créditos sobre $100M aplican la tasa del Tramo 4, alineando la calculadora y el detalle de solicitudes (`snapshotPremiums`) con las tasas del certificado de cobertura Póliza 353.
+- Se verificaron los casos borde ($60.000.001, $100.000.000 y $100.000.001) para asegurar la asignación correcta de tramo.
+
+#### Presentación: tasas preferenciales en por mil (‰)
+- Las tasas preferenciales de **desgravamen TDV** y **cesantía TDV** ahora se muestran con el símbolo **por mil (‰)** en lugar de porcentaje (%), ya que son tasas mensuales por mil sobre el saldo insoluto:
+  - Calculadora: etiquetas de tasa preferencial en el detalle del cálculo y en el PDF descargable.
+  - Detalle de solicitud: "Tasa preferencial TDV" y tasa de cesantía en el desglose de primas.
+- La **tasa banco de desgravamen se mantiene en %** (ej: 5,6376%), ya que representa la prima única como fracción del monto total del crédito, no una tasa mensual por mil.
+- El cambio es solo de presentación: los factores de cálculo (ej: 1,00‰ = 0,001) no se modificaron.
 
 ### Versión 4.2.6 - 2026-08-04
 
