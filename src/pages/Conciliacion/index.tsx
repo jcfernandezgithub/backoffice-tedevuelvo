@@ -562,15 +562,15 @@ export default function ConciliacionPage() {
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-semibold">Descarga la cartola para ver los movimientos</h3>
+                <h3 className="text-base font-semibold">Trae la actividad bancaria para comenzar</h3>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona el rango de fechas y presiona «Actualizar cartola». El banco puede
-                  solicitar un código de verificación durante el proceso.
+                  Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de
+                  verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.
                 </p>
               </div>
-              <Button onClick={() => cartolaJob.start(rangeFromIso, rangeToIso)}>
-                <RotateCw className="h-4 w-4 mr-2" />
-                Descargar cartola
+              <Button onClick={handleUpdateCartola}>
+                <Download className="h-4 w-4 mr-2" />
+                Traer actividad
               </Button>
             </div>
           ) : (
