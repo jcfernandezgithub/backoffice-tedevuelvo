@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ import {
   Search,
   X,
   FileSpreadsheet,
+  Download,
 } from 'lucide-react'
 import { type CartolaMovimiento } from './services/cartolaService'
 import { useCartolaJob } from './hooks/useCartolaJob'
@@ -155,18 +156,6 @@ export default function ConciliacionPage() {
     phase === 'sending_captcha' ||
     phase === 'waiting_captcha'
 
-  // Inicia la descarga al cargar la página (mes en curso) y cada vez que se
-  // aplica un nuevo rango de fechas. El guard por ref evita trabajos duplicados.
-  const startedRangeRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (!rangeReady) return
-    const key = `${rangeFromIso}|${rangeToIso}`
-    if (startedRangeRef.current === key) return
-    startedRangeRef.current = key
-    cartolaJob.start(rangeFromIso, rangeToIso)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rangeReady, rangeFromIso, rangeToIso])
-
   const cartola = phase === 'completed' ? cartolaJob.state.result?.data : undefined
   const movimientos: CartolaMovimiento[] = useMemo(() => {
     const raw = cartola?.movimientos?.movimiento
@@ -257,14 +246,13 @@ export default function ConciliacionPage() {
 
   const handleUpdateCartola = () => {
     if (!draftFrom || !draftTo || isBusy) return
+    const from = toIsoDate(draftFrom)
+    const to = toIsoDate(draftTo)
     if (datesChanged) {
-      // El useEffect de rango detecta el cambio y gatilla la descarga.
       setCommittedFrom(draftFrom)
       setCommittedTo(draftTo)
-    } else {
-      // Mismo rango: relanzar la descarga manualmente.
-      cartolaJob.start(rangeFromIso, rangeToIso)
     }
+    cartolaJob.start(from, to)
   }
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -381,7 +369,7 @@ export default function ConciliacionPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Conciliación bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Cartola descargada automáticamente desde el portal bancario.
+            Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
@@ -440,7 +428,7 @@ export default function ConciliacionPage() {
             </Popover>
             <Button
               onClick={handleUpdateCartola}
-              variant={datesChanged ? 'default' : 'outline'}
+              variant="default"
               disabled={isBusy || !draftFrom || !draftTo}
             >
               {isBusy ? (
@@ -450,8 +438,8 @@ export default function ConciliacionPage() {
                 </>
               ) : (
                 <>
-                  <RotateCw className="h-4 w-4 mr-2" />
-                  {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
+                  <Download className="h-4 w-4 mr-2" />
+                  Traer actividad
                 </>
               )}
             </Button>
@@ -574,15 +562,15 @@ export default function ConciliacionPage() {
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-semibold">Descarga la cartola para ver los movimientos</h3>
+                <h3 className="text-base font-semibold">Trae la actividad bancaria para comenzar</h3>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona el rango de fechas y presiona «Actualizar cartola». El banco puede
-                  solicitar un código de verificación durante el proceso.
+                  Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de
+                  verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.
                 </p>
               </div>
-              <Button onClick={() => cartolaJob.start(rangeFromIso, rangeToIso)}>
-                <RotateCw className="h-4 w-4 mr-2" />
-                Descargar cartola
+              <Button onClick={handleUpdateCartola}>
+                <Download className="h-4 w-4 mr-2" />
+                Traer actividad
               </Button>
             </div>
           ) : (
