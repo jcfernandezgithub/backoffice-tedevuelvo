@@ -99,6 +99,8 @@ export function useCartolaJob() {
               jobId,
               captchaImage: null,
               captchaMessage: null,
+              captchaSuggestion: null,
+              solvingCaptcha: false,
               result: null,
               error: toErrorMessage(e, 'No se pudo consultar el estado de la descarga.'),
             })
@@ -128,14 +130,19 @@ export function useCartolaJob() {
             'message' in payload && typeof payload.message === 'string'
               ? payload.message
               : null
+          const image = payload.captchaImage ?? null
           setState({
             phase: 'waiting_captcha',
             jobId: payload.jobId,
-            captchaImage: payload.captchaImage ?? null,
+            captchaImage: image,
             captchaMessage: message,
+            captchaSuggestion: null,
+            solvingCaptcha: !!image,
             result: null,
             error: null,
           })
+          // Ayuda OCR: pre-cargar el texto detectado (falla en silencio).
+          if (image) void solveCaptcha(image)
           break
         }
         case 'PROCESSING': {
@@ -159,6 +166,8 @@ export function useCartolaJob() {
               jobId: payload.jobId,
               captchaImage: null,
               captchaMessage: null,
+              captchaSuggestion: null,
+              solvingCaptcha: false,
               result,
               error: null,
             })
@@ -180,6 +189,8 @@ export function useCartolaJob() {
             jobId: payload.jobId,
             captchaImage: null,
             captchaMessage: null,
+            captchaSuggestion: null,
+            solvingCaptcha: false,
             result: null,
             error,
           })
@@ -187,7 +198,7 @@ export function useCartolaJob() {
         }
       }
     },
-    [stopPolling, beginPolling],
+    [stopPolling, beginPolling, solveCaptcha],
   )
 
   // Ref para romper el ciclo beginPolling ↔ applyJobPayload.
