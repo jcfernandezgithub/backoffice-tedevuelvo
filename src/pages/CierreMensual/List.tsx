@@ -1,0 +1,2204 @@
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { refundAdminApi, SearchParams } from '@/services/refundAdminApi'
+import { authService } from '@/services/authService'
+import { policyMinimumValueService } from '@/services/policyMinimumValueService'
+import { alianzasService } from '@/services/alianzasService'
+import { allianceUsersClient } from '@/pages/Alianzas/services/allianceUsersClient'
+import { AdminQueryParams, RefundStatus, RefundRequest } from '@/types/refund'
+import { OverdueAlertsBanner, OverdueRowIndicator, useOverdueData } from './components/OverdueAlertsBanner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft, Loader2 } from 'lucide-react'
+import { toast } from '@/hooks/use-toast'
+import { GenerateExcelDialog } from './components/GenerateExcelDialog'
+import { ExportToExcelDialog } from './components/ExportToExcelDialog'
+import { MobileCard } from '@/components/common/MobileCard'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
+import { AllianceCombobox } from './components/AllianceCombobox'
+import { formatCLPNumber } from '@/lib/formatters'
+import { PairedAmountCell } from './components/SiblingPairCell'
+import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
+import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+
+
+const statusLabels: Record<RefundStatus, string> = {
+  simulated: 'Simulado',
+  requested: 'Solicitado',
+  qualifying: 'En calificación',
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
+  approved: 'Aprobado',
+  rejected: 'Rechazado',
+  payment_scheduled: 'Pago programado',
+  paid: 'Pagado',
+  canceled: 'Cancelado',
+  datos_sin_simulacion: 'Datos (sin simulación)',
+}
+
+// Helper para obtener fecha local en formato YYYY-MM-DD
+const toLocalDateString = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+// Obtener el estado que tenía una solicitud en una fecha específica
+const getStatusAtDate = (refund: any, dateStr: string): RefundStatus | null => {
+  if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
+    return refund.status // fallback al estado actual
+  }
+
+  // Convertir la fecha límite al final del día
+  const limitDate = new Date(dateStr + 'T23:59:59.999Z')
+
+  // Filtrar entradas hasta la fecha indicada y tomar la última
+  const entriesBeforeDate = refund.statusHistory
+    .filter((entry: any) => new Date(entry.at) <= limitDate)
+    .sort((a: any, b: any) => new Date(a.at).getTime() - new Date(b.at).getTime())
+
+  if (entriesBeforeDate.length === 0) return null // no existía aún
+
+  const lastEntry = entriesBeforeDate[entriesBeforeDate.length - 1]
+  return (lastEntry.to?.toLowerCase() || refund.status) as RefundStatus
+}
+
+// Verificar si una solicitud TRANSITÓ a un estado dado durante un rango de fechas
+// Busca en el statusHistory si existe una transición AL estado objetivo
+// cuyo timestamp (entry.at) cae dentro de [fromStr, toStr]
+// NO requiere que el estado actual coincida — captura toda solicitud que pasó por ese estado en el período
+// Usa comparación de strings ISO (split('T')[0]) para evitar problemas de timezone
+const wasInStatusDuringRange = (refund: any, targetStatus: RefundStatus, fromStr: string, toStr: string): boolean => {
+  if (!refund.statusHistory || !Array.isArray(refund.statusHistory) || refund.statusHistory.length === 0) {
+    return false
+  }
+
+  return refund.statusHistory.some((entry: any) => {
+    const entryStatus = (entry.to?.toLowerCase() || '') as string
+    if (entryStatus !== targetStatus) return false
+
+    const fromStatus = entry.from?.toLowerCase() || ''
+    if (fromStatus === entryStatus) return false
+
+    if (!entry.at) return false
+    const transDate = entry.at.split('T')[0]
+    if (fromStr && transDate < fromStr) return false
+    if (toStr && transDate > toStr) return false
+    return true
+  })
+}
+
+const getStatusColors = (status: RefundStatus): string => {
+  switch (status) {
+    case 'simulated':
+      return 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500'
+    case 'requested':
+      return 'bg-blue-400 hover:bg-blue-500 text-white border-blue-400'
+    case 'qualifying':
+      return 'bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500'
+    case 'docs_pending':
+      return 'bg-orange-500 hover:bg-orange-600 text-white border-orange-500'
+    case 'docs_received':
+      return 'bg-cyan-500 hover:bg-cyan-600 text-white border-cyan-500'
+    case 'submitted':
+      return 'bg-indigo-500 hover:bg-indigo-600 text-white border-indigo-500'
+    case 'approved':
+      return 'bg-green-500 hover:bg-green-600 text-white border-green-500'
+    case 'payment_scheduled':
+      return 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-500'
+    case 'paid':
+      return 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+    case 'rejected':
+      return 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+    case 'canceled':
+      return 'bg-gray-500 hover:bg-gray-600 text-white border-gray-500'
+    case 'datos_sin_simulacion':
+      return 'bg-purple-500 hover:bg-purple-600 text-white border-purple-500'
+    default:
+      return 'bg-primary hover:bg-primary/90 text-white border-primary'
+  }
+}
+
+interface CierreMensualListProps {
+  title?: string
+  listTitle?: string
+  detailBasePath?: string
+}
+
+export default function CierreMensualList({ title = 'Cierre Mensual', listTitle = 'Listado de Solicitudes', detailBasePath = '/cierre-mensual' }: CierreMensualListProps) {
+  const isCallCenter = detailBasePath === '/gestion-callcenter'
+  const isMobile = useIsMobile()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Filtros que se envían al servidor (solo se actualizan al hacer clic en "Buscar")
+  const [filters, setFilters] = useState<AdminQueryParams>({
+    search: searchParams.get('search') || '',
+    status: (searchParams.get('status') as RefundStatus) || undefined,
+    from: searchParams.get('from') || '',
+    to: searchParams.get('to') || '',
+    page: Number(searchParams.get('page')) || 1,
+    pageSize: Number(searchParams.get('pageSize')) || 20,
+    sort: (searchParams.get('sort') as any) || 'createdAt:desc',
+  })
+  
+  // Estado local para los inputs de filtros (antes de aplicar)
+  const [localFilters, setLocalFilters] = useState<AdminQueryParams>({
+    search: searchParams.get('search') || '',
+    status: (searchParams.get('status') as RefundStatus) || undefined,
+    from: searchParams.get('from') || '',
+    to: searchParams.get('to') || '',
+    sort: (searchParams.get('sort') as any) || 'createdAt:desc',
+  })
+  
+  const [mandateFilter, setMandateFilter] = useState<string>(searchParams.get('mandate') || 'all')
+  const [originFilter, setOriginFilter] = useState<string>(searchParams.get('origin') || 'all')
+  const [bankFilter, setBankFilter] = useState<string>(searchParams.get('bank') || 'all')
+  const [insuranceTypeFilter, setInsuranceTypeFilter] = useState<string>(searchParams.get('insuranceType') || 'all')
+  const [allianceFilter, setAllianceFilter] = useState<string>(searchParams.get('alliance') || 'all')
+  const [nroPolizaFilter, setNroPolizaFilter] = useState<string>(searchParams.get('nroPoliza') || '')
+  const [nroCreditoFilter, setNroCreditoFilter] = useState<string>(searchParams.get('nroCredito') || '')
+  const [institutionFilter, setInstitutionFilter] = useState<string>(searchParams.get('institution') || 'all')
+
+  // Filtros locales "aplicados" - solo se actualizan al presionar Buscar
+  const [appliedLocalFilters, setAppliedLocalFilters] = useState({
+    origin: searchParams.get('origin') || 'all',
+    bank: searchParams.get('bank') || 'all',
+    insuranceType: searchParams.get('insuranceType') || 'all',
+    alliance: searchParams.get('alliance') || 'all',
+    nroPoliza: searchParams.get('nroPoliza') || '',
+    nroCredito: searchParams.get('nroCredito') || '',
+    institution: searchParams.get('institution') || 'all',
+  })
+
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const initialAutoSearch = searchParams.get('autoSearch') === 'true'
+  // Solo activar modo histórico si se pide explícitamente con historical=true.
+  // autoSearch por sí solo ya no lo enciende (las calugas de Operación quieren
+  // búsqueda normal por rango de fechas).
+  const initialHistorical = searchParams.get('historical') === 'true'
+  const [historicalStatusMode, setHistoricalStatusMode] = useState(initialHistorical)
+  // Cuando viene desde una caluga de Operación, restringir el resultado a las
+  // solicitudes que ACTUALMENTE están en ese estado Y entraron a él dentro del rango.
+  // Esto alinea el conteo del listado con el de la caluga (evita contar transiciones
+  // de solicitudes que ya avanzaron a otro estado).
+  const currentStatusOnly = searchParams.get('currentStatusOnly') === 'true'
+  const [sortField, setSortField] = useState<string>('createdAt')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  
+  // Estado para selección de solicitudes
+  const [selectedRefunds, setSelectedRefunds] = useState<Set<string>>(new Set())
+  const [selectAll, setSelectAll] = useState(false)
+  
+  // Estado para selección multi-página (estilo Gmail)
+  const [allPagesSelected, setAllPagesSelected] = useState(false)
+  const [allPagesRefunds, setAllPagesRefunds] = useState<RefundRequest[]>([])
+  const [isLoadingAllPages, setIsLoadingAllPages] = useState(false)
+  const allPagesAbortRef = useRef<AbortController | null>(null)
+  
+  // Estado para parámetros de búsqueda (nuevo endpoint search)
+  const [searchFilters, setSearchFilters] = useState<SearchParams>({
+    page: 1,
+    limit: 20,
+  })
+  const [useSearchEndpoint, setUseSearchEndpoint] = useState(false)
+  const [activeOverdueFilter, setActiveOverdueFilter] = useState<string | null>(null)
+
+  // Toggle "Filtrado por mínima devolución": al activarse consulta la
+  // configuración pública de valor mínimo. Si el servicio responde 404
+  // (sin configuración), la búsqueda se ejecuta sin el parámetro.
+  // En Call Center el filtro es OBLIGATORIO: siempre activo y no editable.
+  const [minRefundFilter, setMinRefundFilter] = useState(isCallCenter)
+  const queryClient = useQueryClient()
+
+  const fetchActiveMinRefundConfig = async () => {
+    const configs = await policyMinimumValueService.list() // 404 → []
+    return configs.find(c => c.isActive) ?? configs[0] ?? null
+  }
+
+  const { data: minRefundConfig, isLoading: isMinRefundLoading } = useQuery({
+    queryKey: ['policy-minimum-value-active'],
+    queryFn: fetchActiveMinRefundConfig,
+    enabled: minRefundFilter,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+
+  const minRefundValue = minRefundConfig?.minimumValue ?? null
+
+  // En modo histórico también usamos el endpoint de búsqueda por updatedAt
+  // (mismos filtros, misma respuesta que /search pero filtrando por updatedAt)
+
+  // Query para listado inicial (listV2)
+  const { data: listData, isLoading: isListLoading, error: listError, refetch: refetchList } = useQuery({
+    queryKey: ['refunds-list', filters],
+    queryFn: () => refundAdminApi.list(filters),
+    retry: false,
+    staleTime: 30 * 1000,
+    enabled: !useSearchEndpoint && !historicalStatusMode,
+  })
+  
+  // Query para búsqueda (search endpoint)
+  const { data: searchData, isLoading: isSearchLoading, error: searchError, refetch: refetchSearch } = useQuery({
+    queryKey: ['refunds-search', searchFilters],
+    queryFn: async () => {
+      // Multi-status: el backend no acepta listas de estados. Disparamos una búsqueda
+      // por cada estado (paginando todas sus páginas) y mergeamos los resultados.
+      const statusList = (searchFilters as any)._statusList as string[] | undefined
+      if (statusList && statusList.length > 1) {
+        const baseFilters = { ...searchFilters } as any
+        delete baseFilters._statusList
+        delete baseFilters.status
+
+        const fetchAllForStatus = async (st: string) => {
+          const first = await refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page: 1, limit: 100 })
+          if (first.total <= 100) return first.items
+          const totalPages = Math.ceil(first.total / 100)
+          const rest = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+          let items = [...first.items]
+          const BATCH = 5
+          for (let i = 0; i < rest.length; i += BATCH) {
+            const batch = rest.slice(i, i + BATCH)
+            const results = await Promise.all(
+              batch.map(page => refundAdminApi.searchByUpdatedAt({ ...baseFilters, status: st, page, limit: 100 }))
+            )
+            results.forEach(r => { items = items.concat(r.items) })
+          }
+          return items
+        }
+
+        const perStatus = await Promise.all(statusList.map(fetchAllForStatus))
+        const merged: any[] = []
+        const seen = new Set<string>()
+        for (const arr of perStatus) {
+          for (const r of arr) {
+            const key = (r as any).id || (r as any).publicId
+            if (key && !seen.has(key)) {
+              seen.add(key)
+              merged.push(r)
+            }
+          }
+        }
+        return {
+          items: merged,
+          total: merged.length,
+          page: 1,
+          pageSize: merged.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      }
+
+      // En modo histórico, paginar para obtener todos los resultados (max 100 por página)
+      if (searchFilters.limit === 100 && historicalStatusMode) {
+        // Primera petición para obtener el total
+        const firstPage = await refundAdminApi.searchByUpdatedAt({ ...searchFilters, page: 1, limit: 100 })
+        if (firstPage.total <= 100) return firstPage
+        
+        // Calcular páginas restantes y obtener en paralelo (lotes de 5)
+        const totalPages = Math.ceil(firstPage.total / 100)
+        const remainingPages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2)
+        let allItems = [...firstPage.items]
+        
+        const BATCH_SIZE = 5
+        for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
+          const batch = remainingPages.slice(i, i + BATCH_SIZE)
+          const results = await Promise.all(
+            batch.map(page => refundAdminApi.searchByUpdatedAt({ ...searchFilters, page, limit: 100 }))
+          )
+          results.forEach(r => allItems = allItems.concat(r.items))
+        }
+        
+        return { ...firstPage, items: allItems, total: firstPage.total, page: 1, pageSize: allItems.length, totalPages: 1, hasNext: false, hasPrev: false }
+      }
+      return refundAdminApi.searchByUpdatedAt(searchFilters)
+    },
+    retry: false,
+    staleTime: 30 * 1000,
+    enabled: useSearchEndpoint || historicalStatusMode,
+  })
+
+  const historicalData = useMemo(() => {
+    // Omitir solicitudes canceladas del cálculo Call Center
+    const items = searchData?.items ?? []
+    const filtered = items.filter((r: any) => r.status?.toLowerCase() !== 'canceled')
+    return {
+      total: filtered.length,
+      page: 1,
+      pageSize: filtered.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+      items: filtered,
+    }
+  }, [searchData])
+  
+  // Unificar datos según el endpoint/modo usado
+  const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
+  const isLoading = historicalStatusMode ? isSearchLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
+  const error = historicalStatusMode ? searchError : (useSearchEndpoint ? searchError : listError)
+  const refetch = historicalStatusMode ? refetchSearch : (useSearchEndpoint ? refetchSearch : refetchList)
+
+  // Fetch partners para mostrar nombres de alianzas
+  const { data: partnersData } = useQuery({
+    queryKey: ['partners-list'],
+    queryFn: () => alianzasService.list({ pageSize: 100 }),
+    staleTime: 30 * 60 * 1000, // 30 minutos
+  })
+
+  // Mapa de partnerId a nombre
+  const partnerNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    partnersData?.items.forEach((p: any) => {
+      map[p.id] = p.nombre
+    })
+    return map
+  }, [partnersData])
+
+  // Obtener unique partnerIds de los items actuales para buscar gestores
+  const uniquePartnerIds = useMemo(() => {
+    if (!data) return []
+    const items = Array.isArray(data) ? data : (data as any).items || []
+    const ids = new Set<string>()
+    items.forEach((r: any) => {
+      if (r.partnerId) ids.add(r.partnerId)
+    })
+    return Array.from(ids)
+  }, [data])
+
+  // Fetch partner users para mostrar nombres de gestores
+  const { data: partnerUsersData } = useQuery({
+    queryKey: ['partner-users-for-refunds', uniquePartnerIds],
+    queryFn: async () => {
+      const allUsers: Record<string, string> = {}
+      await Promise.all(
+        uniquePartnerIds.map(async (partnerId) => {
+          try {
+            const result = await allianceUsersClient.listAllianceUsers(partnerId, { pageSize: 100 })
+            result.users.forEach((user) => {
+              allUsers[user.id] = user.name
+            })
+          } catch (error) {
+            // Silently fail for individual requests
+          }
+        })
+      )
+      return allUsers
+    },
+    enabled: uniquePartnerIds.length > 0,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+  })
+
+  // Mapa de partnerUserId a nombre del gestor
+  const gestorNameMap = partnerUsersData || {}
+
+  // Actualiza solo el estado local de filtros (no dispara búsqueda)
+  const handleLocalFilterChange = (key: keyof AdminQueryParams, value: any) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  // Actualiza rango de fechas en estado local
+  const handleLocalDateRangeChange = (from: string, to: string) => {
+    setLocalFilters(prev => ({ ...prev, from, to }))
+  }
+
+  // Ejecuta la búsqueda con los filtros locales actuales usando el endpoint search
+  const handleSearch = async () => {
+    // Determinar valor de signatureStatus para el servidor
+    let signatureStatusValue: 'signed' | null | undefined = undefined
+    if (mandateFilter === 'signed') {
+      signatureStatusValue = 'signed'
+    } else if (mandateFilter === 'pending') {
+      signatureStatusValue = null
+    }
+    
+    // Construir parámetros para el nuevo endpoint search
+    // isPartner: 0 = directo (sin partnerId), 1 = alianza (con partnerId)
+    let isPartnerValue: 0 | 1 | undefined = undefined
+    if (allianceFilter !== 'all') {
+      // Si se seleccionó una alianza específica, forzar isPartner=1
+      isPartnerValue = 1
+    } else if (originFilter === 'directo') {
+      isPartnerValue = 0
+    } else if (originFilter === 'alianza') {
+      isPartnerValue = 1
+    }
+    
+    // hasBankInfo: 1 = con datos bancarios (Listo), 0 = sin datos bancarios (Pendiente)
+    let hasBankInfoValue: 0 | 1 | undefined = undefined
+    if (bankFilter === 'ready') {
+      hasBankInfoValue = 1
+    } else if (bankFilter === 'pending') {
+      hasBankInfoValue = 0
+    }
+    
+    // Filtrado por mínima devolución: si el toggle está activo, resolvemos el
+    // valor mínimo AHORA (esperando la carga si está en curso). Si el servicio
+    // no tiene configuración (404) o falla, la búsqueda se ejecuta sin el
+    // parámetro, tal como lo hace actualmente.
+    let minimumEstimatedAmountCLP: number | undefined = undefined
+    if (minRefundFilter) {
+      try {
+        const cfg = await queryClient.fetchQuery({
+          queryKey: ['policy-minimum-value-active'],
+          queryFn: fetchActiveMinRefundConfig,
+          staleTime: 5 * 60 * 1000,
+          retry: false,
+        })
+        if (cfg && cfg.minimumValue > 0) {
+          minimumEstimatedAmountCLP = cfg.minimumValue
+        }
+      } catch {
+        // Sin configuración disponible → no enviar el parámetro.
+      }
+    }
+
+    const newSearchFilters: SearchParams = {
+      q: localFilters.search || undefined,
+      // En modo histórico, NO enviamos el status al servidor para traer todas las solicitudes
+      // y filtrar localmente por el estado que tenían en la fecha seleccionada
+      // Si el status contiene múltiples valores separados por coma (ej: desde las calugas
+      // de Operación "En Proceso Operativo"), el backend no acepta listas — omitimos el
+      // filtro server-side y disparamos N búsquedas en paralelo (una por estado) desde
+      // el queryFn (ver `_statusList`).
+      status: historicalStatusMode
+        ? undefined
+        : (localFilters.status && !String(localFilters.status).includes(',')
+            ? localFilters.status
+            : undefined),
+      // Marcador consumido por el queryFn para gatillar el modo multi-status.
+      ...(localFilters.status && String(localFilters.status).includes(',')
+        ? { _statusList: String(localFilters.status).split(',').map(s => s.trim()).filter(Boolean) } as any
+        : {}),
+      sort: 'recent', // Por defecto más recientes
+      // En modo histórico usamos searchByUpdatedAt: from/to filtran por updatedAt en backend.
+      from: localFilters.from || undefined,
+      to: localFilters.to || undefined,
+      page: 1,
+      // En modo histórico pedimos más resultados ya que filtraremos localmente
+      limit: historicalStatusMode || (localFilters.status && String(localFilters.status).includes(','))
+        ? 100
+        : (filters.pageSize || 20),
+      signatureStatus: signatureStatusValue,
+      insuranceToEvaluate: insuranceTypeFilter !== 'all' ? insuranceTypeFilter.toUpperCase() : undefined,
+      isPartner: isPartnerValue,
+      hasBankInfo: hasBankInfoValue,
+      partnerId: allianceFilter !== 'all' ? allianceFilter : undefined,
+      ...(minimumEstimatedAmountCLP !== undefined
+        ? { minimumEstimatedAmountCLP }
+        : {}),
+    }
+
+    // Invalidar primero: garantiza que cada clic en Buscar ejecute la búsqueda
+    // aunque los filtros sean idénticos a los de la búsqueda anterior (la key
+    // cacheada estaría fresca por staleTime y React Query no re-fetchería).
+    queryClient.invalidateQueries({ queryKey: ['refunds-search'] })
+    setSearchFilters(newSearchFilters)
+    setUseSearchEndpoint(true)
+    
+    // Guardar filtros locales aplicados (los que no soporta el servidor)
+    setAppliedLocalFilters({
+      origin: originFilter,
+      bank: bankFilter,
+      insuranceType: insuranceTypeFilter,
+      alliance: allianceFilter,
+      nroPoliza: nroPolizaFilter,
+      nroCredito: nroCreditoFilter,
+      institution: institutionFilter,
+    })
+    
+    // Actualizar URL params
+    const params = new URLSearchParams()
+    if (newSearchFilters.q) params.set('q', newSearchFilters.q)
+    if (newSearchFilters.status) params.set('status', newSearchFilters.status)
+    if (newSearchFilters.origin) params.set('origin', newSearchFilters.origin)
+    if (newSearchFilters.from) params.set('from', newSearchFilters.from)
+    if (newSearchFilters.to) params.set('to', newSearchFilters.to)
+    if (mandateFilter !== 'all') params.set('mandate', mandateFilter)
+    if (bankFilter !== 'all') params.set('bank', bankFilter)
+    if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
+    if (allianceFilter !== 'all') params.set('alliance', allianceFilter)
+    if (institutionFilter !== 'all') params.set('institution', institutionFilter)
+    params.set('page', '1')
+    setSearchParams(params)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    if (historicalStatusMode || activeOverdueFilter) {
+      // En modo histórico, paginación local
+      setHistoricalPage(newPage)
+      return
+    }
+    
+    if (useSearchEndpoint) {
+      const newSearchFilters = { ...searchFilters, page: newPage }
+      setSearchFilters(newSearchFilters)
+    } else {
+      const newFilters = { ...filters, page: newPage }
+      setFilters(newFilters)
+    }
+    
+    const params = new URLSearchParams(searchParams)
+    params.set('page', String(newPage))
+    setSearchParams(params)
+  }
+
+  // Limpia todos los filtros y carga listado inicial con listV2
+  const handleClearFilters = () => {
+    const clearedFilters: AdminQueryParams = {
+      search: '',
+      status: undefined,
+      from: '',
+      to: '',
+      page: 1,
+      pageSize: 20,
+      sort: 'createdAt:desc',
+    }
+    setLocalFilters({
+      search: '',
+      status: undefined,
+      from: '',
+      to: '',
+      sort: 'createdAt:desc',
+    })
+    setFilters(clearedFilters)
+    setSearchFilters({ page: 1, limit: 20 })
+    setUseSearchEndpoint(false) // Volver a usar listV2
+    setMandateFilter('all')
+    setOriginFilter('all')
+    setBankFilter('all')
+    setInsuranceTypeFilter('all')
+    setAllianceFilter('all')
+    setNroPolizaFilter('')
+    setNroCreditoFilter('')
+    setInstitutionFilter('all')
+    setHistoricalStatusMode(false)
+    setMinRefundFilter(isCallCenter)
+    setAppliedLocalFilters({
+      origin: 'all',
+      bank: 'all',
+      insuranceType: 'all',
+      alliance: 'all',
+      nroPoliza: '',
+      nroCredito: '',
+      institution: 'all',
+    })
+    setActiveOverdueFilter(null)
+    setSearchParams(new URLSearchParams())
+  }
+  
+  const handleOriginFilterChange = (value: string) => {
+    setOriginFilter(value)
+  }
+  
+  const handleMandateFilterChange = (value: string) => {
+    setMandateFilter(value)
+  }
+  
+  const handleBankFilterChange = (value: string) => {
+    setBankFilter(value)
+  }
+  
+  const handleInsuranceTypeFilterChange = (value: string) => {
+    setInsuranceTypeFilter(value)
+  }
+
+  const handleCopy = (text: string, fieldId: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(fieldId)
+    setTimeout(() => setCopiedField(null), 2000)
+    toast({
+      title: 'Copiado',
+      description: 'Campo copiado al portapapeles',
+    })
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = paginatedItems.map((r: any) => r.id)
+      setSelectedRefunds(new Set(allIds))
+      setSelectAll(true)
+    } else {
+      setSelectedRefunds(new Set())
+      setSelectAll(false)
+      setAllPagesSelected(false)
+      setAllPagesRefunds([])
+    }
+  }
+
+  // Cargar todas las solicitudes de todas las páginas
+  const handleSelectAllPages = async () => {
+    setIsLoadingAllPages(true)
+    
+    // Cancelar fetch anterior si existe
+    if (allPagesAbortRef.current) {
+      allPagesAbortRef.current.abort()
+    }
+    allPagesAbortRef.current = new AbortController()
+
+    try {
+      // En modo histórico, ya tenemos todos los datos localmente
+      if (historicalStatusMode || activeOverdueFilter) {
+        const allIds = new Set(overdueFilteredItems.map((r: any) => r.id))
+        setSelectedRefunds(allIds)
+        setAllPagesRefunds(overdueFilteredItems as RefundRequest[])
+        setAllPagesSelected(true)
+        setIsLoadingAllPages(false)
+        return
+      }
+
+      // Fetch paralelo de todas las páginas (similar a ExportToExcelDialog)
+      const PAGE_SIZE = 100
+      const fetchFn = useSearchEndpoint 
+        ? (page: number) => refundAdminApi.searchByUpdatedAt({ ...searchFilters, page, limit: PAGE_SIZE })
+        : (page: number) => refundAdminApi.list({ ...filters, page, pageSize: PAGE_SIZE })
+
+      const firstPage = await fetchFn(1)
+      const total = firstPage.total || 0
+      const totalFetchPages = Math.ceil(total / PAGE_SIZE)
+      let allItems = [...(firstPage.items || [])]
+
+      if (totalFetchPages > 1) {
+        const remainingPages = Array.from({ length: totalFetchPages - 1 }, (_, i) => i + 2)
+        const BATCH_SIZE = 10
+        for (let i = 0; i < remainingPages.length; i += BATCH_SIZE) {
+          const batch = remainingPages.slice(i, i + BATCH_SIZE)
+          const results = await Promise.all(batch.map(p => fetchFn(p)))
+          results.forEach(r => { allItems = allItems.concat(r.items || []) })
+        }
+      }
+
+      const allIds = new Set(allItems.map((r: any) => r.id))
+      setSelectedRefunds(allIds)
+      setAllPagesRefunds(allItems as RefundRequest[])
+      setAllPagesSelected(true)
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar todas las solicitudes',
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsLoadingAllPages(false)
+    }
+  }
+
+  const handleClearAllPagesSelection = () => {
+    setSelectedRefunds(new Set())
+    setSelectAll(false)
+    setAllPagesSelected(false)
+    setAllPagesRefunds([])
+  }
+
+  const handleSelectRefund = (refundId: string, checked: boolean) => {
+    const newSelected = new Set(selectedRefunds)
+    if (checked) {
+      newSelected.add(refundId)
+    } else {
+      newSelected.delete(refundId)
+      setSelectAll(false)
+      setAllPagesSelected(false)
+    }
+    setSelectedRefunds(newSelected)
+  }
+
+  const getSelectedRefundsData = (): RefundRequest[] => {
+    // Si se seleccionaron todas las páginas, usar allPagesRefunds
+    const sourceItems = allPagesSelected ? allPagesRefunds : paginatedItems
+    const selected = sourceItems.filter((r: any) => selectedRefunds.has(r.id))
+    
+    // Nota: cuando se seleccionan todas las páginas, no tenemos mandateStatuses 
+    // para items fuera de la página actual, así que omitimos la validación de mandato
+    if (!allPagesSelected) {
+      const withoutMandate = selected.filter((r: any) => {
+        const status = mandateStatuses?.[r.publicId]
+        return !status?.hasSignedPdf
+      })
+
+      if (withoutMandate.length > 0) {
+        toast({
+          title: 'Error',
+          description: `${withoutMandate.length} solicitud(es) seleccionada(s) no tiene(n) mandato firmado`,
+          variant: 'destructive',
+        })
+        return []
+      }
+    }
+
+    return selected as RefundRequest[]
+  }
+
+  const handleExcelGenerated = () => {
+    setSelectedRefunds(new Set())
+    setSelectAll(false)
+    setAllPagesSelected(false)
+    setAllPagesRefunds([])
+  }
+
+  const handleSort = (field: string) => {
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
+    setSortField(field)
+    setSortDirection(newDirection)
+
+    // Para createdAt, además enviamos al backend (recent/old) para ordenar todo el dataset
+    if (field === 'createdAt') {
+      const apiSort: 'recent' | 'old' = newDirection === 'desc' ? 'recent' : 'old'
+      if (useSearchEndpoint) {
+        setSearchFilters(prev => ({ ...prev, sort: apiSort, page: 1 }))
+      } else {
+        const newFilters = { ...filters, sort: apiSort as any, page: 1 }
+        setFilters(newFilters)
+      }
+    }
+  }
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-30" />
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="h-4 w-4 ml-1" />
+    ) : (
+      <ArrowDown className="h-4 w-4 ml-1" />
+    )
+  }
+
+  // Auto-ejecutar búsqueda si viene con autoSearch=true desde Operación
+  // historicalStatusMode ya se inicializa como true en ese caso (ver useState arriba)
+  useEffect(() => {
+    const autoSearch = searchParams.get('autoSearch')
+    if (autoSearch === 'true') {
+      // Pequeño delay para asegurar que los estados locales estén sincronizados
+      const timer = setTimeout(() => {
+        handleSearch()
+        // Remover autoSearch de la URL para evitar re-ejecuciones
+        const newParams = new URLSearchParams(searchParams)
+        newParams.delete('autoSearch')
+        setSearchParams(newParams, { replace: true })
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+    // Call Center: la primera carga siempre filtra por mínima devolución.
+    // Disparamos la búsqueda automáticamente al montar la página.
+    if (isCallCenter) {
+      const timer = setTimeout(() => {
+        handleSearch()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, []) // Solo al montar
+
+  // Mostrar error en useEffect para evitar llamar toast durante el render
+  useEffect(() => {
+    if (error) {
+      const errorMessage = (error as Error).message
+      const errorName = (error as Error).name
+      // Ignorar errores de aborto (StrictMode/WebKit produce "Load failed" al cancelar fetches)
+      if (
+        errorName === 'AbortError' ||
+        errorMessage === 'Load failed' ||
+        errorMessage === 'Failed to fetch' ||
+        errorMessage?.toLowerCase().includes('aborted')
+      ) {
+        return
+      }
+      if (errorMessage === 'UNAUTHORIZED') {
+        toast({
+          title: 'Sesión expirada',
+          description: 'Por favor inicia sesión nuevamente',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      }
+    }
+  }, [error])
+
+  // Normalizar respuesta de la API - ahora viene del endpoint listV2 con paginación server-side
+  const normalizedData = useMemo(() => {
+    if (!data) {
+      return { total: 0, page: 1, pageSize: 20, totalPages: 1, hasNext: false, hasPrev: false, items: [] }
+    }
+    
+    // El servicio ya devuelve el formato correcto desde listV2
+    return {
+      total: data.total || 0,
+      page: data.page || filters.page || 1,
+      pageSize: data.pageSize || filters.pageSize || 20,
+      totalPages: data.totalPages || 1,
+      hasNext: data.hasNext || false,
+      hasPrev: data.hasPrev || false,
+      items: data.items || []
+    }
+  }, [data, filters.page, filters.pageSize])
+
+  // Con paginación server-side, los filtros principales (search, status, from, to) se envían al servidor
+  // Solo aplicamos filtros adicionales locales (origen, banco, tipo seguro) sobre los items recibidos
+  const statusFilteredItems = useMemo(() => {
+    return normalizedData.items
+  }, [normalizedData.items])
+  
+  // Con paginación server-side, el ordenamiento ya viene del servidor
+  // Solo aplicamos ordenamiento local si el usuario lo cambia en la UI
+  const preSortedItems = useMemo(() => {
+    // Los items ya vienen ordenados del servidor según filters.sort
+    return statusFilteredItems
+  }, [statusFilteredItems])
+  
+  // Mandate query moved after paginatedItems (see below)
+  
+  // Aplicar filtros locales que el servidor no soporta (usando valores aplicados al presionar Buscar)
+  const locallyFilteredItems = useMemo(() => {
+    let result = preSortedItems
+
+    // Guardrail: si hay estado seleccionado, asegurar match por estado actual
+    // (protege inconsistencias del backend en filtros por status)
+    // En modo histórico NO aplica: ahí debe contar transiciones aunque el estado final sea distinto
+    if (!historicalStatusMode && localFilters.status) {
+      const statusList = String(localFilters.status)
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean)
+
+      result = result.filter((r: any) => statusList.includes((r.status?.toLowerCase() || '')))
+    }
+    
+    // Filtro de banco (no soportado por servidor)
+    if (appliedLocalFilters.bank !== 'all') {
+      result = appliedLocalFilters.bank === 'ready'
+        ? result.filter((r: any) => r.bankInfo)
+        : result.filter((r: any) => !r.bankInfo)
+    }
+    
+    // Filtro de alianza específica (backend no soporta partnerId, solo isPartner)
+    if (appliedLocalFilters.alliance !== 'all') {
+      result = result.filter((r: any) => r.partnerId === appliedLocalFilters.alliance)
+    }
+
+    // Filtro por institución financiera (institutionId) — viene desde Operación
+    if (appliedLocalFilters.institution !== 'all') {
+      const target = String(appliedLocalFilters.institution).toLowerCase().trim()
+      result = result.filter((r: any) => String(r.institutionId || '').toLowerCase().trim() === target)
+    }
+    
+    // Filtro por Nº Póliza (busca en calculationSnapshot.nroPoliza)
+    if (appliedLocalFilters.nroPoliza) {
+      const search = appliedLocalFilters.nroPoliza.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroPoliza || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+    
+    // Filtro por Nº Crédito (busca en calculationSnapshot.nroCredito)
+    if (appliedLocalFilters.nroCredito) {
+      const search = appliedLocalFilters.nroCredito.toLowerCase()
+      result = result.filter((r: any) => {
+        const val = r.calculationSnapshot?.nroCredito || ''
+        return val.toLowerCase().includes(search)
+      })
+    }
+
+    // durante el rango de fechas [from, to], sin importar su estado actual
+    if (historicalStatusMode && localFilters.status) {
+      const fromDate = localFilters.from || '2000-01-01'
+      const toDate = localFilters.to || toLocalDateString(new Date())
+      
+      // Soportar múltiples estados separados por coma (ej: desde banner Proceso Operativo)
+      const statusList = (localFilters.status as string).split(',').map(s => s.trim()).filter(Boolean)
+      
+      result = result.filter((r: any) => 
+        statusList.some(st => wasInStatusDuringRange(r, st as any, fromDate, toDate))
+      )
+
+      // Restricción adicional: si viene desde una caluga de Operación,
+      // el estado ACTUAL debe ser uno de los seleccionados.
+      if (currentStatusOnly) {
+        const lcStatusList = statusList.map(s => s.toLowerCase())
+        result = result.filter((r: any) => lcStatusList.includes((r.status?.toLowerCase() || '')))
+      }
+    }
+    
+    return result
+  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
+  
+  // Calcular solicitudes con tiempo excedido
+  const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
+
+  // Filtrar por overdue si hay filtro activo
+  const overdueFilteredItems = useMemo(() => {
+    if (!activeOverdueFilter) return locallyFilteredItems
+    const stage = overdueStages.find(s => s.stageKey === activeOverdueFilter)
+    if (!stage) return locallyFilteredItems
+    return locallyFilteredItems.filter((r: any) => stage.overdueIds.has(r.id || r.publicId))
+  }, [locallyFilteredItems, activeOverdueFilter, overdueStages])
+
+  // Estado para paginación local en modo histórico
+  const [historicalPage, setHistoricalPage] = useState(1)
+  const historicalPageSize = filters.pageSize || 20
+
+  // Reset página histórica cuando cambian los filtros
+  useEffect(() => {
+    setHistoricalPage(1)
+  }, [overdueFilteredItems.length])
+
+  // Detectar modo multi-status (status con comas => se pagina localmente)
+  const multiStatusMode = !!(localFilters.status && String(localFilters.status).includes(','))
+
+  // En modo histórico/multi-status, paginar localmente; en modo normal, usar datos del servidor
+  const paginatedItems = useMemo(() => {
+    if (historicalStatusMode || activeOverdueFilter || multiStatusMode) {
+      const start = (historicalPage - 1) * historicalPageSize
+      return overdueFilteredItems.slice(start, start + historicalPageSize)
+    }
+    return overdueFilteredItems
+  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, multiStatusMode, historicalPage, historicalPageSize])
+
+  // Ordenamiento client-side aplicado sobre la página/lista visible
+  const sortedPaginatedItems = useMemo(() => {
+    if (!sortField) return paginatedItems
+    const getValue = (r: any): any => {
+      switch (sortField) {
+        case 'publicId': return r.publicId || ''
+        case 'fullName': return (r.fullName || `${r.firstName || ''} ${r.lastName || ''}`).trim().toLowerCase()
+        case 'rut': return (r.rut || '').toLowerCase()
+        case 'email': return (r.email || '').toLowerCase()
+        case 'status': return (r.status || '').toLowerCase()
+        case 'estimatedAmountCLP': return Number(r.estimatedAmountCLP || r.calculationSnapshot?.estimatedAmountCLP || 0)
+        case 'institutionId': return (r.institutionId || '').toLowerCase()
+        case 'createdAt': return new Date(r.createdAt || 0).getTime()
+        default: return r[sortField] ?? ''
+      }
+    }
+    const dir = sortDirection === 'asc' ? 1 : -1
+    return [...paginatedItems].sort((a: any, b: any) => {
+      const av = getValue(a)
+      const bv = getValue(b)
+      if (av < bv) return -1 * dir
+      if (av > bv) return 1 * dir
+      return 0
+    })
+  }, [paginatedItems, sortField, sortDirection])
+
+
+  // IDs para consultar mandatos - solo los items VISIBLES en la página actual
+  // En modo histórico preSortedItems puede tener miles de items; limitamos a los paginados
+  const idsToFetch = useMemo(() => {
+    // Cuando el filtro de mandato está activo, extender a más items (hasta 200)
+    if (mandateFilter !== 'all') {
+      const extended = locallyFilteredItems.slice(0, 200)
+      return extended.map((r: any) => r.publicId).filter(Boolean)
+    }
+    return paginatedItems.map((r: any) => r.publicId).filter(Boolean)
+  }, [paginatedItems, locallyFilteredItems, mandateFilter])
+
+  // Estado del mandato derivado de los campos de firma que vienen en listV2/search.
+  // Una solicitud se considera firmada si signatureStatus === 'signed' o
+  // existe signedPdfUrl/signaturePdfKey/signedPdfS3Key. signUrl proviene de experianSignUrl.
+  const mandateStatuses = useMemo(() => {
+    const map: Record<string, { hasSignedPdf: boolean; signUrl?: string }> = {}
+    const source = mandateFilter !== 'all' ? locallyFilteredItems.slice(0, 200) : paginatedItems
+    source.forEach((r: any) => {
+      if (!r.publicId) return
+      const signed =
+        r.signatureStatus === 'signed' ||
+        !!r.signedPdfUrl ||
+        !!r.signaturePdfKey ||
+        !!r.signedPdfS3Key ||
+        !!r.hasSignedPdf
+      map[r.publicId] = {
+        hasSignedPdf: signed,
+        signUrl: r.experianSignUrl || r.signUrl,
+      }
+    })
+    return map
+  }, [paginatedItems, locallyFilteredItems, mandateFilter])
+  const isMandateLoading = false
+  
+  // sortedItems para exportar - en modo histórico contiene TODOS los items filtrados (no paginados)
+  const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
+
+  // Usar paginación del servidor, pero en modo histórico/overdue/multi-status el total es local
+  const localPaginationMode = historicalStatusMode || activeOverdueFilter || multiStatusMode
+  const totalFiltered = localPaginationMode ? overdueFilteredItems.length : normalizedData.total
+  const totalPages = localPaginationMode
+    ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
+    : (normalizedData.totalPages || Math.max(1, Math.ceil(normalizedData.total / normalizedData.pageSize)))
+  const hasNextPage = localPaginationMode ? historicalPage < totalPages : normalizedData.hasNext
+  const hasPrevPage = localPaginationMode ? historicalPage > 1 : normalizedData.hasPrev
+
+  const currentPage = localPaginationMode ? historicalPage : normalizedData.page
+  const startIndex = (currentPage - 1) * (localPaginationMode ? historicalPageSize : normalizedData.pageSize)
+
+  // Helper: obtener el estado a mostrar según el modo (actual o histórico)
+  const getDisplayStatus = useCallback((refund: any): RefundStatus => {
+    if (!historicalStatusMode || !localFilters.to) return refund.status
+    const historical = getStatusAtDate(refund, localFilters.to)
+    return historical || refund.status
+  }, [historicalStatusMode, localFilters.to])
+
+  return (
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
+        <div className="flex flex-wrap gap-2">
+          {!isMobile && (
+            <>
+              <ExportToExcelDialog 
+                refunds={sortedItems as RefundRequest[]} 
+                totalCount={totalFiltered}
+                partnerNameMap={partnerNameMap}
+                gestorNameMap={gestorNameMap}
+                mandateStatuses={mandateStatuses || {}}
+                selectedRefunds={selectedRefunds}
+                searchFilters={useSearchEndpoint ? searchFilters : undefined}
+                listFilters={!useSearchEndpoint ? filters : undefined}
+                useSearchEndpoint={useSearchEndpoint}
+                historicalStatusMode={historicalStatusMode}
+                allPagesRefunds={allPagesSelected ? allPagesRefunds : undefined}
+              />
+              <GenerateExcelDialog 
+                selectedRefunds={getSelectedRefundsData()} 
+                onClose={handleExcelGenerated}
+              />
+            </>
+          )}
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <RotateCw className="h-4 w-4 mr-2" />
+            {!isMobile && 'Actualizar'}
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar (ID, email, RUT, nombre)"
+                value={localFilters.search || ''}
+                onChange={(e) => handleLocalFilterChange('search', e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-9"
+              />
+            </div>
+
+            <Select
+              value={localFilters.status || 'all'}
+              onValueChange={(v) => handleLocalFilterChange('status', v === 'all' ? undefined : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados</SelectItem>
+                {Object.entries(statusLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={mandateFilter}
+              onValueChange={handleMandateFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Mandato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los mandatos</SelectItem>
+                <SelectItem value="signed">Con mandato firmado</SelectItem>
+                <SelectItem value="pending">Mandato pendiente</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={originFilter}
+              onValueChange={handleOriginFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Origen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los orígenes</SelectItem>
+                <SelectItem value="alianza">Alianza</SelectItem>
+                <SelectItem value="directo">Directo</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={bankFilter}
+              onValueChange={handleBankFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Datos pago" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ready">Listo para pago</SelectItem>
+                <SelectItem value="pending">Sin datos bancarios</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={insuranceTypeFilter}
+              onValueChange={handleInsuranceTypeFilterChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo Seguro" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los tipos</SelectItem>
+                <SelectItem value="desgravamen">Desgravamen</SelectItem>
+                <SelectItem value="cesantia">Cesantía</SelectItem>
+                <SelectItem value="ambos">Ambos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <AllianceCombobox
+              value={allianceFilter}
+              onChange={setAllianceFilter}
+              partners={partnersData?.items || []}
+            />
+
+            <Input
+              placeholder="Nº Póliza"
+              value={nroPolizaFilter}
+              onChange={(e) => setNroPolizaFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
+            />
+
+            <Input
+              placeholder="Nº Crédito"
+              value={nroCreditoFilter}
+              onChange={(e) => setNroCreditoFilter(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="font-mono"
+            />
+          </div>
+
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Fecha:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = toLocalDateString(new Date())
+                  handleLocalDateRangeChange(hoy, hoy)
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Hoy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const ayer = new Date()
+                  ayer.setDate(ayer.getDate() - 1)
+                  const ayerStr = toLocalDateString(ayer)
+                  handleLocalDateRangeChange(ayerStr, ayerStr)
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Ayer
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = new Date()
+                  const semanaAtras = new Date()
+                  semanaAtras.setDate(hoy.getDate() - 7)
+                  handleLocalDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy))
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Última semana
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const hoy = new Date()
+                  const mesAtras = new Date()
+                  mesAtras.setMonth(hoy.getMonth() - 1)
+                  handleLocalDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy))
+                }}
+                className="h-7 text-xs px-2"
+              >
+                Último mes
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm text-muted-foreground">Desde</label>
+                <Input
+                  type="date"
+                  value={localFilters.from || ''}
+                  onChange={(e) => handleLocalFilterChange('from', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground">Hasta</label>
+                <Input
+                  type="date"
+                  value={localFilters.to || ''}
+                  onChange={(e) => handleLocalFilterChange('to', e.target.value)}
+                />
+              </div>
+            </div>
+            {/* Toggle Estado en fecha */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="historical-status"
+                  checked={historicalStatusMode}
+                  onCheckedChange={setHistoricalStatusMode}
+                  disabled={!localFilters.to}
+                />
+                <label
+                  htmlFor="historical-status"
+                  className={`flex items-center gap-1.5 text-sm cursor-pointer select-none ${
+                    historicalStatusMode ? 'text-foreground font-medium' : 'text-muted-foreground'
+                  }`}
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  Estado en fecha
+                </label>
+              </div>
+              {historicalStatusMode && (
+                <span className="text-xs text-muted-foreground">
+                  Mostrando el estado que tenían las solicitudes en la fecha seleccionada
+                </span>
+              )}
+            </div>
+            {/* Toggle Filtrado por mínima devolución */}
+            <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="min-refund-filter"
+                  checked={minRefundFilter}
+                  onCheckedChange={setMinRefundFilter}
+                  disabled={isCallCenter}
+                />
+                <label
+                  htmlFor="min-refund-filter"
+                  className={`flex items-center gap-1.5 text-sm select-none ${
+                    isCallCenter ? 'cursor-not-allowed' : 'cursor-pointer'
+                  } ${minRefundFilter ? 'text-foreground font-medium' : 'text-muted-foreground'}`}
+                >
+                  <Flag className="h-3.5 w-3.5" />
+                  Filtrado por mínima devolución
+                </label>
+              </div>
+              {minRefundFilter && (
+                <span className="text-xs text-muted-foreground">
+                  {isMinRefundLoading
+                    ? 'Consultando valor mínimo configurado…'
+                    : minRefundValue != null && minRefundValue > 0
+                      ? `Solo solicitudes con devolución estimada desde $${formatCLPNumber(minRefundValue)}`
+                      : 'Sin valor mínimo configurado: se listan todas las solicitudes'}
+                </span>
+              )}
+              {isCallCenter && (
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                  Obligatorio en Call Center
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex items-center gap-2 pt-2">
+            <Button onClick={handleSearch}>
+              <Search className="h-4 w-4 mr-2" />
+              Buscar
+            </Button>
+            <Button variant="outline" onClick={handleClearFilters}>
+              <X className="h-4 w-4 mr-2" />
+              Limpiar Filtros
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Banner modo histórico */}
+      {historicalStatusMode && (
+        <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3 animate-fade-in">
+          <div className="flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 p-1.5">
+            <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+              Modo histórico activo
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-400">
+              La columna "Estado" muestra el estado que tenía cada solicitud al {localFilters.to ? new Date(localFilters.to + 'T12:00:00').toLocaleDateString('es-CL') : 'la fecha seleccionada'}. 
+              Si difiere del actual, verás un ícono <ArrowRightLeft className="inline h-3 w-3" />.
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 shrink-0"
+            onClick={() => setHistoricalStatusMode(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Banner de alertas de tiempo excedido */}
+      <OverdueAlertsBanner
+        refunds={locallyFilteredItems}
+        activeOverdueFilter={activeOverdueFilter}
+        onFilterByOverdue={(stageKey) => {
+          setActiveOverdueFilter(stageKey)
+          setHistoricalPage(1)
+        }}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {listTitle}
+            {totalFiltered > 0 && (
+              <span className="text-muted-foreground ml-2">({totalFiltered} total)</span>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : paginatedItems.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No se encontraron solicitudes
+            </div>
+          ) : (
+            <>
+              {/* Banner de selección multi-página (estilo Gmail) */}
+              {selectAll && totalFiltered > paginatedItems.length && !allPagesSelected && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-4 py-2 mb-3 flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span>
+                    Se seleccionaron <strong>{paginatedItems.length}</strong> solicitudes de esta página.
+                  </span>
+                  {isLoadingAllPages ? (
+                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Cargando todas las solicitudes...
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleSelectAllPages}
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    >
+                      Seleccionar las {totalFiltered} solicitudes que coinciden con los filtros
+                    </button>
+                  )}
+                </div>
+              )}
+              {allPagesSelected && (
+                <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-md px-4 py-2 mb-3 flex items-center justify-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <span>
+                    Se seleccionaron <strong>las {selectedRefunds.size}</strong> solicitudes que coinciden con los filtros.
+                  </span>
+                  <button
+                    onClick={handleClearAllPagesSelection}
+                    className="text-green-700 dark:text-green-400 hover:underline font-medium"
+                  >
+                    Limpiar selección
+                  </button>
+                </div>
+              )}
+
+              {/* Vista Desktop - Tabla */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectAll}
+                          onCheckedChange={handleSelectAll}
+                          aria-label="Seleccionar todas"
+                        />
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('publicId')}
+                      >
+                        <div className="flex items-center">
+                          ID Público
+                          <SortIcon field="publicId" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('fullName')}
+                      >
+                        <div className="flex items-center">
+                          Nombre
+                          <SortIcon field="fullName" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('rut')}
+                      >
+                        <div className="flex items-center">
+                          RUT
+                          <SortIcon field="rut" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('email')}
+                      >
+                        <div className="flex items-center">
+                          Email
+                          <SortIcon field="email" />
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('status')}
+                      >
+                        <div className="flex items-center">
+                          Estado
+                          <SortIcon field="status" />
+                        </div>
+                      </TableHead>
+                      <TableHead>Tipo Seguro</TableHead>
+                      <TableHead>Mandato</TableHead>
+                      <TableHead 
+                        className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('estimatedAmountCLP')}
+                      >
+                        <div className="flex items-center justify-end">
+                          Monto estimado
+                          <SortIcon field="estimatedAmountCLP" />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-right">Monto Real</TableHead>
+                      <TableHead className="text-right">Valor Nueva Prima</TableHead>
+                      <TableHead className="text-center">Pago</TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('institutionId')}
+                      >
+                        <div className="flex items-center">
+                          Institución
+                          <SortIcon field="institutionId" />
+                        </div>
+                      </TableHead>
+                      <TableHead>Nº Póliza</TableHead>
+                      <TableHead>Nº Crédito</TableHead>
+                      <TableHead>Origen</TableHead>
+                      <TableHead>Gestor</TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleSort('createdAt')}
+                      >
+                        <div className="flex items-center">
+                          Creación
+                          <SortIcon field="createdAt" />
+                        </div>
+                      </TableHead>
+                      {isCallCenter && (
+                        <TableHead>Fecha Docs Pendientes</TableHead>
+                      )}
+                      {isCallCenter && (
+                        <TableHead>Fecha Docs Recibidos</TableHead>
+                      )}
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedPaginatedItems.map((refund) => (
+                      <TableRow key={refund.publicId || refund.id}>
+                        <TableCell className="w-12">
+                          <Checkbox
+                            checked={selectedRefunds.has(refund.id)}
+                            onCheckedChange={(checked) => handleSelectRefund(refund.id, checked as boolean)}
+                            aria-label={`Seleccionar solicitud ${refund.publicId}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{refund.publicId}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.publicId, `publicId-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `publicId-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>{refund.fullName}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span>{refund.rut}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.rut, `rut-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `rut-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <div className="flex items-center gap-1">
+                            <span>{refund.email}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopy(refund.email, `email-${refund.id}`)}
+                              className="h-6 w-6 p-0"
+                            >
+                              {copiedField === `email-${refund.id}` ? (
+                                <Check className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const displayStatus = getDisplayStatus(refund)
+                            return (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <Badge className={getStatusColors(displayStatus)}>
+                                  {statusLabels[displayStatus] || displayStatus}
+                                </Badge>
+                                {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
+                                  <span title={`Estado actual: ${statusLabels[refund.status]}`}>
+                                    <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </span>
+                                )}
+                                <OverdueRowIndicator refund={refund} />
+                              </div>
+                            )
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const snapshot = (refund as any).calculationSnapshot
+                            const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+                            
+                            // Detectar cesantía: por insuranceToEvaluate o campos específicos
+                            const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
+                              insuranceToEvaluate.includes('CESANT') ||
+                              snapshot?.tipoSeguro?.toLowerCase() === 'cesantia'
+                            
+                            // Detectar desgravamen: por insuranceToEvaluate o campos específicos
+                            const isDesgravamen = insuranceToEvaluate === 'DESGRAVAMEN' || 
+                              insuranceToEvaluate.includes('DESGRAV') ||
+                              snapshot?.tipoSeguro?.toLowerCase() === 'desgravamen'
+                            
+                            // Detectar ambos
+                            const isBoth = insuranceToEvaluate === 'AMBOS' || 
+                              insuranceToEvaluate.includes('BOTH') ||
+                              (isCesantia && isDesgravamen)
+                            
+                            if (isBoth) {
+                              return (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                    Desgravamen
+                                  </Badge>
+                                  <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                    Cesantía
+                                  </Badge>
+                                </div>
+                              )
+                            } else if (isCesantia) {
+                              return (
+                                <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                  Cesantía
+                                </Badge>
+                              )
+                            } else {
+                              return (
+                                <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                  Desgravamen
+                                </Badge>
+                              )
+                            }
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {mandateStatuses?.[refund.publicId] ? (
+                            mandateStatuses[refund.publicId].hasSignedPdf ? (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-xs">Firmado</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1 text-orange-600">
+                                  <AlertCircle className="h-4 w-4" />
+                                  <span className="text-xs">Pendiente</span>
+                                </div>
+                                {mandateStatuses[refund.publicId].signUrl && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleCopy(mandateStatuses[refund.publicId].signUrl!, `signUrl-${refund.publicId}`)
+                                    }}
+                                  >
+                                    {copiedField === `signUrl-${refund.publicId}` ? (
+                                      <Check className="h-3 w-3 text-green-600" />
+                                    ) : (
+                                      <Copy className="h-3 w-3" />
+                                    )}
+                                    <span className="ml-1">URL</span>
+                                  </Button>
+                                )}
+                              </div>
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {(() => {
+                            // Caso AMBOS (1 sola solicitud con desglose interno)
+                            const bd = computeBreakdown((refund as any).calculationSnapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.devolucionConMargen}
+                                  siblingValue={bd.cesantia.devolucionConMargen}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
+                                />
+                              )
+                            }
+                            return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {(refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
+                            (() => {
+                              const realAmountEntry = refund.statusHistory?.slice().reverse().find(
+                                (entry: any) => {
+                                  const toStatus = entry.to?.toLowerCase()
+                                  return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+                                }
+                              )
+                              return realAmountEntry?.realAmount ? (
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                  ${realAmountEntry.realAmount.toLocaleString('es-CL')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )
+                            })()
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {(() => {
+                            const snapshot = (refund as any).calculationSnapshot
+                            // Override manual (casos borde donde el cálculo no cuadra)
+                            const manualTotal = Number(snapshot?.newTotalPremium) || 0
+                            if (manualTotal > 0) {
+                              return (
+                                <span className="font-medium text-primary" title="Prima total ingresada manualmente">
+                                  ${formatCLPNumber(manualTotal)}
+                                </span>
+                              )
+                            }
+                            const derived = derivePremiumsFromSnapshot(snapshot, (refund as any).institutionId)
+                            const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium || 0
+                            const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
+                            const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
+                            // Caso AMBOS
+                            const bd = computeBreakdown(snapshot)
+                            if (bd) {
+                              return (
+                                <PairedAmountCell
+                                  selfValue={bd.desgravamen.primaTotalTDV}
+                                  siblingValue={bd.cesantia.primaTotalTDV}
+                                  selfTipo="desgravamen"
+                                  siblingTipo="cesantia"
+                                  totalClassName="font-semibold text-primary"
+                                />
+                              )
+                            }
+                            // Caso CESANTÍA PURA: usa fórmula del certificado (saldo × tasa × cuotas)
+                            const cesantiaTotal = computePureCesantiaTotalTDV(snapshot)
+                            const finalValor = cesantiaTotal !== null ? cesantiaTotal : valorNuevaPrima
+                            return finalValor > 0 ? (
+                              <span className="font-medium text-primary">
+                                ${formatCLPNumber(finalValor)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          })()}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {(refund as any).bankInfo ? (
+                            <div className="flex items-center justify-center">
+                              <div className="relative group">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
+                                  <Flag className="h-4 w-4 text-emerald-500 fill-emerald-500" />
+                                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
+                                </div>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+                                  Datos bancarios registrados
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              <div className="relative group">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 border border-amber-500/30">
+                                  <Flag className="h-4 w-4 text-amber-500" />
+                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pendiente</span>
+                                </div>
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
+                                  Sin datos bancarios
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">{getInstitutionDisplayName(refund.institutionId)}</TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroPoliza || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">
+                          {(refund as any).calculationSnapshot?.nroCredito || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell>
+                          {refund.partnerId ? (
+                            <Badge 
+                              variant="outline" 
+                              className="bg-primary/10 text-primary border-primary/20 text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                navigate(`/alianzas/${refund.partnerId}`)
+                              }}
+                            >
+                              {partnerNameMap[refund.partnerId] || 'Alianza'}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Directo</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {refund.partnerUserId && gestorNameMap[refund.partnerUserId] ? (
+                            <span className="text-xs">{gestorNameMap[refund.partnerUserId]}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {refund.createdAt ? new Date(refund.createdAt).toLocaleString('es-CL', {
+                            dateStyle: 'short',
+                            timeStyle: 'short'
+                          }) : 'N/A'}
+                        </TableCell>
+                        {isCallCenter && (
+                          <TableCell className="text-sm">
+                            {(() => {
+                              const docsPendingEntry = refund.statusHistory
+                                ?.filter((entry: any) => (entry.to || '').toLowerCase() === 'docs_pending' || (entry.status || '').toLowerCase() === 'docs_pending')
+                                .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
+                              if (!docsPendingEntry) return <span className="text-muted-foreground">-</span>
+                              return new Date(docsPendingEntry.at).toLocaleString('es-CL', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            })()}
+                          </TableCell>
+                        )}
+                        {isCallCenter && (
+                          <TableCell className="text-sm">
+                            {(() => {
+                              const docsReceivedEntry = refund.statusHistory
+                                ?.filter((entry: any) => (entry.to || '').toLowerCase() === 'docs_received' || (entry.status || '').toLowerCase() === 'docs_received')
+                                .sort((a: any, b: any) => new Date(b.at).getTime() - new Date(a.at).getTime())[0]
+                              if (!docsReceivedEntry) return <span className="text-muted-foreground">-</span>
+                              return new Date(docsReceivedEntry.at).toLocaleString('es-CL', {
+                                dateStyle: 'short',
+                                timeStyle: 'short'
+                              })
+                            })()}
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
+                          >
+                            Ver detalle
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Vista Mobile - Cards */}
+              <div className="md:hidden space-y-3">
+                {sortedPaginatedItems.map((refund) => (
+                  <MobileCard
+                    key={refund.publicId || refund.id}
+                    onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
+                    header={
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {refund.publicId}
+                        </span>
+                        <Checkbox
+                          checked={selectedRefunds.has(refund.id)}
+                          onCheckedChange={(checked) => handleSelectRefund(refund.id, checked as boolean)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Seleccionar ${refund.publicId}`}
+                        />
+                      </div>
+                    }
+                    fields={[
+                      {
+                        label: 'Nombre',
+                        value: refund.fullName,
+                        fullWidth: true
+                      },
+                      {
+                        label: 'RUT',
+                        value: refund.rut
+                      },
+                      {
+                        label: 'Estado',
+                        value: (() => {
+                          const displayStatus = getDisplayStatus(refund)
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <Badge className={getStatusColors(displayStatus)}>
+                                {statusLabels[displayStatus] || displayStatus}
+                              </Badge>
+                              {historicalStatusMode && localFilters.status && refund.status !== localFilters.status && (
+                                <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </div>
+                          )
+                        })()
+                      },
+                      {
+                        label: 'Tipo Seguro',
+                        value: (() => {
+                          const snapshot = (refund as any).calculationSnapshot
+                          const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+                          
+                          const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
+                            insuranceToEvaluate.includes('CESANT') ||
+                            snapshot?.tipoSeguro?.toLowerCase() === 'cesantia'
+                          
+                          const isDesgravamen = insuranceToEvaluate === 'DESGRAVAMEN' || 
+                            insuranceToEvaluate.includes('DESGRAV') ||
+                            snapshot?.tipoSeguro?.toLowerCase() === 'desgravamen'
+                          
+                          const isBoth = insuranceToEvaluate === 'AMBOS' || 
+                            insuranceToEvaluate.includes('BOTH') ||
+                            (isCesantia && isDesgravamen)
+                          
+                          if (isBoth) {
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                  Desgravamen
+                                </Badge>
+                                <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                  Cesantía
+                                </Badge>
+                              </div>
+                            )
+                          } else if (isCesantia) {
+                            return (
+                              <Badge variant="outline" className="bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30 text-xs">
+                                Cesantía
+                              </Badge>
+                            )
+                          } else {
+                            return (
+                              <Badge variant="outline" className="bg-violet-500/15 text-violet-600 dark:text-violet-400 border-violet-500/30 text-xs">
+                                Desgravamen
+                              </Badge>
+                            )
+                          }
+                        })()
+                      },
+                      {
+                        label: 'Monto estimado',
+                        value: (() => {
+                          const bd = computeBreakdown((refund as any).calculationSnapshot)
+                          if (bd) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={bd.desgravamen.devolucionConMargen}
+                                siblingValue={bd.cesantia.devolucionConMargen}
+                                selfTipo="desgravamen"
+                                siblingTipo="cesantia"
+                              />
+                            )
+                          }
+                          return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                        })()
+                      },
+                      {
+                        label: 'Monto Real',
+                        value: (refund.status === 'payment_scheduled' || refund.status === 'paid') ? (
+                          (() => {
+                            const realAmountEntry = refund.statusHistory?.slice().reverse().find(
+                              (entry: any) => {
+                                const toStatus = entry.to?.toLowerCase()
+                                return (toStatus === 'payment_scheduled' || toStatus === 'paid') && entry.realAmount
+                              }
+                            )
+                            return realAmountEntry?.realAmount ? (
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                ${realAmountEntry.realAmount.toLocaleString('es-CL')}
+                              </span>
+                            ) : '-'
+                          })()
+                        ) : '-'
+                      },
+                      {
+                        label: 'Valor Nueva Prima',
+                        value: (() => {
+                          const snapshot = (refund as any).calculationSnapshot
+                          const manualTotal = Number(snapshot?.newTotalPremium) || 0
+                          if (manualTotal > 0) {
+                            return (
+                              <span className="font-medium text-primary" title="Prima total ingresada manualmente">
+                                ${formatCLPNumber(manualTotal)}
+                              </span>
+                            )
+                          }
+                          const derived = derivePremiumsFromSnapshot(snapshot, (refund as any).institutionId)
+                          const newMonthlyPremium = derived.newMonthlyPremium || snapshot?.newMonthlyPremium || 0
+                          const remainingInstallments = snapshot?.confirmedRemainingInstallments || snapshot?.remainingInstallments || 0
+                          const valorNuevaPrima = Math.round(newMonthlyPremium * remainingInstallments * 1000) / 1000
+                          const bd = computeBreakdown(snapshot)
+                          if (bd) {
+                            return (
+                              <PairedAmountCell
+                                selfValue={bd.desgravamen.primaTotalTDV}
+                                siblingValue={bd.cesantia.primaTotalTDV}
+                                selfTipo="desgravamen"
+                                siblingTipo="cesantia"
+                                totalClassName="font-semibold text-primary"
+                              />
+                            )
+                          }
+                          const cesantiaTotal = computePureCesantiaTotalTDV(snapshot)
+                          const finalValor = cesantiaTotal !== null ? cesantiaTotal : valorNuevaPrima
+                          return finalValor > 0 ? (
+                            <span className="font-medium text-primary">
+                              ${formatCLPNumber(finalValor)}
+                            </span>
+                          ) : '-'
+                        })()
+                      },
+                      {
+                        label: 'Datos pago',
+                        value: (refund as any).bankInfo ? (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
+                            <Flag className="h-3 w-3 text-emerald-500 fill-emerald-500" />
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30">
+                            <Flag className="h-3 w-3 text-amber-500" />
+                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">Pendiente</span>
+                          </div>
+                        )
+                      },
+                      {
+                        label: 'Institución',
+                        value: getInstitutionDisplayName(refund.institutionId)
+                      },
+                      {
+                        label: 'Nº Póliza',
+                        value: (refund as any).calculationSnapshot?.nroPoliza || '-'
+                      },
+                      {
+                        label: 'Nº Crédito',
+                        value: (refund as any).calculationSnapshot?.nroCredito || '-'
+                      },
+                      {
+                        label: 'Origen',
+                        value: refund.partnerId ? (
+                          <Badge 
+                            variant="outline" 
+                            className="bg-primary/10 text-primary border-primary/20 text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              navigate(`/alianzas/${refund.partnerId}`)
+                            }}
+                          >
+                            {partnerNameMap[refund.partnerId] || 'Alianza'}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Directo</span>
+                        )
+                      },
+                      {
+                        label: 'Gestor',
+                        value: refund.partnerUserId && gestorNameMap[refund.partnerUserId] ? (
+                          <span className="text-xs">{gestorNameMap[refund.partnerUserId]}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )
+                      },
+                      {
+                        label: 'Mandato',
+                        value: mandateStatuses?.[refund.publicId] ? (
+                          mandateStatuses[refund.publicId].hasSignedPdf ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle className="h-3 w-3" />
+                              <span className="text-xs">Firmado</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 text-orange-600">
+                                <AlertCircle className="h-3 w-3" />
+                                <span className="text-xs">Pendiente</span>
+                              </div>
+                              {mandateStatuses[refund.publicId].signUrl && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCopy(mandateStatuses[refund.publicId].signUrl!, `signUrl-${refund.publicId}`)
+                                  }}
+                                >
+                                  {copiedField === `signUrl-${refund.publicId}` ? (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                  <span className="ml-1">URL</span>
+                                </Button>
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-xs">-</span>
+                        )
+                      },
+                      {
+                        label: 'Fecha',
+                        value: new Date(refund.createdAt).toLocaleDateString('es-CL')
+                      }
+                    ]}
+                  />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages} ({totalFiltered} solicitudes)
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!hasPrevPage}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!hasNextPage}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
