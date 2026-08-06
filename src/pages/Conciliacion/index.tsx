@@ -369,7 +369,7 @@ export default function ConciliacionPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Conciliación bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Cartola descargada automáticamente desde el portal bancario.
+            Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
