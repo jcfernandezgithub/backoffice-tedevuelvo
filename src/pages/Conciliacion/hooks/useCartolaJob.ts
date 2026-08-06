@@ -119,6 +119,21 @@ export function useCartolaJob() {
     [stopPolling],
   )
 
+  /**
+   * Lanza el OCR sobre la imagen del CAPTCHA. El resultado solo se aplica
+   * si el trabajo sigue esperando CAPTCHA con esa misma imagen (se ignoran
+   * respuestas tardías de imágenes anteriores).
+   */
+  const solveCaptcha = useCallback(async (image: string) => {
+    const requestId = ++ocrRequestRef.current
+    const text = await resolveCaptchaText(image)
+    if (ocrRequestRef.current !== requestId) return
+    setState((s) => {
+      if (s.phase !== 'waiting_captcha' || s.captchaImage !== image) return s
+      return { ...s, solvingCaptcha: false, captchaSuggestion: text }
+    })
+  }, [])
+
   /** Traduce una respuesta del backend (inicio, captcha o polling) a estado de UI. */
   const applyJobPayload = useCallback(
     (payload: StartBankJobResponse | BankJobResponse) => {
