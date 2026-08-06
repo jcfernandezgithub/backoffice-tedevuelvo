@@ -519,7 +519,7 @@ export default function ConciliacionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {query.isLoading || query.isFetching ? (
+          {isBusy ? (
             <div className="flex flex-col items-center justify-center gap-5 py-16 px-6 rounded-lg border border-dashed bg-muted/20">
               <div className="relative h-16 w-16">
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
@@ -528,25 +528,62 @@ export default function ConciliacionPage() {
                 </div>
               </div>
               <div className="text-center max-w-md space-y-2">
-                <h3 className="text-lg font-semibold">Conectando con el portal bancario</h3>
+                <h3 className="text-lg font-semibold">
+                  {phase === 'processing'
+                    ? 'Scotiabank está preparando la cartola'
+                    : 'Conectando con el portal bancario'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Estamos consultando y extrayendo los movimientos de la cartola. Este proceso puede tardar unos segundos; por favor, no cierres ni cambies el rango de fechas mientras termina.
+                  Estamos descargando y extrayendo los movimientos de la cartola. Este proceso puede
+                  tardar unos minutos; por favor, no cierres esta página. Si el banco solicita un
+                  código de verificación, te lo pediremos aquí mismo.
                 </p>
               </div>
               <div className="w-full max-w-xs space-y-2">
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div className="h-full w-2/3 rounded-full bg-primary animate-pulse" />
                 </div>
-                <p className="text-xs text-center text-muted-foreground">Tiempo estimado: hasta 30 segundos</p>
+                <p className="text-xs text-center text-muted-foreground">
+                  Tiempo estimado: 1 a 2 minutos
+                </p>
               </div>
             </div>
           ) : errorMsg ? (
-            <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-4">
-              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-medium text-destructive">No se pudo obtener la cartola</div>
-                <div className="text-muted-foreground mt-1">{errorMsg}</div>
+            <div className="flex flex-col gap-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <div className="font-medium text-destructive">No se pudo obtener la cartola</div>
+                  <div className="text-muted-foreground mt-1">{errorMsg}</div>
+                </div>
               </div>
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cartolaJob.start(rangeFromIso, rangeToIso)}
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Intentar nuevamente
+                </Button>
+              </div>
+            </div>
+          ) : phase === 'idle' ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 rounded-lg border border-dashed bg-muted/20 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+              <div className="space-y-1 max-w-md">
+                <h3 className="text-base font-semibold">Descarga la cartola para ver los movimientos</h3>
+                <p className="text-sm text-muted-foreground">
+                  Selecciona el rango de fechas y presiona «Actualizar cartola». El banco puede
+                  solicitar un código de verificación durante el proceso.
+                </p>
+              </div>
+              <Button onClick={() => cartolaJob.start(rangeFromIso, rangeToIso)}>
+                <RotateCw className="h-4 w-4 mr-2" />
+                Descargar cartola
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
