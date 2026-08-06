@@ -788,6 +788,8 @@ export default function ConciliacionPage() {
         open={phase === 'waiting_captcha' || phase === 'sending_captcha'}
         image={cartolaJob.state.captchaImage}
         message={cartolaJob.state.captchaMessage}
+        suggestedCode={cartolaJob.state.captchaSuggestion}
+        solving={cartolaJob.state.solvingCaptcha}
         submitting={phase === 'sending_captcha'}
         onSubmit={cartolaJob.submitCaptcha}
         onCancel={cartolaJob.cancel}

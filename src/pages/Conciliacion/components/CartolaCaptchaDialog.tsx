@@ -9,13 +9,17 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertTriangle, Loader2, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 
 interface CartolaCaptchaDialogProps {
   open: boolean
   image: string | null
   message: string | null
   submitting: boolean
+  /** Texto detectado automáticamente por OCR para pre-cargar el input. */
+  suggestedCode?: string | null
+  /** true mientras el servicio OCR está procesando la imagen. */
+  solving?: boolean
   onSubmit: (code: string) => void
   onCancel: () => void
 }
@@ -30,6 +34,8 @@ export function CartolaCaptchaDialog({
   image,
   message,
   submitting,
+  suggestedCode,
+  solving,
   onSubmit,
   onCancel,
 }: CartolaCaptchaDialogProps) {
@@ -44,6 +50,14 @@ export function CartolaCaptchaDialog({
       setConfirmingCancel(false)
     }
   }, [open, image])
+
+  // Pre-cargar el código detectado por OCR sin pisar lo que el usuario
+  // ya haya escrito manualmente.
+  useEffect(() => {
+    if (suggestedCode) {
+      setCode((prev) => (prev.trim() ? prev : suggestedCode))
+    }
+  }, [suggestedCode])
 
   const handleSubmit = () => {
     if (!code.trim() || submitting || !image) return
@@ -138,9 +152,21 @@ export function CartolaCaptchaDialog({
                 disabled={submitting}
                 className="text-center text-lg tracking-[0.3em] font-mono"
               />
-              <p className="text-xs text-muted-foreground text-center">
-                Escribe exactamente los caracteres que ves en la imagen.
-              </p>
+              {solving && !suggestedCode ? (
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Detectando código automáticamente…
+                </p>
+              ) : suggestedCode && code === suggestedCode ? (
+                <p className="text-xs text-primary text-center flex items-center justify-center gap-1.5">
+                  <Sparkles className="h-3 w-3" />
+                  Código detectado automáticamente — verifícalo antes de continuar.
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center">
+                  Escribe exactamente los caracteres que ves en la imagen.
+                </p>
+              )}
             </div>
 
             <DialogFooter className="gap-2 sm:gap-2">
