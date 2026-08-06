@@ -796,6 +796,14 @@ export default function ConciliacionPage() {
         }}
         onApplied={refreshReconciliation}
       />
+      <CartolaCaptchaDialog
+        open={phase === 'waiting_captcha' || phase === 'sending_captcha'}
+        image={cartolaJob.state.captchaImage}
+        message={cartolaJob.state.captchaMessage}
+        submitting={phase === 'sending_captcha'}
+        onSubmit={cartolaJob.submitCaptcha}
+        onCancel={cartolaJob.cancel}
+      />
     </div>
   )
 }
