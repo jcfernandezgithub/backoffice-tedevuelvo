@@ -80,7 +80,7 @@ const statusVariants: Record<RefundStatus, 'default' | 'secondary' | 'destructiv
   datos_sin_simulacion: 'outline',
 }
 
-interface RefundDetailProps {
+interface CierreMensualDetailProps {
   backUrl?: string
   showDocumentButtons?: boolean
   contextLabel?: string
@@ -115,7 +115,7 @@ const getInsuranceType = (snapshot: any): 'desgravamen' | 'cesantia' | 'ambos' |
   return null
 }
 
-export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDocumentButtons = true, contextLabel }: RefundDetailProps) {
+export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-mensual', showDocumentButtons = true, contextLabel }: CierreMensualDetailProps) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()

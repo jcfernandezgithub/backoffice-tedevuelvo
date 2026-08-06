@@ -143,13 +143,13 @@ const getStatusColors = (status: RefundStatus): string => {
   }
 }
 
-interface RefundsListProps {
+interface CierreMensualListProps {
   title?: string
   listTitle?: string
   detailBasePath?: string
 }
 
-export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listado de Solicitudes', detailBasePath = '/refunds' }: RefundsListProps) {
+export default function CierreMensualList({ title = 'Cierre Mensual', listTitle = 'Listado de Solicitudes', detailBasePath = '/cierre-mensual' }: CierreMensualListProps) {
   const isCallCenter = detailBasePath === '/gestion-callcenter'
   const isMobile = useIsMobile()
   const navigate = useNavigate()

@@ -5,6 +5,7 @@
 export const ROUTE_TO_PAGE_KEY: Record<string, string> = {
   '/dashboard': 'DASHBOARD',
   '/refunds': 'SOLICITUDES',
+  '/cierre-mensual': 'CIERRE_MENSUAL',
   '/solicitudes': 'SOLICITUDES',
   '/gestion-callcenter': 'GESTION_CALLCENTER',
   '/alianzas': 'ALIANZAS',
@@ -25,10 +26,16 @@ export function pageKeyForPath(pathname: string): string | null {
   return match ? ROUTE_TO_PAGE_KEY[match] : null
 }
 
-export function hasPageAccess(pages: string[] | undefined, key: string | null): boolean {
+// Páginas en desarrollo: accesibles para ADMIN aunque el backend aún no las
+// entregue en el listado `pages` del login. Quitar del set cuando el backend
+// incorpore la page al rol correspondiente.
+const DEV_PAGES_ADMIN_ONLY = new Set(['CIERRE_MENSUAL'])
+
+export function hasPageAccess(pages: string[] | undefined, key: string | null, rol?: string): boolean {
   if (!key) return true
   if (!pages || pages.length === 0) return false
-  return pages.includes(key)
+  if (pages.includes(key)) return true
+  return rol === 'ADMIN' && DEV_PAGES_ADMIN_ONLY.has(key)
 }
 
 export function firstAllowedRoute(pages: string[] | undefined): string {

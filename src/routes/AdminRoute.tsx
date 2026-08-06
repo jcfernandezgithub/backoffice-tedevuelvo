@@ -13,7 +13,7 @@ export default function AdminRoute() {
   // Si el backend entrega pages, priorizamos ese control por página.
   if (user.pages && user.pages.length > 0) {
     const key = pageKeyForPath(location.pathname)
-    if (key && !hasPageAccess(user.pages, key)) {
+    if (key && !hasPageAccess(user.pages, key, user.rol)) {
       return <Navigate to={firstAllowedRoute(user.pages)} replace />
     }
   } else if (user.rol !== 'ADMIN') {
