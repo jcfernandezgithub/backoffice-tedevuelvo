@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,9 @@ import {
   X,
   FileSpreadsheet,
 } from 'lucide-react'
-import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
+import { type CartolaMovimiento } from './services/cartolaService'
+import { useCartolaJob } from './hooks/useCartolaJob'
+import { CartolaCaptchaDialog } from './components/CartolaCaptchaDialog'
 import { cartolaLinksService } from './services/cartolaLinksService'
 import {
   LinkRefundsDialog,
