@@ -7,6 +7,7 @@ import {
   type BankJobResponse,
   type StartBankJobResponse,
 } from '../services/cartolaService'
+import { resolveCaptchaText } from '../services/captchaOcrService'
 
 export type CartolaJobPhase =
   | 'idle' // Sin trabajo activo (p.ej. luego de cancelar)
@@ -22,6 +23,10 @@ export interface CartolaJobState {
   jobId: string | null
   captchaImage: string | null
   captchaMessage: string | null
+  /** Texto del CAPTCHA detectado por OCR (sugerencia pre-cargada en el input). */
+  captchaSuggestion: string | null
+  /** true mientras el servicio OCR está procesando la imagen actual. */
+  solvingCaptcha: boolean
   result: BankDownloadResult | null
   error: string | null
 }
@@ -31,6 +36,8 @@ const INITIAL_STATE: CartolaJobState = {
   jobId: null,
   captchaImage: null,
   captchaMessage: null,
+  captchaSuggestion: null,
+  solvingCaptcha: false,
   result: null,
   error: null,
 }
@@ -51,6 +58,7 @@ export function useCartolaJob() {
   const [state, setState] = useState<CartolaJobState>(INITIAL_STATE)
   const jobIdRef = useRef<string | null>(null)
   const stopPollingRef = useRef<(() => void) | null>(null)
+  const ocrRequestRef = useRef(0)
 
   const stopPolling = useCallback(() => {
     stopPollingRef.current?.()
@@ -185,6 +193,21 @@ export function useCartolaJob() {
   // Ref para romper el ciclo beginPolling ↔ applyJobPayload.
   const applyJobPayloadRef = useRef(applyJobPayload)
   applyJobPayloadRef.current = applyJobPayload
+
+  /**
+   * Lanza el OCR sobre la imagen del CAPTCHA. El resultado solo se aplica
+   * si el trabajo sigue esperando CAPTCHA con esa misma imagen (se ignoran
+   * respuestas tardías de imágenes anteriores).
+   */
+  const solveCaptcha = useCallback(async (image: string) => {
+    const requestId = ++ocrRequestRef.current
+    const text = await resolveCaptchaText(image)
+    if (ocrRequestRef.current !== requestId) return
+    setState((s) => {
+      if (s.phase !== 'waiting_captcha' || s.captchaImage !== image) return s
+      return { ...s, solvingCaptcha: false, captchaSuggestion: text }
+    })
+  }, [])
 
   /** Inicia un nuevo trabajo de descarga para el rango indicado. */
   const start = useCallback(
