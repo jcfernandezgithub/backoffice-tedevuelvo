@@ -26,8 +26,11 @@ import {
   Search,
   X,
   FileSpreadsheet,
+  Download,
 } from 'lucide-react'
-import { downloadCartolaXml, type CartolaMovimiento } from './services/cartolaService'
+import { type CartolaMovimiento } from './services/cartolaService'
+import { useCartolaJob } from './hooks/useCartolaJob'
+import { CartolaCaptchaDialog } from './components/CartolaCaptchaDialog'
 import { cartolaLinksService } from './services/cartolaLinksService'
 import {
   LinkRefundsDialog,
@@ -144,16 +147,16 @@ export default function ConciliacionPage() {
   const rangeToIso = committedTo ? toIsoDate(committedTo) : ''
   const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
-  const query = useQuery({
-    queryKey: ['cartola', 'xml', rangeFromIso, rangeToIso],
-    queryFn: () => downloadCartolaXml({ from: rangeFromIso, to: rangeToIso }),
-    enabled: rangeReady,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-    retry: false,
-  })
+  // Descarga asíncrona de la cartola: job en backend + CAPTCHA + polling.
+  const cartolaJob = useCartolaJob()
+  const { phase } = cartolaJob.state
+  const isBusy =
+    phase === 'starting' ||
+    phase === 'processing' ||
+    phase === 'sending_captcha' ||
+    phase === 'waiting_captcha'
 
-  const cartola = query.data?.data
+  const cartola = phase === 'completed' ? cartolaJob.state.result?.data : undefined
   const movimientos: CartolaMovimiento[] = useMemo(() => {
     const raw = cartola?.movimientos?.movimiento
     if (!raw) return []
@@ -206,10 +209,10 @@ export default function ConciliacionPage() {
     setDateTo(undefined)
   }
 
-  const errorMsg = query.error instanceof Error ? query.error.message : null
+  const errorMsg = phase === 'failed' ? cartolaJob.state.error : null
 
   useEffect(() => {
-    if (query.isSuccess && query.data?.data) {
+    if (phase === 'completed' && cartolaJob.state.result?.data) {
       const now = new Date().toISOString()
       try {
         localStorage.setItem(LAST_UPDATED_KEY, now)
@@ -218,7 +221,7 @@ export default function ConciliacionPage() {
       }
       setLastUpdatedAt(now)
     }
-  }, [query.isSuccess, query.data])
+  }, [phase, cartolaJob.state.result])
 
   // Bulk: estado de conciliación de todos los documentos visibles.
   const documentoNumeros = useMemo(
@@ -242,13 +245,14 @@ export default function ConciliacionPage() {
   }
 
   const handleUpdateCartola = () => {
-    if (!draftFrom || !draftTo) return
+    if (!draftFrom || !draftTo || isBusy) return
+    const from = toIsoDate(draftFrom)
+    const to = toIsoDate(draftTo)
     if (datesChanged) {
       setCommittedFrom(draftFrom)
       setCommittedTo(draftTo)
-    } else {
-      query.refetch()
     }
+    cartolaJob.start(from, to)
   }
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -365,7 +369,7 @@ export default function ConciliacionPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Conciliación bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Cartola descargada automáticamente desde el portal bancario.
+            Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
@@ -374,11 +378,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  disabled={query.isFetching}
+                  disabled={isBusy}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !draftFrom && 'text-muted-foreground',
-                    query.isFetching && 'opacity-60 cursor-not-allowed',
+                    isBusy && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -400,11 +404,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  disabled={query.isFetching}
+                  disabled={isBusy}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !draftTo && 'text-muted-foreground',
-                    query.isFetching && 'opacity-60 cursor-not-allowed',
+                    isBusy && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -424,25 +428,25 @@ export default function ConciliacionPage() {
             </Popover>
             <Button
               onClick={handleUpdateCartola}
-              variant={datesChanged ? 'default' : 'outline'}
-              disabled={query.isFetching || !draftFrom || !draftTo}
+              variant="default"
+              disabled={isBusy || !draftFrom || !draftTo}
             >
-              {query.isFetching ? (
+              {isBusy ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Actualizando…
+                  Descargando…
                 </>
               ) : (
                 <>
-                  <RotateCw className="h-4 w-4 mr-2" />
-                  {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
+                  <Download className="h-4 w-4 mr-2" />
+                  Traer actividad
                 </>
               )}
             </Button>
             <Button
               variant="outline"
               onClick={openIndividualCsvDialog}
-              disabled={query.isFetching || movementCandidates.length === 0}
+              disabled={isBusy || movementCandidates.length === 0}
               title="Conciliar múltiples abonos individuales mediante un archivo CSV"
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -456,7 +460,7 @@ export default function ConciliacionPage() {
       </div>
 
       {/* Resumen de cuenta */}
-      {cartola && !query.isFetching && (
+      {cartola && !isBusy && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-md border p-4 bg-muted/20">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
@@ -503,7 +507,7 @@ export default function ConciliacionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {query.isLoading || query.isFetching ? (
+          {isBusy ? (
             <div className="flex flex-col items-center justify-center gap-5 py-16 px-6 rounded-lg border border-dashed bg-muted/20">
               <div className="relative h-16 w-16">
                 <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" />
@@ -512,25 +516,62 @@ export default function ConciliacionPage() {
                 </div>
               </div>
               <div className="text-center max-w-md space-y-2">
-                <h3 className="text-lg font-semibold">Conectando con el portal bancario</h3>
+                <h3 className="text-lg font-semibold">
+                  {phase === 'processing'
+                    ? 'Scotiabank está preparando la cartola'
+                    : 'Conectando con el portal bancario'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Estamos consultando y extrayendo los movimientos de la cartola. Este proceso puede tardar unos segundos; por favor, no cierres ni cambies el rango de fechas mientras termina.
+                  Estamos descargando y extrayendo los movimientos de la cartola. Este proceso puede
+                  tardar unos minutos; por favor, no cierres esta página. Si el banco solicita un
+                  código de verificación, te lo pediremos aquí mismo.
                 </p>
               </div>
               <div className="w-full max-w-xs space-y-2">
                 <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                   <div className="h-full w-2/3 rounded-full bg-primary animate-pulse" />
                 </div>
-                <p className="text-xs text-center text-muted-foreground">Tiempo estimado: hasta 30 segundos</p>
+                <p className="text-xs text-center text-muted-foreground">
+                  Tiempo estimado: 1 a 2 minutos
+                </p>
               </div>
             </div>
           ) : errorMsg ? (
-            <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 p-4">
-              <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-medium text-destructive">No se pudo obtener la cartola</div>
-                <div className="text-muted-foreground mt-1">{errorMsg}</div>
+            <div className="flex flex-col gap-4 rounded-md border border-destructive/40 bg-destructive/5 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <div className="font-medium text-destructive">No se pudo obtener la cartola</div>
+                  <div className="text-muted-foreground mt-1">{errorMsg}</div>
+                </div>
               </div>
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cartolaJob.start(rangeFromIso, rangeToIso)}
+                >
+                  <RotateCw className="h-4 w-4 mr-2" />
+                  Intentar nuevamente
+                </Button>
+              </div>
+            </div>
+          ) : phase === 'idle' ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 rounded-lg border border-dashed bg-muted/20 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+              <div className="space-y-1 max-w-md">
+                <h3 className="text-base font-semibold">Trae la actividad bancaria para comenzar</h3>
+                <p className="text-sm text-muted-foreground">
+                  Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de
+                  verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.
+                </p>
+              </div>
+              <Button onClick={handleUpdateCartola}>
+                <Download className="h-4 w-4 mr-2" />
+                Traer actividad
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -742,6 +783,16 @@ export default function ConciliacionPage() {
           if (!o) setDraftCheckTick((t) => t + 1)
         }}
         onApplied={refreshReconciliation}
+      />
+      <CartolaCaptchaDialog
+        open={phase === 'waiting_captcha' || phase === 'sending_captcha'}
+        image={cartolaJob.state.captchaImage}
+        message={cartolaJob.state.captchaMessage}
+        suggestedCode={cartolaJob.state.captchaSuggestion}
+        solving={cartolaJob.state.solvingCaptcha}
+        submitting={phase === 'sending_captcha'}
+        onSubmit={cartolaJob.submitCaptcha}
+        onCancel={cartolaJob.cancel}
       />
     </div>
   )

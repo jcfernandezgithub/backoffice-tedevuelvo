@@ -1,8 +1,26 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.7
+## Versión 4.2.8
 
 ## Changelog
+
+### Versión 4.2.8 - 2026-08-06
+
+#### Conciliación bancaria: descarga asíncrona con CAPTCHA de Scotiabank
+- Se reemplazó el flujo de descarga de cartolas Scotiabank por un **trabajo asíncrono con polling** (`/api/v1/bank/download-xml-cartola` y `/api/v1/bank/download-jobs/:jobId`).
+- El backend ahora inicia una sesión bancaria en segundo plano que puede solicitar un **código CAPTCHA** antes de entregar los movimientos.
+- El frontend muestra un diálogo modal de validación con la imagen del CAPTCHA, campo de texto y confirmación explícita para cancelar, ya que abandonar invalida el trabajo bancario.
+- Se agregó un indicador visual de progreso y un mensaje de espera durante el polling, dado que la descarga puede demorar entre 1 y 2 minutos.
+- El usuario debe presionar el botón **«Traer actividad»** para iniciar la descarga; la página ya no ejecuta la búsqueda automáticamente al aterrizar.
+
+#### Conciliación bancaria: pre-llenado automático del CAPTCHA mediante OCR
+- Se integró el servicio externo de OCR `https://gary-tester.app.n8n.cloud/webhook/image-ocr` para detectar el texto de la imagen CAPTCHA de Scotiabank y pre-cargarlo en el campo de entrada.
+- El servicio `captchaOcrService.ts` envía la imagen base64 (Data URL) y el `mimeType` al webhook, sin utilizar el JWT de la aplicación ya que es un servicio de terceros.
+- El hook `useCartolaJob` lanza la resolución OCR en paralelo cuando llega un estado `WAITING_CAPTCHA` con imagen, e ignora respuestas tardías de imágenes anteriores.
+- El diálogo `CartolaCaptchaDialog` muestra el estado de detección, pre-carga el código sin pisar lo que el usuario ya escribió manualmente, y pide verificación antes de continuar.
+- Si el OCR falla o retorna vacío, el flujo continúa normalmente y el usuario ingresa el código a mano.
+
+## Versión 4.2.7
 
 ### Versión 4.2.7 - 2026-08-05
 
