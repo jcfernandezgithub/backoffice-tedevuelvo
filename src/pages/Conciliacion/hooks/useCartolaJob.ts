@@ -7,6 +7,7 @@ import {
   type BankJobResponse,
   type StartBankJobResponse,
 } from '../services/cartolaService'
+import { resolveCaptchaText } from '../services/captchaOcrService'
 
 export type CartolaJobPhase =
   | 'idle' // Sin trabajo activo (p.ej. luego de cancelar)
@@ -22,6 +23,10 @@ export interface CartolaJobState {
   jobId: string | null
   captchaImage: string | null
   captchaMessage: string | null
+  /** Texto del CAPTCHA detectado por OCR (sugerencia pre-cargada en el input). */
+  captchaSuggestion: string | null
+  /** true mientras el servicio OCR está procesando la imagen actual. */
+  solvingCaptcha: boolean
   result: BankDownloadResult | null
   error: string | null
 }
@@ -31,6 +36,8 @@ const INITIAL_STATE: CartolaJobState = {
   jobId: null,
   captchaImage: null,
   captchaMessage: null,
+  captchaSuggestion: null,
+  solvingCaptcha: false,
   result: null,
   error: null,
 }
@@ -51,6 +58,7 @@ export function useCartolaJob() {
   const [state, setState] = useState<CartolaJobState>(INITIAL_STATE)
   const jobIdRef = useRef<string | null>(null)
   const stopPollingRef = useRef<(() => void) | null>(null)
+  const ocrRequestRef = useRef(0)
 
   const stopPolling = useCallback(() => {
     stopPollingRef.current?.()
@@ -91,6 +99,8 @@ export function useCartolaJob() {
               jobId,
               captchaImage: null,
               captchaMessage: null,
+              captchaSuggestion: null,
+              solvingCaptcha: false,
               result: null,
               error: toErrorMessage(e, 'No se pudo consultar el estado de la descarga.'),
             })
@@ -109,6 +119,21 @@ export function useCartolaJob() {
     [stopPolling],
   )
 
+  /**
+   * Lanza el OCR sobre la imagen del CAPTCHA. El resultado solo se aplica
+   * si el trabajo sigue esperando CAPTCHA con esa misma imagen (se ignoran
+   * respuestas tardías de imágenes anteriores).
+   */
+  const solveCaptcha = useCallback(async (image: string) => {
+    const requestId = ++ocrRequestRef.current
+    const text = await resolveCaptchaText(image)
+    if (ocrRequestRef.current !== requestId) return
+    setState((s) => {
+      if (s.phase !== 'waiting_captcha' || s.captchaImage !== image) return s
+      return { ...s, solvingCaptcha: false, captchaSuggestion: text }
+    })
+  }, [])
+
   /** Traduce una respuesta del backend (inicio, captcha o polling) a estado de UI. */
   const applyJobPayload = useCallback(
     (payload: StartBankJobResponse | BankJobResponse) => {
@@ -120,14 +145,19 @@ export function useCartolaJob() {
             'message' in payload && typeof payload.message === 'string'
               ? payload.message
               : null
+          const image = payload.captchaImage ?? null
           setState({
             phase: 'waiting_captcha',
             jobId: payload.jobId,
-            captchaImage: payload.captchaImage ?? null,
+            captchaImage: image,
             captchaMessage: message,
+            captchaSuggestion: null,
+            solvingCaptcha: !!image,
             result: null,
             error: null,
           })
+          // Ayuda OCR: pre-cargar el texto detectado (falla en silencio).
+          if (image) void solveCaptcha(image)
           break
         }
         case 'PROCESSING': {
@@ -151,6 +181,8 @@ export function useCartolaJob() {
               jobId: payload.jobId,
               captchaImage: null,
               captchaMessage: null,
+              captchaSuggestion: null,
+              solvingCaptcha: false,
               result,
               error: null,
             })
@@ -172,6 +204,8 @@ export function useCartolaJob() {
             jobId: payload.jobId,
             captchaImage: null,
             captchaMessage: null,
+            captchaSuggestion: null,
+            solvingCaptcha: false,
             result: null,
             error,
           })
@@ -179,7 +213,7 @@ export function useCartolaJob() {
         }
       }
     },
-    [stopPolling, beginPolling],
+    [stopPolling, beginPolling, solveCaptcha],
   )
 
   // Ref para romper el ciclo beginPolling ↔ applyJobPayload.
@@ -190,6 +224,7 @@ export function useCartolaJob() {
   const start = useCallback(
     async (from: string, to: string) => {
       stopPolling()
+      ocrRequestRef.current += 1 // Invalida OCR en curso de un trabajo anterior.
       jobIdRef.current = null
       setState({ ...INITIAL_STATE, phase: 'starting' })
       try {
@@ -211,7 +246,13 @@ export function useCartolaJob() {
     async (code: string) => {
       const jobId = jobIdRef.current
       if (!jobId) return
-      setState((s) => ({ ...s, phase: 'sending_captcha', captchaMessage: null }))
+      setState((s) => ({
+        ...s,
+        phase: 'sending_captcha',
+        captchaMessage: null,
+        captchaSuggestion: null,
+        solvingCaptcha: false,
+      }))
       try {
         const res = await sendBankCaptcha(jobId, code)
         applyJobPayload(res)
@@ -230,6 +271,7 @@ export function useCartolaJob() {
   /** Abandona el trabajo activo (el backend lo expira por su cuenta). */
   const cancel = useCallback(() => {
     stopPolling()
+    ocrRequestRef.current += 1
     jobIdRef.current = null
     setState(INITIAL_STATE)
   }, [stopPolling])
