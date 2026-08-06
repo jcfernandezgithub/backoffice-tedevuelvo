@@ -246,14 +246,13 @@ export default function ConciliacionPage() {
 
   const handleUpdateCartola = () => {
     if (!draftFrom || !draftTo || isBusy) return
+    const from = toIsoDate(draftFrom)
+    const to = toIsoDate(draftTo)
     if (datesChanged) {
-      // El useEffect de rango detecta el cambio y gatilla la descarga.
       setCommittedFrom(draftFrom)
       setCommittedTo(draftTo)
-    } else {
-      // Mismo rango: relanzar la descarga manualmente.
-      cartolaJob.start(rangeFromIso, rangeToIso)
     }
+    cartolaJob.start(from, to)
   }
 
   const [dialogOpen, setDialogOpen] = useState(false)
