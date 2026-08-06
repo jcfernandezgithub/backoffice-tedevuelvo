@@ -1,0 +1,560 @@
+import { useState, useEffect, useRef } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Download, Eye, ExternalLink, Loader2, Image as ImageIcon, Upload, FileUp, X, FolderDown, Trash2 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { publicFilesApi, type DocumentMeta, type SignedPdfInfo } from '@/services/publicFilesApi'
+import { refundAdminApi } from '@/services/refundAdminApi'
+import { DocumentViewer } from './DocumentViewer'
+import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
+import { authService } from '@/services/authService'
+import JSZip from 'jszip'
+
+const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+
+interface DocumentsSectionProps {
+  publicId: string
+  clientToken?: string
+  documents?: DocumentMeta[]
+  insuranceType?: 'desgravamen' | 'cesantia' | 'ambos' | null
+}
+
+export function DocumentsSection({ publicId, clientToken, documents: propDocuments, insuranceType }: DocumentsSectionProps) {
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const [viewingDoc, setViewingDoc] = useState<{ doc: DocumentMeta; title: string } | null>(null)
+  const [idImages, setIdImages] = useState<{ front?: string; back?: string }>({})
+  
+  // Upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedKind, setSelectedKind] = useState<string>('otros')
+  const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false)
+
+  const docKindOptions = [
+    { value: 'cedula-frente', label: 'Cédula frontal' },
+    { value: 'cedula-trasera', label: 'Cédula trasera' },
+    { value: 'signed-mandate', label: 'Mandato' },
+    { value: 'carta-de-corte', label: 'Carta de corte' },
+    { value: 'carta-de-corte-cesantia', label: 'Carta de corte (Cesantía)' },
+    { value: 'carta-de-corte-desgravamen', label: 'Carta de corte (Desgravamen)' },
+    { value: 'certificado-de-cobertura', label: 'Certificado de cobertura' },
+    { value: 'certificado-de-cobertura-cesantia', label: 'Certificado de cobertura (Cesantía)' },
+    { value: 'certificado-de-cobertura-desgravamen', label: 'Certificado de cobertura (Desgravamen)' },
+    { value: 'otros', label: 'Otros' },
+  ]
+
+  const { data: rawAttachments = [], isLoading: loadingAttachments, refetch: refetchDocuments } = useQuery({
+    queryKey: ['refund-documents', publicId],
+    queryFn: () => refundAdminApi.listDocs(publicId),
+  })
+
+  // Filtrar kinds de carta de corte según el tipo de seguro de la solicitud.
+  // - cesantia: solo se muestra "carta-de-corte-cesantia"
+  // - desgravamen: solo se muestra "carta-de-corte-desgravamen"
+  // - otros tipos (ambos / null): se muestran todos los kinds normalmente
+  const attachments = rawAttachments.filter((doc) => {
+    if (insuranceType === 'cesantia' && doc.kind === 'carta-de-corte-desgravamen') return false
+    if (insuranceType === 'desgravamen' && doc.kind === 'carta-de-corte-cesantia') return false
+    if (insuranceType === 'cesantia' && doc.kind === 'certificado-de-cobertura-desgravamen') return false
+    if (insuranceType === 'desgravamen' && doc.kind === 'certificado-de-cobertura-cesantia') return false
+    return true
+  })
+
+  const { data: signedPdfInfo } = useQuery<SignedPdfInfo>({
+    queryKey: ['refund-signed-pdf', publicId],
+    queryFn: () => publicFilesApi.getSignedPdfInfo(publicId),
+  })
+
+  useEffect(() => {
+    if (!clientToken) return
+
+    const loadIdImages = async () => {
+      try {
+        const frontBlob = await publicFilesApi.getIdImageBlob(publicId, 'id-front', clientToken)
+        setIdImages((prev) => ({ ...prev, front: URL.createObjectURL(frontBlob) }))
+      } catch {
+        // Silently fail if not available
+      }
+
+      try {
+        const backBlob = await publicFilesApi.getIdImageBlob(publicId, 'id-back', clientToken)
+        setIdImages((prev) => ({ ...prev, back: URL.createObjectURL(backBlob) }))
+      } catch {
+        // Silently fail if not available
+      }
+    }
+
+    loadIdImages()
+
+    return () => {
+      if (idImages.front) URL.revokeObjectURL(idImages.front)
+      if (idImages.back) URL.revokeObjectURL(idImages.back)
+    }
+  }, [publicId, clientToken])
+
+  const getFileName = (key: string) => {
+    const parts = key.split('/')
+    return parts[parts.length - 1]
+  }
+
+  const handleDownload = async (doc: DocumentMeta) => {
+    try {
+      const blob = await publicFilesApi.getRefundDocumentBlob(publicId, doc.id)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = getFileName(doc.key)
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast({ title: 'Documento descargado' })
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const handleDownloadAll = async () => {
+    if (attachments.length === 0) {
+      toast({ title: 'Sin documentos', description: 'No hay documentos para descargar', variant: 'destructive' })
+      return
+    }
+
+    setIsDownloadingAll(true)
+    try {
+      const zip = new JSZip()
+      
+      // Descargar todos los documentos en paralelo
+      const downloadPromises = attachments.map(async (doc) => {
+        try {
+          const blob = await publicFilesApi.getRefundDocumentBlob(publicId, doc.id)
+          const fileName = getFileName(doc.key)
+          zip.file(fileName, blob)
+        } catch (err) {
+          console.error(`Error descargando ${doc.key}:`, err)
+        }
+      })
+
+      await Promise.all(downloadPromises)
+
+      // Generar el ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(zipBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `documentos-${publicId}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      toast({ title: 'Descarga completada', description: `${attachments.length} documento(s) descargado(s)` })
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    } finally {
+      setIsDownloadingAll(false)
+    }
+  }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      const allowedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx']
+      const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+      if (allowedTypes.includes(extension)) {
+        setSelectedFile(file)
+      } else {
+        toast({
+          title: 'Tipo de archivo no permitido',
+          description: 'Solo se permiten archivos PDF, imágenes, Word y Excel',
+          variant: 'destructive'
+        })
+      }
+    }
+  }
+
+  const handleClearFile = () => {
+    setSelectedFile(null)
+    setSelectedKind('otros')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteDoc = async (docId: string) => {
+    try {
+      const token = authService.getAccessToken()
+      const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${docId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al eliminar documento')
+      }
+
+      toast({ title: 'Documento eliminado' })
+      await refetchDocuments()
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({ 
+        title: 'Error', 
+        description: 'Selecciona un archivo', 
+        variant: 'destructive' 
+      })
+      return
+    }
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('kind', selectedKind)
+
+      const token = authService.getAccessToken()
+      const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/upload-file`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Error al subir archivo')
+      }
+
+      toast({ title: 'Archivo subido exitosamente' })
+      handleClearFile()
+      
+      // Refrescar lista de documentos inmediatamente
+      await refetchDocuments()
+    } catch (err: any) {
+      toast({ 
+        title: 'Error al subir archivo', 
+        description: err.message, 
+        variant: 'destructive' 
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Subir archivo */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5" />
+            Subir Documento
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div 
+            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragging 
+                ? 'border-primary bg-primary/5' 
+                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Drop zone overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 flex items-center justify-center bg-primary/10 rounded-lg z-10">
+                <div className="text-center">
+                  <FileUp className="w-12 h-12 mx-auto text-primary mb-2" />
+                  <p className="text-lg font-medium text-primary">Suelta el archivo aquí</p>
+                </div>
+              </div>
+            )}
+            
+            {!selectedFile ? (
+              <div className="text-center py-4">
+                <FileUp className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Arrastra un archivo aquí o haz clic para seleccionar
+                </p>
+                <Input
+                  ref={fileInputRef}
+                  id="file-upload"
+                  type="file"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                >
+                  Seleccionar archivo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  PDF, imágenes, Word o Excel (máx. 20MB)
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <FileUp className="w-8 h-8 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatBytes(selectedFile.size)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Select value={selectedKind} onValueChange={setSelectedKind}>
+                    <SelectTrigger className="h-8 w-full sm:w-[200px] text-sm">
+                      <SelectValue placeholder="Tipo de documento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {docKindOptions.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleUpload}
+                    disabled={isUploading}
+                    size="sm"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Subir
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleClearFile}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Adjuntos */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Documentos</CardTitle>
+          {attachments.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAll}
+              disabled={isDownloadingAll}
+            >
+              {isDownloadingAll ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Descargando...
+                </>
+              ) : (
+                <>
+                  <FolderDown className="w-4 h-4 mr-2" />
+                  Descargar todo
+                </>
+              )}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {loadingAttachments ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin" />
+            </div>
+          ) : attachments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sin documentos adjuntos</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre del Archivo</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Tamaño</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attachments.map((doc) => (
+                  <TableRow key={doc.id}>
+                    <TableCell className="font-mono text-xs break-all">{getFileName(doc.key)}</TableCell>
+                    <TableCell className="text-sm">{docKindOptions.find(o => o.value === doc.kind)?.label ?? doc.kind}</TableCell>
+                    <TableCell>{formatBytes(doc.size)}</TableCell>
+                    <TableCell>{format(new Date(doc.createdAt), 'dd/MM/yyyy HH:mm')}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setViewingDoc({ doc, title: `${doc.kind} - ${doc.id}` })}
+                        aria-label="Ver PDF"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDownload(doc)}
+                        aria-label="Descargar"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button size="sm" variant="ghost" aria-label="Eliminar documento">
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        }
+                        title="Eliminar documento"
+                        description={`¿Estás seguro de que deseas eliminar "${getFileName(doc.key)}"? Esta acción no se puede deshacer.`}
+                        onConfirm={() => handleDeleteDoc(doc.id)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Mandato firmado */}
+      {(signedPdfInfo?.hasSignedPdf || signedPdfInfo?.signedPdfUrl) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mandato Firmado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() => window.open(signedPdfInfo.signedPdfUrl || signedPdfInfo.url, '_blank')}
+              aria-label="Ver mandato firmado"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Ver mandato firmado
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Documentos de identidad */}
+      {clientToken && (idImages.front || idImages.back) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Documentos de Identidad</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {idImages.front && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Frente</p>
+                  <div className="border rounded-lg overflow-hidden">
+                    <img
+                      src={idImages.front}
+                      alt="DNI Frente"
+                      className="w-full h-auto"
+                      aria-label="Ver DNI frente"
+                    />
+                  </div>
+                </div>
+              )}
+              {idImages.back && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Dorso</p>
+                  <div className="border rounded-lg overflow-hidden">
+                    <img
+                      src={idImages.back}
+                      alt="DNI Dorso"
+                      className="w-full h-auto"
+                      aria-label="Ver DNI dorso"
+                    />
+                  </div>
+                </div>
+              )}
+              {!idImages.front && !idImages.back && (
+                <div className="col-span-2 flex items-center justify-center py-8 text-muted-foreground">
+                  <ImageIcon className="w-6 h-6 mr-2" />
+                  <p className="text-sm">Documentos de identidad no disponibles</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Visor de documentos */}
+      {viewingDoc && (
+        <DocumentViewer
+          open={!!viewingDoc}
+          onClose={() => setViewingDoc(null)}
+          title={viewingDoc.title}
+          getBlob={() => publicFilesApi.getRefundDocumentBlob(publicId, viewingDoc.doc.id)}
+          contentType={viewingDoc.doc.contentType}
+        />
+      )}
+    </div>
+  )
+}
