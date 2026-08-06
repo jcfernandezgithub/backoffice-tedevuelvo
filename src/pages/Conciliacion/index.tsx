@@ -390,11 +390,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  disabled={query.isFetching}
+                  disabled={isBusy}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !draftFrom && 'text-muted-foreground',
-                    query.isFetching && 'opacity-60 cursor-not-allowed',
+                    isBusy && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -416,11 +416,11 @@ export default function ConciliacionPage() {
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  disabled={query.isFetching}
+                  disabled={isBusy}
                   className={cn(
                     'justify-start text-left font-normal w-[150px]',
                     !draftTo && 'text-muted-foreground',
-                    query.isFetching && 'opacity-60 cursor-not-allowed',
+                    isBusy && 'opacity-60 cursor-not-allowed',
                   )}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
@@ -441,12 +441,12 @@ export default function ConciliacionPage() {
             <Button
               onClick={handleUpdateCartola}
               variant={datesChanged ? 'default' : 'outline'}
-              disabled={query.isFetching || !draftFrom || !draftTo}
+              disabled={isBusy || !draftFrom || !draftTo}
             >
-              {query.isFetching ? (
+              {isBusy ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Actualizando…
+                  Descargando…
                 </>
               ) : (
                 <>
@@ -458,7 +458,7 @@ export default function ConciliacionPage() {
             <Button
               variant="outline"
               onClick={openIndividualCsvDialog}
-              disabled={query.isFetching || movementCandidates.length === 0}
+              disabled={isBusy || movementCandidates.length === 0}
               title="Conciliar múltiples abonos individuales mediante un archivo CSV"
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -472,7 +472,7 @@ export default function ConciliacionPage() {
       </div>
 
       {/* Resumen de cuenta */}
-      {cartola && !query.isFetching && (
+      {cartola && !isBusy && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 rounded-md border p-4 bg-muted/20">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
