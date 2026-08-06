@@ -428,7 +428,7 @@ export default function ConciliacionPage() {
             </Popover>
             <Button
               onClick={handleUpdateCartola}
-              variant={datesChanged ? 'default' : 'outline'}
+              variant="default"
               disabled={isBusy || !draftFrom || !draftTo}
             >
               {isBusy ? (
@@ -438,8 +438,8 @@ export default function ConciliacionPage() {
                 </>
               ) : (
                 <>
-                  <RotateCw className="h-4 w-4 mr-2" />
-                  {datesChanged ? 'Aplicar rango' : 'Actualizar cartola'}
+                  <Download className="h-4 w-4 mr-2" />
+                  Traer actividad
                 </>
               )}
             </Button>
