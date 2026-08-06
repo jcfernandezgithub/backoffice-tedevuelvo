@@ -146,16 +146,28 @@ export default function ConciliacionPage() {
   const rangeToIso = committedTo ? toIsoDate(committedTo) : ''
   const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
-  const query = useQuery({
-    queryKey: ['cartola', 'xml', rangeFromIso, rangeToIso],
-    queryFn: () => downloadCartolaXml({ from: rangeFromIso, to: rangeToIso }),
-    enabled: rangeReady,
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-    retry: false,
-  })
+  // Descarga asíncrona de la cartola: job en backend + CAPTCHA + polling.
+  const cartolaJob = useCartolaJob()
+  const { phase } = cartolaJob.state
+  const isBusy =
+    phase === 'starting' ||
+    phase === 'processing' ||
+    phase === 'sending_captcha' ||
+    phase === 'waiting_captcha'
 
-  const cartola = query.data?.data
+  // Inicia la descarga al cargar la página (mes en curso) y cada vez que se
+  // aplica un nuevo rango de fechas. El guard por ref evita trabajos duplicados.
+  const startedRangeRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!rangeReady) return
+    const key = `${rangeFromIso}|${rangeToIso}`
+    if (startedRangeRef.current === key) return
+    startedRangeRef.current = key
+    cartolaJob.start(rangeFromIso, rangeToIso)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeReady, rangeFromIso, rangeToIso])
+
+  const cartola = phase === 'completed' ? cartolaJob.state.result?.data : undefined
   const movimientos: CartolaMovimiento[] = useMemo(() => {
     const raw = cartola?.movimientos?.movimiento
     if (!raw) return []
