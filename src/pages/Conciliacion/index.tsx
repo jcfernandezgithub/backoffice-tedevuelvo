@@ -220,10 +220,10 @@ export default function ConciliacionPage() {
     setDateTo(undefined)
   }
 
-  const errorMsg = query.error instanceof Error ? query.error.message : null
+  const errorMsg = phase === 'failed' ? cartolaJob.state.error : null
 
   useEffect(() => {
-    if (query.isSuccess && query.data?.data) {
+    if (phase === 'completed' && cartolaJob.state.result?.data) {
       const now = new Date().toISOString()
       try {
         localStorage.setItem(LAST_UPDATED_KEY, now)
@@ -232,7 +232,7 @@ export default function ConciliacionPage() {
       }
       setLastUpdatedAt(now)
     }
-  }, [query.isSuccess, query.data])
+  }, [phase, cartolaJob.state.result])
 
   // Bulk: estado de conciliación de todos los documentos visibles.
   const documentoNumeros = useMemo(
@@ -256,12 +256,14 @@ export default function ConciliacionPage() {
   }
 
   const handleUpdateCartola = () => {
-    if (!draftFrom || !draftTo) return
+    if (!draftFrom || !draftTo || isBusy) return
     if (datesChanged) {
+      // El useEffect de rango detecta el cambio y gatilla la descarga.
       setCommittedFrom(draftFrom)
       setCommittedTo(draftTo)
     } else {
-      query.refetch()
+      // Mismo rango: relanzar la descarga manualmente.
+      cartolaJob.start(rangeFromIso, rangeToIso)
     }
   }
 
