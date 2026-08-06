@@ -220,21 +220,6 @@ export function useCartolaJob() {
   const applyJobPayloadRef = useRef(applyJobPayload)
   applyJobPayloadRef.current = applyJobPayload
 
-  /**
-   * Lanza el OCR sobre la imagen del CAPTCHA. El resultado solo se aplica
-   * si el trabajo sigue esperando CAPTCHA con esa misma imagen (se ignoran
-   * respuestas tardías de imágenes anteriores).
-   */
-  const solveCaptcha = useCallback(async (image: string) => {
-    const requestId = ++ocrRequestRef.current
-    const text = await resolveCaptchaText(image)
-    if (ocrRequestRef.current !== requestId) return
-    setState((s) => {
-      if (s.phase !== 'waiting_captcha' || s.captchaImage !== image) return s
-      return { ...s, solvingCaptcha: false, captchaSuggestion: text }
-    })
-  }, [])
-
   /** Inicia un nuevo trabajo de descarga para el rango indicado. */
   const start = useCallback(
     async (from: string, to: string) => {
