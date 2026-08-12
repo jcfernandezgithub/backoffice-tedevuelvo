@@ -14,7 +14,7 @@ export default function ProtectedRoute({ roles }: { roles?: Rol[] }) {
   // Control de acceso por páginas asignadas al rol (backend login).
   if (user.pages && user.pages.length > 0) {
     const key = pageKeyForPath(location.pathname)
-    if (key && !hasPageAccess(user.pages, key)) {
+    if (key && !hasPageAccess(user.pages, key, user.rol)) {
       return <Navigate to={firstAllowedRoute(user.pages)} replace />
     }
   } else if (user.email === 'admin@callcenter.cl') {

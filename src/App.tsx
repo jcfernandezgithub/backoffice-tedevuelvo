@@ -22,6 +22,8 @@ import Operacion from "@/pages/Operacion";
 import UsuariosPage from "@/pages/Usuarios";
 import RefundsList from "@/pages/Refunds/List";
 import RefundDetail from "@/pages/Refunds/Detail";
+import CierreMensualList from "@/pages/CierreMensual/List";
+import CierreMensualDetail from "@/pages/CierreMensual/Detail";
 import CalculadoraPage from "@/pages/Calculadora";
 import AjustesPage from "@/pages/Ajustes";
 import NominaDevoluciones from "@/pages/NominaDevoluciones";
@@ -79,6 +81,8 @@ const App = () => (
               <Route element={<Shell />}>
                 <Route path="/refunds" element={<RefundsList />} />
                 <Route path="/refunds/:id" element={<RefundDetail />} />
+                <Route path="/cierre-mensual" element={<CierreMensualList />} />
+                <Route path="/cierre-mensual/:id" element={<CierreMensualDetail />} />
                 <Route path="/conciliacion" element={<ConciliacionPage />} />
                 <Route path="/procesos-masivos" element={<ProcesosMasivosPage />} />
               </Route>
