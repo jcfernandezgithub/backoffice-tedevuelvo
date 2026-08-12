@@ -244,7 +244,7 @@ const obtenerTasaBanco = (
     const tasasSeguro = getBankRateMatrix();
     const tramo = edad <= 55 ? "hasta_55" : "desde_56";
     const montoRedondeado = Math.round(monto / 1000000) * 1000000;
-    const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 100000000);
+    const montoFinal = Math.min(Math.max(montoRedondeado, 2000000), 150000000);
 
     const key = resolveInstitutionKey(banco, Object.keys(tasasSeguro));
     if (!key) {
