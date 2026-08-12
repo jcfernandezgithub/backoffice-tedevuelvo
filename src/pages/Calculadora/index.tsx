@@ -43,7 +43,7 @@ const formSchema = z.object({
   cuotasPendientes: z.number({
     required_error: "Ingresa las cuotas pendientes",
   }).min(1, "Mínimo 1 cuota pendiente").max(80, "Máximo 80 cuotas pendientes"),
-  saldoInsoluto: z.number().min(1, "Debe ser mayor a $0").max(100000000, "El saldo máximo es $100.000.000").optional(),
+  saldoInsoluto: z.number().min(1, "Debe ser mayor a $0").max(150000000, "El saldo máximo es $150.000.000").optional(),
   tipoSeguro: z.enum(["desgravamen", "cesantia", "ambos"], {
     required_error: "Selecciona el tipo de seguro",
   }),
