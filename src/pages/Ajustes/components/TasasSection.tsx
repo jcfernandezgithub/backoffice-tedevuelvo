@@ -1045,7 +1045,7 @@ function TablaDesgravamenBancos() {
       {/* Lista de bancos en acordeones */}
       <div className="rounded-xl border border-border/60 overflow-hidden">
         {bancosFiltrados.length > 0 ? (
-          <Accordion type="multiple" defaultValue={bancosFiltrados.slice(0, 3)} className="w-full">
+          <Accordion type="multiple" defaultValue={bancosFiltrados.slice(0, 1)} className="w-full">
             {bancosFiltrados.map((banco) => (
               <AccordionItem key={banco} value={banco} className="border-b last:border-b-0">
                 <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 transition-colors">
