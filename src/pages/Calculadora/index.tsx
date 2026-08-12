@@ -726,7 +726,7 @@ export default function CalculadoraPage() {
                         </div>
                       </FormControl>
                       <FormDescription>
-                        Entre $500.000 y $100.000.000
+                        Entre $500.000 y $150.000.000
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
