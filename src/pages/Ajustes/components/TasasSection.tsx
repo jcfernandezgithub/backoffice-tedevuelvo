@@ -754,6 +754,119 @@ function CreateMatrixDialog({
   );
 }
 
+// ─── Resumen compacto de una matriz bancaria ─────────────────────────────────
+
+function BankMatrixSummary({ data, edad }: { data: import('@/services/ratesService').AgeGroupRates; edad: 'hasta_55' | 'desde_56' }) {
+  const datosEdad = data[edad] ?? {};
+  const montos = Object.keys(datosEdad).map(Number).sort((a, b) => a - b);
+  const cuotasSet = new Set<number>();
+  montos.forEach((m) => Object.keys(datosEdad[String(m)] ?? {}).forEach((c) => cuotasSet.add(Number(c))));
+  const cuotas = Array.from(cuotasSet).sort((a, b) => a - b);
+
+  let min = Infinity, max = -Infinity;
+  montos.forEach((m) => cuotas.forEach((c) => {
+    const v = datosEdad[String(m)]?.[String(c)];
+    if (typeof v === 'number') { min = Math.min(min, v); max = Math.max(max, v); }
+  }));
+
+  return (
+    <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground">
+      <span><strong>{montos.length}</strong> montos</span>
+      <span><strong>{cuotas.length}</strong> plazos</span>
+      {min !== Infinity && (
+        <span className="font-mono">
+          {(min * 100).toFixed(4)}% – {(max * 100).toFixed(4)}%
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Tabla interna de montos × plazos para un banco ──────────────────────────
+
+function BankMatrixTable({
+  bankName, data, edad, onEdit,
+}: {
+  bankName: string;
+  data: import('@/services/ratesService').AgeGroupRates;
+  edad: 'hasta_55' | 'desde_56';
+  onEdit: (monto: number, plazo: number, tasa: number) => void;
+}) {
+  const datosEdad = data[edad] ?? {};
+  const { montos, cuotas, matriz, minTasa, maxTasa } = useMemo(() => {
+    const montosRaw = Object.keys(datosEdad).map(Number).sort((a, b) => a - b);
+    const cuotasSet = new Set<number>();
+    montosRaw.forEach((m) => Object.keys(datosEdad[String(m)] ?? {}).forEach((c) => cuotasSet.add(Number(c))));
+    const cuotasRaw = Array.from(cuotasSet).sort((a, b) => a - b);
+    let min = Infinity, max = -Infinity;
+    montosRaw.forEach((m) => cuotasRaw.forEach((c) => {
+      const v = datosEdad[String(m)]?.[String(c)];
+      if (typeof v === 'number') { min = Math.min(min, v); max = Math.max(max, v); }
+    }));
+    return {
+      montos: montosRaw,
+      cuotas: cuotasRaw,
+      matriz: datosEdad,
+      minTasa: min === Infinity ? 0 : min,
+      maxTasa: max === -Infinity ? 0 : max,
+    };
+  }, [datosEdad]);
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b bg-muted/30">
+            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[110px]">
+              Monto crédito
+            </th>
+            {cuotas.map((c) => (
+              <th key={c} className="text-center px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap min-w-[72px]">
+                {c} cuotas
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {montos.map((monto, rowIdx) => (
+            <tr key={monto} className={`border-b ${rowIdx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}>
+              <td className="px-4 py-2 font-semibold text-xs sticky left-0 bg-inherit z-10 border-r border-border/40">
+                {formatMontoCLP(monto)}
+              </td>
+              {cuotas.map((c) => {
+                const tasa = matriz[String(monto)]?.[String(c)];
+                const colorClass = typeof tasa === 'number' ? getTasaColorClass(tasa, minTasa, maxTasa) : '';
+                return (
+                  <td key={c} className="px-2 py-1.5 text-center">
+                    {typeof tasa === 'number' ? (
+                      <button
+                        className={`inline-block font-mono text-xs font-semibold px-2 py-1 rounded-md hover:ring-2 hover:ring-primary/40 transition-all ${colorClass}`}
+                        onClick={() => onEdit(monto, c, tasa)}
+                        title="Editar tasa"
+                      >
+                        {(tasa * 100).toFixed(4)}%
+                      </button>
+                    ) : (
+                      <span className="text-muted-foreground/40 text-xs">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+          {montos.length === 0 && (
+            <tr>
+              <td colSpan={cuotas.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Sin datos para este tramo de edad.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // ─── Tabla desgravamen bancario ───────────────────────────────────────────────
 
 function TablaDesgravamenBancos() {
@@ -762,37 +875,17 @@ function TablaDesgravamenBancos() {
   const data = matrixQuery.data ?? {};
   const bancos = Object.keys(data);
 
-  const [bancoSeleccionado, setBancoSeleccionado] = useState<string>('');
+  const [q, setQ] = useState('');
   const [tramoEdad, setTramoEdad] = useState<'hasta_55' | 'desde_56'>('hasta_55');
   const [creating, setCreating] = useState(false);
-  const [cellEdit, setCellEdit] = useState<{ monto: number; plazo: number; valor: string; original: number } | null>(null);
+  const [cellEdit, setCellEdit] = useState<{
+    bankName: string; monto: number; plazo: number; valor: string; original: number; edad: 'hasta_55' | 'desde_56';
+  } | null>(null);
   const [confirmCell, setConfirmCell] = useState(false);
 
-  useEffect(() => {
-    if (bancos.length > 0 && !bancos.includes(bancoSeleccionado)) setBancoSeleccionado(bancos[0]);
-  }, [bancos, bancoSeleccionado]);
-
-  const { montos, cuotas, matriz, minTasa, maxTasa } = useMemo(() => {
-    const datosBanco = data[bancoSeleccionado]?.[tramoEdad] ?? {};
-    const montosRaw = Object.keys(datosBanco).map(Number).sort((a, b) => a - b);
-    const cuotasSet = new Set<number>();
-    montosRaw.forEach((m) => Object.keys(datosBanco[String(m)] ?? {}).forEach((c) => cuotasSet.add(Number(c))));
-    const cuotasRaw = Array.from(cuotasSet).sort((a, b) => a - b);
-
-    let min = Infinity, max = -Infinity;
-    montosRaw.forEach((m) => cuotasRaw.forEach((c) => {
-      const v = datosBanco[String(m)]?.[String(c)];
-      if (typeof v === 'number') { min = Math.min(min, v); max = Math.max(max, v); }
-    }));
-
-    return {
-      montos: montosRaw,
-      cuotas: cuotasRaw,
-      matriz: datosBanco,
-      minTasa: min === Infinity ? 0 : min,
-      maxTasa: max === -Infinity ? 0 : max,
-    };
-  }, [bancoSeleccionado, tramoEdad, data]);
+  const bancosFiltrados = useMemo(() =>
+    bancos.filter((b) => b.toLowerCase().includes(q.toLowerCase())),
+  [bancos, q]);
 
   const handleSaveCell = async () => {
     if (!cellEdit) return;
@@ -800,7 +893,11 @@ function TablaDesgravamenBancos() {
     if (!isFinite(tasa)) { toast.error('Tasa inválida'); return; }
     try {
       await updateMatrixRate.mutateAsync({
-        bankName: bancoSeleccionado, ageGroup: tramoEdad, amount: cellEdit.monto, term: cellEdit.plazo, tasa,
+        bankName: cellEdit.bankName,
+        ageGroup: cellEdit.edad,
+        amount: cellEdit.monto,
+        term: cellEdit.plazo,
+        tasa,
       });
       toast.success('Tasa actualizada');
       setConfirmCell(false);
@@ -810,50 +907,51 @@ function TablaDesgravamenBancos() {
     }
   };
 
-
   if (matrixQuery.isLoading) return <TableSkeleton rows={8} />;
   if (matrixQuery.isError) return <ErrorState message={errMsg(matrixQuery.error)} onRetry={() => matrixQuery.refetch()} />;
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-          <Select value={bancoSeleccionado} onValueChange={setBancoSeleccionado}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Selecciona banco" /></SelectTrigger>
-            <SelectContent>
-              {bancos.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-            </SelectContent>
-          </Select>
+      {/* Barra de control: buscador + edad + nuevo banco */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar banco..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-8 h-9"
+          />
         </div>
 
-        <div className="flex rounded-lg border border-border overflow-hidden bg-muted/30">
-          {(['hasta_55', 'desde_56'] as const).map((val) => {
-            const isActive = tramoEdad === val;
-            return (
-              <button
-                key={val}
-                onClick={() => setTramoEdad(val)}
-                className={`flex items-center gap-1.5 text-xs px-3 h-8 transition-all font-medium ${
-                  isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                }`}
-              >
-                {val === 'hasta_55' ? <UserRound className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
-                {val === 'hasta_55' ? '18 – 55 años' : '56+ años'}
-              </button>
-            );
-          })}
-        </div>
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex rounded-lg border border-border overflow-hidden bg-muted/30">
+            {(['hasta_55', 'desde_56'] as const).map((val) => {
+              const isActive = tramoEdad === val;
+              return (
+                <button
+                  key={val}
+                  onClick={() => setTramoEdad(val)}
+                  className={`flex items-center gap-1.5 text-xs px-3 h-8 transition-all font-medium ${
+                    isActive ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                  }`}
+                >
+                  {val === 'hasta_55' ? <UserRound className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                  {val === 'hasta_55' ? '18 – 55 años' : '56+ años'}
+                </button>
+              );
+            })}
+          </div>
 
-        <div className="ml-auto flex items-center gap-2">
           <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
             <Plus className="h-3.5 w-3.5" /> Nuevo banco
           </Button>
         </div>
       </div>
 
+      {/* Leyenda de color */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-xs text-muted-foreground">Tasa:</span>
+        <span className="text-xs text-muted-foreground">Intensidad de tasa:</span>
         {['bg-emerald-50 text-emerald-800', 'bg-lime-50 text-lime-800', 'bg-yellow-50 text-yellow-800', 'bg-orange-50 text-orange-800', 'bg-red-50 text-red-800'].map((cls, i) => (
           <span key={i} className={`text-[10px] font-medium px-2 py-0.5 rounded ${cls}`}>
             {['Muy baja', 'Baja', 'Media', 'Alta', 'Muy alta'][i]}
@@ -869,65 +967,41 @@ function TablaDesgravamenBancos() {
         </TooltipProvider>
       </div>
 
+      {/* Lista de bancos en acordeones */}
       <div className="rounded-xl border border-border/60 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground sticky left-0 bg-muted/50 z-10 min-w-[100px]">
-                  Monto crédito
-                </th>
-                {cuotas.map((c) => (
-                  <th key={c} className="text-center px-3 py-3 font-medium text-muted-foreground whitespace-nowrap min-w-[80px]">
-                    {c} cuotas
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {montos.map((monto, rowIdx) => (
-                <tr key={monto} className={`border-b transition-all ${rowIdx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}>
-                  <td className="px-4 py-2.5 font-semibold text-xs sticky left-0 bg-inherit z-10 border-r border-border/40">
-                    {formatMontoCLP(monto)}
-                  </td>
-                  {cuotas.map((c) => {
-                    const tasa = matriz[String(monto)]?.[String(c)];
-                    const colorClass = typeof tasa === 'number' ? getTasaColorClass(tasa, minTasa, maxTasa) : '';
-                    return (
-                      <td key={c} className="px-2 py-2 text-center">
-                        {typeof tasa === 'number' ? (
-                          <button
-                            className={`inline-block font-mono text-xs font-semibold px-2 py-1 rounded-md hover:ring-2 hover:ring-primary/40 transition-all ${colorClass}`}
-                            onClick={() => setCellEdit({ monto, plazo: c, valor: String(tasa * 100), original: tasa })}
-                            title="Editar tasa"
-                          >
-                            {(tasa * 100).toFixed(4)}%
-                          </button>
-                        ) : (
-                          <span className="text-muted-foreground/40 text-xs">—</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-              {montos.length === 0 && (
-                <tr>
-                  <td colSpan={cuotas.length + 1} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                    Sin datos para este banco y tramo de edad.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="px-4 py-3 border-t bg-muted/20 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-muted-foreground">
-          <span><strong>{montos.length}</strong> tramos de monto</span>
-          <span><strong>{cuotas.length}</strong> plazos disponibles</span>
-          <span>Tasas expresadas como <strong>prima única</strong> (% del capital del crédito)</span>
-          <span>Min: <strong className="font-mono">{(minTasa * 100).toFixed(4)}%</strong> · Max: <strong className="font-mono">{(maxTasa * 100).toFixed(4)}%</strong></span>
-        </div>
+        {bancosFiltrados.length > 0 ? (
+          <Accordion type="multiple" defaultValue={bancosFiltrados.slice(0, 3)} className="w-full">
+            {bancosFiltrados.map((banco) => (
+              <AccordionItem key={banco} value={banco} className="border-b last:border-b-0">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20 transition-colors">
+                  <div className="flex flex-1 items-center justify-between gap-4 pr-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-1.5 rounded-md bg-blue-500/10 shrink-0">
+                        <Building2 className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <span className="font-medium text-sm truncate">{banco}</span>
+                    </div>
+                    <BankMatrixSummary data={data[banco]} edad={tramoEdad} />
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-0 pb-0">
+                  <BankMatrixTable
+                    bankName={banco}
+                    data={data[banco]}
+                    edad={tramoEdad}
+                    onEdit={(monto, plazo, tasa) =>
+                      setCellEdit({ bankName: banco, monto, plazo, valor: String(tasa * 100), original: tasa, edad: tramoEdad })
+                    }
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        ) : (
+          <div className="px-4 py-12 text-center text-sm text-muted-foreground">
+            {q ? `No se encontraron bancos para "${q}"` : 'No hay bancos configurados.'}
+          </div>
+        )}
       </div>
 
       {/* Editar celda */}
@@ -936,7 +1010,7 @@ function TablaDesgravamenBancos() {
           <DialogHeader>
             <DialogTitle>Editar tasa</DialogTitle>
             <DialogDescription>
-              {bancoSeleccionado} · {tramoEdad === 'hasta_55' ? '18–55 años' : '56+ años'} ·{' '}
+              {cellEdit?.bankName} · {cellEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'} ·{' '}
               {cellEdit ? `${formatMontoCLP(cellEdit.monto)} · ${cellEdit.plazo} cuotas` : ''}
             </DialogDescription>
           </DialogHeader>
@@ -975,7 +1049,7 @@ function TablaDesgravamenBancos() {
       <CriticalRateConfirmDialog
         open={confirmCell}
         onOpenChange={setConfirmCell}
-        context={`Desgravamen · ${bancoSeleccionado} · ${tramoEdad === 'hasta_55' ? '18–55 años' : '56+ años'}${cellEdit ? ` · ${formatMontoCLP(cellEdit.monto)} · ${cellEdit.plazo} cuotas` : ''}`}
+        context={`Desgravamen · ${cellEdit?.bankName ?? ''} · ${cellEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'}${cellEdit ? ` · ${formatMontoCLP(cellEdit.monto)} · ${cellEdit.plazo} cuotas` : ''}`}
         rows={cellEdit ? [{
           label: 'Prima única',
           before: `${(cellEdit.original * 100).toFixed(4)}%`,
