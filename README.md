@@ -1,8 +1,17 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.8
+## Versión 4.2.9
 
 ## Changelog
+
+### Versión 4.2.9 - 2026-08-12
+
+#### UX de tasas de desgravamen en Ajustes
+- Se rediseñó la sección **Desgravamen** de **Tasas para Cálculo** (`/ajustes`) para reducir la complejidad de lectura de la matriz bancaria.
+- Los bancos ahora se presentan como una **lista de acordeones**; solo el primero se expande por defecto y el resto permanece colapsado.
+- Se agregó un **buscador de bancos** y un **selector global de tramo de edad** (18–55 / 56+) que aplica a toda la lista.
+- Dentro de cada banco se incluye un **resumen** con cantidad de montos, plazos y rango de tasas, además de un buscador de monto y paginación configurable (10/20/50 montos por página).
+- Se mantuvo el flujo de confirmación crítica antes de guardar cambios en cualquier celda de la matriz.
 
 ### Versión 4.2.8 - 2026-08-06
 
