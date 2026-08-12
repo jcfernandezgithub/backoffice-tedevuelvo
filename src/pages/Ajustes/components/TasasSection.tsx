@@ -793,6 +793,10 @@ function BankMatrixTable({
   onEdit: (monto: number, plazo: number, tasa: number) => void;
 }) {
   const datosEdad = data[edad] ?? {};
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [q, setQ] = useState('');
+
   const { montos, cuotas, matriz, minTasa, maxTasa } = useMemo(() => {
     const montosRaw = Object.keys(datosEdad).map(Number).sort((a, b) => a - b);
     const cuotasSet = new Set<number>();
@@ -812,57 +816,128 @@ function BankMatrixTable({
     };
   }, [datosEdad]);
 
+  const filteredMontos = useMemo(() => {
+    if (!q.trim()) return montos;
+    const term = q.toLowerCase().replace(/[^\dkm]/gi, '');
+    return montos.filter((m) => formatMontoCLP(m).toLowerCase().includes(q.toLowerCase()) || String(m).includes(term));
+  }, [montos, q]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMontos.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageMontos = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return filteredMontos.slice(start, start + pageSize);
+  }, [filteredMontos, safePage, pageSize]);
+
+  useEffect(() => { setPage(1); }, [q, pageSize, edad, bankName]);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b bg-muted/30">
-            <th className="text-left px-4 py-2.5 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[110px]">
-              Monto crédito
-            </th>
-            {cuotas.map((c) => (
-              <th key={c} className="text-center px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap min-w-[72px]">
-                {c} cuotas
+    <div className="space-y-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 pt-2">
+        <div className="relative flex-1 max-w-[220px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar monto..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="pl-8 h-8 text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Mostrar</span>
+          <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+            <SelectTrigger className="h-8 w-[72px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[10, 20, 50].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>filas · {filteredMontos.length} montos</span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="border-b bg-muted/30">
+              <th className="text-left px-4 py-2.5 font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10 min-w-[110px]">
+                Monto crédito
               </th>
+              {cuotas.map((c) => (
+                <th key={c} className="text-center px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap min-w-[72px]">
+                  {c} cuotas
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageMontos.map((monto, rowIdx) => (
+              <tr key={monto} className={`border-b ${rowIdx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}>
+                <td className="px-4 py-2 font-semibold text-xs sticky left-0 bg-inherit z-10 border-r border-border/40">
+                  {formatMontoCLP(monto)}
+                </td>
+                {cuotas.map((c) => {
+                  const tasa = matriz[String(monto)]?.[String(c)];
+                  const colorClass = typeof tasa === 'number' ? getTasaColorClass(tasa, minTasa, maxTasa) : '';
+                  return (
+                    <td key={c} className="px-2 py-1.5 text-center">
+                      {typeof tasa === 'number' ? (
+                        <button
+                          className={`inline-block font-mono text-xs font-semibold px-2 py-1 rounded-md hover:ring-2 hover:ring-primary/40 transition-all ${colorClass}`}
+                          onClick={() => onEdit(monto, c, tasa)}
+                          title="Editar tasa"
+                        >
+                          {(tasa * 100).toFixed(4)}%
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground/40 text-xs">—</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {montos.map((monto, rowIdx) => (
-            <tr key={monto} className={`border-b ${rowIdx % 2 === 0 ? 'bg-background' : 'bg-muted/10'}`}>
-              <td className="px-4 py-2 font-semibold text-xs sticky left-0 bg-inherit z-10 border-r border-border/40">
-                {formatMontoCLP(monto)}
-              </td>
-              {cuotas.map((c) => {
-                const tasa = matriz[String(monto)]?.[String(c)];
-                const colorClass = typeof tasa === 'number' ? getTasaColorClass(tasa, minTasa, maxTasa) : '';
-                return (
-                  <td key={c} className="px-2 py-1.5 text-center">
-                    {typeof tasa === 'number' ? (
-                      <button
-                        className={`inline-block font-mono text-xs font-semibold px-2 py-1 rounded-md hover:ring-2 hover:ring-primary/40 transition-all ${colorClass}`}
-                        onClick={() => onEdit(monto, c, tasa)}
-                        title="Editar tasa"
-                      >
-                        {(tasa * 100).toFixed(4)}%
-                      </button>
-                    ) : (
-                      <span className="text-muted-foreground/40 text-xs">—</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-          {montos.length === 0 && (
-            <tr>
-              <td colSpan={cuotas.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                Sin datos para este tramo de edad.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            {pageMontos.length === 0 && (
+              <tr>
+                <td colSpan={cuotas.length + 1} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {q ? `No se encontraron montos para "${q}"` : 'Sin datos para este tramo de edad.'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {filteredMontos.length > pageSize && (
+        <div className="flex items-center justify-between px-4 pb-3">
+          <span className="text-xs text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="h-8 text-xs"
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="h-8 text-xs"
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
