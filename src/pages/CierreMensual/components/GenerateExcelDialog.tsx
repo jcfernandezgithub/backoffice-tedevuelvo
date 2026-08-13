@@ -430,13 +430,49 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="w-full space-y-1 sm:max-w-xs">
               <Label htmlFor="uf-cierre">Valor UF del día del cierre *</Label>
-              <Input
-                id="uf-cierre"
-                value={ufValue}
-                onChange={(e) => setUfValue(e.target.value)}
-                placeholder="Ej: 40.150,25"
-                inputMode="decimal"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="uf-cierre"
+                  value={ufValue}
+                  onChange={(e) => {
+                    setUfTouched(true)
+                    setUfValue(e.target.value)
+                  }}
+                  placeholder={ufStatus === 'loading' ? 'Obteniendo UF…' : 'Ej: 40.150,25'}
+                  inputMode="decimal"
+                  disabled={ufStatus === 'loading'}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => void loadUf()}
+                  disabled={ufStatus === 'loading'}
+                  title="Volver a obtener la UF de hoy"
+                >
+                  {ufStatus === 'loading'
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <RefreshCw className="h-4 w-4" />}
+                </Button>
+              </div>
+              {ufStatus === 'ok' && !ufTouched && (
+                <p className="flex items-center gap-1 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> UF de hoy obtenida automáticamente
+                </p>
+              )}
+              {ufStatus === 'fallback' && !ufTouched && ufDate && (
+                <p className="flex items-center gap-1 text-xs text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Hoy aún no está publicada; se usa la UF del {ufDate}
+                </p>
+              )}
+              {ufStatus === 'error' && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" /> No se pudo obtener la UF. Ingrésala manualmente.
+                </p>
+              )}
+              {ufTouched && (
+                <p className="text-xs text-muted-foreground">Valor ingresado manualmente</p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground sm:max-w-xs">
               Se usa para convertir la prima neta a UF y calcular las comisiones de intermediación (10%) y recaudación (20%).
