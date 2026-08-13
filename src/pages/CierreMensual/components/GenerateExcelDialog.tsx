@@ -604,7 +604,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           {prefilling && (
             <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Precargando datos guardados (sexo, dirección, comuna)… {prefilledCount}/{filteredRefunds.length}
+              Precargando datos guardados (sexo, dirección, comuna, cuota, tasa)… {prefilledCount}/{filteredRefunds.length}
             </div>
           )}
           {visibleRefunds.map((refund, index) => {
