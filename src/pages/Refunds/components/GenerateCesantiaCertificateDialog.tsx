@@ -196,6 +196,11 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     primaNeta: '',
   })
 
+  // Sexo no se edita en el formulario de cesantía, pero debe persistirse en el snapshot.
+  const [sexo, setSexo] = useState<'M' | 'F' | ''>(
+    ((refund as any)?.sexo === 'M' || (refund as any)?.sexo === 'F') ? (refund as any).sexo : ''
+  )
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     if (!newOpen) {
@@ -296,6 +301,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       
       const direccion = data.data?.direccion || ''
       const comuna = data.data?.comuna || ''
+      const genero = data.data?.genero || ''
+      const sexoFromRut = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : ''
+      if (sexoFromRut) setSexo(sexoFromRut)
       
       setFormData(prev => ({
         ...prev,
@@ -343,12 +351,13 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     const cuotaActual = typeof cuotaActualRaw === 'number' ? cuotaActualRaw : undefined
 
     const payload = {
+      sexo: sexo === 'M' || sexo === 'F' ? sexo : undefined,
       direccion,
       comuna,
       cuotaActual,
     }
 
-    if (!payload.direccion && !payload.comuna && payload.cuotaActual === undefined) return
+    if (!payload.sexo && !payload.direccion && !payload.comuna && payload.cuotaActual === undefined) return
 
     try {
       await refundAdminApi.updatePersonalInformation(refund.publicId, payload)
