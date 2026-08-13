@@ -588,6 +588,12 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
         )}
 
         <div className="max-h-[50vh] overflow-y-auto pr-2">
+          {prefilling && (
+            <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Precargando datos guardados (sexo, dirección, comuna)… {prefilledCount}/{filteredRefunds.length}
+            </div>
+          )}
           {visibleRefunds.map((refund, index) => {
             const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
             const data = refundData[refund.id] || EMPTY_REFUND_DATA
