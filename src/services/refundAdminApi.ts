@@ -312,6 +312,47 @@ class RefundAdminApiClient {
   }
 
   async assignFolio(publicId: string, reassign = false): Promise<{ ok: boolean; publicId: string; nroFolio: string; alreadyAssigned: boolean; reassigned?: boolean }> {
+    return this.assignFolioInternal(publicId, reassign)
+  }
+
+  /**
+   * Actualización parcial de datos personales del snapshot.
+   * Solo envía los campos definidos (no manda undefined ni reemplaza el objeto completo).
+   */
+  async updatePersonalInformation(
+    publicId: string,
+    data: { sexo?: string; direccion?: string; comuna?: string; cuotaActual?: number }
+  ): Promise<RefundRequest> {
+    const payload: Record<string, string | number> = {}
+    if (typeof data.sexo === 'string' && data.sexo.trim() !== '') payload.sexo = data.sexo.trim()
+    if (typeof data.direccion === 'string' && data.direccion.trim() !== '') payload.direccion = data.direccion.trim()
+    if (typeof data.comuna === 'string' && data.comuna.trim() !== '') payload.comuna = data.comuna.trim()
+    if (typeof data.cuotaActual === 'number' && Number.isFinite(data.cuotaActual)) payload.cuotaActual = data.cuotaActual
+
+    if (Object.keys(payload).length === 0) {
+      throw new Error('No hay datos personales para actualizar')
+    }
+
+    const response = await fetch(`${API_BASE_URL}/refund-requests/${publicId}/personal-information`, {
+      method: 'PATCH',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED')
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Error al actualizar datos personales' }))
+      throw new Error(error.message || 'Error al actualizar datos personales')
+    }
+
+    const result = await response.json().catch(() => ({}))
+    return result?.status ? { ...result, status: normalizeStatus(result.status) } : result
+  }
+
+  private async assignFolioInternal(publicId: string, reassign = false): Promise<{ ok: boolean; publicId: string; nroFolio: string; alreadyAssigned: boolean; reassigned?: boolean }> {
     const query = reassign ? '?reassign=true' : ''
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${publicId}/assign-folio${query}`, {
       method: 'PATCH',
