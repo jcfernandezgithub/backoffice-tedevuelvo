@@ -86,6 +86,8 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const [ufStatus, setUfStatus] = useState<'idle' | 'loading' | 'ok' | 'fallback' | 'error'>('idle')
   const [ufDate, setUfDate] = useState<string | null>(null)
   const [ufTouched, setUfTouched] = useState(false)
+  const [prefilling, setPrefilling] = useState(false)
+  const [prefilledCount, setPrefilledCount] = useState(0)
 
   const loadUf = useCallback(async () => {
     setUfStatus('loading')
@@ -110,6 +112,74 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const filteredRefunds = useMemo(() => {
     return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
   }, [selectedRefunds, mode])
+
+  // Precarga de datos personales ya guardados en la solicitud (sexo, dirección, comuna)
+  // + póliza / nº crédito desde el snapshot. No sobreescribe lo que el usuario ya escribió.
+  useEffect(() => {
+    if (!open || filteredRefunds.length === 0) return
+    let cancelled = false
+
+    const mergePrefill = (refundId: string, incoming: Partial<RefundExcelData>) => {
+      setRefundData(prev => {
+        const current = prev[refundId] || EMPTY_REFUND_DATA
+        const next = { ...current }
+        let changed = false
+        for (const [key, value] of Object.entries(incoming) as [keyof RefundExcelData, string][]) {
+          if (value && !String(current[key] || '').trim()) {
+            next[key] = value
+            changed = true
+          }
+        }
+        return changed ? { ...prev, [refundId]: next } : prev
+      })
+    }
+
+    const fromRefund = (refund: any): Partial<RefundExcelData> => {
+      const snap = refund?.calculationSnapshot || {}
+      const rawSexo = String(refund?.sexo ?? snap?.sexo ?? '').trim().toUpperCase()
+      const sexo = rawSexo === 'MUJ' || rawSexo.startsWith('F') ? 'F' : rawSexo === 'VAR' || rawSexo.startsWith('M') ? 'M' : ''
+      return {
+        policyNumber: String(snap?.nroPoliza || '').trim(),
+        creditCode: String(snap?.nroCredito || '').trim(),
+        sexo,
+        direccion: String(refund?.direccion ?? snap?.direccion ?? '').trim(),
+        comuna: String(refund?.comuna ?? snap?.comuna ?? '').trim(),
+      }
+    }
+
+    // 1) Inmediato: con lo que ya tenemos en memoria
+    filteredRefunds.forEach(refund => mergePrefill(refund.id, fromRefund(refund)))
+
+    // 2) Refresco desde el backend para traer datos guardados posteriormente
+    const run = async () => {
+      setPrefilling(true)
+      setPrefilledCount(0)
+      const CONCURRENCY = 5
+      const queue = [...filteredRefunds]
+      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+        while (queue.length > 0 && !cancelled) {
+          const refund = queue.shift()!
+          try {
+            const detail = await refundAdminApi.getById(refund.publicId)
+            if (cancelled) return
+            mergePrefill(refund.id, fromRefund(detail))
+          } catch {
+            // silencioso: el usuario puede completar manualmente
+          } finally {
+            if (!cancelled) setPrefilledCount(c => c + 1)
+          }
+        }
+      })
+      await Promise.all(workers)
+      if (!cancelled) setPrefilling(false)
+    }
+
+    void run()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, filteredRefunds])
 
   const dialogTotalPages = Math.max(1, Math.ceil(filteredRefunds.length / DIALOG_PAGE_SIZE))
 
