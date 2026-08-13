@@ -198,6 +198,8 @@ export function computeBreakdown(snapshot: any): BreakdownResult | null {
  * un residual).
  */
 export function computePureCesantiaTotalTDV(snapshot: any): number | null {
+  const detail = computeCesantiaTdvDetail(snapshot)
+  if (!detail) return null
   if (!snapshot) return null
   const ins = (snapshot.insuranceToEvaluate || snapshot.tipoSeguro || '').toLowerCase()
   const isMixed =
@@ -206,9 +208,20 @@ export function computePureCesantiaTotalTDV(snapshot: any): number | null {
     (ins.includes('desgrav') && ins.includes('cesant'))
   const isPureCesantia = (ins === 'cesantia' || ins === 'cesantía' || ins.includes('cesant')) && !isMixed
   if (!isPureCesantia) return null
+  return detail.primaBruta
+}
+
+/**
+ * Detalle de cálculo de prima TDV de cesantía (independiente del tipo de seguro
+ * de la solicitud). Se usa para el archivo de altas de Cesantía.
+ */
+export function computeCesantiaTdvDetail(
+  snapshot: any,
+): { saldoInsoluto: number; remainingInstallments: number; tasaMensual: number; primaBruta: number } | null {
+  if (!snapshot) return null
 
   // El certificado de cesantía usa el SALDO INSOLUTO (averageInsuredBalance),
-  // no el monto total del crédito. Replicamos la misma prioridad.
+  // no el monto total del crédito.
   const saldoInsoluto =
     snapshot.confirmedAverageInsuredBalance ||
     snapshot.averageInsuredBalance ||
@@ -219,8 +232,13 @@ export function computePureCesantiaTotalTDV(snapshot: any): number | null {
   if (!saldoInsoluto || !remainingInstallments) return null
 
   const tdvData = getTdvCesantiaRates().TE_DEVUELVO_CESANTIA ?? {}
-  const tasaTDV = getTasaMensual(tdvData, saldoInsoluto)
-  if (!tasaTDV) return null
+  const tasaMensual = getTasaMensual(tdvData, saldoInsoluto)
+  if (!tasaMensual) return null
 
-  return Math.round(saldoInsoluto * tasaTDV * remainingInstallments)
+  return {
+    saldoInsoluto,
+    remainingInstallments,
+    tasaMensual,
+    primaBruta: Math.round(saldoInsoluto * tasaMensual * remainingInstallments),
+  }
 }
