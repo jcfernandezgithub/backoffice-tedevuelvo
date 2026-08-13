@@ -560,6 +560,42 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                           placeholder="Ej: Providencia"
                         />
                       </div>
+
+                      {!isDesgravamen && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor={`region-${refund.id}`}>Región</Label>
+                            <Input
+                              id={`region-${refund.id}`}
+                              value={data.region}
+                              onChange={(e) => updateRefundData(refund.id, 'region', e.target.value)}
+                              placeholder="Ej: Metropolitana"
+                            />
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito</Label>
+                              <Input
+                                id={`cuota-${refund.id}`}
+                                value={data.valorCuota}
+                                onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
+                                placeholder="Ej: 235.253"
+                                inputMode="decimal"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`tasa-${refund.id}`}>Tasa del crédito</Label>
+                              <Input
+                                id={`tasa-${refund.id}`}
+                                value={data.tasaCredito}
+                                onChange={(e) => updateRefundData(refund.id, 'tasaCredito', e.target.value)}
+                                placeholder="Ej: 1,25%"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
