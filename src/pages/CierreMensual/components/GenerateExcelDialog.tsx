@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
-import { computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
+import { computeCesantiaTdvDetail } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
 
 interface RefundExcelData {
@@ -26,6 +26,9 @@ interface RefundExcelData {
   sexo: string
   direccion: string
   comuna: string
+  region: string
+  valorCuota: string
+  tasaCredito: string
 }
 
 type InsuranceMode = 'desgravamen' | 'cesantia'
@@ -42,9 +45,20 @@ const EMPTY_REFUND_DATA: RefundExcelData = {
   sexo: '',
   direccion: '',
   comuna: '',
+  region: '',
+  valorCuota: '',
+  tasaCredito: '',
 }
 
 const DIALOG_PAGE_SIZE = 20
+
+// Constantes del formato de altas Cesantía (Southbridge)
+const CESANTIA_POLIZA_MAESTRA = '20123902'
+const CESANTIA_PRODUCTO_SBINS = 'Desempleo'
+const CESANTIA_ESTADO = 'Vigente'
+const IVA_FACTOR = 1.19
+const COMISION_INTERMEDIACION = 0.1
+const COMISION_RECAUDACION = 0.2
 
 function getInsuranceType(snapshot: any): string {
   const raw = (snapshot?.insuranceToEvaluate || snapshot?.tipoSeguro || '').toString().toLowerCase()
@@ -67,6 +81,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
+  const [ufValue, setUfValue] = useState('')
 
   const filteredRefunds = useMemo(() => {
     return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
@@ -122,6 +137,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       const sexo = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : genero
       const direccion = data.data?.direccion || ''
       const comuna = data.data?.comuna || ''
+      const region = data.data?.region || data.data?.regionNombre || ''
 
       setRefundData(prev => ({
         ...prev,
@@ -130,6 +146,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           sexo,
           direccion,
           comuna,
+          region: prev[refundId]?.region || region,
         },
       }))
 
@@ -154,7 +171,19 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
 
-    if (missingData.length > 0) {
+    if (!isDesgravamen) {
+      const uf = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
+      if (!uf || uf <= 0) {
+        toast({
+          title: 'Falta el valor de la UF',
+          description: 'Ingresa el valor de la UF del día del cierre para calcular la prima neta en UF',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (isDesgravamen && missingData.length > 0) {
       toast({
         title: 'Error',
         description: `Debes completar la información de ${missingData.length} solicitud(es)`,
@@ -162,6 +191,8 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       })
       return
     }
+
+    const ufDelDia = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
 
     // Asignar/obtener nroFolio para cada solicitud en paralelo
     let folioByRefundId: Record<string, string> = {}
@@ -192,7 +223,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
     }
 
     const excelData = filteredRefunds.map((refund) => {
-      const data = refundData[refund.id]
+      const data = refundData[refund.id] || EMPTY_REFUND_DATA
       const calculation = refund.calculationSnapshot || {}
       const rut = refund.rut || ''
       const rutParts = rut.split('-')
@@ -238,25 +269,54 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
 
+      if (!isDesgravamen) {
+        const detail = computeCesantiaTdvDetail(calculation)
+        const primaBruta = detail?.primaBruta || 0
+        const primaNeta = primaBruta / IVA_FACTOR
+        const primaNetaUF = ufDelDia > 0 ? primaNeta / ufDelDia : 0
+        const round2 = (n: number) => Math.round(n * 100) / 100
+
+        return {
+          ID: refund.publicId,
+          'Producto_SBINS*': CESANTIA_PRODUCTO_SBINS,
+          'Fecha_Inicio_Vigencia*': vigenciaDesde,
+          'Fecha_Termino_Vigencia*': vigenciaHasta,
+          Estado: CESANTIA_ESTADO,
+          'Poliza*': CESANTIA_POLIZA_MAESTRA,
+          'Certificado*': folioByRefundId[refund.id] || '',
+          'Nombre_Asegurado*': refund.fullName,
+          'Rut_Asegurado*': rutNumber,
+          'DV_Asegurado*': rutDV,
+          'Fecha de nacimiento': fechaNacimiento,
+          'Telefono_Asegurado*': refund.phone || '',
+          'Mail_Asegurado*': refund.email || '',
+          'Dirección_Asegurado*': data?.direccion || '',
+          'Comuna_Asegurado*': data?.comuna || '',
+          'Región_Asegurado*': data?.region || '',
+          'SALDO INSOLUTO*': detail?.saldoInsoluto || saldoInsoluto,
+          'PLAZO*': detail?.remainingInstallments || cuotaRestantes,
+          'Valor Cuota*': data?.valorCuota ? Number(String(data.valorCuota).replace(/\./g, '').replace(',', '.')) : '',
+          'Tasa* credito': data?.tasaCredito || '',
+          'Prima bruta CLP*': primaBruta,
+          'Prima neta CLP*': Math.round(primaNeta),
+          'Prima Neta UF (Uf del día de venta)': round2(primaNetaUF),
+          'Comisión neta Intermediacion (UF)': round2(primaNetaUF * COMISION_INTERMEDIACION),
+          'Comisión neta recaudación (UF)': round2(primaNetaUF * COMISION_RECAUDACION),
+          Tasa: detail ? `${(detail.tasaMensual * 100).toFixed(3)}%` : '',
+        }
+      }
+
       let primaSeguro = 0
       let codigoProducto = '342'
       let capitalAsegurado = saldoInsoluto
 
-      if (isDesgravamen) {
-        const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
-          calculation,
-          refund.institutionId,
-        )
-        const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
-        primaSeguro = primaBruta * cuotaRestantes
-        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
-      } else {
-        // Cesantía: prima única sobre saldo insoluto × tasa × cuotas restantes
-        primaSeguro = computePureCesantiaTotalTDV(calculation) || 0
-        // TODO: ajustar código de producto y capital asegurado según formato real de Cesantía
-        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
-        capitalAsegurado = saldoInsoluto
-      }
+      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
+        calculation,
+        refund.institutionId,
+      )
+      const primaBrutaMensual = derivedNew || calculation.newMonthlyPremium || 0
+      primaSeguro = primaBrutaMensual * cuotaRestantes
+      codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
 
       return {
         Sponsor: 'TDV Servicios SpA.',
@@ -341,6 +401,24 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
             requerida para cada solicitud:
           </DialogDescription>
         </DialogHeader>
+
+        {!isDesgravamen && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="w-full space-y-1 sm:max-w-xs">
+              <Label htmlFor="uf-cierre">Valor UF del día del cierre *</Label>
+              <Input
+                id="uf-cierre"
+                value={ufValue}
+                onChange={(e) => setUfValue(e.target.value)}
+                placeholder="Ej: 40.150,25"
+                inputMode="decimal"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground sm:max-w-xs">
+              Se usa para convertir la prima neta a UF y calcular las comisiones de intermediación (10%) y recaudación (20%).
+            </p>
+          </div>
+        )}
 
         {dialogTotalPages > 1 && (
           <div className="flex items-center justify-between px-1 pb-2">
@@ -482,6 +560,42 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                           placeholder="Ej: Providencia"
                         />
                       </div>
+
+                      {!isDesgravamen && (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor={`region-${refund.id}`}>Región</Label>
+                            <Input
+                              id={`region-${refund.id}`}
+                              value={data.region}
+                              onChange={(e) => updateRefundData(refund.id, 'region', e.target.value)}
+                              placeholder="Ej: Metropolitana"
+                            />
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito</Label>
+                              <Input
+                                id={`cuota-${refund.id}`}
+                                value={data.valorCuota}
+                                onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
+                                placeholder="Ej: 235.253"
+                                inputMode="decimal"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`tasa-${refund.id}`}>Tasa del crédito</Label>
+                              <Input
+                                id={`tasa-${refund.id}`}
+                                value={data.tasaCredito}
+                                onChange={(e) => updateRefundData(refund.id, 'tasaCredito', e.target.value)}
+                                placeholder="Ej: 1,25%"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
