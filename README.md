@@ -1,8 +1,35 @@
 # Welcome to your Lovable project
 
-## Versión 4.2.9
+## Versión 4.3.0
 
 ## Changelog
+
+### Versión 4.3.0 - 2026-08-13
+
+#### Nuevo módulo Cierre Mensual
+- Se creó el módulo **Cierre Mensual** (`/cierre-mensual`) como clon independiente de la página de Solicitudes, destinado a operaciones de cierre y reportes mensuales.
+- Incluye su propia navegación, listado filtrable, detalle de solicitud y generación de archivos de altas, separado de la operación diaria de Solicitudes.
+- El módulo se encuentra marcado como **En desarrollo** en el menú lateral mientras se ajustan las reglas de negocio específicas.
+
+#### Archivo de altas CIA para Cesantía
+- En **Cierre Mensual** se agregó el botón **Altas CIA Cesantía**, separado del flujo de Desgravamen, con validaciones y columnas propias.
+- El archivo Excel sigue el formato Southbridge de 26 columnas, incluyendo datos del asegurado, crédito, prima bruta, descuentos, comisiones y prima neta.
+- Se agregó un campo **Valor UF del día** con carga automática desde el servicio público `findic.cl` y fallback de 4 días hacia atrás; el usuario puede refrescar o digitar el valor manualmente.
+
+#### Persistencia de datos personales en certificados de cobertura
+- Al confirmar y descargar un certificado de cobertura (Desgravamen o Cesantía), el sistema guarda automáticamente en el snapshot los campos personales: **sexo**, **dirección**, **comuna** y **cuota actual**.
+- La actualización se realiza mediante `PATCH /api/v1/refund-requests/:publicId/personal-information` antes de generar o subir el PDF, asegurando que el certificado refleje la información más reciente.
+- El flujo fue sincronizado entre **Solicitudes** y **Cierre Mensual** para mantener consistencia en ambas rutas.
+
+#### Precarga de datos en archivo de altas
+- Al abrir el diálogo de generación de altas en **Cierre Mensual**, el sistema precarga automáticamente desde cada solicitud: **sexo**, **dirección**, **comuna**, **región**, **número de póliza**, **código de crédito**, **valor cuota actual** y **tasa del crédito**.
+- Los datos se sincronizan concurrentemente con el backend (hasta 5 workers) y se muestra un indicador de progreso mientras se completan las consultas.
+- Las solicitudes con todos los campos obligatorios completos se destacan en verde con el badge **"Datos completos"**; la región es el único campo opcional.
+
+#### Cambio de estado a Documentos recibidos para Cesantía
+- En el detalle de solicitud, la transición a **Documentos recibidos** ahora solicita **valor cuota actual del crédito** y **tasa del crédito** exclusivamente para solicitudes de tipo **Cesantía** o **Ambos**.
+- Para solicitudes de **Desgravamen** estos campos no se muestran ni se requieren.
+- Los valores se persisten vía `PATCH /personal-information` antes de ejecutar el cambio de estado.
 
 ### Versión 4.2.9 - 2026-08-12
 
