@@ -635,6 +635,46 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   }
 
   const generatePDF = async () => {
+    const savePersonalInformation = async () => {
+      const direccionCompleta = [
+        formData.direccion?.trim(),
+        formData.numero?.trim() ? `N° ${formData.numero.trim()}` : '',
+        formData.depto?.trim() ? `Depto ${formData.depto.trim()}` : '',
+      ].filter(Boolean).join(' ')
+
+      const sexo = formData.sexo === 'M' ? 'M' : formData.sexo === 'F' ? 'F' : undefined
+      const cuotaActualRaw =
+        refund.calculationSnapshot?.confirmedCurrentInstallment ??
+        refund.calculationSnapshot?.currentInstallment
+      const cuotaActual = typeof cuotaActualRaw === 'number' ? cuotaActualRaw : undefined
+
+      const payload = {
+        sexo,
+        direccion: direccionCompleta || undefined,
+        comuna: formData.comuna?.trim() || undefined,
+        cuotaActual,
+      }
+
+      if (!payload.sexo && !payload.direccion && !payload.comuna && payload.cuotaActual === undefined) return
+
+      try {
+        await refundAdminApi.updatePersonalInformation(refund.publicId, payload)
+        await queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] })
+        await queryClient.invalidateQueries({ queryKey: ['refund'] })
+        toast({
+          title: 'Datos guardados',
+          description: 'Los datos de dirección se guardaron en la solicitud',
+        })
+      } catch (error: any) {
+        console.error('Error guardando datos personales:', error)
+        toast({
+          title: 'No se pudieron guardar los datos personales',
+          description: error?.message || 'Se continuará con la generación del certificado',
+          variant: 'destructive',
+        })
+      }
+    }
+
     setIsGenerating(true)
     try {
       // Persistir datos personales editados en el snapshot antes de generar el PDF
