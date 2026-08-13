@@ -138,12 +138,25 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       const snap = refund?.calculationSnapshot || {}
       const rawSexo = String(refund?.sexo ?? snap?.sexo ?? '').trim().toUpperCase()
       const sexo = rawSexo === 'MUJ' || rawSexo.startsWith('F') ? 'F' : rawSexo === 'VAR' || rawSexo.startsWith('M') ? 'M' : ''
+
+      const cuotaRaw = refund?.cuotaActual ?? snap?.cuotaActual ?? null
+      const valorCuota = typeof cuotaRaw === 'number' && cuotaRaw > 0
+        ? Math.round(cuotaRaw).toLocaleString('es-CL')
+        : ''
+
+      const tasaRaw = refund?.valorTasa ?? snap?.valorTasa ?? null
+      const tasaCredito = typeof tasaRaw === 'number' && tasaRaw >= 0
+        ? `${String(tasaRaw).replace('.', ',')}%`
+        : ''
+
       return {
         policyNumber: String(snap?.nroPoliza || '').trim(),
         creditCode: String(snap?.nroCredito || '').trim(),
         sexo,
         direccion: String(refund?.direccion ?? snap?.direccion ?? '').trim(),
         comuna: String(refund?.comuna ?? snap?.comuna ?? '').trim(),
+        valorCuota,
+        tasaCredito,
       }
     }
 
@@ -591,7 +604,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           {prefilling && (
             <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Precargando datos guardados (sexo, dirección, comuna)… {prefilledCount}/{filteredRefunds.length}
+              Precargando datos guardados (sexo, dirección, comuna, cuota, tasa)… {prefilledCount}/{filteredRefunds.length}
             </div>
           )}
           {visibleRefunds.map((refund, index) => {
