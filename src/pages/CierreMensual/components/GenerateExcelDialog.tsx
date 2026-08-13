@@ -402,6 +402,24 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           </DialogDescription>
         </DialogHeader>
 
+        {!isDesgravamen && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="w-full space-y-1 sm:max-w-xs">
+              <Label htmlFor="uf-cierre">Valor UF del día del cierre *</Label>
+              <Input
+                id="uf-cierre"
+                value={ufValue}
+                onChange={(e) => setUfValue(e.target.value)}
+                placeholder="Ej: 40.150,25"
+                inputMode="decimal"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground sm:max-w-xs">
+              Se usa para convertir la prima neta a UF y calcular las comisiones de intermediación (10%) y recaudación (20%).
+            </p>
+          </div>
+        )}
+
         {dialogTotalPages > 1 && (
           <div className="flex items-center justify-between px-1 pb-2">
             <span className="text-sm text-muted-foreground">
