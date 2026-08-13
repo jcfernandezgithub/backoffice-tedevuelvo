@@ -314,53 +314,58 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
         return
       }
 
-      const cuotaActual = Number(String(creditFields.cuotaActual).replace(/[^0-9.]/g, ''))
-      const valorTasa = Number(String(creditFields.valorTasa).replace(/[^0-9.]/g, ''))
+      const insuranceType = getInsuranceType(refund?.calculationSnapshot)
+      const requiresCreditData = insuranceType === 'cesantia' || insuranceType === 'ambos'
 
-      if (!Number.isFinite(cuotaActual) || cuotaActual <= 0) {
-        toast({
-          title: 'Valor cuota requerido',
-          description: 'Ingresa el valor de la cuota actual del crédito para continuar',
-          variant: 'destructive',
-        })
-        return
-      }
-      if (!Number.isFinite(valorTasa) || valorTasa <= 0) {
-        toast({
-          title: 'Tasa requerida',
-          description: 'Ingresa la tasa del crédito para continuar',
-          variant: 'destructive',
-        })
-        return
-      }
+      if (requiresCreditData) {
+        const cuotaActual = Number(String(creditFields.cuotaActual).replace(/[^0-9.]/g, ''))
+        const valorTasa = Number(String(creditFields.valorTasa).replace(/[^0-9.]/g, ''))
 
-      // Guardar sólo los campos modificados vía PATCH /personal-information
-      const current: any = refund || {}
-      const patch: { cuotaActual?: number; valorTasa?: number } = {}
-      if (Number(current.cuotaActual) !== cuotaActual) patch.cuotaActual = cuotaActual
-      if (Number(current.valorTasa) !== valorTasa) patch.valorTasa = valorTasa
-
-      if (Object.keys(patch).length > 0) {
-        try {
-          setSavingCreditFields(true)
-          const updated = await refundAdminApi.updatePersonalInformation(refund!.publicId, patch)
-          // Actualizar estado local con la respuesta del servidor
-          queryClient.setQueryData(['refund', id], (prev: any) =>
-            prev ? { ...prev, ...(updated as any) } : updated
-          )
+        if (!Number.isFinite(cuotaActual) || cuotaActual <= 0) {
           toast({
-            title: 'Datos del crédito guardados',
-            description: 'Se guardaron el valor cuota y la tasa del crédito',
-          })
-        } catch (e: any) {
-          toast({
-            title: 'Error al guardar datos del crédito',
-            description: e?.message || 'No se pudieron guardar el valor cuota y la tasa',
+            title: 'Valor cuota requerido',
+            description: 'Ingresa el valor de la cuota actual del crédito para continuar',
             variant: 'destructive',
           })
           return
-        } finally {
-          setSavingCreditFields(false)
+        }
+        if (!Number.isFinite(valorTasa) || valorTasa <= 0) {
+          toast({
+            title: 'Tasa requerida',
+            description: 'Ingresa la tasa del crédito para continuar',
+            variant: 'destructive',
+          })
+          return
+        }
+
+        // Guardar sólo los campos modificados vía PATCH /personal-information
+        const current: any = refund || {}
+        const patch: { cuotaActual?: number; valorTasa?: number } = {}
+        if (Number(current.cuotaActual) !== cuotaActual) patch.cuotaActual = cuotaActual
+        if (Number(current.valorTasa) !== valorTasa) patch.valorTasa = valorTasa
+
+        if (Object.keys(patch).length > 0) {
+          try {
+            setSavingCreditFields(true)
+            const updated = await refundAdminApi.updatePersonalInformation(refund!.publicId, patch)
+            // Actualizar estado local con la respuesta del servidor
+            queryClient.setQueryData(['refund', id], (prev: any) =>
+              prev ? { ...prev, ...(updated as any) } : updated
+            )
+            toast({
+              title: 'Datos del crédito guardados',
+              description: 'Se guardaron el valor cuota y la tasa del crédito',
+            })
+          } catch (e: any) {
+            toast({
+              title: 'Error al guardar datos del crédito',
+              description: e?.message || 'No se pudieron guardar el valor cuota y la tasa',
+              variant: 'destructive',
+            })
+            return
+          } finally {
+            setSavingCreditFields(false)
+          }
         }
       }
     }
@@ -432,6 +437,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
       </div>
     )
   }
+
+  const insuranceType = getInsuranceType(refund.calculationSnapshot)
 
   return (
     <div className="p-6 space-y-6">
@@ -769,7 +776,7 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                   </div>
                 )}
 
-                {updateForm.status === 'docs_received' && (
+                {updateForm.status === 'docs_received' && (insuranceType === 'cesantia' || insuranceType === 'ambos') && (
                   <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <p className="text-sm font-semibold text-primary">
                       Datos del crédito contratado <span className="text-destructive">*</span>
