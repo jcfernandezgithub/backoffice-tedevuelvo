@@ -610,16 +610,29 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           {visibleRefunds.map((refund, index) => {
             const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
             const data = refundData[refund.id] || EMPTY_REFUND_DATA
-            const isComplete = Boolean(data.policyNumber?.trim() && data.creditCode?.trim() && data.sexo?.trim())
+            const isComplete = isDesgravamen
+              ? Boolean(data.policyNumber?.trim() && data.creditCode?.trim() && data.sexo?.trim())
+              : Boolean(
+                  data.policyNumber?.trim() &&
+                  data.creditCode?.trim() &&
+                  data.sexo?.trim() &&
+                  data.direccion?.trim() &&
+                  data.comuna?.trim() &&
+                  data.valorCuota?.trim() &&
+                  data.tasaCredito?.trim()
+                )
             const isExpanded = expandedRefundId === refund.id
             const isAmbos = getInsuranceType(refund.calculationSnapshot) === 'ambos'
 
             return (
-              <div key={refund.id} className="border-b">
+              <div
+                key={refund.id}
+                className={`border-b transition-colors ${isComplete ? 'border-l-2 border-l-green-500 bg-green-500/5' : ''}`}
+              >
                 <button
                   type="button"
                   onClick={() => setExpandedRefundId((current) => (current === refund.id ? null : refund.id))}
-                  className="flex w-full items-center justify-between gap-4 rounded-sm py-4 text-left transition-colors hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex w-full items-center justify-between gap-4 rounded-sm px-2 py-4 text-left transition-colors hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   aria-expanded={isExpanded}
                 >
                   <div className="flex min-w-0 items-center gap-3 text-left">
@@ -632,6 +645,15 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                             AMBOS
                           </span>
                         )}
+                        <span
+                          className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isComplete
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+                          }`}
+                        >
+                          {isComplete ? 'Datos completos' : 'Faltan datos'}
+                        </span>
                       </div>
                       <div className="break-all text-sm text-muted-foreground">
                         {refund.publicId} • {refund.rut}
@@ -711,41 +733,53 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                       </div>
 
                       {!isDesgravamen && (
-                        <>
-                          <div className="space-y-2">
-                            <Label htmlFor={`region-${refund.id}`}>Región</Label>
-                            <Input
-                              id={`region-${refund.id}`}
-                              value={data.region}
-                              onChange={(e) => updateRefundData(refund.id, 'region', e.target.value)}
-                              placeholder="Ej: Metropolitana"
-                            />
-                          </div>
-
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito</Label>
-                              <Input
-                                id={`cuota-${refund.id}`}
-                                value={data.valorCuota}
-                                onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
-                                placeholder="Ej: 235.253"
-                                inputMode="decimal"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`tasa-${refund.id}`}>Tasa del crédito</Label>
-                              <Input
-                                id={`tasa-${refund.id}`}
-                                value={data.tasaCredito}
-                                onChange={(e) => updateRefundData(refund.id, 'tasaCredito', e.target.value)}
-                                placeholder="Ej: 1,25%"
-                              />
-                            </div>
-                          </div>
-                        </>
+                        <div className="space-y-2">
+                          <Label htmlFor={`region-${refund.id}`}>
+                            Región <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                          </Label>
+                          <Input
+                            id={`region-${refund.id}`}
+                            value={data.region}
+                            onChange={(e) => updateRefundData(refund.id, 'region', e.target.value)}
+                            placeholder="Ej: Metropolitana"
+                          />
+                        </div>
                       )}
                     </div>
+
+                    {!isDesgravamen && (
+                      <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <div className="h-1 w-1 rounded-full bg-primary" />
+                          Datos del crédito
+                        </div>
+                        <p className="-mt-2 text-xs text-muted-foreground">
+                          Corresponden al crédito contratado, no al cliente. Se precargan desde la solicitud.
+                        </p>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito *</Label>
+                            <Input
+                              id={`cuota-${refund.id}`}
+                              value={data.valorCuota}
+                              onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
+                              placeholder="Ej: 235.253"
+                              inputMode="decimal"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`tasa-${refund.id}`}>Tasa del crédito *</Label>
+                            <Input
+                              id={`tasa-${refund.id}`}
+                              value={data.tasaCredito}
+                              onChange={(e) => updateRefundData(refund.id, 'tasaCredito', e.target.value)}
+                              placeholder="Ej: 1,25%"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
