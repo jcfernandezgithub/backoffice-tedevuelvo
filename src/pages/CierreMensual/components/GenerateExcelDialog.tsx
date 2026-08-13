@@ -288,15 +288,15 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       <DialogTrigger asChild>
         <Button variant="default" disabled={selectedRefunds.length === 0} className="gap-2">
           <FileSpreadsheet className="h-4 w-4" />
-          Archivo Altas CIA. ({selectedRefunds.length})
+          Archivo Altas CIA Desgravamen ({selectedRefunds.length})
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Generar Excel de Solicitudes</DialogTitle>
+          <DialogTitle>Generar Excel de Altas CIA - Desgravamen</DialogTitle>
           <DialogDescription>
-            Se generará un archivo Excel con {selectedRefunds.length} solicitud(es) seleccionada(s). Complete la información
+            Se generará un archivo Excel con {selectedRefunds.length} solicitud(es) seleccionada(s) del tipo Desgravamen. Complete la información
             requerida para cada solicitud:
           </DialogDescription>
         </DialogHeader>
