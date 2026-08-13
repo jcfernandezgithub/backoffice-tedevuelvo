@@ -458,6 +458,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
         )
       }
 
+      // Persistir datos personales editados en el snapshot antes de subir el certificado
+      await savePersonalInformation()
+
       const { blob, fileName } = await buildPDF()
       const token = authService.getAccessToken()
       const uploadFormData = new FormData()
