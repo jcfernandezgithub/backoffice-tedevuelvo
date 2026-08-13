@@ -776,7 +776,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </div>
                 )}
 
-                {updateForm.status === 'docs_received' && (
+                {updateForm.status === 'docs_received' && (insuranceType === 'cesantia' || insuranceType === 'ambos') && (
                   <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <p className="text-sm font-semibold text-primary">
                       Datos del crédito contratado <span className="text-destructive">*</span>
