@@ -339,6 +339,8 @@ class RefundAdminApiClient {
       body: JSON.stringify(payload),
     })
 
+    console.log('[personal-information] PATCH', publicId, payload, '->', response.status)
+
     if (response.status === 401) {
       throw new Error('UNAUTHORIZED')
     }
