@@ -433,6 +433,8 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
     )
   }
 
+  const insuranceType = getInsuranceType(refund.calculationSnapshot)
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">

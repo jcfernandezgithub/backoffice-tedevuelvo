@@ -433,6 +433,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
     )
   }
 
+  const insuranceType = getInsuranceType(refund.calculationSnapshot)
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
