@@ -321,13 +321,14 @@ class RefundAdminApiClient {
    */
   async updatePersonalInformation(
     publicId: string,
-    data: { sexo?: string; direccion?: string; comuna?: string; cuotaActual?: number }
+    data: { sexo?: string; direccion?: string; comuna?: string; cuotaActual?: number; valorTasa?: number }
   ): Promise<RefundRequest> {
     const payload: Record<string, string | number> = {}
     if (typeof data.sexo === 'string' && data.sexo.trim() !== '') payload.sexo = data.sexo.trim()
     if (typeof data.direccion === 'string' && data.direccion.trim() !== '') payload.direccion = data.direccion.trim()
     if (typeof data.comuna === 'string' && data.comuna.trim() !== '') payload.comuna = data.comuna.trim()
     if (typeof data.cuotaActual === 'number' && Number.isFinite(data.cuotaActual)) payload.cuotaActual = data.cuotaActual
+    if (typeof data.valorTasa === 'number' && Number.isFinite(data.valorTasa)) payload.valorTasa = data.valorTasa
 
     if (Object.keys(payload).length === 0) {
       throw new Error('No hay datos personales para actualizar')

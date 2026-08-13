@@ -64,6 +64,12 @@ export interface RefundRequest {
   bankInfo?: BankInfo
   cloned?: boolean
   siblingId?: string
+  // Datos personales / de crédito (PATCH /personal-information)
+  sexo?: string | null
+  direccion?: string | null
+  comuna?: string | null
+  cuotaActual?: number | null
+  valorTasa?: number | null
 }
 
 export interface RefundDocument {
