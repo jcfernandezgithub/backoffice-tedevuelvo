@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
@@ -19,6 +19,7 @@ import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { computeCesantiaTdvDetail } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { getUfValue, formatUf } from '@/services/ufService'
 
 interface RefundExcelData {
   policyNumber: string
@@ -82,6 +83,29 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
   const [ufValue, setUfValue] = useState('')
+  const [ufStatus, setUfStatus] = useState<'idle' | 'loading' | 'ok' | 'fallback' | 'error'>('idle')
+  const [ufDate, setUfDate] = useState<string | null>(null)
+  const [ufTouched, setUfTouched] = useState(false)
+
+  const loadUf = useCallback(async () => {
+    setUfStatus('loading')
+    try {
+      const result = await getUfValue(new Date())
+      setUfValue(formatUf(result.value))
+      setUfDate(result.date)
+      setUfTouched(false)
+      setUfStatus(result.isFallback ? 'fallback' : 'ok')
+    } catch {
+      setUfDate(null)
+      setUfStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open && mode === 'cesantia' && !ufTouched && ufStatus === 'idle') {
+      void loadUf()
+    }
+  }, [open, mode, ufTouched, ufStatus, loadUf])
 
   const filteredRefunds = useMemo(() => {
     return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
@@ -406,13 +430,49 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="w-full space-y-1 sm:max-w-xs">
               <Label htmlFor="uf-cierre">Valor UF del día del cierre *</Label>
-              <Input
-                id="uf-cierre"
-                value={ufValue}
-                onChange={(e) => setUfValue(e.target.value)}
-                placeholder="Ej: 40.150,25"
-                inputMode="decimal"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="uf-cierre"
+                  value={ufValue}
+                  onChange={(e) => {
+                    setUfTouched(true)
+                    setUfValue(e.target.value)
+                  }}
+                  placeholder={ufStatus === 'loading' ? 'Obteniendo UF…' : 'Ej: 40.150,25'}
+                  inputMode="decimal"
+                  disabled={ufStatus === 'loading'}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => void loadUf()}
+                  disabled={ufStatus === 'loading'}
+                  title="Volver a obtener la UF de hoy"
+                >
+                  {ufStatus === 'loading'
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <RefreshCw className="h-4 w-4" />}
+                </Button>
+              </div>
+              {ufStatus === 'ok' && !ufTouched && (
+                <p className="flex items-center gap-1 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> UF de hoy obtenida automáticamente
+                </p>
+              )}
+              {ufStatus === 'fallback' && !ufTouched && ufDate && (
+                <p className="flex items-center gap-1 text-xs text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Hoy aún no está publicada; se usa la UF del {ufDate}
+                </p>
+              )}
+              {ufStatus === 'error' && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" /> No se pudo obtener la UF. Ingrésala manualmente.
+                </p>
+              )}
+              {ufTouched && (
+                <p className="text-xs text-muted-foreground">Valor ingresado manualmente</p>
+              )}
             </div>
             <p className="text-xs text-muted-foreground sm:max-w-xs">
               Se usa para convertir la prima neta a UF y calcular las comisiones de intermediación (10%) y recaudación (20%).
