@@ -221,7 +221,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
     }
 
     const excelData = filteredRefunds.map((refund) => {
-      const data = refundData[refund.id]
+      const data = refundData[refund.id] || EMPTY_REFUND_DATA
       const calculation = refund.calculationSnapshot || {}
       const rut = refund.rut || ''
       const rutParts = rut.split('-')
