@@ -129,6 +129,12 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
+  // Datos del crédito requeridos al pasar a "Documentos recibidos"
+  const [creditFields, setCreditFields] = useState<{ cuotaActual: string; valorTasa: string }>({
+    cuotaActual: '',
+    valorTasa: '',
+  })
+  const [savingCreditFields, setSavingCreditFields] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
     status: 'simulated',
     note: '',
@@ -306,6 +312,56 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           variant: 'destructive',
         })
         return
+      }
+
+      const cuotaActual = Number(String(creditFields.cuotaActual).replace(/[^0-9.]/g, ''))
+      const valorTasa = Number(String(creditFields.valorTasa).replace(/[^0-9.]/g, ''))
+
+      if (!Number.isFinite(cuotaActual) || cuotaActual <= 0) {
+        toast({
+          title: 'Valor cuota requerido',
+          description: 'Ingresa el valor de la cuota actual del crédito para continuar',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (!Number.isFinite(valorTasa) || valorTasa <= 0) {
+        toast({
+          title: 'Tasa requerida',
+          description: 'Ingresa la tasa del crédito para continuar',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Guardar sólo los campos modificados vía PATCH /personal-information
+      const current: any = refund || {}
+      const patch: { cuotaActual?: number; valorTasa?: number } = {}
+      if (Number(current.cuotaActual) !== cuotaActual) patch.cuotaActual = cuotaActual
+      if (Number(current.valorTasa) !== valorTasa) patch.valorTasa = valorTasa
+
+      if (Object.keys(patch).length > 0) {
+        try {
+          setSavingCreditFields(true)
+          const updated = await refundAdminApi.updatePersonalInformation(refund!.publicId, patch)
+          // Actualizar estado local con la respuesta del servidor
+          queryClient.setQueryData(['refund', id], (prev: any) =>
+            prev ? { ...prev, ...(updated as any) } : updated
+          )
+          toast({
+            title: 'Datos del crédito guardados',
+            description: 'Se guardaron el valor cuota y la tasa del crédito',
+          })
+        } catch (e: any) {
+          toast({
+            title: 'Error al guardar datos del crédito',
+            description: e?.message || 'No se pudieron guardar el valor cuota y la tasa',
+            variant: 'destructive',
+          })
+          return
+        } finally {
+          setSavingCreditFields(false)
+        }
       }
     }
 
@@ -608,6 +664,13 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   nroPoliza: snap.nroPoliza || '',
                   nroCredito: snap.nroCredito || '',
                 })
+                const r: any = refund
+                const cuota = r.cuotaActual ?? snap.cuotaActual ?? snap.valorCuota ?? null
+                const tasa = r.valorTasa ?? snap.valorTasa ?? snap.tasa ?? null
+                setCreditFields({
+                  cuotaActual: cuota != null && cuota !== '' ? String(cuota) : '',
+                  valorTasa: tasa != null && tasa !== '' ? String(tasa) : '',
+                })
               }
             }}>
             <DialogTrigger asChild>
@@ -706,6 +769,60 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   </div>
                 )}
 
+                {updateForm.status === 'docs_received' && (
+                  <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-sm font-semibold text-primary">
+                      Datos del crédito contratado <span className="text-destructive">*</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Valor cuota actual (CLP)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                          <Input
+                            inputMode="numeric"
+                            value={creditFields.cuotaActual}
+                            onChange={(e) =>
+                              setCreditFields((prev) => ({
+                                ...prev,
+                                cuotaActual: e.target.value.replace(/[^0-9]/g, ''),
+                              }))
+                            }
+                            placeholder="350000"
+                            className="pl-7"
+                          />
+                        </div>
+                        {creditFields.cuotaActual && (
+                          <p className="text-xs text-muted-foreground">
+                            ${formatCLPNumber(Number(creditFields.cuotaActual))} CLP
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Tasa del crédito (%)</Label>
+                        <div className="relative">
+                          <Input
+                            inputMode="decimal"
+                            value={creditFields.valorTasa}
+                            onChange={(e) =>
+                              setCreditFields((prev) => ({
+                                ...prev,
+                                valorTasa: e.target.value.replace(/[^0-9.]/g, ''),
+                              }))
+                            }
+                            placeholder="1.25"
+                            className="pr-7"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Se guardarán en la solicitud al confirmar el cambio de estado.
+                    </p>
+                  </div>
+                )}
+
                 {updateForm.status === 'payment_scheduled' && (
                   <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <Label className="text-primary font-medium">
@@ -782,7 +899,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                             ? 'bg-amber-600 hover:bg-amber-700 text-white'
                             : ''
                         }`}
-                        disabled={updateMutation.isPending}
+                        disabled={updateMutation.isPending || savingCreditFields}
                       >
                         {updateMutation.isPending
                           ? 'Actualizando...'
@@ -811,9 +928,9 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                   <Button
                     onClick={handleUpdateStatus}
                     className="w-full"
-                    disabled={updateMutation.isPending}
+                    disabled={updateMutation.isPending || savingCreditFields}
                   >
-                    {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                    {savingCreditFields ? 'Guardando datos...' : updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
                   </Button>
                 )}
               </div>
