@@ -17,7 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
-import { computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
+import { computeCesantiaTdvDetail } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
 
 interface RefundExcelData {
@@ -26,6 +26,9 @@ interface RefundExcelData {
   sexo: string
   direccion: string
   comuna: string
+  region: string
+  valorCuota: string
+  tasaCredito: string
 }
 
 type InsuranceMode = 'desgravamen' | 'cesantia'
@@ -42,9 +45,20 @@ const EMPTY_REFUND_DATA: RefundExcelData = {
   sexo: '',
   direccion: '',
   comuna: '',
+  region: '',
+  valorCuota: '',
+  tasaCredito: '',
 }
 
 const DIALOG_PAGE_SIZE = 20
+
+// Constantes del formato de altas Cesantía (Southbridge)
+const CESANTIA_POLIZA_MAESTRA = '20123902'
+const CESANTIA_PRODUCTO_SBINS = 'Desempleo'
+const CESANTIA_ESTADO = 'Vigente'
+const IVA_FACTOR = 1.19
+const COMISION_INTERMEDIACION = 0.1
+const COMISION_RECAUDACION = 0.2
 
 function getInsuranceType(snapshot: any): string {
   const raw = (snapshot?.insuranceToEvaluate || snapshot?.tipoSeguro || '').toString().toLowerCase()
@@ -67,6 +81,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
+  const [ufValue, setUfValue] = useState('')
 
   const filteredRefunds = useMemo(() => {
     return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
