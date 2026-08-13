@@ -169,7 +169,19 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
 
-    if (missingData.length > 0) {
+    if (!isDesgravamen) {
+      const uf = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
+      if (!uf || uf <= 0) {
+        toast({
+          title: 'Falta el valor de la UF',
+          description: 'Ingresa el valor de la UF del día del cierre para calcular la prima neta en UF',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (isDesgravamen && missingData.length > 0) {
       toast({
         title: 'Error',
         description: `Debes completar la información de ${missingData.length} solicitud(es)`,
@@ -177,6 +189,8 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       })
       return
     }
+
+    const ufDelDia = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
 
     // Asignar/obtener nroFolio para cada solicitud en paralelo
     let folioByRefundId: Record<string, string> = {}
@@ -253,25 +267,54 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
 
+      if (!isDesgravamen) {
+        const detail = computeCesantiaTdvDetail(calculation)
+        const primaBruta = detail?.primaBruta || 0
+        const primaNeta = primaBruta / IVA_FACTOR
+        const primaNetaUF = ufDelDia > 0 ? primaNeta / ufDelDia : 0
+        const round2 = (n: number) => Math.round(n * 100) / 100
+
+        return {
+          ID: refund.publicId,
+          'Producto_SBINS*': CESANTIA_PRODUCTO_SBINS,
+          'Fecha_Inicio_Vigencia*': vigenciaDesde,
+          'Fecha_Termino_Vigencia*': vigenciaHasta,
+          Estado: CESANTIA_ESTADO,
+          'Poliza*': CESANTIA_POLIZA_MAESTRA,
+          'Certificado*': folioByRefundId[refund.id] || '',
+          'Nombre_Asegurado*': refund.fullName,
+          'Rut_Asegurado*': rutNumber,
+          'DV_Asegurado*': rutDV,
+          'Fecha de nacimiento': fechaNacimiento,
+          'Telefono_Asegurado*': refund.phone || '',
+          'Mail_Asegurado*': refund.email || '',
+          'Dirección_Asegurado*': data?.direccion || '',
+          'Comuna_Asegurado*': data?.comuna || '',
+          'Región_Asegurado*': data?.region || '',
+          'SALDO INSOLUTO*': detail?.saldoInsoluto || saldoInsoluto,
+          'PLAZO*': detail?.remainingInstallments || cuotaRestantes,
+          'Valor Cuota*': data?.valorCuota ? Number(String(data.valorCuota).replace(/\./g, '').replace(',', '.')) : '',
+          'Tasa* credito': data?.tasaCredito || '',
+          'Prima bruta CLP*': primaBruta,
+          'Prima neta CLP*': Math.round(primaNeta),
+          'Prima Neta UF (Uf del día de venta)': round2(primaNetaUF),
+          'Comisión neta Intermediacion (UF)': round2(primaNetaUF * COMISION_INTERMEDIACION),
+          'Comisión neta recaudación (UF)': round2(primaNetaUF * COMISION_RECAUDACION),
+          Tasa: detail ? `${(detail.tasaMensual * 100).toFixed(3)}%` : '',
+        }
+      }
+
       let primaSeguro = 0
       let codigoProducto = '342'
       let capitalAsegurado = saldoInsoluto
 
-      if (isDesgravamen) {
-        const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
-          calculation,
-          refund.institutionId,
-        )
-        const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
-        primaSeguro = primaBruta * cuotaRestantes
-        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
-      } else {
-        // Cesantía: prima única sobre saldo insoluto × tasa × cuotas restantes
-        primaSeguro = computePureCesantiaTotalTDV(calculation) || 0
-        // TODO: ajustar código de producto y capital asegurado según formato real de Cesantía
-        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
-        capitalAsegurado = saldoInsoluto
-      }
+      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
+        calculation,
+        refund.institutionId,
+      )
+      const primaBrutaMensual = derivedNew || calculation.newMonthlyPremium || 0
+      primaSeguro = primaBrutaMensual * cuotaRestantes
+      codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
 
       return {
         Sponsor: 'TDV Servicios SpA.',
