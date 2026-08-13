@@ -137,6 +137,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       const sexo = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : genero
       const direccion = data.data?.direccion || ''
       const comuna = data.data?.comuna || ''
+      const region = data.data?.region || data.data?.regionNombre || ''
 
       setRefundData(prev => ({
         ...prev,
@@ -145,6 +146,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           sexo,
           direccion,
           comuna,
+          region: prev[refundId]?.region || region,
         },
       }))
 
