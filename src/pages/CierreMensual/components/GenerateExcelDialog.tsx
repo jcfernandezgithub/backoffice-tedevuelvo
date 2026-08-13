@@ -17,6 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+import { computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
 
 interface RefundExcelData {
@@ -27,8 +28,11 @@ interface RefundExcelData {
   comuna: string
 }
 
+type InsuranceMode = 'desgravamen' | 'cesantia'
+
 interface GenerateExcelDialogProps {
   selectedRefunds: RefundRequest[]
+  mode?: InsuranceMode
   onClose?: () => void
 }
 
@@ -42,19 +46,43 @@ const EMPTY_REFUND_DATA: RefundExcelData = {
 
 const DIALOG_PAGE_SIZE = 20
 
-export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelDialogProps) {
+function getInsuranceType(snapshot: any): string {
+  const raw = (snapshot?.insuranceToEvaluate || snapshot?.tipoSeguro || '').toString().toLowerCase()
+  if (raw.includes('ambos') || raw.includes('both') || (raw.includes('desgrav') && raw.includes('cesant'))) {
+    return 'ambos'
+  }
+  if (raw.includes('desgrav')) return 'desgravamen'
+  if (raw.includes('cesant')) return 'cesantia'
+  return 'unknown'
+}
+
+function matchesMode(snapshot: any, mode: InsuranceMode): boolean {
+  const type = getInsuranceType(snapshot)
+  return type === mode || type === 'ambos'
+}
+
+export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onClose }: GenerateExcelDialogProps) {
   const [open, setOpen] = useState(false)
   const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
 
-  const dialogTotalPages = Math.max(1, Math.ceil(selectedRefunds.length / DIALOG_PAGE_SIZE))
+  const filteredRefunds = useMemo(() => {
+    return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
+  }, [selectedRefunds, mode])
+
+  const dialogTotalPages = Math.max(1, Math.ceil(filteredRefunds.length / DIALOG_PAGE_SIZE))
 
   const visibleRefunds = useMemo(() => {
     const start = (dialogPage - 1) * DIALOG_PAGE_SIZE
-    return selectedRefunds.slice(start, start + DIALOG_PAGE_SIZE)
-  }, [selectedRefunds, dialogPage])
+    return filteredRefunds.slice(start, start + DIALOG_PAGE_SIZE)
+  }, [filteredRefunds, dialogPage])
+
+  const isDesgravamen = mode === 'desgravamen'
+  const modeLabel = isDesgravamen ? 'Desgravamen' : 'Cesantía'
+  const modeProducto = isDesgravamen ? 'Fallecimiento' : 'Desempleo'
+  const modeRamo = isDesgravamen ? 'Desgravamen' : 'Cesantía'
 
   const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
     setRefundData(prev => ({
@@ -121,7 +149,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   }
 
   const handleGenerate = async () => {
-    const missingData = selectedRefunds.filter(refund => {
+    const missingData = filteredRefunds.filter(refund => {
       const data = refundData[refund.id] || EMPTY_REFUND_DATA
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
@@ -139,7 +167,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
     let folioByRefundId: Record<string, string> = {}
     try {
       const results = await Promise.all(
-        selectedRefunds.map(async (r) => {
+        filteredRefunds.map(async (r) => {
           try {
             const res = await refundAdminApi.assignFolio(r.publicId)
             return [r.id, res.nroFolio] as const
@@ -153,7 +181,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       // continua con folios vacíos si algo falla
     }
 
-    const missingFolio = selectedRefunds.filter((r) => !folioByRefundId[r.id])
+    const missingFolio = filteredRefunds.filter((r) => !folioByRefundId[r.id])
     if (missingFolio.length > 0) {
       toast({
         title: 'Error al asignar folios',
@@ -163,7 +191,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       return
     }
 
-    const excelData = selectedRefunds.map((refund) => {
+    const excelData = filteredRefunds.map((refund) => {
       const data = refundData[refund.id]
       const calculation = refund.calculationSnapshot || {}
       const rut = refund.rut || ''
@@ -171,13 +199,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const rutNumber = rutParts[0].replace(/\./g, '')
       const rutDV = rutParts[1] || ''
 
-      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
-        calculation,
-        refund.institutionId,
-      )
-      const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
       const cuotaRestantes = calculation.remainingInstallments || 0
-      const primaSeguro = primaBruta * cuotaRestantes
 
       const paymentScheduledEntry = refund.statusHistory?.find(
         entry => entry.to === 'payment_scheduled'
@@ -215,13 +237,32 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
-      const codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+
+      let primaSeguro = 0
+      let codigoProducto = '342'
+      let capitalAsegurado = saldoInsoluto
+
+      if (isDesgravamen) {
+        const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
+          calculation,
+          refund.institutionId,
+        )
+        const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
+        primaSeguro = primaBruta * cuotaRestantes
+        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+      } else {
+        // Cesantía: prima única sobre saldo insoluto × tasa × cuotas restantes
+        primaSeguro = computePureCesantiaTotalTDV(calculation) || 0
+        // TODO: ajustar código de producto y capital asegurado según formato real de Cesantía
+        codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+        capitalAsegurado = saldoInsoluto
+      }
 
       return {
         Sponsor: 'TDV Servicios SpA.',
         'Rut Empresa': '78168126-1',
-        'Ramo comercial': 'Desgravamen',
-        Producto: 'Fallecimiento',
+        'Ramo comercial': modeRamo,
+        Producto: modeProducto,
         'Poliza N°': data.policyNumber,
         'Número del certificado (Folio)': folioByRefundId[refund.id] || '',
         'Rut Cliente': rutNumber,
@@ -237,7 +278,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         Vigencia_Hasta: vigenciaHasta,
         'Plazo Meses': cuotaRestantes,
         'Codigo_De_credito_o Nro de operación': data.creditCode,
-        'Capital Asegurado': calculation.averageInsuredBalance || 0,
+        'Capital Asegurado': capitalAsegurado,
         'Corre electrónico': refund.email,
         'Dirección particular': data?.direccion || 'N/A',
         Comuna: data?.comuna || 'N/A',
@@ -245,12 +286,12 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
     })
 
-    const fileName = `solicitudes_${new Date().toISOString().split('T')[0]}`
+    const fileName = `solicitudes_${mode}_${new Date().toISOString().split('T')[0]}`
     exportXLSX(excelData, fileName)
 
     toast({
       title: 'Excel generado',
-      description: `Se generó el archivo con ${selectedRefunds.length} solicitudes`,
+      description: `Se generó el archivo de ${modeLabel} con ${filteredRefunds.length} solicitud(es)`,
     })
 
     setOpen(false)
@@ -271,7 +312,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         }
         // Pre-fill from calculationSnapshot
         const initial: Record<string, RefundExcelData> = {}
-        selectedRefunds.forEach(r => {
+        filteredRefunds.forEach(r => {
           const snap = r.calculationSnapshot || {}
           initial[r.id] = {
             ...EMPTY_REFUND_DATA,
@@ -286,17 +327,17 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="default" disabled={selectedRefunds.length === 0} className="gap-2">
+        <Button variant="default" disabled={filteredRefunds.length === 0} className="gap-2">
           <FileSpreadsheet className="h-4 w-4" />
-          Archivo Altas CIA Desgravamen ({selectedRefunds.length})
+          Archivo Altas CIA {modeLabel} ({filteredRefunds.length})
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Generar Excel de Altas CIA - Desgravamen</DialogTitle>
+          <DialogTitle>Generar Excel de Altas CIA - {modeLabel}</DialogTitle>
           <DialogDescription>
-            Se generará un archivo Excel con {selectedRefunds.length} solicitud(es) seleccionada(s) del tipo Desgravamen. Complete la información
+            Se generará un archivo Excel con {filteredRefunds.length} solicitud(es) seleccionada(s) del tipo {modeLabel}. Complete la información
             requerida para cada solicitud:
           </DialogDescription>
         </DialogHeader>
@@ -304,7 +345,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         {dialogTotalPages > 1 && (
           <div className="flex items-center justify-between px-1 pb-2">
             <span className="text-sm text-muted-foreground">
-              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, selectedRefunds.length)} de {selectedRefunds.length}
+              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, filteredRefunds.length)} de {filteredRefunds.length}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -344,6 +385,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
             const data = refundData[refund.id] || EMPTY_REFUND_DATA
             const isComplete = Boolean(data.policyNumber?.trim() && data.creditCode?.trim() && data.sexo?.trim())
             const isExpanded = expandedRefundId === refund.id
+            const isAmbos = getInsuranceType(refund.calculationSnapshot) === 'ambos'
 
             return (
               <div key={refund.id} className="border-b">
@@ -358,6 +400,11 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                     <div className="min-w-0">
                       <div className="font-medium">
                         Solicitud {globalIndex + 1}: {refund.fullName}
+                        {isAmbos && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                            AMBOS
+                          </span>
+                        )}
                       </div>
                       <div className="break-all text-sm text-muted-foreground">
                         {refund.publicId} • {refund.rut}
