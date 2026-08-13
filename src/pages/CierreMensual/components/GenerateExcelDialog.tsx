@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
@@ -19,6 +19,7 @@ import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { computeCesantiaTdvDetail } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { getUfValue, formatUf } from '@/services/ufService'
 
 interface RefundExcelData {
   policyNumber: string
@@ -82,6 +83,29 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
   const [ufValue, setUfValue] = useState('')
+  const [ufStatus, setUfStatus] = useState<'idle' | 'loading' | 'ok' | 'fallback' | 'error'>('idle')
+  const [ufDate, setUfDate] = useState<string | null>(null)
+  const [ufTouched, setUfTouched] = useState(false)
+
+  const loadUf = useCallback(async () => {
+    setUfStatus('loading')
+    try {
+      const result = await getUfValue(new Date())
+      setUfValue(formatUf(result.value))
+      setUfDate(result.date)
+      setUfTouched(false)
+      setUfStatus(result.isFallback ? 'fallback' : 'ok')
+    } catch {
+      setUfDate(null)
+      setUfStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open && mode === 'cesantia' && !ufTouched && ufStatus === 'idle') {
+      void loadUf()
+    }
+  }, [open, mode, ufTouched, ufStatus, loadUf])
 
   const filteredRefunds = useMemo(() => {
     return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
