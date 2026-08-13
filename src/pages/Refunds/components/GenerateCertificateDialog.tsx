@@ -637,6 +637,9 @@ export function GenerateCertificateDialog({ refund, isMandateSigned = false, cer
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
+      // Persistir datos personales editados en el snapshot antes de generar el PDF
+      await savePersonalInformation()
+
       let pdfBlob: Blob | undefined
 
 
