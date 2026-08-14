@@ -29,7 +29,6 @@ interface RefundExcelData {
   comuna: string
   region: string
   valorCuota: string
-  tasaCredito: string
 }
 
 type InsuranceMode = 'desgravamen' | 'cesantia'
@@ -48,7 +47,6 @@ const EMPTY_REFUND_DATA: RefundExcelData = {
   comuna: '',
   region: '',
   valorCuota: '',
-  tasaCredito: '',
 }
 
 const DIALOG_PAGE_SIZE = 20
