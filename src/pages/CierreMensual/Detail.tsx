@@ -130,9 +130,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
   // Datos del crédito requeridos al pasar a "Documentos recibidos"
-  const [creditFields, setCreditFields] = useState<{ cuotaActual: string; valorTasa: string }>({
+  const [creditFields, setCreditFields] = useState<{ cuotaActual: string }>({
     cuotaActual: '',
-    valorTasa: '',
   })
   const [savingCreditFields, setSavingCreditFields] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
@@ -319,7 +318,6 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
 
       if (requiresCreditData) {
         const cuotaActual = Number(String(creditFields.cuotaActual).replace(/[^0-9.]/g, ''))
-        const valorTasa = Number(String(creditFields.valorTasa).replace(/[^0-9.]/g, ''))
 
         if (!Number.isFinite(cuotaActual) || cuotaActual <= 0) {
           toast({
@@ -329,20 +327,11 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
           })
           return
         }
-        if (!Number.isFinite(valorTasa) || valorTasa <= 0) {
-          toast({
-            title: 'Tasa requerida',
-            description: 'Ingresa la tasa del crédito para continuar',
-            variant: 'destructive',
-          })
-          return
-        }
 
         // Guardar sólo los campos modificados vía PATCH /personal-information
         const current: any = refund || {}
-        const patch: { cuotaActual?: number; valorTasa?: number } = {}
+        const patch: { cuotaActual?: number } = {}
         if (Number(current.cuotaActual) !== cuotaActual) patch.cuotaActual = cuotaActual
-        if (Number(current.valorTasa) !== valorTasa) patch.valorTasa = valorTasa
 
         if (Object.keys(patch).length > 0) {
           try {
@@ -354,12 +343,12 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
             )
             toast({
               title: 'Datos del crédito guardados',
-              description: 'Se guardaron el valor cuota y la tasa del crédito',
+              description: 'Se guardó el valor de la cuota actual del crédito',
             })
           } catch (e: any) {
             toast({
               title: 'Error al guardar datos del crédito',
-              description: e?.message || 'No se pudieron guardar el valor cuota y la tasa',
+              description: e?.message || 'No se pudo guardar el valor de la cuota actual',
               variant: 'destructive',
             })
             return
@@ -673,10 +662,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                 })
                 const r: any = refund
                 const cuota = r.cuotaActual ?? snap.cuotaActual ?? snap.valorCuota ?? null
-                const tasa = r.valorTasa ?? snap.valorTasa ?? snap.tasa ?? null
                 setCreditFields({
                   cuotaActual: cuota != null && cuota !== '' ? String(cuota) : '',
-                  valorTasa: tasa != null && tasa !== '' ? String(tasa) : '',
                 })
               }
             }}>
@@ -781,51 +768,31 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                     <p className="text-sm font-semibold text-primary">
                       Datos del crédito contratado <span className="text-destructive">*</span>
                     </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Valor cuota actual (CLP)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
-                          <Input
-                            inputMode="numeric"
-                            value={creditFields.cuotaActual}
-                            onChange={(e) =>
-                              setCreditFields((prev) => ({
-                                ...prev,
-                                cuotaActual: e.target.value.replace(/[^0-9]/g, ''),
-                              }))
-                            }
-                            placeholder="350000"
-                            className="pl-7"
-                          />
-                        </div>
-                        {creditFields.cuotaActual && (
-                          <p className="text-xs text-muted-foreground">
-                            ${formatCLPNumber(Number(creditFields.cuotaActual))} CLP
-                          </p>
-                        )}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Valor cuota actual (CLP)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                        <Input
+                          inputMode="numeric"
+                          value={creditFields.cuotaActual}
+                          onChange={(e) =>
+                            setCreditFields((prev) => ({
+                              ...prev,
+                              cuotaActual: e.target.value.replace(/[^0-9]/g, ''),
+                            }))
+                          }
+                          placeholder="350000"
+                          className="pl-7"
+                        />
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Tasa del crédito (%)</Label>
-                        <div className="relative">
-                          <Input
-                            inputMode="decimal"
-                            value={creditFields.valorTasa}
-                            onChange={(e) =>
-                              setCreditFields((prev) => ({
-                                ...prev,
-                                valorTasa: e.target.value.replace(/[^0-9.]/g, ''),
-                              }))
-                            }
-                            placeholder="1.25"
-                            className="pr-7"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                        </div>
-                      </div>
+                      {creditFields.cuotaActual && (
+                        <p className="text-xs text-muted-foreground">
+                          ${formatCLPNumber(Number(creditFields.cuotaActual))} CLP
+                        </p>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Se guardarán en la solicitud al confirmar el cambio de estado.
+                      Se guardará en la solicitud al confirmar el cambio de estado.
                     </p>
                   </div>
                 )}
