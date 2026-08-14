@@ -130,9 +130,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
   // Datos del crédito requeridos al pasar a "Documentos recibidos"
-  const [creditFields, setCreditFields] = useState<{ cuotaActual: string; valorTasa: string }>({
+  const [creditFields, setCreditFields] = useState<{ cuotaActual: string }>({
     cuotaActual: '',
-    valorTasa: '',
   })
   const [savingCreditFields, setSavingCreditFields] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
@@ -673,10 +672,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                 })
                 const r: any = refund
                 const cuota = r.cuotaActual ?? snap.cuotaActual ?? snap.valorCuota ?? null
-                const tasa = r.valorTasa ?? snap.valorTasa ?? snap.tasa ?? null
                 setCreditFields({
                   cuotaActual: cuota != null && cuota !== '' ? String(cuota) : '',
-                  valorTasa: tasa != null && tasa !== '' ? String(tasa) : '',
                 })
               }
             }}>
