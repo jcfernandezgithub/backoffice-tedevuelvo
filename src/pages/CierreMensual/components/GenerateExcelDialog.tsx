@@ -395,6 +395,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           'SALDO INSOLUTO*': detail?.saldoInsoluto || saldoInsoluto,
           'PLAZO*': detail?.remainingInstallments || cuotaRestantes,
           'Valor Cuota*': data?.valorCuota ? Number(String(data.valorCuota).replace(/\./g, '').replace(',', '.')) : '',
+          'Tasa* credito': '',
           'Prima bruta CLP*': primaBruta,
           'Prima neta CLP*': Math.round(primaNeta),
           'Prima Neta UF (Uf del día de venta)': round2(primaNetaUF),
