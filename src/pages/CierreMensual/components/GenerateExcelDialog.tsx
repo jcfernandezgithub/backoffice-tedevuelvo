@@ -142,11 +142,6 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
         ? Math.round(cuotaRaw).toLocaleString('es-CL')
         : ''
 
-      const tasaRaw = refund?.valorTasa ?? snap?.valorTasa ?? null
-      const tasaCredito = typeof tasaRaw === 'number' && tasaRaw >= 0
-        ? `${String(tasaRaw).replace('.', ',')}%`
-        : ''
-
       return {
         policyNumber: String(snap?.nroPoliza || '').trim(),
         creditCode: String(snap?.nroCredito || '').trim(),
@@ -154,7 +149,6 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
         direccion: String(refund?.direccion ?? snap?.direccion ?? '').trim(),
         comuna: String(refund?.comuna ?? snap?.comuna ?? '').trim(),
         valorCuota,
-        tasaCredito,
       }
     }
 
@@ -401,7 +395,6 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           'SALDO INSOLUTO*': detail?.saldoInsoluto || saldoInsoluto,
           'PLAZO*': detail?.remainingInstallments || cuotaRestantes,
           'Valor Cuota*': data?.valorCuota ? Number(String(data.valorCuota).replace(/\./g, '').replace(',', '.')) : '',
-          'Tasa* credito': data?.tasaCredito || '',
           'Prima bruta CLP*': primaBruta,
           'Prima neta CLP*': Math.round(primaNeta),
           'Prima Neta UF (Uf del día de venta)': round2(primaNetaUF),
@@ -602,7 +595,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           {prefilling && (
             <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Precargando datos guardados (sexo, dirección, comuna, cuota, tasa)… {prefilledCount}/{filteredRefunds.length}
+              Precargando datos guardados (sexo, dirección, comuna, cuota)… {prefilledCount}/{filteredRefunds.length}
             </div>
           )}
           {visibleRefunds.map((refund, index) => {
@@ -616,8 +609,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                   data.sexo?.trim() &&
                   data.direccion?.trim() &&
                   data.comuna?.trim() &&
-                  data.valorCuota?.trim() &&
-                  data.tasaCredito?.trim()
+                  data.valorCuota?.trim()
                 )
             const isExpanded = expandedRefundId === refund.id
             const isAmbos = getInsuranceType(refund.calculationSnapshot) === 'ambos'
@@ -755,26 +747,15 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
                           Corresponden al crédito contratado, no al cliente. Se precargan desde la solicitud.
                         </p>
 
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-2">
-                            <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito *</Label>
-                            <Input
-                              id={`cuota-${refund.id}`}
-                              value={data.valorCuota}
-                              onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
-                              placeholder="Ej: 235.253"
-                              inputMode="decimal"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor={`tasa-${refund.id}`}>Tasa del crédito *</Label>
-                            <Input
-                              id={`tasa-${refund.id}`}
-                              value={data.tasaCredito}
-                              onChange={(e) => updateRefundData(refund.id, 'tasaCredito', e.target.value)}
-                              placeholder="Ej: 1,25%"
-                            />
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito *</Label>
+                          <Input
+                            id={`cuota-${refund.id}`}
+                            value={data.valorCuota}
+                            onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
+                            placeholder="Ej: 235.253"
+                            inputMode="decimal"
+                          />
                         </div>
                       </div>
                     )}
