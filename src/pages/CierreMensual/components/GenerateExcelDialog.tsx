@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileSpreadsheet, Loader2, RefreshCw } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
 import { toast } from '@/hooks/use-toast'
 import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+import { computeCesantiaTdvDetail } from '@/lib/insuranceBreakdownUtils'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { getUfValue, formatUf } from '@/services/ufService'
 
 interface RefundExcelData {
   policyNumber: string
@@ -25,10 +27,15 @@ interface RefundExcelData {
   sexo: string
   direccion: string
   comuna: string
+  region: string
+  valorCuota: string
 }
+
+type InsuranceMode = 'desgravamen' | 'cesantia'
 
 interface GenerateExcelDialogProps {
   selectedRefunds: RefundRequest[]
+  mode?: InsuranceMode
   onClose?: () => void
 }
 
@@ -38,23 +45,158 @@ const EMPTY_REFUND_DATA: RefundExcelData = {
   sexo: '',
   direccion: '',
   comuna: '',
+  region: '',
+  valorCuota: '',
 }
 
 const DIALOG_PAGE_SIZE = 20
 
-export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelDialogProps) {
+// Constantes del formato de altas Cesantía (Southbridge)
+const CESANTIA_POLIZA_MAESTRA = '20123902'
+const CESANTIA_PRODUCTO_SBINS = 'Desempleo'
+const CESANTIA_ESTADO = 'Vigente'
+const IVA_FACTOR = 1.19
+const COMISION_INTERMEDIACION = 0.1
+const COMISION_RECAUDACION = 0.2
+
+function getInsuranceType(snapshot: any): string {
+  const raw = (snapshot?.insuranceToEvaluate || snapshot?.tipoSeguro || '').toString().toLowerCase()
+  if (raw.includes('ambos') || raw.includes('both') || (raw.includes('desgrav') && raw.includes('cesant'))) {
+    return 'ambos'
+  }
+  if (raw.includes('desgrav')) return 'desgravamen'
+  if (raw.includes('cesant')) return 'cesantia'
+  return 'unknown'
+}
+
+function matchesMode(snapshot: any, mode: InsuranceMode): boolean {
+  const type = getInsuranceType(snapshot)
+  return type === mode || type === 'ambos'
+}
+
+export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onClose }: GenerateExcelDialogProps) {
   const [open, setOpen] = useState(false)
   const [refundData, setRefundData] = useState<Record<string, RefundExcelData>>({})
   const [loadingRut, setLoadingRut] = useState<string | null>(null)
   const [dialogPage, setDialogPage] = useState(1)
   const [expandedRefundId, setExpandedRefundId] = useState<string | null>(null)
+  const [ufValue, setUfValue] = useState('')
+  const [ufStatus, setUfStatus] = useState<'idle' | 'loading' | 'ok' | 'fallback' | 'error'>('idle')
+  const [ufDate, setUfDate] = useState<string | null>(null)
+  const [ufTouched, setUfTouched] = useState(false)
+  const [prefilling, setPrefilling] = useState(false)
+  const [prefilledCount, setPrefilledCount] = useState(0)
 
-  const dialogTotalPages = Math.max(1, Math.ceil(selectedRefunds.length / DIALOG_PAGE_SIZE))
+  const loadUf = useCallback(async () => {
+    setUfStatus('loading')
+    try {
+      const result = await getUfValue(new Date())
+      setUfValue(formatUf(result.value))
+      setUfDate(result.date)
+      setUfTouched(false)
+      setUfStatus(result.isFallback ? 'fallback' : 'ok')
+    } catch {
+      setUfDate(null)
+      setUfStatus('error')
+    }
+  }, [])
+
+  useEffect(() => {
+    if (open && mode === 'cesantia' && !ufTouched && ufStatus === 'idle') {
+      void loadUf()
+    }
+  }, [open, mode, ufTouched, ufStatus, loadUf])
+
+  const filteredRefunds = useMemo(() => {
+    return selectedRefunds.filter(r => matchesMode(r.calculationSnapshot, mode))
+  }, [selectedRefunds, mode])
+
+  // Precarga de datos personales ya guardados en la solicitud (sexo, dirección, comuna)
+  // + póliza / nº crédito desde el snapshot. No sobreescribe lo que el usuario ya escribió.
+  useEffect(() => {
+    if (!open || filteredRefunds.length === 0) return
+    let cancelled = false
+
+    const mergePrefill = (refundId: string, incoming: Partial<RefundExcelData>) => {
+      setRefundData(prev => {
+        const current = prev[refundId] || EMPTY_REFUND_DATA
+        const next = { ...current }
+        let changed = false
+        for (const [key, value] of Object.entries(incoming) as [keyof RefundExcelData, string][]) {
+          if (value && !String(current[key] || '').trim()) {
+            next[key] = value
+            changed = true
+          }
+        }
+        return changed ? { ...prev, [refundId]: next } : prev
+      })
+    }
+
+    const fromRefund = (refund: any): Partial<RefundExcelData> => {
+      const snap = refund?.calculationSnapshot || {}
+      const rawSexo = String(refund?.sexo ?? snap?.sexo ?? '').trim().toUpperCase()
+      const sexo = rawSexo === 'MUJ' || rawSexo.startsWith('F') ? 'F' : rawSexo === 'VAR' || rawSexo.startsWith('M') ? 'M' : ''
+
+      const cuotaRaw = refund?.cuotaActual ?? snap?.cuotaActual ?? null
+      const valorCuota = typeof cuotaRaw === 'number' && cuotaRaw > 0
+        ? Math.round(cuotaRaw).toLocaleString('es-CL')
+        : ''
+
+      return {
+        policyNumber: String(snap?.nroPoliza || '').trim(),
+        creditCode: String(snap?.nroCredito || '').trim(),
+        sexo,
+        direccion: String(refund?.direccion ?? snap?.direccion ?? '').trim(),
+        comuna: String(refund?.comuna ?? snap?.comuna ?? '').trim(),
+        valorCuota,
+      }
+    }
+
+    // 1) Inmediato: con lo que ya tenemos en memoria
+    filteredRefunds.forEach(refund => mergePrefill(refund.id, fromRefund(refund)))
+
+    // 2) Refresco desde el backend para traer datos guardados posteriormente
+    const run = async () => {
+      setPrefilling(true)
+      setPrefilledCount(0)
+      const CONCURRENCY = 5
+      const queue = [...filteredRefunds]
+      const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+        while (queue.length > 0 && !cancelled) {
+          const refund = queue.shift()!
+          try {
+            const detail = await refundAdminApi.getById(refund.publicId)
+            if (cancelled) return
+            mergePrefill(refund.id, fromRefund(detail))
+          } catch {
+            // silencioso: el usuario puede completar manualmente
+          } finally {
+            if (!cancelled) setPrefilledCount(c => c + 1)
+          }
+        }
+      })
+      await Promise.all(workers)
+      if (!cancelled) setPrefilling(false)
+    }
+
+    void run()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, filteredRefunds])
+
+  const dialogTotalPages = Math.max(1, Math.ceil(filteredRefunds.length / DIALOG_PAGE_SIZE))
 
   const visibleRefunds = useMemo(() => {
     const start = (dialogPage - 1) * DIALOG_PAGE_SIZE
-    return selectedRefunds.slice(start, start + DIALOG_PAGE_SIZE)
-  }, [selectedRefunds, dialogPage])
+    return filteredRefunds.slice(start, start + DIALOG_PAGE_SIZE)
+  }, [filteredRefunds, dialogPage])
+
+  const isDesgravamen = mode === 'desgravamen'
+  const modeLabel = isDesgravamen ? 'Desgravamen' : 'Cesantía'
+  const modeProducto = isDesgravamen ? 'Fallecimiento' : 'Desempleo'
+  const modeRamo = isDesgravamen ? 'Desgravamen' : 'Cesantía'
 
   const updateRefundData = (refundId: string, field: keyof RefundExcelData, value: string) => {
     setRefundData(prev => ({
@@ -94,6 +236,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       const sexo = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : genero
       const direccion = data.data?.direccion || ''
       const comuna = data.data?.comuna || ''
+      const region = data.data?.region || data.data?.regionNombre || ''
 
       setRefundData(prev => ({
         ...prev,
@@ -102,6 +245,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           sexo,
           direccion,
           comuna,
+          region: prev[refundId]?.region || region,
         },
       }))
 
@@ -121,12 +265,24 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
   }
 
   const handleGenerate = async () => {
-    const missingData = selectedRefunds.filter(refund => {
+    const missingData = filteredRefunds.filter(refund => {
       const data = refundData[refund.id] || EMPTY_REFUND_DATA
       return !data?.policyNumber?.trim() || !data?.creditCode?.trim()
     })
 
-    if (missingData.length > 0) {
+    if (!isDesgravamen) {
+      const uf = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
+      if (!uf || uf <= 0) {
+        toast({
+          title: 'Falta el valor de la UF',
+          description: 'Ingresa el valor de la UF del día del cierre para calcular la prima neta en UF',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (isDesgravamen && missingData.length > 0) {
       toast({
         title: 'Error',
         description: `Debes completar la información de ${missingData.length} solicitud(es)`,
@@ -135,11 +291,13 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       return
     }
 
+    const ufDelDia = Number(String(ufValue).replace(/\./g, '').replace(',', '.'))
+
     // Asignar/obtener nroFolio para cada solicitud en paralelo
     let folioByRefundId: Record<string, string> = {}
     try {
       const results = await Promise.all(
-        selectedRefunds.map(async (r) => {
+        filteredRefunds.map(async (r) => {
           try {
             const res = await refundAdminApi.assignFolio(r.publicId)
             return [r.id, res.nroFolio] as const
@@ -153,7 +311,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       // continua con folios vacíos si algo falla
     }
 
-    const missingFolio = selectedRefunds.filter((r) => !folioByRefundId[r.id])
+    const missingFolio = filteredRefunds.filter((r) => !folioByRefundId[r.id])
     if (missingFolio.length > 0) {
       toast({
         title: 'Error al asignar folios',
@@ -163,21 +321,15 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       return
     }
 
-    const excelData = selectedRefunds.map((refund) => {
-      const data = refundData[refund.id]
+    const excelData = filteredRefunds.map((refund) => {
+      const data = refundData[refund.id] || EMPTY_REFUND_DATA
       const calculation = refund.calculationSnapshot || {}
       const rut = refund.rut || ''
       const rutParts = rut.split('-')
       const rutNumber = rutParts[0].replace(/\./g, '')
       const rutDV = rutParts[1] || ''
 
-      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
-        calculation,
-        refund.institutionId,
-      )
-      const primaBruta = derivedNew || calculation.newMonthlyPremium || 0
       const cuotaRestantes = calculation.remainingInstallments || 0
-      const primaSeguro = primaBruta * cuotaRestantes
 
       const paymentScheduledEntry = refund.statusHistory?.find(
         entry => entry.to === 'payment_scheduled'
@@ -215,13 +367,61 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
-      const codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+
+      if (!isDesgravamen) {
+        const detail = computeCesantiaTdvDetail(calculation)
+        const primaBruta = detail?.primaBruta || 0
+        const primaNeta = primaBruta / IVA_FACTOR
+        const primaNetaUF = ufDelDia > 0 ? primaNeta / ufDelDia : 0
+        const round2 = (n: number) => Math.round(n * 100) / 100
+
+        return {
+          ID: refund.publicId,
+          'Producto_SBINS*': CESANTIA_PRODUCTO_SBINS,
+          'Fecha_Inicio_Vigencia*': vigenciaDesde,
+          'Fecha_Termino_Vigencia*': vigenciaHasta,
+          Estado: CESANTIA_ESTADO,
+          'Poliza*': CESANTIA_POLIZA_MAESTRA,
+          'Certificado*': folioByRefundId[refund.id] || '',
+          'Nombre_Asegurado*': refund.fullName,
+          'Rut_Asegurado*': rutNumber,
+          'DV_Asegurado*': rutDV,
+          'Fecha de nacimiento': fechaNacimiento,
+          'Telefono_Asegurado*': refund.phone || '',
+          'Mail_Asegurado*': refund.email || '',
+          'Dirección_Asegurado*': data?.direccion || '',
+          'Comuna_Asegurado*': data?.comuna || '',
+          'Región_Asegurado*': data?.region || '',
+          'SALDO INSOLUTO*': detail?.saldoInsoluto || saldoInsoluto,
+          'PLAZO*': detail?.remainingInstallments || cuotaRestantes,
+          'Valor Cuota*': data?.valorCuota ? Number(String(data.valorCuota).replace(/\./g, '').replace(',', '.')) : '',
+          'Tasa* credito': '',
+          'Prima bruta CLP*': primaBruta,
+          'Prima neta CLP*': Math.round(primaNeta),
+          'Prima Neta UF (Uf del día de venta)': round2(primaNetaUF),
+          'Comisión neta Intermediacion (UF)': round2(primaNetaUF * COMISION_INTERMEDIACION),
+          'Comisión neta recaudación (UF)': round2(primaNetaUF * COMISION_RECAUDACION),
+          Tasa: detail ? `${(detail.tasaMensual * 100).toFixed(3)}%` : '',
+        }
+      }
+
+      let primaSeguro = 0
+      let codigoProducto = '342'
+      let capitalAsegurado = saldoInsoluto
+
+      const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
+        calculation,
+        refund.institutionId,
+      )
+      const primaBrutaMensual = derivedNew || calculation.newMonthlyPremium || 0
+      primaSeguro = primaBrutaMensual * cuotaRestantes
+      codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
 
       return {
         Sponsor: 'TDV Servicios SpA.',
         'Rut Empresa': '78168126-1',
-        'Ramo comercial': 'Desgravamen',
-        Producto: 'Fallecimiento',
+        'Ramo comercial': modeRamo,
+        Producto: modeProducto,
         'Poliza N°': data.policyNumber,
         'Número del certificado (Folio)': folioByRefundId[refund.id] || '',
         'Rut Cliente': rutNumber,
@@ -237,7 +437,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         Vigencia_Hasta: vigenciaHasta,
         'Plazo Meses': cuotaRestantes,
         'Codigo_De_credito_o Nro de operación': data.creditCode,
-        'Capital Asegurado': calculation.averageInsuredBalance || 0,
+        'Capital Asegurado': capitalAsegurado,
         'Corre electrónico': refund.email,
         'Dirección particular': data?.direccion || 'N/A',
         Comuna: data?.comuna || 'N/A',
@@ -245,12 +445,12 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
     })
 
-    const fileName = `solicitudes_${new Date().toISOString().split('T')[0]}`
+    const fileName = `solicitudes_${mode}_${new Date().toISOString().split('T')[0]}`
     exportXLSX(excelData, fileName)
 
     toast({
       title: 'Excel generado',
-      description: `Se generó el archivo con ${selectedRefunds.length} solicitudes`,
+      description: `Se generó el archivo de ${modeLabel} con ${filteredRefunds.length} solicitud(es)`,
     })
 
     setOpen(false)
@@ -271,7 +471,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         }
         // Pre-fill from calculationSnapshot
         const initial: Record<string, RefundExcelData> = {}
-        selectedRefunds.forEach(r => {
+        filteredRefunds.forEach(r => {
           const snap = r.calculationSnapshot || {}
           initial[r.id] = {
             ...EMPTY_REFUND_DATA,
@@ -286,25 +486,79 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="default" disabled={selectedRefunds.length === 0} className="gap-2">
+        <Button variant="default" disabled={filteredRefunds.length === 0} className="gap-2">
           <FileSpreadsheet className="h-4 w-4" />
-          Archivo Altas CIA. ({selectedRefunds.length})
+          Archivo Altas CIA {modeLabel} ({filteredRefunds.length})
         </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Generar Excel de Solicitudes</DialogTitle>
+          <DialogTitle>Generar Excel de Altas CIA - {modeLabel}</DialogTitle>
           <DialogDescription>
-            Se generará un archivo Excel con {selectedRefunds.length} solicitud(es) seleccionada(s). Complete la información
+            Se generará un archivo Excel con {filteredRefunds.length} solicitud(es) seleccionada(s) del tipo {modeLabel}. Complete la información
             requerida para cada solicitud:
           </DialogDescription>
         </DialogHeader>
 
+        {!isDesgravamen && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="w-full space-y-1 sm:max-w-xs">
+              <Label htmlFor="uf-cierre">Valor UF del día del cierre *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="uf-cierre"
+                  value={ufValue}
+                  onChange={(e) => {
+                    setUfTouched(true)
+                    setUfValue(e.target.value)
+                  }}
+                  placeholder={ufStatus === 'loading' ? 'Obteniendo UF…' : 'Ej: 40.150,25'}
+                  inputMode="decimal"
+                  disabled={ufStatus === 'loading'}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => void loadUf()}
+                  disabled={ufStatus === 'loading'}
+                  title="Volver a obtener la UF de hoy"
+                >
+                  {ufStatus === 'loading'
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <RefreshCw className="h-4 w-4" />}
+                </Button>
+              </div>
+              {ufStatus === 'ok' && !ufTouched && (
+                <p className="flex items-center gap-1 text-xs text-emerald-600">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> UF de hoy obtenida automáticamente
+                </p>
+              )}
+              {ufStatus === 'fallback' && !ufTouched && ufDate && (
+                <p className="flex items-center gap-1 text-xs text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Hoy aún no está publicada; se usa la UF del {ufDate}
+                </p>
+              )}
+              {ufStatus === 'error' && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertTriangle className="h-3.5 w-3.5" /> No se pudo obtener la UF. Ingrésala manualmente.
+                </p>
+              )}
+              {ufTouched && (
+                <p className="text-xs text-muted-foreground">Valor ingresado manualmente</p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground sm:max-w-xs">
+              Se usa para convertir la prima neta a UF y calcular las comisiones de intermediación (10%) y recaudación (20%).
+            </p>
+          </div>
+        )}
+
         {dialogTotalPages > 1 && (
           <div className="flex items-center justify-between px-1 pb-2">
             <span className="text-sm text-muted-foreground">
-              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, selectedRefunds.length)} de {selectedRefunds.length}
+              Mostrando {(dialogPage - 1) * DIALOG_PAGE_SIZE + 1}-{Math.min(dialogPage * DIALOG_PAGE_SIZE, filteredRefunds.length)} de {filteredRefunds.length}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -339,18 +593,37 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         )}
 
         <div className="max-h-[50vh] overflow-y-auto pr-2">
+          {prefilling && (
+            <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Precargando datos guardados (sexo, dirección, comuna, cuota)… {prefilledCount}/{filteredRefunds.length}
+            </div>
+          )}
           {visibleRefunds.map((refund, index) => {
             const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
             const data = refundData[refund.id] || EMPTY_REFUND_DATA
-            const isComplete = Boolean(data.policyNumber?.trim() && data.creditCode?.trim() && data.sexo?.trim())
+            const isComplete = isDesgravamen
+              ? Boolean(data.policyNumber?.trim() && data.creditCode?.trim() && data.sexo?.trim())
+              : Boolean(
+                  data.policyNumber?.trim() &&
+                  data.creditCode?.trim() &&
+                  data.sexo?.trim() &&
+                  data.direccion?.trim() &&
+                  data.comuna?.trim() &&
+                  data.valorCuota?.trim()
+                )
             const isExpanded = expandedRefundId === refund.id
+            const isAmbos = getInsuranceType(refund.calculationSnapshot) === 'ambos'
 
             return (
-              <div key={refund.id} className="border-b">
+              <div
+                key={refund.id}
+                className={`border-b transition-colors ${isComplete ? 'border-l-2 border-l-green-500 bg-green-500/5' : ''}`}
+              >
                 <button
                   type="button"
                   onClick={() => setExpandedRefundId((current) => (current === refund.id ? null : refund.id))}
-                  className="flex w-full items-center justify-between gap-4 rounded-sm py-4 text-left transition-colors hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex w-full items-center justify-between gap-4 rounded-sm px-2 py-4 text-left transition-colors hover:bg-muted/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   aria-expanded={isExpanded}
                 >
                   <div className="flex min-w-0 items-center gap-3 text-left">
@@ -358,6 +631,20 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                     <div className="min-w-0">
                       <div className="font-medium">
                         Solicitud {globalIndex + 1}: {refund.fullName}
+                        {isAmbos && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                            AMBOS
+                          </span>
+                        )}
+                        <span
+                          className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                            isComplete
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200'
+                          }`}
+                        >
+                          {isComplete ? 'Datos completos' : 'Faltan datos'}
+                        </span>
                       </div>
                       <div className="break-all text-sm text-muted-foreground">
                         {refund.publicId} • {refund.rut}
@@ -435,7 +722,44 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
                           placeholder="Ej: Providencia"
                         />
                       </div>
+
+                      {!isDesgravamen && (
+                        <div className="space-y-2">
+                          <Label htmlFor={`region-${refund.id}`}>
+                            Región <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                          </Label>
+                          <Input
+                            id={`region-${refund.id}`}
+                            value={data.region}
+                            onChange={(e) => updateRefundData(refund.id, 'region', e.target.value)}
+                            placeholder="Ej: Metropolitana"
+                          />
+                        </div>
+                      )}
                     </div>
+
+                    {!isDesgravamen && (
+                      <div className="space-y-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                          <div className="h-1 w-1 rounded-full bg-primary" />
+                          Datos del crédito
+                        </div>
+                        <p className="-mt-2 text-xs text-muted-foreground">
+                          Corresponden al crédito contratado, no al cliente. Se precargan desde la solicitud.
+                        </p>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`cuota-${refund.id}`}>Valor cuota del crédito *</Label>
+                          <Input
+                            id={`cuota-${refund.id}`}
+                            value={data.valorCuota}
+                            onChange={(e) => updateRefundData(refund.id, 'valorCuota', e.target.value)}
+                            placeholder="Ej: 235.253"
+                            inputMode="decimal"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

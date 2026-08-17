@@ -129,6 +129,11 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const [snapshotFields, setSnapshotFields] = useState({ nroPoliza: '', nroCredito: '' })
+  // Datos del crédito requeridos al pasar a "Documentos recibidos"
+  const [creditFields, setCreditFields] = useState<{ cuotaActual: string }>({
+    cuotaActual: '',
+  })
+  const [savingCreditFields, setSavingCreditFields] = useState(false)
   const [updateForm, setUpdateForm] = useState<AdminUpdateStatusDto>({
     status: 'simulated',
     note: '',
@@ -307,6 +312,51 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
         })
         return
       }
+
+      const insuranceType = getInsuranceType(refund?.calculationSnapshot)
+      const requiresCreditData = insuranceType === 'cesantia' || insuranceType === 'ambos'
+
+      if (requiresCreditData) {
+        const cuotaActual = Number(String(creditFields.cuotaActual).replace(/[^0-9.]/g, ''))
+
+        if (!Number.isFinite(cuotaActual) || cuotaActual <= 0) {
+          toast({
+            title: 'Valor cuota requerido',
+            description: 'Ingresa el valor de la cuota actual del crédito para continuar',
+            variant: 'destructive',
+          })
+          return
+        }
+
+        // Guardar sólo los campos modificados vía PATCH /personal-information
+        const current: any = refund || {}
+        const patch: { cuotaActual?: number } = {}
+        if (Number(current.cuotaActual) !== cuotaActual) patch.cuotaActual = cuotaActual
+
+        if (Object.keys(patch).length > 0) {
+          try {
+            setSavingCreditFields(true)
+            const updated = await refundAdminApi.updatePersonalInformation(refund!.publicId, patch)
+            // Actualizar estado local con la respuesta del servidor
+            queryClient.setQueryData(['refund', id], (prev: any) =>
+              prev ? { ...prev, ...(updated as any) } : updated
+            )
+            toast({
+              title: 'Datos del crédito guardados',
+              description: 'Se guardó el valor de la cuota actual del crédito',
+            })
+          } catch (e: any) {
+            toast({
+              title: 'Error al guardar datos del crédito',
+              description: e?.message || 'No se pudo guardar el valor de la cuota actual',
+              variant: 'destructive',
+            })
+            return
+          } finally {
+            setSavingCreditFields(false)
+          }
+        }
+      }
     }
 
     updateMutation.mutate(updateForm)
@@ -376,6 +426,8 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
       </div>
     )
   }
+
+  const insuranceType = getInsuranceType(refund.calculationSnapshot)
 
   return (
     <div className="p-6 space-y-6">
@@ -608,6 +660,11 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                   nroPoliza: snap.nroPoliza || '',
                   nroCredito: snap.nroCredito || '',
                 })
+                const r: any = refund
+                const cuota = r.cuotaActual ?? snap.cuotaActual ?? snap.valorCuota ?? null
+                setCreditFields({
+                  cuotaActual: cuota != null && cuota !== '' ? String(cuota) : '',
+                })
               }
             }}>
             <DialogTrigger asChild>
@@ -706,6 +763,40 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                   </div>
                 )}
 
+                {updateForm.status === 'docs_received' && (insuranceType === 'cesantia' || insuranceType === 'ambos') && (
+                  <div className="space-y-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-sm font-semibold text-primary">
+                      Datos del crédito contratado <span className="text-destructive">*</span>
+                    </p>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Valor cuota actual (CLP)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                        <Input
+                          inputMode="numeric"
+                          value={creditFields.cuotaActual}
+                          onChange={(e) =>
+                            setCreditFields((prev) => ({
+                              ...prev,
+                              cuotaActual: e.target.value.replace(/[^0-9]/g, ''),
+                            }))
+                          }
+                          placeholder="350000"
+                          className="pl-7"
+                        />
+                      </div>
+                      {creditFields.cuotaActual && (
+                        <p className="text-xs text-muted-foreground">
+                          ${formatCLPNumber(Number(creditFields.cuotaActual))} CLP
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Se guardará en la solicitud al confirmar el cambio de estado.
+                    </p>
+                  </div>
+                )}
+
                 {updateForm.status === 'payment_scheduled' && (
                   <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                     <Label className="text-primary font-medium">
@@ -782,7 +873,7 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                             ? 'bg-amber-600 hover:bg-amber-700 text-white'
                             : ''
                         }`}
-                        disabled={updateMutation.isPending}
+                        disabled={updateMutation.isPending || savingCreditFields}
                       >
                         {updateMutation.isPending
                           ? 'Actualizando...'
@@ -811,9 +902,9 @@ export default function CierreMensualDetail({ backUrl: propBackUrl = '/cierre-me
                   <Button
                     onClick={handleUpdateStatus}
                     className="w-full"
-                    disabled={updateMutation.isPending}
+                    disabled={updateMutation.isPending || savingCreditFields}
                   >
-                    {updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
+                    {savingCreditFields ? 'Guardando datos...' : updateMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
                   </Button>
                 )}
               </div>

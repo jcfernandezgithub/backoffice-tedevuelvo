@@ -196,6 +196,11 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     primaNeta: '',
   })
 
+  // Sexo no se edita en el formulario de cesantía, pero debe persistirse en el snapshot.
+  const [sexo, setSexo] = useState<'M' | 'F' | ''>(
+    ((refund as any)?.sexo === 'M' || (refund as any)?.sexo === 'F') ? (refund as any).sexo : ''
+  )
+
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
     if (!newOpen) {
@@ -296,6 +301,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       
       const direccion = data.data?.direccion || ''
       const comuna = data.data?.comuna || ''
+      const genero = data.data?.genero || ''
+      const sexoFromRut = genero === 'MUJ' ? 'F' : genero === 'VAR' ? 'M' : ''
+      if (sexoFromRut) setSexo(sexoFromRut)
       
       setFormData(prev => ({
         ...prev,
@@ -334,10 +342,47 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
     return buildCesantiaPdf(refund, { ...formData, primaNeta: String(calculatePrimaNeta()) })
   }
 
+  const savePersonalInformation = async () => {
+    const direccion = formData.direccion?.trim() || undefined
+    const comuna = formData.comuna?.trim() || undefined
+    const cuotaActualRaw =
+      refund.calculationSnapshot?.confirmedCurrentInstallment ??
+      refund.calculationSnapshot?.currentInstallment
+    const cuotaActual = typeof cuotaActualRaw === 'number' ? cuotaActualRaw : undefined
+
+    const payload = {
+      sexo: sexo === 'M' || sexo === 'F' ? sexo : undefined,
+      direccion,
+      comuna,
+      cuotaActual,
+    }
+
+    if (!payload.sexo && !payload.direccion && !payload.comuna && payload.cuotaActual === undefined) return
+
+    try {
+      await refundAdminApi.updatePersonalInformation(refund.publicId, payload)
+      await queryClient.invalidateQueries({ queryKey: ['refund', refund.publicId] })
+      await queryClient.invalidateQueries({ queryKey: ['refund'] })
+      toast({
+        title: 'Datos guardados',
+        description: 'Los datos de dirección se guardaron en la solicitud',
+      })
+    } catch (error: any) {
+      console.error('Error guardando datos personales:', error)
+      toast({
+        title: 'No se pudieron guardar los datos personales',
+        description: error?.message || 'Se continuará con la generación del certificado',
+        variant: 'destructive',
+      })
+    }
+  }
 
   const generatePDF = async () => {
     setIsGenerating(true)
     try {
+      // Persistir datos personales editados en el snapshot antes de generar el PDF
+      await savePersonalInformation()
+
       const { blob, fileName } = await buildPDF()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -421,6 +466,9 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
           )
         )
       }
+
+      // Persistir datos personales editados en el snapshot antes de subir el certificado
+      await savePersonalInformation()
 
       const { blob, fileName } = await buildPDF()
       const token = authService.getAccessToken()

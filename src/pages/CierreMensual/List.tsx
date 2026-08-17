@@ -1089,6 +1089,12 @@ export default function CierreMensualList({ title = 'Cierre Mensual', listTitle 
                 allPagesRefunds={allPagesSelected ? allPagesRefunds : undefined}
               />
               <GenerateExcelDialog 
+                mode="desgravamen"
+                selectedRefunds={getSelectedRefundsData()} 
+                onClose={handleExcelGenerated}
+              />
+              <GenerateExcelDialog 
+                mode="cesantia"
                 selectedRefunds={getSelectedRefundsData()} 
                 onClose={handleExcelGenerated}
               />
