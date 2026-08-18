@@ -1,15 +1,28 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.0
+## Versión 4.3.1
 
 ## Changelog
+
+### Versión 4.3.1 - 2026-08-18
+
+#### Archivo de altas Desgravamen: plan por saldo insoluto en columna L
+- En la generación del archivo de altas **CIA Desgravamen** (disponible en **Cierre Mensual** y **Solicitudes**), el campo **Codigo_producto** (columna L) ahora refleja el plan correspondiente según el saldo insoluto de la solicitud.
+- Se reutiliza la misma lógica de planes del certificado de cobertura **Póliza 353**:
+  - **Plan 1:** saldo insoluto ≤ $20.000.000
+  - **Plan 2:** $20.000.001 – $60.000.000
+  - **Plan 3:** $60.000.001 – $100.000.000
+  - **Plan 4:** $100.000.001 – $150.000.000
+- Anteriormente la columna L devolvía `342` o `344` únicamente discriminando por el tope de $20.000.000; ahora el valor entregado es textual (`Plan 1`, `Plan 2`, `Plan 3`, `Plan 4`) y se alinea con la clasificación del certificado de cobertura.
+
+#### Cierre Mensual disponible en menú principal
+- Se removió el badge **"En desarrollo"** del ítem **Cierre Mensual** en el menú lateral; el módulo ahora aparece como opción activa para los usuarios con permiso correspondiente.
 
 ### Versión 4.3.0 - 2026-08-14
 
 #### Nuevo módulo Cierre Mensual
 - Se creó el módulo **Cierre Mensual** (`/cierre-mensual`) como clon independiente de la página de Solicitudes, destinado a operaciones de cierre y reportes mensuales.
 - Incluye su propia navegación, listado filtrable, detalle de solicitud y generación de archivos de altas, separado de la operación diaria de Solicitudes.
-- El módulo se encuentra marcado como **En desarrollo** en el menú lateral mientras se ajustan las reglas de negocio específicas.
 
 #### Archivo de altas CIA para Cesantía
 - En **Cierre Mensual** se agregó el botón **Altas CIA Cesantía**, separado del flujo de Desgravamen, con validaciones y columnas propias.
