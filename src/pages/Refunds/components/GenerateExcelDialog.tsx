@@ -18,6 +18,7 @@ import { exportXLSX } from '@/services/reportesService'
 import { authService } from '@/services/authService'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { refundAdminApi } from '@/services/refundAdminApi'
+import { getPlanByAmount } from './pdfGenerators/pol353Config'
 
 interface RefundExcelData {
   policyNumber: string
@@ -215,7 +216,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
-      const codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+      const plan = getPlanByAmount(saldoInsoluto)
+      const codigoProducto = `Plan ${plan}`
 
       return {
         Sponsor: 'TDV Servicios SpA.',
