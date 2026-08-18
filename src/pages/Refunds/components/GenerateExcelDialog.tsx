@@ -216,7 +216,8 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
       }
 
       const saldoInsoluto = calculation.averageInsuredBalance || calculation.remainingBalance || 0
-      const codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+      const plan = getPlanByAmount(saldoInsoluto)
+      const codigoProducto = `Plan ${plan}`
 
       return {
         Sponsor: 'TDV Servicios SpA.',

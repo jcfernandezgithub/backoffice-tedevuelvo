@@ -407,7 +407,6 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       }
 
       let primaSeguro = 0
-      let codigoProducto = '342'
       let capitalAsegurado = saldoInsoluto
 
       const { newMonthlyPremium: derivedNew } = derivePremiumsFromSnapshot(
@@ -416,7 +415,8 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
       )
       const primaBrutaMensual = derivedNew || calculation.newMonthlyPremium || 0
       primaSeguro = primaBrutaMensual * cuotaRestantes
-      codigoProducto = saldoInsoluto <= 20000000 ? '342' : '344'
+      const plan = getPlanByAmount(saldoInsoluto)
+      const codigoProducto = `Plan ${plan}`
 
       return {
         Sponsor: 'TDV Servicios SpA.',
