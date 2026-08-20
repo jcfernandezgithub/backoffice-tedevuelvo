@@ -42,6 +42,8 @@ import { formatCLPNumber } from '@/lib/formatters'
 import { PairedAmountCell } from './components/SiblingPairCell'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
+import { EstimatedAmountCell } from '@/components/common/EstimatedAmountCell'
+import { resolveDisplayAmount } from '@/lib/refundDisplayAmount'
 
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -995,7 +997,7 @@ export default function CierreMensualList({ title = 'Cierre Mensual', listTitle 
         case 'rut': return (r.rut || '').toLowerCase()
         case 'email': return (r.email || '').toLowerCase()
         case 'status': return (r.status || '').toLowerCase()
-        case 'estimatedAmountCLP': return Number(r.estimatedAmountCLP || r.calculationSnapshot?.estimatedAmountCLP || 0)
+        case 'estimatedAmountCLP': return Number(resolveDisplayAmount(r).amount || r.calculationSnapshot?.estimatedAmountCLP || 0)
         case 'institutionId': return (r.institutionId || '').toLowerCase()
         case 'createdAt': return new Date(r.createdAt || 0).getTime()
         default: return r[sortField] ?? ''
@@ -1746,7 +1748,7 @@ export default function CierreMensualList({ title = 'Cierre Mensual', listTitle 
                                 />
                               )
                             }
-                            return <>${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}</>
+                            return <EstimatedAmountCell refund={refund} />
                           })()}
                         </TableCell>
                         <TableCell className="text-right">
@@ -2020,7 +2022,7 @@ export default function CierreMensualList({ title = 'Cierre Mensual', listTitle 
                               />
                             )
                           }
-                          return `$${refund.estimatedAmountCLP?.toLocaleString('es-CL') || '0'}`
+                          return <EstimatedAmountCell refund={refund} align="left" />
                         })()
                       },
                       {
