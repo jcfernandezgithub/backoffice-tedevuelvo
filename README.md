@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.1
+## Versión 4.3.2
 
 ## Changelog
+
+### Versión 4.3.2 - 2026-08-20
+
+#### Visualización del monto recalculado en listados
+- En **Solicitudes**, **Call Center** y **Cierre Mensual**, el monto mostrado en la columna **Monto estimado** ahora prioriza el valor recalculado de la solicitud cuando existe (`recalculatedSnapshot.totalAmountCLP` o el total del snapshot de recálculo).
+- Si no hay recálculo, se sigue mostrando el monto original de la simulación (`estimatedAmountCLP`), manteniendo la consistencia con el dato histórico.
+- Se agregó un chip **"Recalc."** junto al monto cuando proviene del recálculo, con un tooltip que compara el monto simulado versus el monto recalculado para mayor transparencia del operador.
+- El cambio se aplicó a la tabla de escritorio, tarjetas móviles y ordenamiento por monto en los tres módulos, sin agregar columnas adicionales.
 
 ### Versión 4.3.1 - 2026-08-18
 
