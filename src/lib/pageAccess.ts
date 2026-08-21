@@ -46,6 +46,7 @@ export function firstAllowedRoute(pages: string[] | undefined): string {
     '/dashboard',
     '/gestion-callcenter',
     '/refunds',
+    '/cierre-mensual',
     '/calculadora',
     '/alianzas',
     '/usuarios',
