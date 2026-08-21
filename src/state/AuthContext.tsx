@@ -27,17 +27,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = authService.getCurrent()
       
       if (currentUser) {
-        // Cargar el usuario actual siempre; el timer se encargará de refrescar cuando toque.
+        // Cargar el usuario cacheado para no bloquear la UI...
         setUser(currentUser)
-        if (authService.isTokenExpiringSoon()) {
-          try {
-            const { user: refreshedUser } = await authService.refresh()
-            setUser(refreshedUser)
-          } catch (error) {
-            console.warn('[Auth] Refresh inicial falló, se reintentará automáticamente', error)
-          }
+        // ...y re-sincronizar siempre rol/permisos con el backend, así los
+        // cambios de permisos (páginas agregadas o revocadas) se aplican sin
+        // necesidad de cerrar sesión.
+        try {
+          const { user: refreshedUser } = await authService.refresh()
+          setUser(refreshedUser)
+        } catch (error) {
+          console.warn('[Auth] Sincronización inicial de permisos falló, se reintentará automáticamente', error)
         }
         startRefreshTimer()
+
       } else {
         setUser(null)
       }

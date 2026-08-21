@@ -1,6 +1,6 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.2
+## Versión 4.3.3
 
 ## Changelog
 
@@ -11,6 +11,24 @@
 - Si no hay recálculo, se sigue mostrando el monto original de la simulación (`estimatedAmountCLP`), manteniendo la consistencia con el dato histórico.
 - Se agregó un chip **"Recalc."** junto al monto cuando proviene del recálculo, con un tooltip que compara el monto simulado versus el monto recalculado para mayor transparencia del operador.
 - El cambio se aplicó a la tabla de escritorio, tarjetas móviles y ordenamiento por monto en los tres módulos, sin agregar columnas adicionales.
+
+### Versión 4.3.3 - 2026-08-21
+
+#### Gestión de permisos de Cierre Mensual
+- Se agregó **Cierre Mensual** (`/cierre-mensual`) como página gestionable en **Roles y permisos**.
+- La clave del backend para controlar su visibilidad es `CIERRE`, alineada con el valor entregado por el servicio de login en el campo `pages`.
+- El acceso al ítem de menú lateral ahora depende exclusivamente de que el rol del usuario incluya la página `CIERRE` en su lista de permisos.
+
+#### Sincronización de permisos con el backend al cargar la aplicación
+- Se corrigió un problema por el cual el menú lateral mostraba páginas a las que el usuario ya no tenía permiso, porque la sesión previa estaba cacheada en `localStorage`.
+- Al iniciar la aplicación se ejecuta ahora una sincronización obligatoria del rol y las páginas permitidas contra el backend, priorizando siempre la respuesta más reciente del servidor sobre los datos locales.
+- El servicio `authService` expone `extractPagesStrict` para descartar páginas desconocidas o no autorizadas y actualizar el objeto de usuario con los permisos vigentes.
+
+#### Cálculo unificado de Prima Total en conciliación manual
+- Se centralizó el cálculo de **Prima Total** para Cesantía en la utilidad `resolvePrimaTotal()` (`src/lib/primaTotalUtils.ts`), asegurando que el diálogo de conciliación manual use la misma fórmula que el detalle de la solicitud.
+- Para solicitudes de Cesantía pura, la prima total ahora se calcula directamente sobre el **saldo insoluto confirmado** multiplicado por la tasa Cesantía TDV y el número de cuotas restantes, sin depender del `newMonthlyPremium` del snapshot (que podía quedar desactualizado tras la simulación inicial).
+- Se eliminó la descomposición "prima mensual × cuotas" del resumen de conciliación para Cesantía pura, evitando confusiones cuando el valor mensual no refleja el cálculo final con el saldo confirmado.
+- El cambio elimina la discrepancia observada entre el diálogo de conciliación y la vista de detalle para solicitudes con recálculo de saldo.
 
 ### Versión 4.3.1 - 2026-08-18
 

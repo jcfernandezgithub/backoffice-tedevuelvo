@@ -44,17 +44,22 @@ const extractRoles = (u: LoginResponse['user']): string[] => {
   return []
 }
 
-const extractPages = (data: LoginResponse): string[] => {
+// Devuelve las pages informadas por el backend, o null si la respuesta no
+// trae información de pages (para no sobreescribir con un array vacío falso).
+const extractPagesStrict = (data: LoginResponse): string[] | null => {
   const u = data.user
-  if (Array.isArray(u.pages)) return u.pages
-  if (u.role && typeof u.role === 'object' && Array.isArray(u.role.pages)) return u.role.pages
+  if (u && Array.isArray(u.pages)) return u.pages
+  if (u?.role && typeof u.role === 'object' && Array.isArray(u.role.pages)) return u.role.pages
   // Fallback: decodificar JWT
   try {
     const payload = JSON.parse(atob(data.accessToken.split('.')[1]))
     if (Array.isArray(payload.pages)) return payload.pages
   } catch { /* noop */ }
-  return []
+  return null
 }
+
+const extractPages = (data: LoginResponse): string[] => extractPagesStrict(data) ?? []
+
 
 export const authService = {
   getCurrent(): Usuario | null {
@@ -153,14 +158,17 @@ export const authService = {
 
     // Actualizar usuario preservando datos previos cuando el refresh venga incompleto.
     const rolesFromResponse = extractRoles(data.user)
-    const pagesFromResponse = extractPages(data)
+    const pagesFromResponse = extractPagesStrict(data)
     const updatedUser: Usuario = {
       id: data.user?.id ?? user.id,
       nombre: data.user?.fullName ?? user.nombre,
       email: data.user?.email ?? user.email,
       rol: rolesFromResponse.length ? mapRoleToFrontend(rolesFromResponse) : user.rol,
       activo: true,
-      pages: pagesFromResponse.length ? pagesFromResponse : (user.pages ?? []),
+      // Si el backend informa pages (incluso vacío), esa es la verdad: así los
+      // permisos revocados se reflejan sin necesidad de volver a iniciar sesión.
+      pages: pagesFromResponse ?? (user.pages ?? []),
+
     }
 
     save(AUTH_KEY, updatedUser)

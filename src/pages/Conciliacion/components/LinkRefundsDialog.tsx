@@ -38,12 +38,20 @@ interface DraftMatch {
 function computeRealSummary(refund: PendingRefund) {
   const prima = Number(refund.newMonthlyPremium ?? 0)
   const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
-  const primaTotal = Math.max(0, Math.round(prima * cuotas))
+  // La prima total viene calculada con la misma fórmula del Detalle
+  // (fuente de verdad): cesantía = saldo confirmado × 0,94‰ × cuotas;
+  // desgravamen = nueva prima mensual derivada × cuotas.
+  const isCesantia = !!refund.isCesantia
+  const primaTotal =
+    refund.primaTotal != null
+      ? Math.max(0, Math.round(Number(refund.primaTotal)))
+      : Math.max(0, Math.round(prima * cuotas))
   const realFromRefund = Math.round(Number(refund.remainingAmount) || 0)
   return {
     prima,
     cuotas,
     primaTotal,
+    isCesantia,
     realFromRefund,
     isEstimated: !!refund.isEstimated,
   }
@@ -676,7 +684,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
-                    const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
+                    const { prima, cuotas, primaTotal, isEstimated, isCesantia } = computeRealSummary(d.refund)
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -718,9 +726,11 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                             Nueva prima total
                           </span>
                           <span className="tabular-nums text-right">
-                            <span className="text-muted-foreground text-[10px]">
-                              {formatCurrency(prima)} × {cuotas} =
-                            </span>{' '}
+                            {!isCesantia && (
+                              <span className="text-muted-foreground text-[10px]">
+                                {formatCurrency(prima)} × {cuotas} ={' '}
+                              </span>
+                            )}
                             <span className="font-semibold text-foreground">
                               {formatCurrency(primaTotal)}
                             </span>
@@ -862,7 +872,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
               <div className="divide-y">
                 {drafts.map((d) => {
-                  const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
+                  const { prima, cuotas, primaTotal, isEstimated, isCesantia } = computeRealSummary(d.refund)
                   const nroCredito = resolveCreditNumber(d.refund)
                   return (
                     <div key={d.refund.id} className="px-3 py-2.5 text-sm">
@@ -885,7 +895,8 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
                       </div>
                       <div className="mt-1.5 text-[11px] text-muted-foreground flex items-center gap-1">
                         <Info className="h-3 w-3" />
-                        Nueva prima total: {formatCurrency(prima)} × {cuotas} ={' '}
+                        Nueva prima total:{' '}
+                        {!isCesantia && <>{formatCurrency(prima)} × {cuotas} = </>}
                         <span className="font-medium text-foreground/80">
                           {formatCurrency(primaTotal)}
                         </span>

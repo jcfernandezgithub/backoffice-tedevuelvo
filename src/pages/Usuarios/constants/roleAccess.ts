@@ -1,6 +1,7 @@
 export const ALL_PLATFORM_PAGES = [
   'Dashboard',
   'Solicitudes',
+  'Cierre Mensual',
   'Call Center',
   'Alianzas',
   'Usuarios',
@@ -18,6 +19,7 @@ export type PlatformPage = (typeof ALL_PLATFORM_PAGES)[number]
 export const PAGE_LABEL_TO_KEY: Record<PlatformPage, string> = {
   'Dashboard': 'DASHBOARD',
   'Solicitudes': 'SOLICITUDES',
+  'Cierre Mensual': 'CIERRE',
   'Call Center': 'GESTION_CALLCENTER',
   'Alianzas': 'ALIANZAS',
   'Usuarios': 'USUARIOS',
