@@ -44,17 +44,22 @@ const extractRoles = (u: LoginResponse['user']): string[] => {
   return []
 }
 
-const extractPages = (data: LoginResponse): string[] => {
+// Devuelve las pages informadas por el backend, o null si la respuesta no
+// trae información de pages (para no sobreescribir con un array vacío falso).
+const extractPagesStrict = (data: LoginResponse): string[] | null => {
   const u = data.user
-  if (Array.isArray(u.pages)) return u.pages
-  if (u.role && typeof u.role === 'object' && Array.isArray(u.role.pages)) return u.role.pages
+  if (u && Array.isArray(u.pages)) return u.pages
+  if (u?.role && typeof u.role === 'object' && Array.isArray(u.role.pages)) return u.role.pages
   // Fallback: decodificar JWT
   try {
     const payload = JSON.parse(atob(data.accessToken.split('.')[1]))
     if (Array.isArray(payload.pages)) return payload.pages
   } catch { /* noop */ }
-  return []
+  return null
 }
+
+const extractPages = (data: LoginResponse): string[] => extractPagesStrict(data) ?? []
+
 
 export const authService = {
   getCurrent(): Usuario | null {
