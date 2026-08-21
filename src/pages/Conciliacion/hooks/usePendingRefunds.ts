@@ -54,10 +54,14 @@ export function usePendingRefunds() {
         const nroCredito = String((r as any)?.calculationSnapshot?.nroCredito ?? '').trim()
         const snap = (r as any)?.calculationSnapshot ?? {}
         const nroPoliza = String(snap?.nroPoliza ?? '').trim()
-        const newMonthlyPremium = Number(snap?.newMonthlyPremium ?? 0)
-        const confirmedRemainingInstallments = Number(
-          snap?.confirmedRemainingInstallments ?? snap?.remainingInstallments ?? 0,
-        )
+        // Fuente de verdad: misma fórmula que el Detalle de la solicitud.
+        const {
+          monthlyPremium: newMonthlyPremium,
+          installments: confirmedRemainingInstallments,
+          primaTotal,
+          isCesantia,
+        } = resolvePrimaTotal(snap, (r as any)?.institutionId)
+
         return {
           id: r.id,
           publicId: r.publicId,
