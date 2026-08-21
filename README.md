@@ -24,6 +24,12 @@
 - Al iniciar la aplicación se ejecuta ahora una sincronización obligatoria del rol y las páginas permitidas contra el backend, priorizando siempre la respuesta más reciente del servidor sobre los datos locales.
 - El servicio `authService` expone `extractPagesStrict` para descartar páginas desconocidas o no autorizadas y actualizar el objeto de usuario con los permisos vigentes.
 
+#### Cálculo unificado de Prima Total en conciliación manual
+- Se centralizó el cálculo de **Prima Total** para Cesantía en la utilidad `resolvePrimaTotal()` (`src/lib/primaTotalUtils.ts`), asegurando que el diálogo de conciliación manual use la misma fórmula que el detalle de la solicitud.
+- Para solicitudes de Cesantía pura, la prima total ahora se calcula directamente sobre el **saldo insoluto confirmado** multiplicado por la tasa Cesantía TDV y el número de cuotas restantes, sin depender del `newMonthlyPremium` del snapshot (que podía quedar desactualizado tras la simulación inicial).
+- Se eliminó la descomposición "prima mensual × cuotas" del resumen de conciliación para Cesantía pura, evitando confusiones cuando el valor mensual no refleja el cálculo final con el saldo confirmado.
+- El cambio elimina la discrepancia observada entre el diálogo de conciliación y la vista de detalle para solicitudes con recálculo de saldo.
+
 ### Versión 4.3.1 - 2026-08-18
 
 #### Archivo de altas Desgravamen: plan por saldo insoluto en columna L
