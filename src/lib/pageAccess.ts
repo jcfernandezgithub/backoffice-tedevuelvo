@@ -29,7 +29,7 @@ export function pageKeyForPath(pathname: string): string | null {
 // Páginas en desarrollo: accesibles para ADMIN aunque el backend aún no las
 // entregue en el listado `pages` del login. Quitar del set cuando el backend
 // incorpore la page al rol correspondiente.
-const DEV_PAGES_ADMIN_ONLY = new Set(['CIERRE_MENSUAL'])
+const DEV_PAGES_ADMIN_ONLY = new Set<string>([])
 
 export function hasPageAccess(pages: string[] | undefined, key: string | null, rol?: string): boolean {
   if (!key) return true
