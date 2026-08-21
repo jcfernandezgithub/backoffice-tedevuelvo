@@ -50,4 +50,8 @@ export interface PendingRefund {
   newMonthlyPremium?: number
   /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
   confirmedRemainingInstallments?: number
+  /** Prima total calculada con la misma fórmula del Detalle (fuente de verdad). */
+  primaTotal?: number
+  /** True cuando el seguro es cesantía pura (prima única, sin prima mensual). */
+  isCesantia?: boolean
 }

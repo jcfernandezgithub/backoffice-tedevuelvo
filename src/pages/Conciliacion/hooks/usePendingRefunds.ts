@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { PendingRefund } from '../types'
 import type { RefundRequest } from '@/types/refund'
+import { resolvePrimaTotal } from '@/lib/primaTotalUtils'
 
 function resolveAmount(refund: RefundRequest): { amount: number; isEstimated: boolean } {
   const entry = refund.statusHistory
@@ -78,6 +79,8 @@ export function usePendingRefunds() {
           nroPoliza,
           newMonthlyPremium,
           confirmedRemainingInstallments,
+          primaTotal,
+          isCesantia,
         } as PendingRefund
       })
     },
