@@ -12,6 +12,16 @@
 - Se agregó un chip **"Recalc."** junto al monto cuando proviene del recálculo, con un tooltip que compara el monto simulado versus el monto recalculado para mayor transparencia del operador.
 - El cambio se aplicó a la tabla de escritorio, tarjetas móviles y ordenamiento por monto en los tres módulos, sin agregar columnas adicionales.
 
+#### Gestión de permisos de Cierre Mensual
+- Se agregó **Cierre Mensual** (`/cierre-mensual`) como página gestionable en **Roles y permisos**.
+- La clave del backend para controlar su visibilidad es `CIERRE`, alineada con el valor entregado por el servicio de login en el campo `pages`.
+- El acceso al ítem de menú lateral ahora depende exclusivamente de que el rol del usuario incluya la página `CIERRE` en su lista de permisos.
+
+#### Sincronización de permisos con el backend al cargar la aplicación
+- Se corrigió un problema por el cual el menú lateral mostraba páginas a las que el usuario ya no tenía permiso, porque la sesión previa estaba cacheada en `localStorage`.
+- Al iniciar la aplicación se ejecuta ahora una sincronización obligatoria del rol y las páginas permitidas contra el backend, priorizando siempre la respuesta más reciente del servidor sobre los datos locales.
+- El servicio `authService` expone `extractPagesStrict` para descartar páginas desconocidas o no autorizadas y actualizar el objeto de usuario con los permisos vigentes.
+
 ### Versión 4.3.1 - 2026-08-18
 
 #### Archivo de altas Desgravamen: plan por saldo insoluto en columna L
