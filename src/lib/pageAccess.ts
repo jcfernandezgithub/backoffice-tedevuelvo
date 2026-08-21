@@ -5,7 +5,7 @@
 export const ROUTE_TO_PAGE_KEY: Record<string, string> = {
   '/dashboard': 'DASHBOARD',
   '/refunds': 'SOLICITUDES',
-  '/cierre-mensual': 'CIERRA',
+  '/cierre-mensual': 'CIERRE',
   '/solicitudes': 'SOLICITUDES',
   '/gestion-callcenter': 'GESTION_CALLCENTER',
   '/alianzas': 'ALIANZAS',
