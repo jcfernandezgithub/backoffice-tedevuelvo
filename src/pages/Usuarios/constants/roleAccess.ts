@@ -1,6 +1,7 @@
 export const ALL_PLATFORM_PAGES = [
   'Dashboard',
   'Solicitudes',
+  'Cierre Mensual',
   'Call Center',
   'Alianzas',
   'Usuarios',
