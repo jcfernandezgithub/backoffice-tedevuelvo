@@ -684,7 +684,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 p-2 pr-3">
                   {drafts.map((d) => {
-                    const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
+                    const { prima, cuotas, primaTotal, isEstimated, isCesantia } = computeRealSummary(d.refund)
                     return (
                       <div key={d.refund.id} className="rounded-md border p-2 bg-background">
                         <div className="flex items-start gap-1">
@@ -872,7 +872,7 @@ export function LinkRefundsDialog({ movement, open, onOpenChange, onApplied }: P
               </div>
               <div className="divide-y">
                 {drafts.map((d) => {
-                  const { prima, cuotas, primaTotal, isEstimated } = computeRealSummary(d.refund)
+                  const { prima, cuotas, primaTotal, isEstimated, isCesantia } = computeRealSummary(d.refund)
                   const nroCredito = resolveCreditNumber(d.refund)
                   return (
                     <div key={d.refund.id} className="px-3 py-2.5 text-sm">
