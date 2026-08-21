@@ -1,6 +1,6 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.2
+## Versión 4.3.3
 
 ## Changelog
 
@@ -11,6 +11,8 @@
 - Si no hay recálculo, se sigue mostrando el monto original de la simulación (`estimatedAmountCLP`), manteniendo la consistencia con el dato histórico.
 - Se agregó un chip **"Recalc."** junto al monto cuando proviene del recálculo, con un tooltip que compara el monto simulado versus el monto recalculado para mayor transparencia del operador.
 - El cambio se aplicó a la tabla de escritorio, tarjetas móviles y ordenamiento por monto en los tres módulos, sin agregar columnas adicionales.
+
+### Versión 4.3.3 - 2026-08-21
 
 #### Gestión de permisos de Cierre Mensual
 - Se agregó **Cierre Mensual** (`/cierre-mensual`) como página gestionable en **Roles y permisos**.
