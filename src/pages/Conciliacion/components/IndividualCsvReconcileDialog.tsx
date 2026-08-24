@@ -724,16 +724,19 @@ export function IndividualCsvReconcileDialog({
                               {formatCurrency(r.monto)}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
-                              {r.newMonthlyPremium != null ? (
+                              {r.primaTotal != null ? (
                                 <div>
-                                  <div>{formatCurrency(r.primaTotal ?? 0)}</div>
+                                  <div>{formatCurrency(r.primaTotal)}</div>
                                   <div className="text-[11px] text-muted-foreground">
-                                    {formatCurrency(r.newMonthlyPremium)} × {r.remainingInstallments ?? 0}
+                                    {r.newMonthlyPremium
+                                      ? `${formatCurrency(r.newMonthlyPremium)} × ${r.remainingInstallments ?? 0}`
+                                      : `Prima única · ${r.remainingInstallments ?? 0} cuotas`}
                                   </div>
                                 </div>
                               ) : (
                                 '—'
                               )}
+
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
                               {r.realAmount != null ? (
