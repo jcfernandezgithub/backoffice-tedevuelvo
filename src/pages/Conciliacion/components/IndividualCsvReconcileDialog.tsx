@@ -235,8 +235,15 @@ export function IndividualCsvReconcileDialog({
         const refund = matches[0]
         const prima = Number(refund.newMonthlyPremium ?? 0)
         const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
-        const primaTotal = Math.max(0, Math.round(prima * cuotas))
+        // Fuente de verdad: primaTotal ya viene resuelta con la misma fórmula del
+        // Detalle (cesantía = prima única; desgravamen = mensual × cuotas).
+        // En cesantía pura `newMonthlyPremium` es 0, por lo que no se puede multiplicar.
+        const primaTotal = Math.max(
+          0,
+          Math.round(Number(refund.primaTotal ?? 0) || prima * cuotas),
+        )
         const realAmount = Math.round(p.monto - primaTotal)
+
 
         // Buscar abono por monto exacto.
         const candidates = movementsByAmount.get(Math.round(p.monto)) ?? []
@@ -717,16 +724,19 @@ export function IndividualCsvReconcileDialog({
                               {formatCurrency(r.monto)}
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
-                              {r.newMonthlyPremium != null ? (
+                              {r.primaTotal != null ? (
                                 <div>
-                                  <div>{formatCurrency(r.primaTotal ?? 0)}</div>
+                                  <div>{formatCurrency(r.primaTotal)}</div>
                                   <div className="text-[11px] text-muted-foreground">
-                                    {formatCurrency(r.newMonthlyPremium)} × {r.remainingInstallments ?? 0}
+                                    {r.newMonthlyPremium
+                                      ? `${formatCurrency(r.newMonthlyPremium)} × ${r.remainingInstallments ?? 0}`
+                                      : `Prima única · ${r.remainingInstallments ?? 0} cuotas`}
                                   </div>
                                 </div>
                               ) : (
                                 '—'
                               )}
+
                             </TableCell>
                             <TableCell className="text-right tabular-nums text-sm">
                               {r.realAmount != null ? (
