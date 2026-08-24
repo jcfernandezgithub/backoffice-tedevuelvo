@@ -235,8 +235,15 @@ export function IndividualCsvReconcileDialog({
         const refund = matches[0]
         const prima = Number(refund.newMonthlyPremium ?? 0)
         const cuotas = Number(refund.confirmedRemainingInstallments ?? 0)
-        const primaTotal = Math.max(0, Math.round(prima * cuotas))
+        // Fuente de verdad: primaTotal ya viene resuelta con la misma fórmula del
+        // Detalle (cesantía = prima única; desgravamen = mensual × cuotas).
+        // En cesantía pura `newMonthlyPremium` es 0, por lo que no se puede multiplicar.
+        const primaTotal = Math.max(
+          0,
+          Math.round(Number(refund.primaTotal ?? 0) || prima * cuotas),
+        )
         const realAmount = Math.round(p.monto - primaTotal)
+
 
         // Buscar abono por monto exacto.
         const candidates = movementsByAmount.get(Math.round(p.monto)) ?? []
