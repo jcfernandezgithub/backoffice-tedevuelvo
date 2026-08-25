@@ -501,26 +501,37 @@ const generatePol353PDF = async (
     y += lines.length * gap + extra
   }
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.text('Nota 1:', margin, y)
-  doc.setFont('helvetica', 'normal')
-  writeWrapped(
-    '   El asegurado tiene la obligación de entregar la información que la compañía requiera acerca de su estado de riesgo, en los casos y en la forma que determina la normativa vigente. La infracción a esta obligación puede acarrear la terminación del contrato o que no sea pagado el siniestro.',
+  // Escribe "Nota N:" en negrita y el cuerpo a continuación en la misma
+  // línea, evitando que la primera línea se sobreescriba sobre la etiqueta.
+  const writeNota = (label: string, text: string, fontSize = 7, gap = 2.5, extra = 4) => {
+    doc.setFontSize(fontSize)
+    doc.setFont('helvetica', 'bold')
+    doc.text(label, margin, y)
+    const labelWidth = doc.getTextWidth(label + ' ')
+    doc.setFont('helvetica', 'normal')
+    const lines = doc.splitTextToSize(text, contentWidth - labelWidth)
+    if (lines.length > 0) {
+      doc.text(lines[0], margin + labelWidth, y)
+      if (lines.length > 1) {
+        doc.text(lines.slice(1), margin, y + gap)
+      }
+    }
+    y += lines.length * gap + extra
+  }
+
+  writeNota(
+    'Nota 1:',
+    'El asegurado tiene la obligación de entregar la información que la compañía requiera acerca de su estado de riesgo, en los casos y en la forma que determina la normativa vigente. La infracción a esta obligación puede acarrear la terminación del contrato o que no sea pagado el siniestro.',
   )
 
-  doc.setFont('helvetica', 'bold')
-  doc.text('Nota 2:', margin, y)
-  doc.setFont('helvetica', 'normal')
-  writeWrapped(
-    '   (Para Seguros Colectivos) Importante. "Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA directamente con Augustar Seguros de Vida S.A."',
+  writeNota(
+    'Nota 2:',
+    '(Para Seguros Colectivos) Importante. "Usted está solicitando su incorporación como asegurado a una póliza o contrato de seguro colectivo cuyas condiciones han sido convenidas por TDV SERVICIOS SPA directamente con Augustar Seguros de Vida S.A."',
   )
 
-  doc.setFont('helvetica', 'bold')
-  doc.text('Nota 3:', margin, y)
-  doc.setFont('helvetica', 'normal')
-  writeWrapped(
-    '   Póliza es de prima única y se encuentra pagada en su totalidad a la compañía de seguros Augustar Seguros de Vida S.A.',
+  writeNota(
+    'Nota 3:',
+    'Póliza es de prima única y se encuentra pagada en su totalidad a la compañía de seguros Augustar Seguros de Vida S.A.',
   )
 
   y += 3
