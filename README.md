@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.3
+## Versión 4.3.4
 
 ## Changelog
+
+### Versión 4.3.4 - 2026-08-25
+
+#### Corrección de superposición en certificados de cobertura Desgravamen
+- Se corrigió un problema visual en la generación de certificados de cobertura **Desgravamen** (Póliza 353) donde los textos de las notas legales se sobreescribían con sus respectivos títulos "Nota 1:", "Nota 2:" y "Nota 3:".
+- Se ajustó el generador PDF (`bancoChilePdfGenerator.ts`) para meder el ancho del título en negrita y desplazar la primera línea del cuerpo de la nota, evitando la superposición y manteniendo la alineación en líneas siguientes.
+- El fix aplica exclusivamente a la página 3 del certificado, asegurando que el resto del documento conserve su formato legal vigente.
+
 
 ### Versión 4.3.2 - 2026-08-20
 
