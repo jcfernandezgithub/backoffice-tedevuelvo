@@ -785,17 +785,19 @@ function BankMatrixSummary({ data, edad }: { data: import('@/services/ratesServi
 // ─── Tabla interna de montos × plazos para un banco ──────────────────────────
 
 function BankMatrixTable({
-  bankName, data, edad, onEdit,
+  bankName, data, edad, onEdit, onBulkEdit,
 }: {
   bankName: string;
   data: import('@/services/ratesService').AgeGroupRates;
   edad: 'hasta_55' | 'desde_56';
   onEdit: (monto: number, plazo: number, tasa: number) => void;
+  onBulkEdit: (plazo: number, montos: number[]) => void;
 }) {
   const datosEdad = data[edad] ?? {};
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [q, setQ] = useState('');
+
 
   const { montos, cuotas, matriz, minTasa, maxTasa } = useMemo(() => {
     const montosRaw = Object.keys(datosEdad).map(Number).sort((a, b) => a - b);
