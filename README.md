@@ -1,16 +1,22 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.5
+## Versión 4.3.6
 
 ## Changelog
 
-### Versión 4.3.5 - 2026-08-26
+### Versión 4.3.6 - 2026-08-26
 
-#### Corrección del error `RangeError: Invalid array length` en exportaciones a Excel
-- Se reforzó la generación de archivos Excel en `src/services/reportesService.ts` para evitar el error `RangeError: Invalid array length` al exportar grandes volúmenes de solicitudes.
-- Se implementó sanitización de valores (`null`, `undefined`, `NaN`, `Infinity`, objetos, textos mayores a 32.000 caracteres) y división automática en múltiples hojas de hasta 50.000 filas para respetar los límites de memoria del navegador.
-- Si el binario `.xlsx` no puede generarse, el sistema descarga automáticamente un CSV equivalente con la misma información en lugar de fallar silenciosamente.
-- El cambio aplica a las exportaciones de **Solicitudes** y **Cierre Mensual**.
+#### Actualización masiva de tasas por columna filtrada
+- En **Ajustes > Tasas para Cálculo** se agregó la acción de actualización masiva por columna, permitiendo aplicar una nueva tasa a todos los montos visibles tras filtrar por banco.
+- Solo se modifican los montos resultantes del filtro activo, reduciendo el riesgo de sobrescribir tasas fuera del conjunto buscado.
+- El proceso muestra una barra de progreso persistente, ejecuta las actualizaciones con un límite de concurrencia de 6 llamadas y presenta un resumen de errores si alguna fila falla.
+- Se agregó un diálogo de confirmación crítica de dos pasos que exige marcar una casilla de advertencia antes de aplicar la nueva tasa.
+- Tras completar la actualización correctamente, el sistema redirige automáticamente a `/ajustes?tab=tasas` para reflejar los cambios sin perder la sección activa.
+
+#### Sincronización de la pestaña activa en Ajustes
+- La página de **Ajustes** sincroniza ahora su pestaña activa con el parámetro `?tab=` de la URL, permitiendo recargar o regresar sin perder la sección seleccionada.
+
+### Versión 4.3.5 - 2026-08-26
 
 ### Versión 4.3.4 - 2026-08-25
 
