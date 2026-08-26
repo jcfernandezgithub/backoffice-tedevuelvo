@@ -99,8 +99,21 @@ const GROUPS = NAV_ITEMS.reduce<Record<string, NavItem[]>>((acc, item) => {
 // ─── Componente principal ────────────────────────────────────────────────────
 
 export default function AjustesPage() {
-  const [activeId, setActiveId] = useState(NAV_ITEMS[0].id);
+  const [activeId, setActiveId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    return NAV_ITEMS.find(i => i.id === tab)?.id ?? NAV_ITEMS[0].id;
+  });
   const activeItem = NAV_ITEMS.find(i => i.id === activeId)!;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') !== activeId) {
+      params.set('tab', activeId);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    }
+  }, [activeId]);
+
 
   return (
     <div className="flex min-h-screen bg-background">
