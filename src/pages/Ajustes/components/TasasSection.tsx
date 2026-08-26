@@ -785,17 +785,19 @@ function BankMatrixSummary({ data, edad }: { data: import('@/services/ratesServi
 // ─── Tabla interna de montos × plazos para un banco ──────────────────────────
 
 function BankMatrixTable({
-  bankName, data, edad, onEdit,
+  bankName, data, edad, onEdit, onBulkEdit,
 }: {
   bankName: string;
   data: import('@/services/ratesService').AgeGroupRates;
   edad: 'hasta_55' | 'desde_56';
   onEdit: (monto: number, plazo: number, tasa: number) => void;
+  onBulkEdit: (plazo: number, montos: number[]) => void;
 }) {
   const datosEdad = data[edad] ?? {};
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [q, setQ] = useState('');
+
 
   const { montos, cuotas, matriz, minTasa, maxTasa } = useMemo(() => {
     const montosRaw = Object.keys(datosEdad).map(Number).sort((a, b) => a - b);
@@ -867,10 +869,30 @@ function BankMatrixTable({
                 Monto crédito
               </th>
               {cuotas.map((c) => (
-                <th key={c} className="text-center px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap min-w-[72px]">
-                  {c} cuotas
+                <th key={c} className="text-center px-3 py-2 font-medium text-muted-foreground whitespace-nowrap min-w-[86px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span>{c} cuotas</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => onBulkEdit(c, filteredMontos)}
+                            disabled={filteredMontos.length === 0}
+                            className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+                          >
+                            <Zap className="h-3 w-3" /> Aplicar a columna
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs max-w-[220px]">
+                          Actualiza esta columna en los {filteredMontos.length} montos del filtro actual.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </th>
               ))}
+
             </tr>
           </thead>
           <tbody>
@@ -957,6 +979,54 @@ function TablaDesgravamenBancos() {
     bankName: string; monto: number; plazo: number; valor: string; original: number; edad: 'hasta_55' | 'desde_56';
   } | null>(null);
   const [confirmCell, setConfirmCell] = useState(false);
+  const [bulkEdit, setBulkEdit] = useState<{
+    bankName: string; plazo: number; montos: number[]; valor: string; edad: 'hasta_55' | 'desde_56';
+  } | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, failed: 0 });
+
+  const applyBulkColumn = async () => {
+    if (!bulkEdit) return;
+    const tasa = Number(bulkEdit.valor) / 100;
+    if (!bulkEdit.valor.trim() || !isFinite(tasa) || tasa <= 0) { toast.error('Tasa inválida'); return; }
+
+    const montos = bulkEdit.montos;
+    setBulkRunning(true);
+    setBulkProgress({ done: 0, total: montos.length, failed: 0 });
+
+    const CONCURRENCY = 6;
+    let cursor = 0;
+    let failed = 0;
+
+    const worker = async () => {
+      while (cursor < montos.length) {
+        const monto = montos[cursor++];
+        try {
+          await updateMatrixRate.mutateAsync({
+            bankName: bulkEdit.bankName,
+            ageGroup: bulkEdit.edad,
+            amount: monto,
+            term: bulkEdit.plazo,
+            tasa,
+          });
+        } catch {
+          failed += 1;
+        }
+        setBulkProgress((p) => ({ ...p, done: p.done + 1, failed }));
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, montos.length) }, worker));
+    setBulkRunning(false);
+
+    if (failed === 0) {
+      toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
+      setBulkEdit(null);
+    } else {
+      toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
+    }
+  };
+
 
   const bancosFiltrados = useMemo(() =>
     bancos.filter((b) => b.toLowerCase().includes(q.toLowerCase())),
@@ -1067,6 +1137,10 @@ function TablaDesgravamenBancos() {
                     onEdit={(monto, plazo, tasa) =>
                       setCellEdit({ bankName: banco, monto, plazo, valor: String(tasa * 100), original: tasa, edad: tramoEdad })
                     }
+                    onBulkEdit={(plazo, montos) =>
+                      setBulkEdit({ bankName: banco, plazo, montos, valor: '', edad: tramoEdad })
+                    }
+
                   />
                 </AccordionContent>
               </AccordionItem>
@@ -1135,7 +1209,72 @@ function TablaDesgravamenBancos() {
         pending={updateMatrixRate.isPending}
       />
 
+
+      {/* Actualización masiva por columna (montos filtrados) */}
+      <Dialog open={!!bulkEdit} onOpenChange={(o) => { if (!o && !bulkRunning) setBulkEdit(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" /> Aplicar tasa a toda la columna
+            </DialogTitle>
+            <DialogDescription>
+              {bulkEdit?.bankName} · {bulkEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'} ·{' '}
+              {bulkEdit ? `${bulkEdit.plazo} cuotas` : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Montos afectados</span><span className="font-semibold">{bulkEdit?.montos.length ?? 0}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Plazo</span><span className="font-semibold">{bulkEdit?.plazo} cuotas</span></div>
+            <p className="text-muted-foreground pt-1">
+              Se aplicará solo a los montos que quedaron tras el filtro de búsqueda de esta tabla.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-tasa">Nueva prima única (%)</Label>
+            <Input
+              id="bulk-tasa"
+              type="number"
+              step="0.0001"
+              placeholder="Ej: 0.2450"
+              value={bulkEdit?.valor ?? ''}
+              disabled={bulkRunning}
+              onChange={(e) => setBulkEdit((p) => (p ? { ...p, valor: e.target.value } : p))}
+            />
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-muted-foreground">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <span>Cambio crítico e irreversible: sobrescribe la tasa de todos los montos listados e impacta de inmediato la Calculadora y el portal.</span>
+          </div>
+
+          {(bulkRunning || bulkProgress.done > 0) && (
+            <div className="space-y-1.5">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${bulkProgress.total ? (bulkProgress.done / bulkProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {bulkProgress.done} de {bulkProgress.total} montos actualizados
+                {bulkProgress.failed > 0 ? ` · ${bulkProgress.failed} con error` : ''}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" disabled={bulkRunning} onClick={() => setBulkEdit(null)}>Cancelar</Button>
+            <Button onClick={applyBulkColumn} disabled={bulkRunning}>
+              {bulkRunning ? 'Aplicando…' : `Aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
+
     </div>
   );
 }
