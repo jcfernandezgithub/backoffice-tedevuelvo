@@ -154,7 +154,7 @@ interface CriticalChangeRow {
 }
 
 function CriticalRateConfirmDialog({
-  open, onOpenChange, context, rows, onConfirm, pending,
+  open, onOpenChange, context, rows, onConfirm, pending, progress,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -162,7 +162,9 @@ function CriticalRateConfirmDialog({
   rows: CriticalChangeRow[];
   onConfirm: () => void;
   pending?: boolean;
+  progress?: { done: number; total: number; failed: number };
 }) {
+
   const [ack, setAck] = useState(false);
   useEffect(() => { if (!open) setAck(false); }, [open]);
 
@@ -212,7 +214,23 @@ function CriticalRateConfirmDialog({
           </span>
         </label>
 
+        {progress && progress.total > 0 && (
+          <div className="space-y-1.5">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {progress.done} de {progress.total} montos actualizados
+              {progress.failed > 0 ? ` · ${progress.failed} con error` : ''}
+            </p>
+          </div>
+        )}
+
         <AlertDialogFooter>
+
           <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={!ack || pending}
@@ -1035,10 +1053,11 @@ function TablaDesgravamenBancos() {
       toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
       setBulkEdit(null);
       setConfirmBulkOpen(false);
-      window.location.reload();
+      window.location.href = '/ajustes?tab=tasas';
     } else {
       toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
     }
+
   };
 
 
@@ -1314,7 +1333,9 @@ function TablaDesgravamenBancos() {
         ] : []}
         onConfirm={applyBulkColumn}
         pending={bulkRunning}
+        progress={bulkProgress}
       />
+
 
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
