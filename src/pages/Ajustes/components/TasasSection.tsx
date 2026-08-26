@@ -979,6 +979,54 @@ function TablaDesgravamenBancos() {
     bankName: string; monto: number; plazo: number; valor: string; original: number; edad: 'hasta_55' | 'desde_56';
   } | null>(null);
   const [confirmCell, setConfirmCell] = useState(false);
+  const [bulkEdit, setBulkEdit] = useState<{
+    bankName: string; plazo: number; montos: number[]; valor: string; edad: 'hasta_55' | 'desde_56';
+  } | null>(null);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, failed: 0 });
+
+  const applyBulkColumn = async () => {
+    if (!bulkEdit) return;
+    const tasa = Number(bulkEdit.valor) / 100;
+    if (!bulkEdit.valor.trim() || !isFinite(tasa) || tasa <= 0) { toast.error('Tasa inválida'); return; }
+
+    const montos = bulkEdit.montos;
+    setBulkRunning(true);
+    setBulkProgress({ done: 0, total: montos.length, failed: 0 });
+
+    const CONCURRENCY = 6;
+    let cursor = 0;
+    let failed = 0;
+
+    const worker = async () => {
+      while (cursor < montos.length) {
+        const monto = montos[cursor++];
+        try {
+          await updateMatrixRate.mutateAsync({
+            bankName: bulkEdit.bankName,
+            ageGroup: bulkEdit.edad,
+            amount: monto,
+            term: bulkEdit.plazo,
+            tasa,
+          });
+        } catch {
+          failed += 1;
+        }
+        setBulkProgress((p) => ({ ...p, done: p.done + 1, failed }));
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, montos.length) }, worker));
+    setBulkRunning(false);
+
+    if (failed === 0) {
+      toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
+      setBulkEdit(null);
+    } else {
+      toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
+    }
+  };
+
 
   const bancosFiltrados = useMemo(() =>
     bancos.filter((b) => b.toLowerCase().includes(q.toLowerCase())),
