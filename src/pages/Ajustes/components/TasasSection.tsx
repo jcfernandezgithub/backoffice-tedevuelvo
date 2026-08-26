@@ -154,7 +154,7 @@ interface CriticalChangeRow {
 }
 
 function CriticalRateConfirmDialog({
-  open, onOpenChange, context, rows, onConfirm, pending,
+  open, onOpenChange, context, rows, onConfirm, pending, progress,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -162,7 +162,9 @@ function CriticalRateConfirmDialog({
   rows: CriticalChangeRow[];
   onConfirm: () => void;
   pending?: boolean;
+  progress?: { done: number; total: number; failed: number };
 }) {
+
   const [ack, setAck] = useState(false);
   useEffect(() => { if (!open) setAck(false); }, [open]);
 
