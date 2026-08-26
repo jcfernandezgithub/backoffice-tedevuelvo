@@ -307,6 +307,16 @@ export function ExportToExcelDialog({
     } catch (error) {
       console.error('Error exporting:', error)
       const detail = error instanceof Error ? error.message : ''
+
+      if (detail === 'XLSX_FALLBACK_CSV') {
+        setOpen(false)
+        toast({
+          title: 'Exportado como CSV',
+          description: 'El archivo era demasiado grande para Excel, se descargó en formato CSV con la misma información.',
+        })
+        return
+      }
+
       const isBackendSortError = /sort exceeded memory limit|allowDiskUse/i.test(detail)
       toast({
         title: 'Error en la exportación',
