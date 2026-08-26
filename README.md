@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.4
+## Versión 4.3.5
 
 ## Changelog
+
+### Versión 4.3.5 - 2026-08-26
+
+#### Corrección del error `RangeError: Invalid array length` en exportaciones a Excel
+- Se reforzó la generación de archivos Excel en `src/services/reportesService.ts` para evitar el error `RangeError: Invalid array length` al exportar grandes volúmenes de solicitudes.
+- Se implementó sanitización de valores (`null`, `undefined`, `NaN`, `Infinity`, objetos, textos mayores a 32.000 caracteres) y división automática en múltiples hojas de hasta 50.000 filas para respetar los límites de memoria del navegador.
+- Si el binario `.xlsx` no puede generarse, el sistema descarga automáticamente un CSV equivalente con la misma información en lugar de fallar silenciosamente.
+- El cambio aplica a las exportaciones de **Solicitudes** y **Cierre Mensual**.
 
 ### Versión 4.3.4 - 2026-08-25
 
