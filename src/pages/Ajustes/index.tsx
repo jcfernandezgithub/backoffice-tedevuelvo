@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
