@@ -1281,12 +1281,41 @@ function TablaDesgravamenBancos() {
 
           <DialogFooter>
             <Button variant="outline" disabled={bulkRunning} onClick={() => setBulkEdit(null)}>Cancelar</Button>
-            <Button onClick={applyBulkColumn} disabled={bulkRunning}>
-              {bulkRunning ? 'Aplicando…' : `Aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
+            <Button onClick={requestBulkApply} disabled={bulkRunning}>
+              {bulkRunning ? 'Aplicando…' : `Revisar y aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CriticalRateConfirmDialog
+        open={confirmBulkOpen && !!bulkEdit}
+        onOpenChange={setConfirmBulkOpen}
+        context={`Desgravamen · ${bulkEdit?.bankName ?? ''} · ${bulkEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'} · ${bulkEdit?.plazo ?? ''} cuotas`}
+        rows={bulkEdit ? [
+          {
+            label: 'Tasa nueva',
+            before: '—',
+            after: `${(Number(bulkEdit.valor) || 0).toFixed(4)}%`,
+            changed: true,
+          },
+          {
+            label: 'Montos afectados',
+            before: '—',
+            after: String(bulkEdit.montos.length),
+            changed: true,
+          },
+          {
+            label: 'Plazo',
+            before: '—',
+            after: `${bulkEdit.plazo} cuotas`,
+            changed: true,
+          },
+        ] : []}
+        onConfirm={applyBulkColumn}
+        pending={bulkRunning}
+      />
+
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
 
