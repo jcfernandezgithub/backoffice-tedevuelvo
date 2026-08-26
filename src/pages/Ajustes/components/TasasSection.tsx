@@ -1209,7 +1209,72 @@ function TablaDesgravamenBancos() {
         pending={updateMatrixRate.isPending}
       />
 
+
+      {/* Actualización masiva por columna (montos filtrados) */}
+      <Dialog open={!!bulkEdit} onOpenChange={(o) => { if (!o && !bulkRunning) setBulkEdit(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" /> Aplicar tasa a toda la columna
+            </DialogTitle>
+            <DialogDescription>
+              {bulkEdit?.bankName} · {bulkEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'} ·{' '}
+              {bulkEdit ? `${bulkEdit.plazo} cuotas` : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs space-y-1">
+            <div className="flex justify-between"><span className="text-muted-foreground">Montos afectados</span><span className="font-semibold">{bulkEdit?.montos.length ?? 0}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Plazo</span><span className="font-semibold">{bulkEdit?.plazo} cuotas</span></div>
+            <p className="text-muted-foreground pt-1">
+              Se aplicará solo a los montos que quedaron tras el filtro de búsqueda de esta tabla.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-tasa">Nueva prima única (%)</Label>
+            <Input
+              id="bulk-tasa"
+              type="number"
+              step="0.0001"
+              placeholder="Ej: 0.2450"
+              value={bulkEdit?.valor ?? ''}
+              disabled={bulkRunning}
+              onChange={(e) => setBulkEdit((p) => (p ? { ...p, valor: e.target.value } : p))}
+            />
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-muted-foreground">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <span>Cambio crítico e irreversible: sobrescribe la tasa de todos los montos listados e impacta de inmediato la Calculadora y el portal.</span>
+          </div>
+
+          {(bulkRunning || bulkProgress.done > 0) && (
+            <div className="space-y-1.5">
+              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${bulkProgress.total ? (bulkProgress.done / bulkProgress.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {bulkProgress.done} de {bulkProgress.total} montos actualizados
+                {bulkProgress.failed > 0 ? ` · ${bulkProgress.failed} con error` : ''}
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" disabled={bulkRunning} onClick={() => setBulkEdit(null)}>Cancelar</Button>
+            <Button onClick={applyBulkColumn} disabled={bulkRunning}>
+              {bulkRunning ? 'Aplicando…' : `Aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
+
     </div>
   );
 }
