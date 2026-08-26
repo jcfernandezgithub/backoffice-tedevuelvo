@@ -214,7 +214,23 @@ function CriticalRateConfirmDialog({
           </span>
         </label>
 
+        {progress && progress.total > 0 && (
+          <div className="space-y-1.5">
+            <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {progress.done} de {progress.total} montos actualizados
+              {progress.failed > 0 ? ` · ${progress.failed} con error` : ''}
+            </p>
+          </div>
+        )}
+
         <AlertDialogFooter>
+
           <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             disabled={!ack || pending}
