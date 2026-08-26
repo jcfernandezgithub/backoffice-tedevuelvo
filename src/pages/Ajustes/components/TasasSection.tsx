@@ -984,6 +984,8 @@ function TablaDesgravamenBancos() {
   } | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+
 
   const applyBulkColumn = async () => {
     if (!bulkEdit) return;
