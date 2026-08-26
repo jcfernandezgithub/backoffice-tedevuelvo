@@ -987,6 +987,16 @@ function TablaDesgravamenBancos() {
   const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
 
 
+  const requestBulkApply = () => {
+    if (!bulkEdit) return;
+    const tasa = Number(bulkEdit.valor) / 100;
+    if (!bulkEdit.valor.trim() || !isFinite(tasa) || tasa <= 0) {
+      toast.error('Tasa inválida');
+      return;
+    }
+    setConfirmBulkOpen(true);
+  };
+
   const applyBulkColumn = async () => {
     if (!bulkEdit) return;
     const tasa = Number(bulkEdit.valor) / 100;
@@ -1024,12 +1034,13 @@ function TablaDesgravamenBancos() {
     if (failed === 0) {
       toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
       setBulkEdit(null);
+      setConfirmBulkOpen(false);
       window.location.reload();
     } else {
       toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
     }
-
   };
+
 
 
   const bancosFiltrados = useMemo(() =>
