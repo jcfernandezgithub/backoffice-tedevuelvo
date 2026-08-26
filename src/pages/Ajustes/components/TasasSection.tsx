@@ -1089,6 +1089,10 @@ function TablaDesgravamenBancos() {
                     onEdit={(monto, plazo, tasa) =>
                       setCellEdit({ bankName: banco, monto, plazo, valor: String(tasa * 100), original: tasa, edad: tramoEdad })
                     }
+                    onBulkEdit={(plazo, montos) =>
+                      setBulkEdit({ bankName: banco, plazo, montos, valor: '', edad: tramoEdad })
+                    }
+
                   />
                 </AccordionContent>
               </AccordionItem>
