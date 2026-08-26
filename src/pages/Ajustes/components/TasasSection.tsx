@@ -1332,7 +1332,9 @@ function TablaDesgravamenBancos() {
         ] : []}
         onConfirm={applyBulkColumn}
         pending={bulkRunning}
+        progress={bulkProgress}
       />
+
 
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
