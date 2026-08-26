@@ -869,10 +869,30 @@ function BankMatrixTable({
                 Monto crédito
               </th>
               {cuotas.map((c) => (
-                <th key={c} className="text-center px-3 py-2.5 font-medium text-muted-foreground whitespace-nowrap min-w-[72px]">
-                  {c} cuotas
+                <th key={c} className="text-center px-3 py-2 font-medium text-muted-foreground whitespace-nowrap min-w-[86px]">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span>{c} cuotas</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => onBulkEdit(c, filteredMontos)}
+                            disabled={filteredMontos.length === 0}
+                            className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline disabled:opacity-40 disabled:no-underline"
+                          >
+                            <Zap className="h-3 w-3" /> Aplicar a columna
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="text-xs max-w-[220px]">
+                          Actualiza esta columna en los {filteredMontos.length} montos del filtro actual.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </th>
               ))}
+
             </tr>
           </thead>
           <tbody>
