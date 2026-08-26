@@ -1053,10 +1053,11 @@ function TablaDesgravamenBancos() {
       toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
       setBulkEdit(null);
       setConfirmBulkOpen(false);
-      window.location.reload();
+      window.location.href = '/ajustes?tab=tasas';
     } else {
       toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
     }
+
   };
 
 
