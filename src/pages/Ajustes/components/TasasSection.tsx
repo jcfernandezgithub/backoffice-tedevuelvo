@@ -984,6 +984,18 @@ function TablaDesgravamenBancos() {
   } | null>(null);
   const [bulkRunning, setBulkRunning] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0, failed: 0 });
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+
+
+  const requestBulkApply = () => {
+    if (!bulkEdit) return;
+    const tasa = Number(bulkEdit.valor) / 100;
+    if (!bulkEdit.valor.trim() || !isFinite(tasa) || tasa <= 0) {
+      toast.error('Tasa inválida');
+      return;
+    }
+    setConfirmBulkOpen(true);
+  };
 
   const applyBulkColumn = async () => {
     if (!bulkEdit) return;
@@ -1022,12 +1034,13 @@ function TablaDesgravamenBancos() {
     if (failed === 0) {
       toast.success(`${montos.length} tasas actualizadas en la columna ${bulkEdit.plazo} cuotas`);
       setBulkEdit(null);
+      setConfirmBulkOpen(false);
       window.location.reload();
     } else {
       toast.error(`${failed} de ${montos.length} tasas no se pudieron actualizar. Reintenta para completarlas.`);
     }
-
   };
+
 
 
   const bancosFiltrados = useMemo(() =>
@@ -1268,12 +1281,41 @@ function TablaDesgravamenBancos() {
 
           <DialogFooter>
             <Button variant="outline" disabled={bulkRunning} onClick={() => setBulkEdit(null)}>Cancelar</Button>
-            <Button onClick={applyBulkColumn} disabled={bulkRunning}>
-              {bulkRunning ? 'Aplicando…' : `Aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
+            <Button onClick={requestBulkApply} disabled={bulkRunning}>
+              {bulkRunning ? 'Aplicando…' : `Revisar y aplicar a ${bulkEdit?.montos.length ?? 0} montos`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CriticalRateConfirmDialog
+        open={confirmBulkOpen && !!bulkEdit}
+        onOpenChange={setConfirmBulkOpen}
+        context={`Desgravamen · ${bulkEdit?.bankName ?? ''} · ${bulkEdit?.edad === 'hasta_55' ? '18–55 años' : '56+ años'} · ${bulkEdit?.plazo ?? ''} cuotas`}
+        rows={bulkEdit ? [
+          {
+            label: 'Tasa nueva',
+            before: '—',
+            after: `${(Number(bulkEdit.valor) || 0).toFixed(4)}%`,
+            changed: true,
+          },
+          {
+            label: 'Montos afectados',
+            before: '—',
+            after: String(bulkEdit.montos.length),
+            changed: true,
+          },
+          {
+            label: 'Plazo',
+            before: '—',
+            after: `${bulkEdit.plazo} cuotas`,
+            changed: true,
+          },
+        ] : []}
+        onConfirm={applyBulkColumn}
+        pending={bulkRunning}
+      />
+
 
       <CreateMatrixDialog open={creating} onOpenChange={setCreating} nextOrden={bancos.length + 1} />
 
