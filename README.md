@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.6
+## Versión 4.3.7
 
 ## Changelog
+
+### Versión 4.3.7 - 2026-08-27
+
+#### Análisis de crédito con IA: refinamiento de métricas y tabla de proyecciones
+- Se priorizó la **Tasa de Interés Mensual Implícita (Pura)** como indicador principal del análisis, mostrándola en la tarjeta destacada con leyenda explicativa.
+- Se reorganizaron las tarjetas de tasas detectadas para mostrar primero la tasa pura, seguida de Desgravamen mensual, Tasa Combinada Mensual y TEA.
+- Se agregó la columna **Tasa mensual pura (%)** a la tabla de proyecciones por plazo, resaltada con seminegrita y color de acento.
+- Se reordenaron las columnas de proyecciones: Plazo, Tasa mensual pura (%), Cuota mensual estimada ($), Interés acumulado del periodo (%), Costo total acumulado con seguro (%), Total a pagar ($).
+- Se mejoró el normalizador de respuestas del webhook para interpretar múltiples variantes de claves (camelCase, snake_case, con/sin %), derivando tasas combinadas y TEA cuando no vienen explícitas.
+- Se implementó cálculo por anualidad como fallback para cuota estimada, costo total e interés acumulado cuando la IA no entrega proyecciones completas.
 
 ### Versión 4.3.6 - 2026-08-26
 
