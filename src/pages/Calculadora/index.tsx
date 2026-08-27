@@ -96,9 +96,7 @@ export default function CalculadoraPage() {
   const [modoAnalisis, setModoAnalisis] = useState(false);
   const [tasasManuales, setTasasManuales] = useState({
     desgBanco: "",
-    desgPref: "",
     cesBanco: "",
-    cesPref: "",
   });
 
   const parseTasa = (v: string, divisor: number): number | undefined => {
@@ -112,9 +110,7 @@ export default function CalculadoraPage() {
   const overridesActivos: TasaOverrides | undefined = modoAnalisis
     ? {
         tasaBancoDesgravamen: parseTasa(tasasManuales.desgBanco, 100),
-        tasaPreferencialDesgravamen: parseTasa(tasasManuales.desgPref, 1000),
         tasaBancoCesantia: parseTasa(tasasManuales.cesBanco, 1000),
-        tasaPreferencialCesantia: parseTasa(tasasManuales.cesPref, 1000),
       }
     : undefined;
 
@@ -127,9 +123,7 @@ export default function CalculadoraPage() {
       const base = resultadoBase ?? resultado;
       setTasasManuales({
         desgBanco: base?.desgravamen ? (base.desgravamen.tasaBanco * 100).toFixed(4) : "",
-        desgPref: base?.desgravamen ? (base.desgravamen.tasaPreferencial * 1000).toFixed(4) : "",
         cesBanco: base?.cesantia ? (base.cesantia.tasaBanco * 1000).toFixed(4) : "",
-        cesPref: base?.cesantia ? (base.cesantia.tasaPreferencial * 1000).toFixed(4) : "",
       });
     }
   };
@@ -941,28 +935,16 @@ export default function CalculadoraPage() {
                           <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
                             Desgravamen
                           </p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium">Tasa banco (%)</label>
-                              <Input
-                                inputMode="decimal"
-                                placeholder="0,2500"
-                                className="bg-background"
-                                value={tasasManuales.desgBanco}
-                                onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium">Tasa preferencial (‰)</label>
-                              <Input
-                                inputMode="decimal"
-                                placeholder="0,4400"
-                                className="bg-background"
-                                value={tasasManuales.desgPref}
-                                onChange={(e) => setTasasManuales((t) => ({ ...t, desgPref: e.target.value }))}
-                              />
-                            </div>
-                          </div>
+                           <div className="space-y-1">
+                             <label className="text-xs font-medium">Tasa banco (%)</label>
+                             <Input
+                               inputMode="decimal"
+                               placeholder="0,2500"
+                               className="bg-background"
+                               value={tasasManuales.desgBanco}
+                               onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
+                             />
+                           </div>
                         </div>
                       )}
 
@@ -971,28 +953,16 @@ export default function CalculadoraPage() {
                           <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
                             Cesantía
                           </p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium">Tasa banco (‰)</label>
-                              <Input
-                                inputMode="decimal"
-                                placeholder="1,2000"
-                                className="bg-background"
-                                value={tasasManuales.cesBanco}
-                                onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <label className="text-xs font-medium">Tasa preferencial (‰)</label>
-                              <Input
-                                inputMode="decimal"
-                                placeholder="0,9400"
-                                className="bg-background"
-                                value={tasasManuales.cesPref}
-                                onChange={(e) => setTasasManuales((t) => ({ ...t, cesPref: e.target.value }))}
-                              />
-                            </div>
-                          </div>
+                           <div className="space-y-1">
+                             <label className="text-xs font-medium">Tasa banco (‰)</label>
+                             <Input
+                               inputMode="decimal"
+                               placeholder="1,2000"
+                               className="bg-background"
+                               value={tasasManuales.cesBanco}
+                               onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
+                             />
+                           </div>
                         </div>
                       )}
 
@@ -1005,7 +975,7 @@ export default function CalculadoraPage() {
                           variant="ghost"
                           size="sm"
                           className="h-6 px-2 text-xs"
-                          onClick={() => setTasasManuales({ desgBanco: "", desgPref: "", cesBanco: "", cesPref: "" })}
+                          onClick={() => setTasasManuales({ desgBanco: "", cesBanco: "" })}
                         >
                           Limpiar
                         </Button>
