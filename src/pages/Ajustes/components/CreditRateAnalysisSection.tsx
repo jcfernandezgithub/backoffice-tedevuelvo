@@ -461,6 +461,9 @@ export function CreditRateAnalysisSection() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Plazo</TableHead>
+                        <TableHead className="text-right font-semibold text-primary">
+                          Tasa mensual pura (%)
+                        </TableHead>
                         <TableHead className="text-right">Cuota mensual estimada ($)</TableHead>
                         <TableHead className="text-right">Interés acumulado del periodo (%)</TableHead>
                         <TableHead className="w-[160px] bg-primary/5 text-primary">
@@ -483,31 +486,39 @@ export function CreditRateAnalysisSection() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {proyecciones.map((p, i) => (
-                        <TableRow key={`${p.plazo_meses}-${i}`}>
-                          <TableCell className="font-medium">
-                            {p.plazo_meses ? `${p.plazo_meses} cuotas` : '—'}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatMoney(p.cuota_mensual_estimada)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatPct(p.tasa_interes_pura_acumulada_pct, 2)}
-                          </TableCell>
-                          <TableCell className="bg-primary/5 font-bold tabular-nums text-primary">
-                            {formatPct(p.tasa_total_con_seguro_pct, 2)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatMoney(p.monto_total_a_pagar)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {proyecciones.map((p, i) => {
+                        const tasaMensualPura =
+                          p.tasa_mensual_pura_pct ?? resumen?.tasa_interes_mensual_credito_pct;
+                        return (
+                          <TableRow key={`${p.plazo_meses}-${i}`}>
+                            <TableCell className="font-medium">
+                              {p.plazo_meses ? `${p.plazo_meses} cuotas` : '—'}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums font-semibold text-primary">
+                              {formatPct(tasaMensualPura, 3)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatMoney(p.cuota_mensual_estimada)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatPct(p.tasa_interes_pura_acumulada_pct, 2)}
+                            </TableCell>
+                            <TableCell className="bg-primary/5 font-bold tabular-nums text-primary">
+                              {formatPct(p.tasa_total_con_seguro_pct, 2)}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatMoney(p.monto_total_a_pagar)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
               </TooltipProvider>
             )}
           </div>
+
 
 
         </div>

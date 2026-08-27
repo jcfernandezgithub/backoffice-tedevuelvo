@@ -25,11 +25,13 @@ export interface CreditRatesSummary {
 
 export interface CreditRateProjection {
   plazo_meses?: number;
+  tasa_mensual_pura_pct?: number;
   cuota_mensual_estimada?: number;
   tasa_interes_pura_acumulada_pct?: number;
   tasa_total_con_seguro_pct?: number;
   monto_total_a_pagar?: number;
 }
+
 
 export interface CreditRateAnalysisResponse {
   documento_analizado?: CreditDocumentAnalysis;
@@ -217,6 +219,13 @@ function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResp
       const tasaConSeguro =
         toNum(raw.tasa_total_con_seguro_pct ?? raw.tasa_con_seguro_pct ?? raw.tasa_con_seguro) ??
         combinada;
+      const tasaMensualPura =
+        toNum(
+          raw.tasa_mensual_pura_pct ??
+            raw.tasa_interes_mensual_pct ??
+            raw.tasa_interes_mensual_credito_pct ??
+            raw.tasa_pura,
+        ) ?? interes;
       let cuota = toNum(raw.cuota_mensual_estimada ?? raw.cuota_estimada ?? raw.cuota_mensual);
       let total = toNum(raw.monto_total_a_pagar ?? raw.total_a_pagar ?? raw.total);
       // Derivación por anualidad cuando la IA no devuelve montos.
@@ -232,6 +241,7 @@ function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResp
       return {
         ...p,
         plazo_meses: plazo,
+        tasa_mensual_pura_pct: tasaMensualPura,
         cuota_mensual_estimada: cuota,
         monto_total_a_pagar: total,
         tasa_interes_pura_acumulada_pct: acumulada,
@@ -239,6 +249,7 @@ function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResp
       } as CreditRateProjection;
     });
   }
+
   return out;
 }
 
