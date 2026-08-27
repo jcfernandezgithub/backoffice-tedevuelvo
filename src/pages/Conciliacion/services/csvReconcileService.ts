@@ -43,6 +43,10 @@ export interface ProcessedRow {
   matchedNewMonthlyPremium?: number
   /** Cuotas restantes confirmadas del crédito — desde calculationSnapshot. */
   matchedRemainingInstallments?: number
+  /** Prima total resuelta con la fórmula del Detalle (incluye cesantía / prima única). */
+  matchedPrimaTotal?: number
+  /** True cuando el seguro es cesantía pura (prima única, sin prima mensual). */
+  matchedIsCesantia?: boolean
   /** Aprobado explícitamente por el usuario para conciliar. */
   approved?: boolean
   matchedLinkedMovement?: string
@@ -255,6 +259,8 @@ export function matchAgainstSystem(
         matchedFullName: refund.fullName,
         matchedNewMonthlyPremium: refund.newMonthlyPremium,
         matchedRemainingInstallments: refund.confirmedRemainingInstallments,
+        matchedPrimaTotal: refund.primaTotal,
+        matchedIsCesantia: refund.isCesantia,
         detail: `La solicitud ${refund.publicId} ya está asociada a este movimiento.`,
       }
     }
@@ -268,6 +274,8 @@ export function matchAgainstSystem(
         matchedFullName: refund.fullName,
         matchedNewMonthlyPremium: refund.newMonthlyPremium,
         matchedRemainingInstallments: refund.confirmedRemainingInstallments,
+        matchedPrimaTotal: refund.primaTotal,
+        matchedIsCesantia: refund.isCesantia,
         matchedLinkedMovement: linkedDoc,
         detail: `La solicitud ${refund.publicId} ya está asociada al movimiento ${linkedDoc}.`,
       }
@@ -281,6 +289,8 @@ export function matchAgainstSystem(
       matchedFullName: refund.fullName,
       matchedNewMonthlyPremium: refund.newMonthlyPremium,
       matchedRemainingInstallments: refund.confirmedRemainingInstallments,
+      matchedPrimaTotal: refund.primaTotal,
+      matchedIsCesantia: refund.isCesantia,
       approved: true,
       detail: 'Coincide con una solicitud Ingresada. Lista para conciliar.',
     }
