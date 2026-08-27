@@ -7,6 +7,7 @@ import { AIValidationSection } from './components/AIValidationSection';
 import { PolicyMinimumValueSection } from './components/PolicyMinimumValueSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
 import { RolesSection } from './components/RolesSection';
+import { CreditRateAnalysisSection } from './components/CreditRateAnalysisSection';
 import {
   Timer,
   TrendingUp,
