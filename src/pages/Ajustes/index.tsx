@@ -18,6 +18,7 @@ import {
   Building2,
   ShieldCheck,
   BadgeDollarSign,
+  FileSearch,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
