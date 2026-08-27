@@ -908,7 +908,89 @@ export default function CalculadoraPage() {
                   )}
                 />
 
+                {/* Modo análisis: tasas manuales */}
+                <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">Usar tasa manual</p>
+                        <Badge variant="outline" className="text-[10px]">Modo análisis</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Reemplaza las tasas del servicio para comparar escenarios. No afecta a las solicitudes.
+                      </p>
+                    </div>
+                    <Switch checked={modoAnalisis} onCheckedChange={activarModoAnalisis} />
+                  </div>
+
+                  {modoAnalisis && (
+                    <div className="space-y-3 pt-1">
+                      {(form.watch("tipoSeguro") === "desgravamen" || form.watch("tipoSeguro") === "ambos") && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Tasa banco desgravamen (%)</label>
+                            <Input
+                              inputMode="decimal"
+                              placeholder="0,2500"
+                              value={tasasManuales.desgBanco}
+                              onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Tasa preferencial TDV (‰)</label>
+                            <Input
+                              inputMode="decimal"
+                              placeholder="0,4400"
+                              value={tasasManuales.desgPref}
+                              onChange={(e) => setTasasManuales((t) => ({ ...t, desgPref: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {(form.watch("tipoSeguro") === "cesantia" || form.watch("tipoSeguro") === "ambos") && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Tasa banco cesantía (‰)</label>
+                            <Input
+                              inputMode="decimal"
+                              placeholder="1,2000"
+                              value={tasasManuales.cesBanco}
+                              onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Tasa preferencial cesantía (‰)</label>
+                            <Input
+                              inputMode="decimal"
+                              placeholder="0,9400"
+                              value={tasasManuales.cesPref}
+                              onChange={(e) => setTasasManuales((t) => ({ ...t, cesPref: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          Deja un campo vacío para mantener la tasa vigente del servicio.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setTasasManuales({ desgBanco: "", desgPref: "", cesBanco: "", cesPref: "" })}
+                        >
+                          Limpiar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Selector de margen de seguridad */}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Margen de seguridad</label>
                   <Select
