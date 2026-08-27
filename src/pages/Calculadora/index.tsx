@@ -8,7 +8,9 @@ import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageC
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
-import { calcularDevolucion, CalculationResult } from "@/lib/calculadoraUtils";
+import { calcularDevolucion, CalculationResult, TasaOverrides } from "@/lib/calculadoraUtils";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { usePublicInstitutions } from "@/hooks/useInstitutions";
 import { useBankCesantiaRates, useBankRateMatrix, useTdvCesantiaRates } from "@/hooks/useRates";
 
@@ -184,7 +186,7 @@ export default function CalculadoraPage() {
 
     const edad = calcularEdad(data.fechaNacimiento);
     
-    const result = calcularDevolucion(
+    const base = calcularDevolucion(
       data.institucion,
       edad,
       data.montoCredito,
@@ -194,8 +196,22 @@ export default function CalculadoraPage() {
       data.saldoInsoluto
     );
 
+    const result = hayOverrides
+      ? calcularDevolucion(
+          data.institucion,
+          edad,
+          data.montoCredito,
+          data.cuotasTotales,
+          data.cuotasPendientes,
+          data.tipoSeguro,
+          data.saldoInsoluto,
+          overridesActivos
+        )
+      : base;
+
     setTimeout(() => {
       setResultado(result);
+      setResultadoBase(base);
       setFormDataSnapshot(data);
       setIsCalculating(false);
     }, 500);
@@ -989,6 +1005,7 @@ export default function CalculadoraPage() {
                     onClick={() => {
                       form.reset();
                       setResultado(null);
+                      setResultadoBase(null);
                       setFormDataSnapshot(null);
                     }}
                   >
