@@ -364,10 +364,7 @@ export function CreditRateAnalysisSection() {
               <MetricCard
                 icon={Percent}
                 label="Tasa con seguro"
-                value={formatPct(
-                  resumen?.tasa_combinada_mensual_pct ?? doc?.tasa_total_con_seguro_pct,
-                  3,
-                )}
+                value={formatPct(resumen?.tasa_combinada_mensual_pct, 3)}
                 hint="Dato principal del análisis"
                 highlight
               />
