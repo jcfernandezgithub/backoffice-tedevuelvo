@@ -122,9 +122,84 @@ function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
   return normalizeAnalysis(obj);
 }
 
-/** Tolera variantes de claves para las proyecciones (snake/camel/alternativas). */
+/** Convierte a número tolerando strings con %, puntos y comas. */
+function toNum(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value !== 'string') return undefined;
+  const cleaned = value.replace(/[%\s$]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Aplana recursivamente el payload en pares [clave, valor numérico]. */
+function flattenNumbers(input: unknown, depth = 0, acc: Array<[string, number]> = []) {
+  if (depth > 5 || input == null || typeof input !== 'object') return acc;
+  if (Array.isArray(input)) return acc; // las listas se tratan aparte (proyecciones)
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    const n = toNum(v);
+    if (n !== undefined) acc.push([k.toLowerCase(), n]);
+    else flattenNumbers(v, depth + 1, acc);
+  }
+  return acc;
+}
+
+function pick(
+  pairs: Array<[string, number]>,
+  include: string[],
+  exclude: string[] = [],
+): number | undefined {
+  const hit = pairs.find(
+    ([k, v]) =>
+      include.every((t) => k.includes(t)) && !exclude.some((t) => k.includes(t)) && v !== 0,
+  );
+  return hit?.[1];
+}
+
+/** Tolera variantes de claves y deriva los valores que la IA no entregó. */
 function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResponse {
   const out = { ...(obj as CreditRateAnalysisResponse) };
+  const pairs = flattenNumbers(obj);
+
+  // ---- Datos del documento ----
+  const doc: CreditDocumentAnalysis = { ...(out.documento_analizado ?? {}) };
+  doc.monto_credito_detectado =
+    toNum(doc.monto_credito_detectado) ?? pick(pairs, ['monto'], ['total', 'pagar', 'cuota']);
+  doc.cuota_mensual_detectada =
+    toNum(doc.cuota_mensual_detectada) ?? pick(pairs, ['cuota'], ['plazo', 'numero', 'cantidad']);
+  doc.plazo_meses_detectado =
+    toNum(doc.plazo_meses_detectado) ?? pick(pairs, ['plazo']) ?? pick(pairs, ['meses']);
+  out.documento_analizado = doc;
+
+  // ---- Tasas ----
+  const r: CreditRatesSummary = { ...(out.resumen_tasas ?? {}) };
+  const desgravamen =
+    toNum(r.tasa_desgravamen_mensual_pct) ??
+    toNum(doc.tasa_desgravamen_mensual_pct) ??
+    pick(pairs, ['desgravamen']);
+  const interes =
+    toNum(r.tasa_interes_mensual_credito_pct) ??
+    pick(pairs, ['interes', 'mensual'], ['acumulad', 'seguro', 'total']) ??
+    pick(pairs, ['tasa', 'credito'], ['acumulad', 'seguro', 'anual', 'combinada']);
+  let combinada =
+    toNum(r.tasa_combinada_mensual_pct) ??
+    pick(pairs, ['combinada']) ??
+    pick(pairs, ['con_seguro'], ['acumulad', 'total_a']) ??
+    pick(pairs, ['total', 'seguro'], ['acumulad', 'pagar']);
+  if (combinada === undefined && interes !== undefined) {
+    combinada = interes + (desgravamen ?? 0);
+  }
+  let tea =
+    toNum(r.tasa_efectiva_anual_tea_pct) ?? pick(pairs, ['tea']) ?? pick(pairs, ['anual']);
+  if (tea === undefined && combinada !== undefined) {
+    tea = (Math.pow(1 + combinada / 100, 12) - 1) * 100;
+  }
+  r.tasa_desgravamen_mensual_pct = desgravamen;
+  r.tasa_interes_mensual_credito_pct = interes;
+  r.tasa_combinada_mensual_pct = combinada;
+  r.tasa_efectiva_anual_tea_pct = tea;
+  out.resumen_tasas = r;
+
+  // ---- Proyecciones ----
   if (!Array.isArray(out.proyecciones_por_plazo)) {
     const alt =
       obj['proyecciones'] ??
@@ -135,19 +210,38 @@ function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResp
     if (Array.isArray(alt)) out.proyecciones_por_plazo = alt as CreditRateProjection[];
   }
   if (Array.isArray(out.proyecciones_por_plazo)) {
+    const monto = doc.monto_credito_detectado;
     out.proyecciones_por_plazo = out.proyecciones_por_plazo.map((p) => {
-      const raw = p as Record<string, unknown>;
+      const raw = (p ?? {}) as Record<string, unknown>;
+      const plazo = toNum(raw.plazo_meses ?? raw.plazo ?? raw.cuotas ?? raw.meses);
+      const tasaConSeguro =
+        toNum(raw.tasa_total_con_seguro_pct ?? raw.tasa_con_seguro_pct ?? raw.tasa_con_seguro) ??
+        combinada;
+      let cuota = toNum(raw.cuota_mensual_estimada ?? raw.cuota_estimada ?? raw.cuota_mensual);
+      let total = toNum(raw.monto_total_a_pagar ?? raw.total_a_pagar ?? raw.total);
+      // Derivación por anualidad cuando la IA no devuelve montos.
+      if ((!cuota || cuota <= 0) && monto && plazo && tasaConSeguro) {
+        const i = tasaConSeguro / 100;
+        cuota = i > 0 ? (monto * i) / (1 - Math.pow(1 + i, -plazo)) : monto / plazo;
+      }
+      if ((!total || total <= 0) && cuota && plazo) total = cuota * plazo;
+      let acumulada = toNum(raw.tasa_interes_pura_acumulada_pct ?? raw.tasa_acumulada_pct);
+      if ((!acumulada || acumulada <= 0) && total && monto) {
+        acumulada = (total / monto - 1) * 100;
+      }
       return {
         ...p,
-        plazo_meses: raw.plazo_meses ?? raw.plazo ?? raw.cuotas ?? raw.meses,
-        cuota_mensual_estimada: raw.cuota_mensual_estimada ?? raw.cuota_estimada ?? raw.cuota_mensual,
-        tasa_total_con_seguro_pct:
-          raw.tasa_total_con_seguro_pct ?? raw.tasa_con_seguro_pct ?? raw.tasa_con_seguro,
+        plazo_meses: plazo,
+        cuota_mensual_estimada: cuota,
+        monto_total_a_pagar: total,
+        tasa_interes_pura_acumulada_pct: acumulada,
+        tasa_total_con_seguro_pct: tasaConSeguro,
       } as CreditRateProjection;
     });
   }
   return out;
 }
+
 
 function looksLikeAnalysis(value: unknown): boolean {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
