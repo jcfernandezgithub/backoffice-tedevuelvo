@@ -134,6 +134,18 @@ function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResp
       obj['tabla_proyecciones'];
     if (Array.isArray(alt)) out.proyecciones_por_plazo = alt as CreditRateProjection[];
   }
+  if (Array.isArray(out.proyecciones_por_plazo)) {
+    out.proyecciones_por_plazo = out.proyecciones_por_plazo.map((p) => {
+      const raw = p as Record<string, unknown>;
+      return {
+        ...p,
+        plazo_meses: raw.plazo_meses ?? raw.plazo ?? raw.cuotas ?? raw.meses,
+        cuota_mensual_estimada: raw.cuota_mensual_estimada ?? raw.cuota_estimada ?? raw.cuota_mensual,
+        tasa_total_con_seguro_pct:
+          raw.tasa_total_con_seguro_pct ?? raw.tasa_con_seguro_pct ?? raw.tasa_con_seguro,
+      } as CreditRateProjection;
+    });
+  }
   return out;
 }
 
