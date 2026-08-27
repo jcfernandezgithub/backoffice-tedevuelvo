@@ -363,7 +363,7 @@ export function CreditRateAnalysisSection() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard
                 icon={Percent}
-                label="Tasa con seguro"
+                label="Tasa mensual con seguro"
                 value={formatPct(resumen?.tasa_combinada_mensual_pct, 3)}
                 hint="Dato principal del análisis"
                 highlight
@@ -388,18 +388,17 @@ export function CreditRateAnalysisSection() {
             </div>
           </div>
 
-          {/* Destacado tasa con seguro */}
+          {/* Destacado tasa mensual con seguro */}
           {resumen?.tasa_combinada_mensual_pct !== undefined && (
             <div className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-5">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
               <div className="relative flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-primary/80">
-                    Tasa con seguro detectada
+                    Tasa mensual con seguro detectada
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Este es el indicador clave que incluye la tasa de interés del crédito más la
-                    protección de desgravamen.
+                    Tasa de interés mensual del crédito más la prima mensual del seguro de desgravamen.
                   </p>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -411,6 +410,7 @@ export function CreditRateAnalysisSection() {
               </div>
             </div>
           )}
+
 
           {/* Datos del crédito */}
           <div>
@@ -444,42 +444,60 @@ export function CreditRateAnalysisSection() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-border/60">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[160px] bg-primary/5 text-primary">Tasa con seguro</TableHead>
-                      <TableHead>Plazo</TableHead>
-                      <TableHead className="text-right">Cuota estimada</TableHead>
-                      <TableHead className="text-right">Tasa interés acum.</TableHead>
-                      <TableHead className="text-right">Total a pagar</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {proyecciones.map((p, i) => (
-                      <TableRow key={`${p.plazo_meses}-${i}`}>
-                        <TableCell className="bg-primary/5 font-bold tabular-nums text-primary">
-                          {formatPct(p.tasa_total_con_seguro_pct, 3)}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {p.plazo_meses ? `${p.plazo_meses} cuotas` : '—'}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatMoney(p.cuota_mensual_estimada)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatPct(p.tasa_interes_pura_acumulada_pct, 2)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatMoney(p.monto_total_a_pagar)}
-                        </TableCell>
+              <TooltipProvider>
+                <div className="overflow-x-auto rounded-lg border border-border/60">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Plazo</TableHead>
+                        <TableHead className="text-right">Cuota estimada</TableHead>
+                        <TableHead className="text-right">Tasa interés acum.</TableHead>
+                        <TableHead className="w-[160px] bg-primary/5 text-primary">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex cursor-help items-center gap-1">
+                                Sobrecosto total (%)
+                                <Info className="h-3 w-3 opacity-70" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p>
+                                Porcentaje total pagado por sobre el capital prestado (Intereses +
+                                Desgravamen acumulados en todo el periodo)
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableHead>
+                        <TableHead className="text-right">Total a pagar ($)</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {proyecciones.map((p, i) => (
+                        <TableRow key={`${p.plazo_meses}-${i}`}>
+                          <TableCell className="font-medium">
+                            {p.plazo_meses ? `${p.plazo_meses} cuotas` : '—'}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney(p.cuota_mensual_estimada)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatPct(p.tasa_interes_pura_acumulada_pct, 2)}
+                          </TableCell>
+                          <TableCell className="bg-primary/5 font-bold tabular-nums text-primary">
+                            {formatPct(p.tasa_total_con_seguro_pct, 2)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney(p.monto_total_a_pagar)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TooltipProvider>
             )}
           </div>
+
 
         </div>
       )}
