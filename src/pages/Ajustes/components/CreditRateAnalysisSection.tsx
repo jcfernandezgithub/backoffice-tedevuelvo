@@ -368,49 +368,49 @@ export function CreditRateAnalysisSection() {
               Tasas detectadas
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <MetricCard
-                icon={Percent}
-                label="Tasa mensual con seguro"
-                value={formatPct(resumen?.tasa_combinada_mensual_pct, 3)}
-                hint="Dato principal del análisis"
-                highlight
-              />
-              <MetricCard
-                icon={Percent}
-                label="Interés mensual crédito"
-                value={formatPct(resumen?.tasa_interes_mensual_credito_pct)}
-              />
-              <MetricCard
-                icon={Percent}
-                label="Desgravamen mensual"
-                value={formatPct(
-                  resumen?.tasa_desgravamen_mensual_pct ?? doc?.tasa_desgravamen_mensual_pct,
-                )}
-              />
-              <MetricCard
-                icon={Percent}
-                label="Tasa efectiva anual (TEA)"
-                value={formatPct(resumen?.tasa_efectiva_anual_tea_pct, 2)}
-              />
+            <MetricCard
+              icon={Percent}
+              label="Tasa de Interés Mensual Implícita (Pura)"
+              value={formatPct(resumen?.tasa_interes_mensual_credito_pct, 3)}
+              hint="Tasa pura calculada a partir del monto, cuota y plazo del crédito"
+              highlight
+            />
+            <MetricCard
+              icon={Percent}
+              label="Desgravamen mensual"
+              value={formatPct(
+                resumen?.tasa_desgravamen_mensual_pct ?? doc?.tasa_desgravamen_mensual_pct,
+              )}
+            />
+            <MetricCard
+              icon={Percent}
+              label="Tasa Combinada Mensual"
+              value={formatPct(resumen?.tasa_combinada_mensual_pct, 3)}
+            />
+            <MetricCard
+              icon={Percent}
+              label="Tasa Efectiva Anual (TEA)"
+              value={formatPct(resumen?.tasa_efectiva_anual_tea_pct, 2)}
+            />
             </div>
           </div>
 
           {/* Destacado tasa mensual con seguro */}
-          {resumen?.tasa_combinada_mensual_pct !== undefined && (
+          {resumen?.tasa_interes_mensual_credito_pct !== undefined && (
             <div className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-5">
               <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
               <div className="relative flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-primary/80">
-                    Tasa mensual con seguro detectada
+                    Tasa de Interés Mensual Implícita (Pura) detectada
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Tasa de interés mensual del crédito más la prima mensual del seguro de desgravamen.
+                    Tasa pura calculada a partir del monto, cuota y plazo del crédito.
                   </p>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-extrabold tracking-tight text-primary tabular-nums">
-                    {formatPct(resumen.tasa_combinada_mensual_pct, 3)}
+                    {formatPct(resumen.tasa_interes_mensual_credito_pct, 3)}
                   </span>
                   <span className="text-sm font-medium text-muted-foreground">mensual</span>
                 </div>
@@ -440,6 +440,10 @@ export function CreditRateAnalysisSection() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
               Proyecciones por plazo
             </p>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Cada cuota mensual estimada se proyectó utilizando la Tasa de Interés Mensual Implícita
+              (Pura) calculada.
+            </p>
             {proyecciones.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border/70 p-6 text-center">
                 <p className="text-sm font-medium text-muted-foreground">
@@ -457,13 +461,13 @@ export function CreditRateAnalysisSection() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Plazo</TableHead>
-                        <TableHead className="text-right">Cuota estimada</TableHead>
-                        <TableHead className="text-right">Tasa interés acum.</TableHead>
+                        <TableHead className="text-right">Cuota mensual estimada ($)</TableHead>
+                        <TableHead className="text-right">Interés acumulado del periodo (%)</TableHead>
                         <TableHead className="w-[160px] bg-primary/5 text-primary">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div className="flex cursor-help items-center gap-1">
-                                Sobrecosto total (%)
+                                Costo total acumulado con seguro (%)
                                 <Info className="h-3 w-3 opacity-70" />
                               </div>
                             </TooltipTrigger>
