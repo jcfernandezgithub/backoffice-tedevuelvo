@@ -1,6 +1,6 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.7
+## Versión 4.3.8
 
 ## Changelog
 
