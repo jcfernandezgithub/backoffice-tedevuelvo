@@ -81,6 +81,14 @@ const NAV_ITEMS: NavItem[] = [
     component: <AIValidationSection />,
   },
   {
+    id: 'analisis-credito',
+    label: 'Análisis de crédito con IA',
+    description: 'Tasas desde el documento',
+    icon: FileSearch,
+    group: 'Automatización',
+    component: <CreditRateAnalysisSection />,
+  },
+  {
     id: 'roles',
     label: 'Roles y permisos',
     description: 'Perfiles de acceso a la plataforma',
