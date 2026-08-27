@@ -74,6 +74,10 @@ import type { CartolaMovementRef } from './LinkRefundsDialog'
  *   montoReal     = max(0, montoCSV − primaTotalTDV)
  */
 function primaTotalTDV(r: ProcessedRow): number {
+  // Fuente de verdad: primaTotal resuelta con la fórmula del Detalle (cubre
+  // cesantía pura, donde la prima es única y no hay prima mensual).
+  const total = Number(r.matchedPrimaTotal ?? 0)
+  if (total > 0) return Math.round(total)
   const prima = Number(r.matchedNewMonthlyPremium ?? 0)
   const cuotas = Number(r.matchedRemainingInstallments ?? 0)
   if (!prima || !cuotas) return 0
