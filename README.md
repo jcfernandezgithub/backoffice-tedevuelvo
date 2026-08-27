@@ -20,6 +20,8 @@
 - Se actualizó la etiqueta de la prima para mostrar "prima única" en estos casos, alineando la información con el tipo de seguro.
 
 ### Versión 4.3.7 - 2026-08-27
+
+#### Análisis de crédito con IA: refinamiento de métricas y tabla de proyecciones
 - Se priorizó la **Tasa de Interés Mensual Implícita (Pura)** como indicador principal del análisis, mostrándola en la tarjeta destacada con leyenda explicativa.
 - Se reorganizaron las tarjetas de tasas detectadas para mostrar primero la tasa pura, seguida de Desgravamen mensual, Tasa Combinada Mensual y TEA.
 - Se agregó la columna **Tasa mensual pura (%)** a la tabla de proyecciones por plazo, resaltada con seminegrita y color de acento.
