@@ -106,7 +106,12 @@ export function CreditRateAnalysisSection() {
     [result],
   );
 
-  const isValid = doc?.es_credito_valido === true;
+  const hasRates =
+    (resumen?.tasa_interes_mensual_credito_pct ?? 0) > 0 ||
+    (resumen?.tasa_combinada_mensual_pct ?? 0) > 0 ||
+    result?.es_valido_para_continuar_proceso === true;
+
+  const isValid = doc?.es_credito_valido === true || result?.es_valido_para_continuar_proceso === true;
 
   const pickFile = useCallback((next: File | null) => {
     if (!next) return;
