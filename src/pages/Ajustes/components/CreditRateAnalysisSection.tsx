@@ -355,7 +355,7 @@ export function CreditRateAnalysisSection() {
             </Button>
           </div>
 
-          {/* Tasas */}
+          {/* Tasas detectadas */}
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
               Tasas detectadas
@@ -363,9 +363,12 @@ export function CreditRateAnalysisSection() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <MetricCard
                 icon={Percent}
-                label="Tasa combinada mensual"
-                value={formatPct(resumen?.tasa_combinada_mensual_pct)}
-                hint="Interés + desgravamen"
+                label="Tasa con seguro"
+                value={formatPct(
+                  resumen?.tasa_combinada_mensual_pct ?? doc?.tasa_total_con_seguro_pct,
+                  3,
+                )}
+                hint="Dato principal del análisis"
                 highlight
               />
               <MetricCard
@@ -387,6 +390,30 @@ export function CreditRateAnalysisSection() {
               />
             </div>
           </div>
+
+          {/* Destacado tasa con seguro */}
+          {resumen?.tasa_combinada_mensual_pct !== undefined && (
+            <div className="relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-background p-5">
+              <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+              <div className="relative flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary/80">
+                    Tasa con seguro detectada
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Este es el indicador clave que incluye la tasa de interés del crédito más la
+                    protección de desgravamen.
+                  </p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-extrabold tracking-tight text-primary tabular-nums">
+                    {formatPct(resumen.tasa_combinada_mensual_pct, 3)}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">mensual</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Datos del crédito */}
           <div>
@@ -414,16 +441,19 @@ export function CreditRateAnalysisSection() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[160px] bg-primary/5 text-primary">Tasa con seguro</TableHead>
                       <TableHead>Plazo</TableHead>
                       <TableHead className="text-right">Cuota estimada</TableHead>
                       <TableHead className="text-right">Tasa interés acum.</TableHead>
-                      <TableHead className="text-right">Tasa con seguro</TableHead>
                       <TableHead className="text-right">Total a pagar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {proyecciones.map((p, i) => (
                       <TableRow key={`${p.plazo_meses}-${i}`}>
+                        <TableCell className="bg-primary/5 font-bold tabular-nums text-primary">
+                          {formatPct(p.tasa_total_con_seguro_pct, 3)}
+                        </TableCell>
                         <TableCell className="font-medium">
                           {p.plazo_meses ? `${p.plazo_meses} cuotas` : '—'}
                         </TableCell>
@@ -432,9 +462,6 @@ export function CreditRateAnalysisSection() {
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatPct(p.tasa_interes_pura_acumulada_pct, 2)}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">
-                          {formatPct(p.tasa_total_con_seguro_pct, 2)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatMoney(p.monto_total_a_pagar)}
@@ -446,6 +473,7 @@ export function CreditRateAnalysisSection() {
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>
