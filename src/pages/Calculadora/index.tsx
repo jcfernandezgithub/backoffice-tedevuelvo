@@ -909,12 +909,23 @@ export default function CalculadoraPage() {
                 />
 
                 {/* Modo análisis: tasas manuales */}
-                <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 p-3 space-y-3">
+                <div
+                  className={`rounded-lg border p-3 space-y-3 transition-colors ${
+                    modoAnalisis
+                      ? "border-amber-300 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/5"
+                      : "border-dashed border-border/70 bg-muted/20"
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">Usar tasa manual</p>
-                        <Badge variant="outline" className="text-[10px]">Modo análisis</Badge>
+                        <Badge
+                          variant={modoAnalisis ? "default" : "outline"}
+                          className={`text-[10px] ${modoAnalisis ? "bg-amber-500 hover:bg-amber-500 text-white" : ""}`}
+                        >
+                          {modoAnalisis ? "Análisis activo" : "Modo análisis"}
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         Reemplaza las tasas del servicio para comparar escenarios. No afecta a las solicitudes.
@@ -924,49 +935,63 @@ export default function CalculadoraPage() {
                   </div>
 
                   {modoAnalisis && (
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-4 pt-1">
                       {(form.watch("tipoSeguro") === "desgravamen" || form.watch("tipoSeguro") === "ambos") && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium">Tasa banco desgravamen (%)</label>
-                            <Input
-                              inputMode="decimal"
-                              placeholder="0,2500"
-                              value={tasasManuales.desgBanco}
-                              onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium">Tasa preferencial TDV (‰)</label>
-                            <Input
-                              inputMode="decimal"
-                              placeholder="0,4400"
-                              value={tasasManuales.desgPref}
-                              onChange={(e) => setTasasManuales((t) => ({ ...t, desgPref: e.target.value }))}
-                            />
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
+                            Desgravamen
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Tasa banco (%)</label>
+                              <Input
+                                inputMode="decimal"
+                                placeholder="0,2500"
+                                className="bg-background"
+                                value={tasasManuales.desgBanco}
+                                onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Tasa preferencial (‰)</label>
+                              <Input
+                                inputMode="decimal"
+                                placeholder="0,4400"
+                                className="bg-background"
+                                value={tasasManuales.desgPref}
+                                onChange={(e) => setTasasManuales((t) => ({ ...t, desgPref: e.target.value }))}
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {(form.watch("tipoSeguro") === "cesantia" || form.watch("tipoSeguro") === "ambos") && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium">Tasa banco cesantía (‰)</label>
-                            <Input
-                              inputMode="decimal"
-                              placeholder="1,2000"
-                              value={tasasManuales.cesBanco}
-                              onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium">Tasa preferencial cesantía (‰)</label>
-                            <Input
-                              inputMode="decimal"
-                              placeholder="0,9400"
-                              value={tasasManuales.cesPref}
-                              onChange={(e) => setTasasManuales((t) => ({ ...t, cesPref: e.target.value }))}
-                            />
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
+                            Cesantía
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Tasa banco (‰)</label>
+                              <Input
+                                inputMode="decimal"
+                                placeholder="1,2000"
+                                className="bg-background"
+                                value={tasasManuales.cesBanco}
+                                onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-medium">Tasa preferencial (‰)</label>
+                              <Input
+                                inputMode="decimal"
+                                placeholder="0,9400"
+                                className="bg-background"
+                                value={tasasManuales.cesPref}
+                                onChange={(e) => setTasasManuales((t) => ({ ...t, cesPref: e.target.value }))}
+                              />
+                            </div>
                           </div>
                         </div>
                       )}
