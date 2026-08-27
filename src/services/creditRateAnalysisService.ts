@@ -110,7 +110,7 @@ function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
   if (typeof input !== 'object') return {} as CreditRateAnalysisResponse;
 
   const obj = input as Record<string, unknown>;
-  if (looksLikeAnalysis(obj)) return obj as CreditRateAnalysisResponse;
+  if (looksLikeAnalysis(obj)) return normalizeAnalysis(obj);
 
   for (const key of ['output', 'json', 'data', 'body', 'result', 'response']) {
     if (key in obj) {
@@ -119,7 +119,22 @@ function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
     }
   }
 
-  return obj as CreditRateAnalysisResponse;
+  return normalizeAnalysis(obj);
+}
+
+/** Tolera variantes de claves para las proyecciones (snake/camel/alternativas). */
+function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResponse {
+  const out = { ...(obj as CreditRateAnalysisResponse) };
+  if (!Array.isArray(out.proyecciones_por_plazo)) {
+    const alt =
+      obj['proyecciones'] ??
+      obj['proyeccionesPorPlazo'] ??
+      obj['proyeccion_por_plazo'] ??
+      obj['proyecciones_por_cuotas'] ??
+      obj['tabla_proyecciones'];
+    if (Array.isArray(alt)) out.proyecciones_por_plazo = alt as CreditRateProjection[];
+  }
+  return out;
 }
 
 function looksLikeAnalysis(value: unknown): boolean {
