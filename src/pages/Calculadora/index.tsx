@@ -922,7 +922,7 @@ export default function CalculadoraPage() {
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Reemplaza las tasas del servicio para comparar escenarios. No afecta a las solicitudes.
+                        Reemplaza la tasa del banco para comparar escenarios. La tasa preferencial no se modifica.
                       </p>
                     </div>
                     <Switch checked={modoAnalisis} onCheckedChange={activarModoAnalisis} />
