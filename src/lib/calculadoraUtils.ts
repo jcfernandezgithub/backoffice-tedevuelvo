@@ -374,7 +374,7 @@ export const calcularDevolucion = (
 
   try {
     if (tipoSeguro === "cesantia") {
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes);
+      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
       const montoConMargen = aplicarMargenDevolucion(cesantia.montoDevolucion);
 
       return {
@@ -395,7 +395,9 @@ export const calcularDevolucion = (
     if (tipoSeguro === "ambos") {
       const tramo = edad <= 55 ? "hasta_55" : "desde_56";
       const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
-      const resultadoTasa = obtenerTasaBanco(bancoMapeado, edad, montoCredito, cuotasTotales);
+      const resultadoTasa = isOverride(overrides?.tasaBancoDesgravamen)
+        ? { tasa: overrides!.tasaBancoDesgravamen!, cuotasUtilizadas: cuotasTotales, montoRedondeado: montoCredito }
+        : obtenerTasaBanco(bancoMapeado, edad, montoCredito, cuotasTotales);
 
       if (resultadoTasa === null) {
         return {
@@ -414,7 +416,9 @@ export const calcularDevolucion = (
       }
 
       const { tasa: tasaActual, cuotasUtilizadas, montoRedondeado } = resultadoTasa;
-      const tasaPreferencial = obtenerTasaPreferencialTDV(saldo, edad);
+      const tasaPreferencial = isOverride(overrides?.tasaPreferencialDesgravamen)
+        ? overrides!.tasaPreferencialDesgravamen!
+        : obtenerTasaPreferencialTDV(saldo, edad);
 
       // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
       // del crédito original, no sobre el saldo insoluto. El saldo insoluto
@@ -449,7 +453,7 @@ export const calcularDevolucion = (
         seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
       };
 
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes);
+      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
       const montoDevolucionTotal = desgravamen.montoDevolucion + cesantia.montoDevolucion;
       const montoConMargen = aplicarMargenDevolucion(montoDevolucionTotal);
 
@@ -472,7 +476,9 @@ export const calcularDevolucion = (
     // Solo desgravamen
     const tramo = edad <= 55 ? "hasta_55" : "desde_56";
     const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
-    const resultadoTasa = obtenerTasaBanco(bancoMapeado, edad, montoCredito, cuotasTotales);
+    const resultadoTasa = isOverride(overrides?.tasaBancoDesgravamen)
+      ? { tasa: overrides!.tasaBancoDesgravamen!, cuotasUtilizadas: cuotasTotales, montoRedondeado: montoCredito }
+      : obtenerTasaBanco(bancoMapeado, edad, montoCredito, cuotasTotales);
 
     if (resultadoTasa === null) {
       return {
@@ -491,7 +497,9 @@ export const calcularDevolucion = (
     }
 
     const { tasa: tasaActual, cuotasUtilizadas, montoRedondeado } = resultadoTasa;
-    const tasaPreferencial = obtenerTasaPreferencialTDV(saldo, edad);
+    const tasaPreferencial = isOverride(overrides?.tasaPreferencialDesgravamen)
+      ? overrides!.tasaPreferencialDesgravamen!
+      : obtenerTasaPreferencialTDV(saldo, edad);
 
     // La prima del banco (única y mensual) se calcula sobre el MONTO TOTAL
     // del crédito original, no sobre el saldo insoluto. El saldo insoluto
