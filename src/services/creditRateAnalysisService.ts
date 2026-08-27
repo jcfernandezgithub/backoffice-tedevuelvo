@@ -78,7 +78,57 @@ export async function analyzeCreditDocument(
     throw new Error('El servicio de análisis no devolvió una respuesta válida.');
   }
 
-  // n8n puede responder un array con un único item.
-  const payload = Array.isArray(data) ? data[0] : data;
-  return (payload ?? {}) as CreditRateAnalysisResponse;
+  return unwrapAnalysis(data);
+}
+
+/**
+ * n8n puede envolver el resultado (array, `output`, `json`, `data`, `body`)
+ * o devolverlo como string JSON. Se busca recursivamente el objeto que
+ * contiene las tasas / proyecciones.
+ */
+function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
+  if (depth > 6 || input == null) return {} as CreditRateAnalysisResponse;
+
+  if (typeof input === 'string') {
+    const text = input.trim();
+    if (!text.startsWith('{') && !text.startsWith('[')) return {} as CreditRateAnalysisResponse;
+    try {
+      return unwrapAnalysis(JSON.parse(text), depth + 1);
+    } catch {
+      return {} as CreditRateAnalysisResponse;
+    }
+  }
+
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      const found = unwrapAnalysis(item, depth + 1);
+      if (looksLikeAnalysis(found)) return found;
+    }
+    return {} as CreditRateAnalysisResponse;
+  }
+
+  if (typeof input !== 'object') return {} as CreditRateAnalysisResponse;
+
+  const obj = input as Record<string, unknown>;
+  if (looksLikeAnalysis(obj)) return obj as CreditRateAnalysisResponse;
+
+  for (const key of ['output', 'json', 'data', 'body', 'result', 'response']) {
+    if (key in obj) {
+      const found = unwrapAnalysis(obj[key], depth + 1);
+      if (looksLikeAnalysis(found)) return found;
+    }
+  }
+
+  return obj as CreditRateAnalysisResponse;
+}
+
+function looksLikeAnalysis(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    'resumen_tasas' in obj ||
+    'proyecciones_por_plazo' in obj ||
+    'documento_analizado' in obj ||
+    'es_valido_para_continuar_proceso' in obj
+  );
 }
