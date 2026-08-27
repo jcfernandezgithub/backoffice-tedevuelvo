@@ -340,7 +340,7 @@ export function CreditRateAnalysisSection() {
                   </Badge>
                 )}
               </div>
-              {result.observaciones && (
+              {result.observaciones && !hasRates && (
                 <p className="mt-1 text-xs text-muted-foreground">{result.observaciones}</p>
               )}
             </div>
