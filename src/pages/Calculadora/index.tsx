@@ -8,7 +8,9 @@ import { Calculator, TrendingDown, Shield, Info, AlertCircle, Download, MessageC
 import { jsPDF } from "jspdf";
 import { cn } from "@/lib/utils";
 import { formatCurrency, calcularEdad } from "@/lib/formatters";
-import { calcularDevolucion, CalculationResult } from "@/lib/calculadoraUtils";
+import { calcularDevolucion, CalculationResult, TasaOverrides } from "@/lib/calculadoraUtils";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { usePublicInstitutions } from "@/hooks/useInstitutions";
 import { useBankCesantiaRates, useBankRateMatrix, useTdvCesantiaRates } from "@/hooks/useRates";
 
@@ -83,14 +85,51 @@ export default function CalculadoraPage() {
     .filter((i) => i.active)
     .sort((a, b) => a.label.localeCompare(b.label));
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
+  const [resultadoBase, setResultadoBase] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
   const [margenTeDevuelvo, setMargenTeDevuelvo] = useState(getMargenTeDevuelvo);
   const [margenSeguridad, setMargenSeguridad] = useState(0);
   const [editandoMargenTeDevuelvo, setEditandoMargenTeDevuelvo] = useState(false);
   const [openInstitution, setOpenInstitution] = useState(false);
+  // Modo análisis: permite usar tasas manuales en lugar de las del servicio
+  const [modoAnalisis, setModoAnalisis] = useState(false);
+  const [tasasManuales, setTasasManuales] = useState({
+    desgBanco: "",
+    cesBanco: "",
+  });
+
+  const parseTasa = (v: string, divisor: number): number | undefined => {
+    const raw = v.trim().replace(",", ".");
+    if (!raw) return undefined;
+    const n = Number(raw);
+    if (isNaN(n) || n < 0) return undefined;
+    return n / divisor;
+  };
+
+  const overridesActivos: TasaOverrides | undefined = modoAnalisis
+    ? {
+        tasaBancoDesgravamen: parseTasa(tasasManuales.desgBanco, 100),
+        tasaBancoCesantia: parseTasa(tasasManuales.cesBanco, 1000),
+      }
+    : undefined;
+
+  const hayOverrides = !!overridesActivos && Object.values(overridesActivos).some((v) => v !== undefined);
+
+  // Al activar el modo análisis, precarga las tasas vigentes del último cálculo
+  const activarModoAnalisis = (checked: boolean) => {
+    setModoAnalisis(checked);
+    if (checked) {
+      const base = resultadoBase ?? resultado;
+      setTasasManuales({
+        desgBanco: base?.desgravamen ? (base.desgravamen.tasaBanco * 100).toFixed(4) : "",
+        cesBanco: base?.cesantia ? (base.cesantia.tasaBanco * 1000).toFixed(4) : "",
+      });
+    }
+  };
 
   const MARGENES_DISPONIBLES = generarMargenes(margenTeDevuelvo);
+
 
   const handleCambiarMargenTeDevuelvo = (nuevoMargen: number) => {
     localStorage.setItem(MARGEN_TE_DEVUELVO_KEY, nuevoMargen.toString());
@@ -141,7 +180,7 @@ export default function CalculadoraPage() {
 
     const edad = calcularEdad(data.fechaNacimiento);
     
-    const result = calcularDevolucion(
+    const base = calcularDevolucion(
       data.institucion,
       edad,
       data.montoCredito,
@@ -151,8 +190,22 @@ export default function CalculadoraPage() {
       data.saldoInsoluto
     );
 
+    const result = hayOverrides
+      ? calcularDevolucion(
+          data.institucion,
+          edad,
+          data.montoCredito,
+          data.cuotasTotales,
+          data.cuotasPendientes,
+          data.tipoSeguro,
+          data.saldoInsoluto,
+          overridesActivos
+        )
+      : base;
+
     setTimeout(() => {
       setResultado(result);
+      setResultadoBase(base);
       setFormDataSnapshot(data);
       setIsCalculating(false);
     }, 500);
@@ -300,7 +353,7 @@ export default function CalculadoraPage() {
       if (!isCallcenter) {
         doc.setTextColor(80);
         doc.text(`Tasa banco: ${(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
-        doc.text(`Tasa preferencial: ${(resultado.desgravamen.tasaPreferencial * 1000).toFixed(4)}‰`, 25, y); y += 5;
+        
 
         if (resultado.desgravamen.cuotasUtilizadas) {
           doc.text(`Cuotas utilizadas para tasa: ${resultado.desgravamen.cuotasUtilizadas}`, 25, y); y += 5;
@@ -358,7 +411,7 @@ export default function CalculadoraPage() {
       if (!isCallcenter) {
         doc.setTextColor(80);
         doc.text(`Tasa banco: ${(ces.tasaBanco * 1000).toFixed(4)}‰`, 25, y); y += 5;
-        doc.text(`Tasa preferencial: ${(ces.tasaPreferencial * 1000).toFixed(4)}‰`, 25, y); y += 5;
+        
         doc.text(`Cuotas pendientes: ${cuotasPend}`, 25, y); y += 5;
         doc.text(`Tramo: ${ces.tramoUsado}`, 25, y); y += 5;
 
@@ -849,7 +902,90 @@ export default function CalculadoraPage() {
                   )}
                 />
 
+                {/* Modo análisis: tasas manuales */}
+                <div
+                  className={`rounded-lg border p-3 space-y-3 transition-colors ${
+                    modoAnalisis
+                      ? "border-amber-300 bg-amber-50/60 dark:border-amber-500/40 dark:bg-amber-500/5"
+                      : "border-dashed border-border/70 bg-muted/20"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">Usar tasa manual</p>
+                        <Badge
+                          variant={modoAnalisis ? "default" : "outline"}
+                          className={`text-[10px] ${modoAnalisis ? "bg-amber-500 hover:bg-amber-500 text-white" : ""}`}
+                        >
+                          {modoAnalisis ? "Análisis activo" : "Modo análisis"}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Reemplaza la tasa del banco para comparar escenarios. La tasa preferencial no se modifica.
+                      </p>
+                    </div>
+                    <Switch checked={modoAnalisis} onCheckedChange={activarModoAnalisis} />
+                  </div>
+
+                  {modoAnalisis && (
+                    <div className="space-y-4 pt-1">
+                      {(form.watch("tipoSeguro") === "desgravamen" || form.watch("tipoSeguro") === "ambos") && (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
+                            Desgravamen
+                          </p>
+                           <div className="space-y-1">
+                             <label className="text-xs font-medium">Tasa banco (%)</label>
+                             <Input
+                               inputMode="decimal"
+                               placeholder="0,2500"
+                               className="bg-background"
+                               value={tasasManuales.desgBanco}
+                               onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
+                             />
+                           </div>
+                        </div>
+                      )}
+
+                      {(form.watch("tipoSeguro") === "cesantia" || form.watch("tipoSeguro") === "ambos") && (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 border-b border-amber-200/70 dark:border-amber-500/30 pb-1">
+                            Cesantía
+                          </p>
+                           <div className="space-y-1">
+                             <label className="text-xs font-medium">Tasa banco (‰)</label>
+                             <Input
+                               inputMode="decimal"
+                               placeholder="1,2000"
+                               className="bg-background"
+                               value={tasasManuales.cesBanco}
+                               onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
+                             />
+                           </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                          Deja un campo vacío para mantener la tasa vigente del servicio.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => setTasasManuales({ desgBanco: "", cesBanco: "" })}
+                        >
+                          Limpiar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Selector de margen de seguridad */}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Margen de seguridad</label>
                   <Select
@@ -946,6 +1082,7 @@ export default function CalculadoraPage() {
                     onClick={() => {
                       form.reset();
                       setResultado(null);
+                      setResultadoBase(null);
                       setFormDataSnapshot(null);
                     }}
                   >
@@ -991,7 +1128,54 @@ export default function CalculadoraPage() {
                   </CardContent>
                 </Card>
 
+                {/* Comparativa modo análisis vs tasas del servicio */}
+                {hayOverrides && resultadoBase && !resultadoBase.error && (() => {
+                  const rawBase =
+                    (resultadoBase.desgravamen?.montoDevolucion ?? 0) +
+                    (resultadoBase.cesantia?.montoDevolucion ?? 0);
+                  const baseAjustado = calcularConMargenPersonalizado(rawBase);
+                  const delta = montoDevolucionAjustado - baseAjustado;
+                  const pct = baseAjustado > 0 ? (delta / baseAjustado) * 100 : 0;
+                  return (
+                    <Card className="border-amber-500/40 bg-amber-500/5 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Settings className="w-4 h-4 text-amber-600" />
+                          Modo análisis: tasas manuales
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          Comparación con el resultado usando las tasas vigentes del servicio.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-md border bg-background/60 p-3">
+                            <p className="text-xs text-muted-foreground">Tasas del servicio</p>
+                            <p className="text-lg font-semibold tabular-nums">{formatCurrency(baseAjustado)}</p>
+                          </div>
+                          <div className="rounded-md border border-amber-500/40 bg-background/60 p-3">
+                            <p className="text-xs text-muted-foreground">Tasas manuales</p>
+                            <p className="text-lg font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+                              {formatCurrency(montoDevolucionAjustado)}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm">
+                          Diferencia:{" "}
+                          <span className={cn("font-semibold tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
+                            {delta >= 0 ? "+" : "−"}{formatCurrency(Math.abs(delta))}
+                          </span>{" "}
+                          <span className="text-muted-foreground">
+                            ({delta >= 0 ? "+" : "−"}{Math.abs(pct).toFixed(1)}%)
+                          </span>
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
                 {/* Comparativa */}
+
                 <Card className="shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -1132,9 +1316,6 @@ export default function CalculadoraPage() {
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
                                   <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
-
-                                  <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
 
@@ -1191,9 +1372,6 @@ export default function CalculadoraPage() {
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
                                   <span className="font-mono">{(resultado.cesantia.tasaBanco * 1000).toFixed(4)}‰</span>
-
-                                  <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
                             </div>
