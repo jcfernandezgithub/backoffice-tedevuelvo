@@ -7,6 +7,7 @@ import { AIValidationSection } from './components/AIValidationSection';
 import { PolicyMinimumValueSection } from './components/PolicyMinimumValueSection';
 import { InstitutionsSection } from './components/InstitutionsSection';
 import { RolesSection } from './components/RolesSection';
+import { CreditRateAnalysisSection } from './components/CreditRateAnalysisSection';
 import {
   Timer,
   TrendingUp,
@@ -17,6 +18,7 @@ import {
   Building2,
   ShieldCheck,
   BadgeDollarSign,
+  FileSearch,
 } from 'lucide-react';
 
 // ─── Definición de la navegación ────────────────────────────────────────────
@@ -78,6 +80,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Sparkles,
     group: 'Automatización',
     component: <AIValidationSection />,
+  },
+  {
+    id: 'analisis-credito',
+    label: 'Análisis de crédito con IA',
+    description: 'Tasas desde el documento',
+    icon: FileSearch,
+    group: 'Automatización',
+    component: <CreditRateAnalysisSection />,
   },
   {
     id: 'roles',
