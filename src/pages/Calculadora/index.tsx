@@ -83,14 +83,57 @@ export default function CalculadoraPage() {
     .filter((i) => i.active)
     .sort((a, b) => a.label.localeCompare(b.label));
   const [resultado, setResultado] = useState<CalculationResult | null>(null);
+  const [resultadoBase, setResultadoBase] = useState<CalculationResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formDataSnapshot, setFormDataSnapshot] = useState<FormData | null>(null);
   const [margenTeDevuelvo, setMargenTeDevuelvo] = useState(getMargenTeDevuelvo);
   const [margenSeguridad, setMargenSeguridad] = useState(0);
   const [editandoMargenTeDevuelvo, setEditandoMargenTeDevuelvo] = useState(false);
   const [openInstitution, setOpenInstitution] = useState(false);
+  // Modo análisis: permite usar tasas manuales en lugar de las del servicio
+  const [modoAnalisis, setModoAnalisis] = useState(false);
+  const [tasasManuales, setTasasManuales] = useState({
+    desgBanco: "",
+    desgPref: "",
+    cesBanco: "",
+    cesPref: "",
+  });
+
+  const parseTasa = (v: string, divisor: number): number | undefined => {
+    const raw = v.trim().replace(",", ".");
+    if (!raw) return undefined;
+    const n = Number(raw);
+    if (isNaN(n) || n < 0) return undefined;
+    return n / divisor;
+  };
+
+  const overridesActivos: TasaOverrides | undefined = modoAnalisis
+    ? {
+        tasaBancoDesgravamen: parseTasa(tasasManuales.desgBanco, 100),
+        tasaPreferencialDesgravamen: parseTasa(tasasManuales.desgPref, 1000),
+        tasaBancoCesantia: parseTasa(tasasManuales.cesBanco, 1000),
+        tasaPreferencialCesantia: parseTasa(tasasManuales.cesPref, 1000),
+      }
+    : undefined;
+
+  const hayOverrides = !!overridesActivos && Object.values(overridesActivos).some((v) => v !== undefined);
+
+  // Al activar el modo análisis, precarga las tasas vigentes del último cálculo
+  const activarModoAnalisis = (checked: boolean) => {
+    setModoAnalisis(checked);
+    if (checked) {
+      const base = resultadoBase ?? resultado;
+      setTasasManuales({
+        desgBanco: base?.desgravamen ? (base.desgravamen.tasaBanco * 100).toFixed(4) : "",
+        desgPref: base?.desgravamen ? (base.desgravamen.tasaPreferencial * 1000).toFixed(4) : "",
+        cesBanco: base?.cesantia ? (base.cesantia.tasaBanco * 1000).toFixed(4) : "",
+        cesPref: base?.cesantia ? (base.cesantia.tasaPreferencial * 1000).toFixed(4) : "",
+      });
+    }
+  };
 
   const MARGENES_DISPONIBLES = generarMargenes(margenTeDevuelvo);
+
 
   const handleCambiarMargenTeDevuelvo = (nuevoMargen: number) => {
     localStorage.setItem(MARGEN_TE_DEVUELVO_KEY, nuevoMargen.toString());
