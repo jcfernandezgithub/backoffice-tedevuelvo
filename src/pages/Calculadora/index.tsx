@@ -1321,9 +1321,6 @@ export default function CalculadoraPage() {
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
                                   <span className="font-mono">{(resultado.desgravamen.tasaBanco * 100).toFixed(4)}%</span>
-
-                                  <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.desgravamen.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
 
