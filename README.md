@@ -1,8 +1,23 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.7
+## Versión 4.3.8
 
 ## Changelog
+
+### Versión 4.3.8 - 2026-08-27
+
+#### Modo Análisis en calculadora de devolución
+- Se agregó el **Modo análisis** a la calculadora, permitiendo al usuario ingresar manualmente la **tasa del banco** para comparar simulaciones sin modificar la tasa preferencial interna.
+- Al activar el modo se precargan automáticamente las tasas vigentes del banco seleccionado; el usuario puede ajustarlas y recalcular en tiempo real.
+- Se muestra una tarjeta de comparación con el monto estimado base versus el monto con tasa manual, expresando la diferencia en pesos y porcentaje.
+- La tasa preferencial (TDV) se mantiene oculta y protegida: no se despliega en la interfaz ni en el PDF, y no es editable por el usuario.
+- El panel de análisis usa un esquema de color ámbar para diferenciarlo visualmente del flujo normal de simulación.
+
+#### Corrección de prima en conciliación CSV para Cesantía
+- Se corrigió un error en la conciliación mediante CSV donde las solicitudes de **Cesantía** mostraban la columna **Prima TDV** como "sin dato".
+- El problema ocurría porque el sistema intentaba calcular la prima a partir de tasas mensuales, mientras que Cesantía opera con una **prima única total**.
+- Ahora el diálogo de conciliación CSV utiliza directamente el campo `primaTotal` de la solicitud emparejada cuando corresponde a una póliza de Cesantía.
+- Se actualizó la etiqueta de la prima para mostrar "prima única" en estos casos, alineando la información con el tipo de seguro.
 
 ### Versión 4.3.7 - 2026-08-27
 
