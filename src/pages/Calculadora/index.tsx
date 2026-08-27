@@ -1133,7 +1133,54 @@ export default function CalculadoraPage() {
                   </CardContent>
                 </Card>
 
+                {/* Comparativa modo análisis vs tasas del servicio */}
+                {hayOverrides && resultadoBase && !resultadoBase.error && (() => {
+                  const rawBase =
+                    (resultadoBase.desgravamen?.montoDevolucion ?? 0) +
+                    (resultadoBase.cesantia?.montoDevolucion ?? 0);
+                  const baseAjustado = calcularConMargenPersonalizado(rawBase);
+                  const delta = montoDevolucionAjustado - baseAjustado;
+                  const pct = baseAjustado > 0 ? (delta / baseAjustado) * 100 : 0;
+                  return (
+                    <Card className="border-amber-500/40 bg-amber-500/5 shadow-md">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Settings className="w-4 h-4 text-amber-600" />
+                          Modo análisis: tasas manuales
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          Comparación con el resultado usando las tasas vigentes del servicio.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="rounded-md border bg-background/60 p-3">
+                            <p className="text-xs text-muted-foreground">Tasas del servicio</p>
+                            <p className="text-lg font-semibold tabular-nums">{formatCurrency(baseAjustado)}</p>
+                          </div>
+                          <div className="rounded-md border border-amber-500/40 bg-background/60 p-3">
+                            <p className="text-xs text-muted-foreground">Tasas manuales</p>
+                            <p className="text-lg font-semibold tabular-nums text-amber-700 dark:text-amber-400">
+                              {formatCurrency(montoDevolucionAjustado)}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-3 text-sm">
+                          Diferencia:{" "}
+                          <span className={cn("font-semibold tabular-nums", delta >= 0 ? "text-green-600" : "text-destructive")}>
+                            {delta >= 0 ? "+" : "−"}{formatCurrency(Math.abs(delta))}
+                          </span>{" "}
+                          <span className="text-muted-foreground">
+                            ({delta >= 0 ? "+" : "−"}{Math.abs(pct).toFixed(1)}%)
+                          </span>
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
                 {/* Comparativa */}
+
                 <Card className="shadow-md">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
