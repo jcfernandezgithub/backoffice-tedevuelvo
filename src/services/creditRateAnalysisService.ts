@@ -110,7 +110,7 @@ function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
   if (typeof input !== 'object') return {} as CreditRateAnalysisResponse;
 
   const obj = input as Record<string, unknown>;
-  if (looksLikeAnalysis(obj)) return obj as CreditRateAnalysisResponse;
+  if (looksLikeAnalysis(obj)) return normalizeAnalysis(obj);
 
   for (const key of ['output', 'json', 'data', 'body', 'result', 'response']) {
     if (key in obj) {
@@ -119,7 +119,34 @@ function unwrapAnalysis(input: unknown, depth = 0): CreditRateAnalysisResponse {
     }
   }
 
-  return obj as CreditRateAnalysisResponse;
+  return normalizeAnalysis(obj);
+}
+
+/** Tolera variantes de claves para las proyecciones (snake/camel/alternativas). */
+function normalizeAnalysis(obj: Record<string, unknown>): CreditRateAnalysisResponse {
+  const out = { ...(obj as CreditRateAnalysisResponse) };
+  if (!Array.isArray(out.proyecciones_por_plazo)) {
+    const alt =
+      obj['proyecciones'] ??
+      obj['proyeccionesPorPlazo'] ??
+      obj['proyeccion_por_plazo'] ??
+      obj['proyecciones_por_cuotas'] ??
+      obj['tabla_proyecciones'];
+    if (Array.isArray(alt)) out.proyecciones_por_plazo = alt as CreditRateProjection[];
+  }
+  if (Array.isArray(out.proyecciones_por_plazo)) {
+    out.proyecciones_por_plazo = out.proyecciones_por_plazo.map((p) => {
+      const raw = p as Record<string, unknown>;
+      return {
+        ...p,
+        plazo_meses: raw.plazo_meses ?? raw.plazo ?? raw.cuotas ?? raw.meses,
+        cuota_mensual_estimada: raw.cuota_mensual_estimada ?? raw.cuota_estimada ?? raw.cuota_mensual,
+        tasa_total_con_seguro_pct:
+          raw.tasa_total_con_seguro_pct ?? raw.tasa_con_seguro_pct ?? raw.tasa_con_seguro,
+      } as CreditRateProjection;
+    });
+  }
+  return out;
 }
 
 function looksLikeAnalysis(value: unknown): boolean {

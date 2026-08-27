@@ -429,11 +429,21 @@ export function CreditRateAnalysisSection() {
           </div>
 
           {/* Proyecciones */}
-          {proyecciones.length > 0 && (
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
-                Proyecciones por plazo
-              </p>
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">
+              Proyecciones por plazo
+            </p>
+            {proyecciones.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border/70 p-6 text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  El análisis no devolvió proyecciones por plazo
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground/80">
+                  Esto ocurre cuando el documento no contiene datos suficientes del crédito
+                  (monto, cuota o plazo). Intenta con un archivo más legible.
+                </p>
+              </div>
+            ) : (
               <div className="overflow-x-auto rounded-lg border border-border/60">
                 <Table>
                   <TableHeader>
@@ -468,8 +478,8 @@ export function CreditRateAnalysisSection() {
                   </TableBody>
                 </Table>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
       )}
