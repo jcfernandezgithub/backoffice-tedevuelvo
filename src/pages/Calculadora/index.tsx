@@ -1377,9 +1377,6 @@ export default function CalculadoraPage() {
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
                                   <span className="font-mono">{(resultado.cesantia.tasaBanco * 1000).toFixed(4)}‰</span>
-
-                                  <span className="text-muted-foreground">Tasa preferencial:</span>
-                                  <span className="font-mono">{(resultado.cesantia.tasaPreferencial * 1000).toFixed(4)}‰</span>
                                 </>
                               )}
                             </div>
