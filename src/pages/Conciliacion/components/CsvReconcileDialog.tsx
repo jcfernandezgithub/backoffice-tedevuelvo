@@ -902,9 +902,7 @@ function RowsTable({
                 const hasDiff = est > 0 && Math.abs(diff) > 0.5
                 const prima = primaTotalTDV(r)
                 const real = montoRealDevolucion(r)
-                const primaKnown =
-                  Boolean(r.matchedNewMonthlyPremium) &&
-                  Boolean(r.matchedRemainingInstallments)
+                const primaKnown = prima > 0
                 return (
                   <Fragment key={r.rowNumber}>
                     <TableRow className={r.approved === false ? 'opacity-60' : undefined}>
@@ -982,13 +980,22 @@ function RowsTable({
                             <span className="text-xs tabular-nums text-muted-foreground">
                               −{formatCurrency(prima)}
                             </span>
-                            <span
-                              className="text-[10px] text-muted-foreground tabular-nums"
-                              title="Prima mensual TDV × cuotas pendientes"
-                            >
-                              {formatCurrency(r.matchedNewMonthlyPremium ?? 0)} ×{' '}
-                              {r.matchedRemainingInstallments ?? 0}
-                            </span>
+                            {r.matchedIsCesantia || !r.matchedNewMonthlyPremium ? (
+                              <span
+                                className="text-[10px] text-muted-foreground"
+                                title="Prima única del seguro de cesantía"
+                              >
+                                prima única
+                              </span>
+                            ) : (
+                              <span
+                                className="text-[10px] text-muted-foreground tabular-nums"
+                                title="Prima mensual TDV × cuotas pendientes"
+                              >
+                                {formatCurrency(r.matchedNewMonthlyPremium ?? 0)} ×{' '}
+                                {r.matchedRemainingInstallments ?? 0}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span
