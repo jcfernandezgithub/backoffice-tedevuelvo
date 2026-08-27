@@ -307,11 +307,35 @@ const aplicarMargenDevolucion = (montoDevolucion: number): number => {
   return Math.round(montoDevolucion * factor);
 };
 
-const calcularCesantia = (banco: string, saldoInsoluto: number, cuotasPendientes: number) => {
+/**
+ * Overrides de tasas para el "modo análisis" de la calculadora.
+ * Todos los valores se expresan como fracción mensual sobre el saldo
+ * (ej. 0.0025 = 0,25% mensual). Cuando un override viene definido, se usa en
+ * lugar de la tasa entregada por el servicio.
+ */
+export interface TasaOverrides {
+  tasaBancoDesgravamen?: number;
+  tasaPreferencialDesgravamen?: number;
+  tasaBancoCesantia?: number;
+  tasaPreferencialCesantia?: number;
+}
+
+const isOverride = (v?: number): v is number => typeof v === "number" && !isNaN(v) && v >= 0;
+
+const calcularCesantia = (
+  banco: string,
+  saldoInsoluto: number,
+  cuotasPendientes: number,
+  overrides?: TasaOverrides,
+) => {
   const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
   const tramo = obtenerTramo(saldoInsoluto);
-  const tasaBanco = obtenerTasaCesantiaBanco(bancoMapeado, saldoInsoluto);
-  const tasaPreferencial = obtenerTasaCesantiaPreferencial(saldoInsoluto);
+  const tasaBanco = isOverride(overrides?.tasaBancoCesantia)
+    ? overrides!.tasaBancoCesantia!
+    : obtenerTasaCesantiaBanco(bancoMapeado, saldoInsoluto);
+  const tasaPreferencial = isOverride(overrides?.tasaPreferencialCesantia)
+    ? overrides!.tasaPreferencialCesantia!
+    : obtenerTasaCesantiaPreferencial(saldoInsoluto);
 
   if (tasaBanco === null) {
     throw new Error(`No hay datos de cesantía para ${banco}`);
@@ -343,9 +367,11 @@ export const calcularDevolucion = (
   cuotasPendientes: number,
   tipoSeguro: "desgravamen" | "cesantia" | "ambos" = "desgravamen",
   saldoInsoluto?: number,
+  overrides?: TasaOverrides,
 ): CalculationResult => {
   // Saldo insoluto: si no se provee, se estima proporcionalmente
   const saldo = saldoInsoluto || Math.round(montoCredito * (cuotasPendientes / cuotasTotales));
+
   try {
     if (tipoSeguro === "cesantia") {
       const cesantia = calcularCesantia(banco, saldo, cuotasPendientes);
