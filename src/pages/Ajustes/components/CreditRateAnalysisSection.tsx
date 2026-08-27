@@ -478,8 +478,8 @@ export function CreditRateAnalysisSection() {
                   </TableBody>
                 </Table>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </div>
       )}
