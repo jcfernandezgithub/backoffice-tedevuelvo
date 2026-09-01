@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.8
+## Versión 4.3.9
 
 ## Changelog
+
+### Versión 4.3.9 - 2026-09-01
+
+#### Exportación de monto real de devolución en Excel
+- Se agregaron al Excel de **Solicitudes** y **Cierre Mensual** las columnas que reflejan el monto real que se devolverá al cliente una vez confirmado el pago:
+  - **Monto Real Devolución**
+  - **Fecha Pago Programado**
+  - **Fecha Pagada**
+- Estas columnas se alimentan del campo `realAmount` de la solicitud y de las fechas registradas en su historial de estados, respondiendo a la pregunta operativa sobre cuándo queda disponible el monto real en la base de datos (a partir del estado **Pago programado**).
+- El cambio se aplicó tanto en el diálogo de exportación de **Solicitudes** (`ExportToExcelDialog.tsx`) como en el de **Cierre Mensual**, manteniendo la consistencia entre ambos módulos.
 
 ### Versión 4.3.8 - 2026-08-27
 
