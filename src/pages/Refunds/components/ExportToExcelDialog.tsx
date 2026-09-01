@@ -198,10 +198,21 @@ function prepareExcelData(
       'Ahorro Mensual': formatExcelAmount(calculation.savingsPerMonth || 0),
       'Ahorro Total': formatExcelAmount(calculation.totalSavings || 0),
       'Monto Estimado CLP': formatExcelAmount(montoEstimadoCLP),
+      'Monto Real Devolución': (() => {
+        const topLevel = Number((refund as any).realAmount || 0)
+        if (topLevel > 0) return formatExcelAmount(topLevel)
+        const entry = refund.statusHistory?.slice().reverse().find((e: any) => {
+          const to = String(e.to).toLowerCase()
+          return (to === 'payment_scheduled' || to === 'paid') && e.realAmount
+        })
+        return entry?.realAmount ? formatExcelAmount(Number(entry.realAmount)) : ''
+      })(),
       
       // === FECHAS ===
       'Fecha Docs Pendientes': getStatusDate('docs_pending'),
       'Fecha Docs Recibidos': getStatusDate('docs_received'),
+      'Fecha Pago Programado': getStatusDate('payment_scheduled'),
+      'Fecha Pagada': getStatusDate('paid'),
       'Fecha de Creación': formattedCreatedAt,
       'Última Actualización': refund.updatedAt ? new Date(refund.updatedAt).toLocaleDateString('es-CL', {
         year: 'numeric',
