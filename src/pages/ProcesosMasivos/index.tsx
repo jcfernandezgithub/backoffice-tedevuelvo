@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Package, FileText, Shield } from 'lucide-react'
+import { Package, FileText, Shield, Wallet } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import CartasCorteWizard from './wizards/CartasCorteWizard'
 import CertificadosCoberturaWizard from './wizards/CertificadosCoberturaWizard'
+import PagosMasivosWizard from './wizards/PagosMasivosWizard'
 
-type ProcessTab = 'cartas' | 'certificados'
+type ProcessTab = 'cartas' | 'certificados' | 'pagos'
 
 export default function ProcesosMasivosPage() {
   const [tab, setTab] = useState<ProcessTab>('cartas')
@@ -17,7 +18,7 @@ export default function ProcesosMasivosPage() {
           Procesos Masivos
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Generación masiva de documentos a partir de un archivo de carga.
+          Generación masiva de documentos y actualización masiva de estados a partir de un archivo de carga.
         </p>
       </div>
 
@@ -31,6 +32,10 @@ export default function ProcesosMasivosPage() {
             <Shield className="h-4 w-4" />
             Certificados de Cobertura
           </TabsTrigger>
+          <TabsTrigger value="pagos" className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" />
+            Pagos (carga_tdv)
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="cartas" className="mt-0">
@@ -38,6 +43,9 @@ export default function ProcesosMasivosPage() {
         </TabsContent>
         <TabsContent value="certificados" className="mt-0">
           <CertificadosCoberturaWizard />
+        </TabsContent>
+        <TabsContent value="pagos" className="mt-0">
+          <PagosMasivosWizard />
         </TabsContent>
       </Tabs>
     </div>
