@@ -28,9 +28,11 @@ import {
   FileSpreadsheet,
   Download,
 } from 'lucide-react'
-import { type CartolaMovimiento } from './services/cartolaService'
+import { type CartolaData, type CartolaMovimiento } from './services/cartolaService'
 import { useCartolaJob } from './hooks/useCartolaJob'
 import { CartolaCaptchaDialog } from './components/CartolaCaptchaDialog'
+import { CartolaImportDialog } from './components/CartolaImportDialog'
+import { type CartolaImportResult } from './services/cartolaImportService'
 import { cartolaLinksService } from './services/cartolaLinksService'
 import {
   LinkRefundsDialog,
