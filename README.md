@@ -1,8 +1,21 @@
 # Welcome to your Lovable project
 
-## Versión 4.3.9
+## Versión 4.4.0
 
 ## Changelog
+
+### Versión 4.4.0 - 2026-09-03
+
+#### Carga manual de cartolas en Conciliación bancaria
+- Se habilitó la carga manual de cartolas en **Conciliación** para casos en los que el flujo automático de descarga no esté disponible.
+- El usuario puede subir el archivo XML descargado del portal del banco o pegar directamente el contenido XML/JSON entregado por el servicio de cartolas.
+- El parser detecta automáticamente el formato, normaliza envoltorios como `result.data.cartola` o `movimientos.movimiento`, y convierte los movimientos a la misma estructura `CartolaData` que usa la conciliación.
+- Los movimientos cargados manualmente se mantienen solo en la sesión actual; no se persiste la cartola en el servidor ni en `localStorage`.
+
+#### Control de feature flag para descarga automática de cartolas
+- El flujo automático de descarga de cartolas (login bancario, CAPTCHA y polling del trabajo) queda temporalmente oculto tras el flag `AUTO_BANK_DOWNLOAD_ENABLED = false`.
+- Esto permite seguir operando la conciliación con carga manual mientras se estabiliza el servicio de descarga automática.
+- Para reactivar el flujo automático, cambiar el flag a `true` en `src/pages/Conciliacion/index.tsx`.
 
 ### Versión 4.3.9 - 2026-09-01
 
