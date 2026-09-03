@@ -106,7 +106,14 @@ function sameDate(a?: Date, b?: Date): boolean {
 
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
+/**
+ * Flag de la descarga automática desde el portal del banco (Playwright + CAPTCHA).
+ * Se mantiene el código intacto, pero oculto: hoy la carga es manual.
+ */
+const AUTO_BANK_DOWNLOAD_ENABLED = false
+
 function hasDraftInStorage(documentoNumero: string): boolean {
+
   try {
     const raw = localStorage.getItem(`manual-reconciliation-draft:${documentoNumero}`)
     return !!raw && raw !== '[]'
