@@ -412,7 +412,9 @@ export default function ConciliacionPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Conciliación bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.
+            {AUTO_BANK_DOWNLOAD_ENABLED
+              ? 'Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.'
+              : 'Carga la cartola del banco (archivo XML o contenido JSON) para conciliar los abonos con las solicitudes.'}
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
