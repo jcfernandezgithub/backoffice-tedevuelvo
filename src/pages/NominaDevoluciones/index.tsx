@@ -11,11 +11,6 @@ import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
 import { exportXLSX } from '@/services/reportesService'
-import { refundAdminApi } from '@/services/refundAdminApi'
-
-function normalizeRut(rut: string) {
-  return (rut || '').toLowerCase().replace(/[.\-\s]/g, '')
-}
 
 
 const CSV_TEMPLATE_HEADERS = [
@@ -62,14 +57,13 @@ export default function NominaDevoluciones() {
       const csvLines = [csvHeaders.join(';')]
       let missingIds = 0
       nom.rows.forEach((r) => {
-        const rutKey = normalizeRut(r.rutProveedor || '')
-        const id = r.refundId || idByRut.get(rutKey) || ''
+        const id = r.refundId || ''
         if (!id) missingIds++
         csvLines.push([
           id,
           r.nombreProveedor || '',
           r.rutProveedor || '',
-          r.institucionFinanciera || instByRut.get(rutKey) || r.bancoProveedor || '',
+          r.institucionFinanciera || r.bancoProveedor || '',
           String(r.monto ?? 0),
         ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
       })
@@ -164,6 +158,7 @@ export default function NominaDevoluciones() {
             toast.success(`${rows.length} solicitud(es) agregada(s) a la nómina`)
           }}
           existingRuts={nom.rows.map(r => r.rutProveedor)}
+          existingIds={nom.rows.map(r => r.refundId || '').filter(Boolean)}
         />
       </div>
     </div>
