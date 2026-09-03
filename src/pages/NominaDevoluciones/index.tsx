@@ -11,6 +11,11 @@ import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
 import { exportXLSX } from '@/services/reportesService'
+import { refundAdminApi } from '@/services/refundAdminApi'
+
+function normalizeRut(rut: string) {
+  return (rut || '').toLowerCase().replace(/[.\-\s]/g, '')
+}
 
 
 const CSV_TEMPLATE_HEADERS = [
@@ -31,9 +36,37 @@ export default function NominaDevoluciones() {
     else toast.error(`${result.errors.length} error(es) encontrado(s)`)
   }, [nom])
 
-  const handleGenerate = useCallback((grouped: boolean) => {
+  const handleGenerate = useCallback(async (grouped: boolean) => {
     const res = nom.generate(grouped)
     if (res) {
+      // Completar IDs faltantes (filas guardadas antes de que se persistiera el refundId)
+      const idByRut = new Map<string, string>()
+      const instByRut = new Map<string, string>()
+      if (nom.rows.some((r) => !r.refundId)) {
+        try {
+          let page = 1
+          let hasMore = true
+          while (hasMore && page <= 20) {
+            const resp = await refundAdminApi.search({
+              status: 'payment_scheduled',
+              hasBankInfo: 1,
+              limit: 100,
+              sort: 'recent',
+              page,
+            })
+            ;(resp.items || []).forEach((item: any) => {
+              const key = normalizeRut(item.rut || '')
+              if (!key) return
+              if (!idByRut.has(key)) idByRut.set(key, item.id || item._id || item.publicId || '')
+              if (!instByRut.has(key)) instByRut.set(key, item.institutionId || '')
+            })
+            hasMore = resp.hasNext || false
+            page++
+          }
+        } catch {
+          // Si falla la búsqueda, se exporta con lo disponible
+        }
+      }
       // Export Excel with the same row data (without touching TXT logic)
       const excelRows = nom.rows.map((r, i) => ({
         '#': i + 1,
@@ -55,16 +88,23 @@ export default function NominaDevoluciones() {
       // Tercer archivo: CSV de carga TDV (no modifica los archivos anteriores)
       const csvHeaders = ['ID Solicitud', 'Nombre Cliente', 'RUT', 'Institucion Financiera', 'Monto Devolucion']
       const csvLines = [csvHeaders.join(';')]
+      let missingIds = 0
       nom.rows.forEach((r) => {
+        const rutKey = normalizeRut(r.rutProveedor || '')
+        const id = r.refundId || idByRut.get(rutKey) || ''
+        if (!id) missingIds++
         csvLines.push([
-          r.refundId || '',
+          id,
           r.nombreProveedor || '',
           r.rutProveedor || '',
-          r.institucionFinanciera || r.bancoProveedor || '',
+          r.institucionFinanciera || instByRut.get(rutKey) || r.bancoProveedor || '',
           String(r.monto ?? 0),
         ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
       })
       downloadTxtFile(`carga_tdv_${xlsxName}.csv`, '\uFEFF' + csvLines.join('\r\n'))
+      if (missingIds > 0) {
+        toast.warning(`${missingIds} fila(s) sin ID de solicitud: vuelve a agregarlas desde "Agregar desde solicitudes"`)
+      }
 
       toast.success(`${res.fileName} + Excel + CSV descargados (${res.lineCount} líneas)`)
     }
