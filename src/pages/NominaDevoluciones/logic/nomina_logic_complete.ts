@@ -18,6 +18,9 @@ export interface NominaRowInput {
   codigoSucursal?: string;
   emailAviso?: string;
   mensajeAviso?: string;
+  /** Metadata sólo para exportaciones auxiliares (no afecta la generación del TXT). */
+  refundId?: string;
+  institucionFinanciera?: string;
 }
 
 export interface BancoCatalogItem {
