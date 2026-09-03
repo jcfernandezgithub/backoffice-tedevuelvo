@@ -157,20 +157,32 @@ export default function ConciliacionPage() {
   const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
   // Descarga asíncrona de la cartola: job en backend + CAPTCHA + polling.
+  // Solo se usa cuando AUTO_BANK_DOWNLOAD_ENABLED está activo.
   const cartolaJob = useCartolaJob()
   const { phase } = cartolaJob.state
   const isBusy =
-    phase === 'starting' ||
-    phase === 'processing' ||
-    phase === 'sending_captcha' ||
-    phase === 'waiting_captcha'
+    AUTO_BANK_DOWNLOAD_ENABLED &&
+    (phase === 'starting' ||
+      phase === 'processing' ||
+      phase === 'sending_captcha' ||
+      phase === 'waiting_captcha')
 
-  const cartola = phase === 'completed' ? cartolaJob.state.result?.data : undefined
+  // Cartola cargada manualmente (archivo XML o contenido pegado).
+  const [manualCartola, setManualCartola] = useState<CartolaData | null>(null)
+  const [manualFileName, setManualFileName] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+
+  const cartola =
+    manualCartola ??
+    (AUTO_BANK_DOWNLOAD_ENABLED && phase === 'completed'
+      ? cartolaJob.state.result?.data
+      : undefined)
   const movimientos: CartolaMovimiento[] = useMemo(() => {
     const raw = cartola?.movimientos?.movimiento
     if (!raw) return []
     return Array.isArray(raw) ? raw : [raw]
   }, [cartola])
+
 
   // Solo abonos (ignoramos cargos)
   const abonos = useMemo(
