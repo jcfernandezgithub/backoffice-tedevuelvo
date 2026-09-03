@@ -75,6 +75,11 @@ function homologateBank(apiBankName: string): string {
   return BANK_HOMOLOGATION[key] || apiBankName.toUpperCase()
 }
 
+function resolveRefundId(r: RefundRequest): string {
+  const anyRefund = r as RefundRequest & { _id?: string; id?: string; publicId?: string }
+  return anyRefund.id || anyRefund._id || anyRefund.publicId || ''
+}
+
 function mapRefundToRow(r: RefundRequest): NominaRowInput {
   return {
     rutProveedor: r.rut || '',
@@ -88,7 +93,7 @@ function mapRefundToRow(r: RefundRequest): NominaRowInput {
     monto: getRealAmount(r),
     codigoSucursal: '000',
     mensajeAviso: 'Devolución Tedevuelvo',
-    refundId: r.id || '',
+    refundId: resolveRefundId(r),
     institucionFinanciera: r.institutionId || '',
   }
 }
