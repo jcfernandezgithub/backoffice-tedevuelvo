@@ -11,6 +11,11 @@ import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
 import { exportXLSX } from '@/services/reportesService'
+import { refundAdminApi } from '@/services/refundAdminApi'
+
+function normalizeRut(rut: string) {
+  return (rut || '').toLowerCase().replace(/[.\-\s]/g, '')
+}
 
 
 const CSV_TEMPLATE_HEADERS = [
