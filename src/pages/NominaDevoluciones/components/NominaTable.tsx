@@ -106,10 +106,22 @@ export function NominaTable({ rows, errors, selectedIndex, onSelect, onUpdate, o
                   </span>
                   <span className="text-xs text-muted-foreground shrink-0">{row.rutProveedor}</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-0.5">
                   <span>{row.bancoProveedor || 'Sin banco'}</span>
                   <span>•</span>
                   <span>{row.cuentaProveedor || 'Sin cuenta'}</span>
+                  {row.refundId ? (
+                    <span
+                      className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]"
+                      title={`ID solicitud: ${row.refundId}`}
+                    >
+                      ID {row.refundId.slice(-8)}
+                    </span>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-amber-600 border-amber-300">
+                      Sin ID de solicitud
+                    </Badge>
+                  )}
                 </div>
               </div>
 
