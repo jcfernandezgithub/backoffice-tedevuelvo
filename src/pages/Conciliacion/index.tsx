@@ -612,22 +612,34 @@ export default function ConciliacionPage() {
                 </Button>
               </div>
             </div>
-          ) : phase === 'idle' ? (
+          ) : !cartola ? (
             <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 rounded-lg border border-dashed bg-muted/20 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-semibold">Trae la actividad bancaria para comenzar</h3>
+                <h3 className="text-base font-semibold">
+                  {AUTO_BANK_DOWNLOAD_ENABLED
+                    ? 'Trae la actividad bancaria para comenzar'
+                    : 'Carga la cartola para comenzar'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de
-                  verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.
+                  {AUTO_BANK_DOWNLOAD_ENABLED
+                    ? 'Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.'
+                    : 'Descarga la cartola desde el portal del banco y súbela aquí (XML), o pega el contenido JSON del servicio. Los abonos quedarán listos para conciliar.'}
                 </p>
               </div>
-              <Button onClick={handleUpdateCartola}>
-                <Download className="h-4 w-4 mr-2" />
-                Traer actividad
-              </Button>
+              {AUTO_BANK_DOWNLOAD_ENABLED ? (
+                <Button onClick={handleUpdateCartola}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Traer actividad
+                </Button>
+              ) : (
+                <Button onClick={() => setImportOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Cargar cartola
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
