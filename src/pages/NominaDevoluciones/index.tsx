@@ -31,9 +31,37 @@ export default function NominaDevoluciones() {
     else toast.error(`${result.errors.length} error(es) encontrado(s)`)
   }, [nom])
 
-  const handleGenerate = useCallback((grouped: boolean) => {
+  const handleGenerate = useCallback(async (grouped: boolean) => {
     const res = nom.generate(grouped)
     if (res) {
+      // Completar IDs faltantes (filas guardadas antes de que se persistiera el refundId)
+      const idByRut = new Map<string, string>()
+      const instByRut = new Map<string, string>()
+      if (nom.rows.some((r) => !r.refundId)) {
+        try {
+          let page = 1
+          let hasMore = true
+          while (hasMore && page <= 20) {
+            const resp = await refundAdminApi.search({
+              status: 'payment_scheduled',
+              hasBankInfo: 1,
+              limit: 100,
+              sort: 'recent',
+              page,
+            })
+            ;(resp.items || []).forEach((item: any) => {
+              const key = normalizeRut(item.rut || '')
+              if (!key) return
+              if (!idByRut.has(key)) idByRut.set(key, item.id || item._id || item.publicId || '')
+              if (!instByRut.has(key)) instByRut.set(key, item.institutionId || '')
+            })
+            hasMore = resp.hasNext || false
+            page++
+          }
+        } catch {
+          // Si falla la búsqueda, se exporta con lo disponible
+        }
+      }
       // Export Excel with the same row data (without touching TXT logic)
       const excelRows = nom.rows.map((r, i) => ({
         '#': i + 1,
