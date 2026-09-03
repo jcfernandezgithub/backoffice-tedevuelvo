@@ -509,6 +509,7 @@ export default function ConciliacionPage() {
             </Button>
           </div>
           <span className="text-xs text-muted-foreground">
+            {manualFileName ? `${manualFileName} · ` : ''}
             {formatLastUpdated(lastUpdatedAt)}
           </span>
         </div>
