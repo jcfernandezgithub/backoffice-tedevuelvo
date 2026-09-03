@@ -83,16 +83,23 @@ export default function NominaDevoluciones() {
       // Tercer archivo: CSV de carga TDV (no modifica los archivos anteriores)
       const csvHeaders = ['ID Solicitud', 'Nombre Cliente', 'RUT', 'Institucion Financiera', 'Monto Devolucion']
       const csvLines = [csvHeaders.join(';')]
+      let missingIds = 0
       nom.rows.forEach((r) => {
+        const rutKey = normalizeRut(r.rutProveedor || '')
+        const id = r.refundId || idByRut.get(rutKey) || ''
+        if (!id) missingIds++
         csvLines.push([
-          r.refundId || '',
+          id,
           r.nombreProveedor || '',
           r.rutProveedor || '',
-          r.institucionFinanciera || r.bancoProveedor || '',
+          r.institucionFinanciera || instByRut.get(rutKey) || r.bancoProveedor || '',
           String(r.monto ?? 0),
         ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
       })
       downloadTxtFile(`carga_tdv_${xlsxName}.csv`, '\uFEFF' + csvLines.join('\r\n'))
+      if (missingIds > 0) {
+        toast.warning(`${missingIds} fila(s) sin ID de solicitud: vuelve a agregarlas desde "Agregar desde solicitudes"`)
+      }
 
       toast.success(`${res.fileName} + Excel + CSV descargados (${res.lineCount} líneas)`)
     }
