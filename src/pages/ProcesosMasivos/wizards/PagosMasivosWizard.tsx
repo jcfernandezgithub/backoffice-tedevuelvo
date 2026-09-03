@@ -492,7 +492,6 @@ export default function PagosMasivosWizard() {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={startProcessing}>Confirmar y procesar</AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </Card>
