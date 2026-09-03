@@ -27,10 +27,13 @@ import {
   X,
   FileSpreadsheet,
   Download,
+  Upload,
 } from 'lucide-react'
-import { type CartolaMovimiento } from './services/cartolaService'
+import { type CartolaData, type CartolaMovimiento } from './services/cartolaService'
 import { useCartolaJob } from './hooks/useCartolaJob'
 import { CartolaCaptchaDialog } from './components/CartolaCaptchaDialog'
+import { CartolaImportDialog } from './components/CartolaImportDialog'
+import { type CartolaImportResult } from './services/cartolaImportService'
 import { cartolaLinksService } from './services/cartolaLinksService'
 import {
   LinkRefundsDialog,
@@ -104,7 +107,14 @@ function sameDate(a?: Date, b?: Date): boolean {
 
 const LAST_UPDATED_KEY = 'cartola-last-updated-at'
 
+/**
+ * Flag de la descarga automática desde el portal del banco (Playwright + CAPTCHA).
+ * Se mantiene el código intacto, pero oculto: hoy la carga es manual.
+ */
+const AUTO_BANK_DOWNLOAD_ENABLED = false
+
 function hasDraftInStorage(documentoNumero: string): boolean {
+
   try {
     const raw = localStorage.getItem(`manual-reconciliation-draft:${documentoNumero}`)
     return !!raw && raw !== '[]'
@@ -148,20 +158,32 @@ export default function ConciliacionPage() {
   const datesChanged = !sameDate(draftFrom, committedFrom) || !sameDate(draftTo, committedTo)
 
   // Descarga asíncrona de la cartola: job en backend + CAPTCHA + polling.
+  // Solo se usa cuando AUTO_BANK_DOWNLOAD_ENABLED está activo.
   const cartolaJob = useCartolaJob()
   const { phase } = cartolaJob.state
   const isBusy =
-    phase === 'starting' ||
-    phase === 'processing' ||
-    phase === 'sending_captcha' ||
-    phase === 'waiting_captcha'
+    AUTO_BANK_DOWNLOAD_ENABLED &&
+    (phase === 'starting' ||
+      phase === 'processing' ||
+      phase === 'sending_captcha' ||
+      phase === 'waiting_captcha')
 
-  const cartola = phase === 'completed' ? cartolaJob.state.result?.data : undefined
+  // Cartola cargada manualmente (archivo XML o contenido pegado).
+  const [manualCartola, setManualCartola] = useState<CartolaData | null>(null)
+  const [manualFileName, setManualFileName] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+
+  const cartola =
+    manualCartola ??
+    (AUTO_BANK_DOWNLOAD_ENABLED && phase === 'completed'
+      ? cartolaJob.state.result?.data
+      : undefined)
   const movimientos: CartolaMovimiento[] = useMemo(() => {
     const raw = cartola?.movimientos?.movimiento
     if (!raw) return []
     return Array.isArray(raw) ? raw : [raw]
   }, [cartola])
+
 
   // Solo abonos (ignoramos cargos)
   const abonos = useMemo(
@@ -209,10 +231,11 @@ export default function ConciliacionPage() {
     setDateTo(undefined)
   }
 
-  const errorMsg = phase === 'failed' ? cartolaJob.state.error : null
+  const errorMsg =
+    AUTO_BANK_DOWNLOAD_ENABLED && phase === 'failed' ? cartolaJob.state.error : null
 
   useEffect(() => {
-    if (phase === 'completed' && cartolaJob.state.result?.data) {
+    if (AUTO_BANK_DOWNLOAD_ENABLED && phase === 'completed' && cartolaJob.state.result?.data) {
       const now = new Date().toISOString()
       try {
         localStorage.setItem(LAST_UPDATED_KEY, now)
@@ -222,6 +245,27 @@ export default function ConciliacionPage() {
       setLastUpdatedAt(now)
     }
   }, [phase, cartolaJob.state.result])
+
+  /** Aplica la cartola cargada manualmente y ajusta el período mostrado. */
+  const handleImported = (result: CartolaImportResult, fileName?: string) => {
+    setManualCartola(result.cartola)
+    setManualFileName(fileName ?? null)
+    clearFilters()
+    const now = new Date().toISOString()
+    try {
+      localStorage.setItem(LAST_UPDATED_KEY, now)
+    } catch {
+      /* noop */
+    }
+    setLastUpdatedAt(now)
+    toast({
+      title: 'Cartola cargada',
+      description: `${result.movimientos.length} movimientos procesados desde ${
+        result.source === 'xml' ? 'el XML' : 'el JSON'
+      }.`,
+    })
+  }
+
 
   // Bulk: estado de conciliación de todos los documentos visibles.
   const documentoNumeros = useMemo(
@@ -369,11 +413,21 @@ export default function ConciliacionPage() {
         <div>
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Conciliación bancaria</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.
+            {AUTO_BANK_DOWNLOAD_ENABLED
+              ? 'Presiona «Traer actividad» para descargar la cartola desde Scotiabank. El banco puede solicitar un código de verificación antes de mostrar los movimientos.'
+              : 'Carga la cartola del banco (archivo XML o contenido JSON) para conciliar los abonos con las solicitudes.'}
           </p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
           <div className="flex flex-wrap items-center gap-2">
+            {!AUTO_BANK_DOWNLOAD_ENABLED && (
+              <Button onClick={() => setImportOpen(true)} variant="default">
+                <Upload className="h-4 w-4 mr-2" />
+                {manualCartola ? 'Cargar otra cartola' : 'Cargar cartola'}
+              </Button>
+            )}
+            {AUTO_BANK_DOWNLOAD_ENABLED && (
+            <>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -443,6 +497,8 @@ export default function ConciliacionPage() {
                 </>
               )}
             </Button>
+            </>
+            )}
             <Button
               variant="outline"
               onClick={openIndividualCsvDialog}
@@ -454,6 +510,7 @@ export default function ConciliacionPage() {
             </Button>
           </div>
           <span className="text-xs text-muted-foreground">
+            {manualFileName ? `${manualFileName} · ` : ''}
             {formatLastUpdated(lastUpdatedAt)}
           </span>
         </div>
@@ -556,22 +613,34 @@ export default function ConciliacionPage() {
                 </Button>
               </div>
             </div>
-          ) : phase === 'idle' ? (
+          ) : !cartola ? (
             <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 rounded-lg border border-dashed bg-muted/20 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
                 <Building2 className="h-7 w-7 text-primary" />
               </div>
               <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-semibold">Trae la actividad bancaria para comenzar</h3>
+                <h3 className="text-base font-semibold">
+                  {AUTO_BANK_DOWNLOAD_ENABLED
+                    ? 'Trae la actividad bancaria para comenzar'
+                    : 'Carga la cartola para comenzar'}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de
-                  verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.
+                  {AUTO_BANK_DOWNLOAD_ENABLED
+                    ? 'Selecciona el rango de fechas y presiona «Traer actividad». Ten a mano el código de verificación: Scotiabank puede solicitarlo antes de mostrar los movimientos.'
+                    : 'Descarga la cartola desde el portal del banco y súbela aquí (XML), o pega el contenido JSON del servicio. Los abonos quedarán listos para conciliar.'}
                 </p>
               </div>
-              <Button onClick={handleUpdateCartola}>
-                <Download className="h-4 w-4 mr-2" />
-                Traer actividad
-              </Button>
+              {AUTO_BANK_DOWNLOAD_ENABLED ? (
+                <Button onClick={handleUpdateCartola}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Traer actividad
+                </Button>
+              ) : (
+                <Button onClick={() => setImportOpen(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Cargar cartola
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
@@ -784,8 +853,16 @@ export default function ConciliacionPage() {
         }}
         onApplied={refreshReconciliation}
       />
+      <CartolaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={handleImported}
+      />
       <CartolaCaptchaDialog
-        open={phase === 'waiting_captcha' || phase === 'sending_captcha'}
+        open={
+          AUTO_BANK_DOWNLOAD_ENABLED &&
+          (phase === 'waiting_captcha' || phase === 'sending_captcha')
+        }
         image={cartolaJob.state.captchaImage}
         message={cartolaJob.state.captchaMessage}
         suggestedCode={cartolaJob.state.captchaSuggestion}
