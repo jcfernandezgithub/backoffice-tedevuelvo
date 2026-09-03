@@ -230,10 +230,11 @@ export default function ConciliacionPage() {
     setDateTo(undefined)
   }
 
-  const errorMsg = phase === 'failed' ? cartolaJob.state.error : null
+  const errorMsg =
+    AUTO_BANK_DOWNLOAD_ENABLED && phase === 'failed' ? cartolaJob.state.error : null
 
   useEffect(() => {
-    if (phase === 'completed' && cartolaJob.state.result?.data) {
+    if (AUTO_BANK_DOWNLOAD_ENABLED && phase === 'completed' && cartolaJob.state.result?.data) {
       const now = new Date().toISOString()
       try {
         localStorage.setItem(LAST_UPDATED_KEY, now)
@@ -243,6 +244,27 @@ export default function ConciliacionPage() {
       setLastUpdatedAt(now)
     }
   }, [phase, cartolaJob.state.result])
+
+  /** Aplica la cartola cargada manualmente y ajusta el período mostrado. */
+  const handleImported = (result: CartolaImportResult, fileName?: string) => {
+    setManualCartola(result.cartola)
+    setManualFileName(fileName ?? null)
+    clearFilters()
+    const now = new Date().toISOString()
+    try {
+      localStorage.setItem(LAST_UPDATED_KEY, now)
+    } catch {
+      /* noop */
+    }
+    setLastUpdatedAt(now)
+    toast({
+      title: 'Cartola cargada',
+      description: `${result.movimientos.length} movimientos procesados desde ${
+        result.source === 'xml' ? 'el XML' : 'el JSON'
+      }.`,
+    })
+  }
+
 
   // Bulk: estado de conciliación de todos los documentos visibles.
   const documentoNumeros = useMemo(
