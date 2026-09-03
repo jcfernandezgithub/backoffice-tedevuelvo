@@ -52,7 +52,21 @@ export default function NominaDevoluciones() {
       const xlsxName = res.fileName.replace('.txt', '')
       exportXLSX(excelRows, xlsxName)
 
-      toast.success(`${res.fileName} + Excel descargados (${res.lineCount} líneas)`)
+      // Tercer archivo: CSV de carga TDV (no modifica los archivos anteriores)
+      const csvHeaders = ['ID Solicitud', 'Nombre Cliente', 'RUT', 'Institucion Financiera', 'Monto Devolucion']
+      const csvLines = [csvHeaders.join(';')]
+      nom.rows.forEach((r) => {
+        csvLines.push([
+          r.refundId || '',
+          r.nombreProveedor || '',
+          r.rutProveedor || '',
+          r.institucionFinanciera || r.bancoProveedor || '',
+          String(r.monto ?? 0),
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      })
+      downloadTxtFile(`carga_tdv_${xlsxName}.csv`, '\uFEFF' + csvLines.join('\r\n'))
+
+      toast.success(`${res.fileName} + Excel + CSV descargados (${res.lineCount} líneas)`)
     }
   }, [nom])
 
