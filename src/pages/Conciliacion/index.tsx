@@ -419,6 +419,13 @@ export default function ConciliacionPage() {
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
           <div className="flex flex-wrap items-center gap-2">
+            {!AUTO_BANK_DOWNLOAD_ENABLED && (
+              <Button onClick={() => setImportOpen(true)} variant="default">
+                <Upload className="h-4 w-4 mr-2" />
+                {manualCartola ? 'Cargar otra cartola' : 'Cargar cartola'}
+              </Button>
+            )}
+            {AUTO_BANK_DOWNLOAD_ENABLED && (
             <Popover>
               <PopoverTrigger asChild>
                 <Button
