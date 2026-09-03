@@ -27,6 +27,7 @@ import {
   X,
   FileSpreadsheet,
   Download,
+  Upload,
 } from 'lucide-react'
 import { type CartolaData, type CartolaMovimiento } from './services/cartolaService'
 import { useCartolaJob } from './hooks/useCartolaJob'
@@ -852,8 +853,16 @@ export default function ConciliacionPage() {
         }}
         onApplied={refreshReconciliation}
       />
+      <CartolaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={handleImported}
+      />
       <CartolaCaptchaDialog
-        open={phase === 'waiting_captcha' || phase === 'sending_captcha'}
+        open={
+          AUTO_BANK_DOWNLOAD_ENABLED &&
+          (phase === 'waiting_captcha' || phase === 'sending_captcha')
+        }
         image={cartolaJob.state.captchaImage}
         message={cartolaJob.state.captchaMessage}
         suggestedCode={cartolaJob.state.captchaSuggestion}
