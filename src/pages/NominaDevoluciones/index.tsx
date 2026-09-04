@@ -52,7 +52,27 @@ export default function NominaDevoluciones() {
       const xlsxName = res.fileName.replace('.txt', '')
       exportXLSX(excelRows, xlsxName)
 
-      toast.success(`${res.fileName} + Excel descargados (${res.lineCount} líneas)`)
+      // Tercer archivo: CSV de carga TDV (no modifica los archivos anteriores)
+      const csvHeaders = ['ID Solicitud', 'Nombre Cliente', 'RUT', 'Institucion Financiera', 'Monto Devolucion']
+      const csvLines = [csvHeaders.join(';')]
+      let missingIds = 0
+      nom.rows.forEach((r) => {
+        const id = r.refundId || ''
+        if (!id) missingIds++
+        csvLines.push([
+          id,
+          r.nombreProveedor || '',
+          r.rutProveedor || '',
+          r.institucionFinanciera || r.bancoProveedor || '',
+          String(r.monto ?? 0),
+        ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      })
+      downloadTxtFile(`carga_tdv_${xlsxName}.csv`, '\uFEFF' + csvLines.join('\r\n'))
+      if (missingIds > 0) {
+        toast.warning(`${missingIds} fila(s) sin ID de solicitud: vuelve a agregarlas desde "Agregar desde solicitudes"`)
+      }
+
+      toast.success(`${res.fileName} + Excel + CSV descargados (${res.lineCount} líneas)`)
     }
   }, [nom])
 
@@ -138,6 +158,7 @@ export default function NominaDevoluciones() {
             toast.success(`${rows.length} solicitud(es) agregada(s) a la nómina`)
           }}
           existingRuts={nom.rows.map(r => r.rutProveedor)}
+          existingIds={nom.rows.map(r => r.refundId || '').filter(Boolean)}
         />
       </div>
     </div>

@@ -48,36 +48,27 @@ function toAOA<T extends Record<string, any>>(rows: T[], headers: string[]): (st
 function triggerDownload(blob: Blob, finalName: string) {
   const url = URL.createObjectURL(blob)
 
-  // Detect sandboxed preview iframe (downloads blocked silently when
-  // the iframe lacks `allow-downloads`). In that case, open the blob in
-  // a new top-level tab so the browser triggers the download there.
+  // Siempre usamos un anchor con `download` para que el archivo conserve su
+  // nombre. `target=_top` permite que funcione dentro del iframe de preview.
+  // (Abrir el blob con window.open generaba un archivo extra con nombre UUID.)
   const inIframe = (() => {
     try { return window.self !== window.top } catch { return true }
   })()
 
+  const a = document.createElement('a')
+  a.href = url
+  a.download = finalName
   if (inIframe) {
-    const win = window.open(url, '_blank')
-    if (!win) {
-      // Popup blocked → fallback to anchor with target=_top
-      const a = document.createElement('a')
-      a.href = url
-      a.download = finalName
-      a.target = '_top'
-      a.rel = 'noopener'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    }
-  } else {
-    const a = document.createElement('a')
-    a.href = url
-    a.download = finalName
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
+    a.target = '_top'
+    a.rel = 'noopener'
   }
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
   setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
+
 
 export function exportCSV<T extends Record<string, any>>(rows: T[], filename: string) {
   const csv = toCSV(rows)

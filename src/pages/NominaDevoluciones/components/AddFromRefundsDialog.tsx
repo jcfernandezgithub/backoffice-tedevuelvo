@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Search, AlertCircle, UserCheck } from 'lucide-react'
+import { Loader2, Search, AlertCircle, UserCheck, Copy } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
@@ -16,6 +17,8 @@ interface Props {
   onClose: () => void
   onAdd: (rows: NominaRowInput[]) => void
   existingRuts: string[]
+  /** IDs de solicitudes ya presentes en la nómina (dedupe exacto por solicitud). */
+  existingIds?: string[]
 }
 
 function getRealAmount(r: RefundRequest): number {
@@ -75,6 +78,11 @@ function homologateBank(apiBankName: string): string {
   return BANK_HOMOLOGATION[key] || apiBankName.toUpperCase()
 }
 
+function resolveRefundId(r: RefundRequest): string {
+  const anyRefund = r as RefundRequest & { _id?: string; id?: string; publicId?: string }
+  return anyRefund.id || anyRefund._id || anyRefund.publicId || ''
+}
+
 function mapRefundToRow(r: RefundRequest): NominaRowInput {
   return {
     rutProveedor: r.rut || '',
@@ -88,10 +96,12 @@ function mapRefundToRow(r: RefundRequest): NominaRowInput {
     monto: getRealAmount(r),
     codigoSucursal: '000',
     mensajeAviso: 'Devolución Tedevuelvo',
+    refundId: resolveRefundId(r),
+    institucionFinanciera: r.institutionId || '',
   }
 }
 
-export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Props) {
+export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts, existingIds = [] }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refunds, setRefunds] = useState<RefundRequest[]>([])
@@ -141,19 +151,24 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
     return refunds.filter(r =>
       r.fullName?.toLowerCase().includes(q) ||
       r.rut?.toLowerCase().includes(q) ||
-      r.publicId?.toLowerCase().includes(q)
+      r.publicId?.toLowerCase().includes(q) ||
+      resolveRefundId(r).toLowerCase().includes(q)
     )
   }, [refunds, search])
 
-  const alreadyAddedSet = useMemo(() => new Set(existingRuts.map(r => r.toLowerCase().replace(/\./g, ''))), [existingRuts])
+  const alreadyAddedIdSet = useMemo(() => new Set(existingIds.filter(Boolean)), [existingIds])
+  const alreadyAddedRutSet = useMemo(() => new Set(existingRuts.map(r => r.toLowerCase().replace(/\./g, ''))), [existingRuts])
 
   function isAlreadyAdded(r: RefundRequest) {
-    return alreadyAddedSet.has((r.rut || '').toLowerCase().replace(/\./g, ''))
+    const id = resolveRefundId(r)
+    // Si conocemos los IDs ya agregados, deduplicamos por solicitud (un mismo RUT
+    // puede tener varias solicitudes distintas: desgravamen y cesantía).
+    if (alreadyAddedIdSet.size > 0) return !!id && alreadyAddedIdSet.has(id)
+    return alreadyAddedRutSet.has((r.rut || '').toLowerCase().replace(/\./g, ''))
   }
 
   function getRefundId(r: RefundRequest): string {
-    const anyRefund = r as RefundRequest & { _id?: string; id?: string }
-    return anyRefund.id || anyRefund._id || r.publicId || `${r.rut}-${r.createdAt}`
+    return resolveRefundId(r) || `${r.rut}-${r.createdAt}`
   }
 
   function toggleSelect(id: string) {
@@ -200,7 +215,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, RUT o ID..."
+            placeholder="Buscar por nombre, RUT o ID de solicitud..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
@@ -265,10 +280,27 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts }: Pro
                           <span className="font-medium text-sm truncate">{r.fullName}</span>
                           {added && <Badge variant="outline" className="text-[10px] shrink-0">Ya agregado</Badge>}
                         </div>
-                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
                           <span>{r.rut}</span>
-                          <span>{r.publicId}</span>
                           <span>{r.bankInfo?.bank} • {r.bankInfo?.accountNumber}</span>
+                          {refundId && (
+                            <span className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px]">
+                              ID {refundId.slice(-8)}
+                              <button
+                                type="button"
+                                title={`Copiar ID: ${refundId}`}
+                                aria-label="Copiar ID de la solicitud"
+                                className="hover:text-foreground transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  navigator.clipboard?.writeText(refundId)
+                                  toast.success('ID de solicitud copiado')
+                                }}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </button>
+                            </span>
+                          )}
                         </div>
                       </div>
                       <span className="text-sm font-semibold tabular-nums whitespace-nowrap">

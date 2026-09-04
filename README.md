@@ -1,8 +1,24 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.0
+## Versión 4.4.1
 
 ## Changelog
+
+### Versión 4.4.1 - 2026-09-04
+
+#### Cambio de estado masivo: Pago programado → Pagado
+- Se agregó en **Procesos Masivos** una nueva pestaña **Pagos (carga_tdv)** para ejecutar cambios de estado en lote.
+- El usuario carga el archivo `carga_tdv_*.csv` generado desde **Nómina de devoluciones**.
+- Cada fila se valida contra el sistema: se verifica que la solicitud exista y que se encuentre en estado **Pago programado**.
+- Se permite marcar/desmarcar las solicitudes válidas antes de ejecutar la acción.
+- Al confirmar, las solicitudes seleccionadas pasan a estado **Pagada** con la nota "Proceso masivo de cambio de estado" y se registra el `realAmount` indicado en el archivo.
+- Al finalizar se descarga automáticamente un resumen CSV con el resultado línea por línea (éxito, error u omitida) y los detalles de cada operación.
+
+#### Nómina de devoluciones: nuevo archivo `carga_tdv_*.csv`
+- Al generar la nómina en modo **TXT Normal** se descargan ahora 3 archivos: el `.txt` original para Scotiabank, el `.xlsx` con los datos de la nómina y el nuevo `.csv` con prefijo `carga_tdv_`.
+- El CSV contiene las columnas: **ID Solicitud**, **Nombre Cliente**, **RUT**, **Institución Financiera** y **Monto Devolución**.
+- Se corrigió la propagación del ID de solicitud desde el diálogo **Agregar desde solicitudes**, asegurando que el `refundId` se transfiera correctamente a la fila de la nómina.
+- Si alguna fila no tiene ID de solicitud, el sistema muestra una advertencia al generar el archivo para que el usuario re-agregue la solicitud correctamente.
 
 ### Versión 4.4.0 - 2026-09-03
 
