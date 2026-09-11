@@ -555,8 +555,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     overrideAhorros,
   ])
 
-  /* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */
-  const tasasInfo = useMemo(() => {
+  /* ---- Tasas utilizadas en el cálculo ---- */
+  const computeRates = useCallback((ov?: TasaOverrides) => {
     const banco = resolveBanco(refund.institutionId || '')
     const age = Number(watchedAge)
     const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
@@ -582,7 +582,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     try {
       const r = calcularDevolucion(
         banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro,
-        saldoInsoluto || undefined,
+        saldoInsoluto || undefined, ov,
       )
       if (r.error) return { error: r.error }
       return { banco, tipoSeguro, result: r }
@@ -590,6 +590,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       return { error: e instanceof Error ? e.message : 'No se pudieron obtener las tasas.' }
     }
   }, [
+    form,
     refund.institutionId,
     watchedAge,
     watchedConfirmedTotalAmount,
@@ -601,6 +602,87 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     watchedRemainingInstallments,
     watchedInsuranceType,
   ])
+
+  // Devolución final aplicando el margen de seguridad de la institución
+  const devolucionDe = useCallback((r: any) => {
+    const margenPct = typeof institutionMargin === 'number' ? institutionMargin : 0
+    return Math.max(0, Math.round((r?.ahorroTotal || 0) * (1 - margenPct / 100)))
+  }, [institutionMargin])
+
+  const tasasInfo = useMemo(() => computeRates(activeOverrides), [computeRates, activeOverrides])
+
+  // Tasas del servicio (sin override) para comparar
+  const tasasServicio = useMemo(() => computeRates(undefined), [computeRates])
+
+  const draftOverrides = useMemo<TasaOverrides | undefined>(() => {
+    const ov: TasaOverrides = {}
+    const d = toFraction(draftDesg)
+    const c = toFraction(draftCes)
+    if (typeof d === 'number' && d > 0) ov.tasaBancoDesgravamen = d
+    if (typeof c === 'number' && c > 0) ov.tasaBancoCesantia = c
+    return Object.keys(ov).length > 0 ? ov : undefined
+  }, [draftDesg, draftCes])
+
+  const draftPreview = useMemo(
+    () => (rateEditOpen && draftOverrides ? computeRates(draftOverrides) : null),
+    [rateEditOpen, draftOverrides, computeRates],
+  )
+
+  const openRateEditor = () => {
+    const base = tasasServicio as any
+    setDraftDesg(
+      toPctText(
+        typeof watchedManualDesg === 'number'
+          ? watchedManualDesg
+          : base?.result?.desgravamen?.tasaBanco,
+      ),
+    )
+    setDraftCes(
+      toPctText(
+        typeof watchedManualCes === 'number'
+          ? watchedManualCes
+          : base?.result?.cesantia?.tasaBanco,
+      ),
+    )
+    setDraftReason(form.getValues('manualRateReason') || '')
+    setRateEditOpen(true)
+  }
+
+  const applyManualRates = () => {
+    const ov = draftOverrides
+    if (!ov) {
+      toast({ title: 'Ingresa una tasa válida', variant: 'destructive' })
+      return
+    }
+    form.setValue('manualBankRateDesgravamen', ov.tasaBancoDesgravamen as any, { shouldDirty: true })
+    form.setValue('manualBankRateCesantia', ov.tasaBancoCesantia as any, { shouldDirty: true })
+    form.setValue('manualRateReason', draftReason, { shouldDirty: true })
+    const res = runRecalculation({ force: true, overrides: ov })
+    setConfirmRateOpen(false)
+    setRateEditOpen(false)
+    if (!res.ok) {
+      toast({ title: 'No se pudo recalcular', description: res.reason, variant: 'destructive' })
+      return
+    }
+    toast({
+      title: 'Tasa manual aplicada',
+      description: 'La devolución se recalculó con la tasa ingresada. Revisa y guarda los cambios.',
+    })
+  }
+
+  const clearManualRates = () => {
+    form.setValue('manualBankRateDesgravamen', undefined as any, { shouldDirty: true })
+    form.setValue('manualBankRateCesantia', undefined as any, { shouldDirty: true })
+    form.setValue('manualRateReason', '', { shouldDirty: true })
+    setRateEditOpen(false)
+    const res = runRecalculation({ force: true, overrides: null })
+    if (res.ok) {
+      const total = Number(form.getValues('totalSaving')) || 0
+      form.setValue('estimatedAmountCLP', total, { shouldDirty: true })
+      toast({ title: 'Tasa del servicio restablecida', description: 'Se recalculó con las tarifas vigentes.' })
+    }
+  }
+
 
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
