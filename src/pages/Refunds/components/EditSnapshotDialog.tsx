@@ -366,6 +366,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       })() : '',
       age: currentSnapshot.age ?? undefined,
       rateSet: currentSnapshot.rateSet || '',
+      manualBankRateDesgravamen: (currentSnapshot as any).manualBankRateDesgravamen ?? undefined,
+      manualBankRateCesantia: (currentSnapshot as any).manualBankRateCesantia ?? undefined,
+      manualRateReason: (currentSnapshot as any).manualRateReason || '',
+
       estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
       realAmount: (() => {
         if ((refund as any).realAmount) return (refund as any).realAmount
