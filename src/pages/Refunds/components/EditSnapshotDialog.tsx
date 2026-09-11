@@ -632,14 +632,36 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // Tasas del servicio (sin override) para comparar
   const tasasServicio = useMemo(() => computeRates(undefined), [computeRates])
 
+  // Monto total del crédito usado como base para calcular la tasa
+  const montoCreditoBase = useMemo(
+    () => Number(watchedConfirmedTotalAmount || watchedTotalAmount) || 0,
+    [watchedConfirmedTotalAmount, watchedTotalAmount],
+  )
+
+  const primaTotalIngresada = useMemo(() => {
+    const clean = (draftPrimaTotal || '').replace(/[^0-9]/g, '')
+    if (!clean) return undefined
+    const n = Number(clean)
+    return isFinite(n) && n > 0 ? n : undefined
+  }, [draftPrimaTotal])
+
+  // Tasa de desgravamen calculada = prima total confirmada / monto total del crédito
+  const tasaCalculadaDesg = useMemo(() => {
+    if (!primaTotalIngresada || !montoCreditoBase) return undefined
+    return primaTotalIngresada / montoCreditoBase
+  }, [primaTotalIngresada, montoCreditoBase])
+
+  // Texto de tasa desgravamen efectivo según el modo elegido
+  const desgPctText = rateMode === 'prima' ? toPctText(tasaCalculadaDesg) : draftDesg
+
   const draftOverrides = useMemo<TasaOverrides | undefined>(() => {
     const ov: TasaOverrides = {}
-    const d = toFraction(draftDesg)
+    const d = toFraction(desgPctText)
     const c = toFraction(draftCes)
     if (typeof d === 'number' && d > 0) ov.tasaBancoDesgravamen = d
     if (typeof c === 'number' && c > 0) ov.tasaBancoCesantia = c
     return Object.keys(ov).length > 0 ? ov : undefined
-  }, [draftDesg, draftCes])
+  }, [desgPctText, draftCes])
 
   const draftPreview = useMemo(
     () => (rateEditOpen && draftOverrides ? computeRates(draftOverrides) : null),
@@ -663,8 +685,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       ),
     )
     setDraftReason(form.getValues('manualRateReason') || '')
+    setRateMode('directa')
+    setDraftPrimaTotal('')
     setRateEditOpen(true)
   }
+
 
   const applyManualRates = () => {
     const ov = draftOverrides
