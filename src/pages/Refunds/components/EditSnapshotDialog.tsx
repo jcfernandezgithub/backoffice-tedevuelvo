@@ -1298,16 +1298,45 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
-              {/* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */}
+              {/* ---- Tasas utilizadas en el cálculo ---- */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Percent className="h-4 w-4 text-primary" />
                   <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
                     Tasas utilizadas en el cálculo
                   </h4>
-                  <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Solo lectura
-                  </span>
+                  <div className="ml-auto flex items-center gap-2">
+                    {hasManualRates && (
+                      <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        Tasa manual
+                      </span>
+                    )}
+                    {!rateEditOpen && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={openRateEditor}
+                        disabled={'error' in tasasServicio && !!(tasasServicio as any).error}
+                      >
+                        <Unlock className="h-3.5 w-3.5" />
+                        {hasManualRates ? 'Editar tasa manual' : 'Solicitar edición de tasa'}
+                      </Button>
+                    )}
+                    {hasManualRates && !rateEditOpen && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={clearManualRates}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Usar tasa del servicio
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {'error' in tasasInfo && tasasInfo.error ? (
@@ -1343,6 +1372,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                             <RateCard
                               title="Desgravamen · tasa banco"
                               tasa={desg.tasaBanco}
+                              manual={typeof activeOverrides?.tasaBancoDesgravamen === 'number'}
                               rows={[
                                 { label: 'Tramo de edad', value: TRAMO_EDAD_LABEL[r.tramoUsado] || r.tramoUsado || '—' },
                                 { label: 'Cuotas de la tabla', value: desg.cuotasUtilizadas ?? '—' },
@@ -1356,6 +1386,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                             <RateCard
                               title="Cesantía · tasa banco"
                               tasa={ces.tasaBanco}
+                              manual={typeof activeOverrides?.tasaBancoCesantia === 'number'}
                               rows={[
                                 {
                                   label: 'Tramo de saldo',
@@ -1369,15 +1400,211 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                           )}
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground">
-                          Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
-                          actualizan automáticamente al modificar los datos del crédito.
-                        </p>
+                        {hasManualRates ? (
+                          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2 space-y-1">
+                            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                              Esta solicitud usa una tasa registrada manualmente. La devolución
+                              estimada se calculó con ese valor, no con las tarifas del servicio.
+                            </p>
+                            {form.getValues('manualRateReason') && (
+                              <p className="text-[11px] text-muted-foreground">
+                                Motivo: {form.getValues('manualRateReason')}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
+                            actualizan automáticamente al modificar los datos del crédito.
+                          </p>
+                        )}
                       </div>
                     )
                   })()
                 )}
+
+                {/* ---- Editor de tasa manual ---- */}
+                {rateEditOpen && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        Registrar tasa manual (a solicitud del cliente)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Ingresa la tasa mensual del banco tal como aparece en el documento del
+                      cliente. La devolución se recalculará con este valor.
+                    </p>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(() => {
+                        const base = tasasServicio as any
+                        const showDesg = !!base?.result?.desgravamen
+                        const showCes = !!base?.result?.cesantia
+                        return (
+                          <>
+                            {showDesg && (
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">Tasa mensual · Desgravamen</label>
+                                <div className="relative">
+                                  <Input
+                                    value={draftDesg}
+                                    inputMode="decimal"
+                                    onChange={(e) => setDraftDesg(e.target.value.replace(/[^0-9.,]/g, ''))}
+                                    className="pr-7"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Servicio: {fmtPct(base.result.desgravamen.tasaBanco)}
+                                </p>
+                              </div>
+                            )}
+                            {showCes && (
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">Tasa mensual · Cesantía</label>
+                                <div className="relative">
+                                  <Input
+                                    value={draftCes}
+                                    inputMode="decimal"
+                                    onChange={(e) => setDraftCes(e.target.value.replace(/[^0-9.,]/g, ''))}
+                                    className="pr-7"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Servicio: {fmtPct(base.result.cesantia.tasaBanco)}
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Motivo / respaldo (opcional)</label>
+                      <Textarea
+                        value={draftReason}
+                        onChange={(e) => setDraftReason(e.target.value)}
+                        rows={2}
+                        maxLength={200}
+                        placeholder="Ej: tasa informada en certificado del banco entregado por el cliente"
+                        className="text-xs"
+                      />
+                    </div>
+
+                    {/* Vista previa del impacto */}
+                    {draftPreview && !('error' in draftPreview && (draftPreview as any).error) && (
+                      <div className="rounded-md border bg-card p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Impacto en la devolución
+                          </span>
+                        </div>
+                        {(() => {
+                          const before = (tasasServicio as any)?.result
+                          const after = (draftPreview as any).result
+                          const devBefore = devolucionDe(before)
+                          const devAfter = devolucionDe(after)
+                          const diff = devAfter - devBefore
+                          return (
+                            <div className="space-y-1">
+                              <RateRow label="Devolución con tasa del servicio" value={fmtCLP(devBefore)} />
+                              <RateRow
+                                label="Devolución con tasa manual"
+                                value={<span className="text-primary font-semibold">{fmtCLP(devAfter)}</span>}
+                              />
+                              <RateRow
+                                label="Diferencia"
+                                value={
+                                  <span className={diff >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                                    {diff >= 0 ? '+' : '−'}{fmtCLP(Math.abs(diff))}
+                                    {devBefore > 0 && (
+                                      <span className="text-muted-foreground font-normal">
+                                        {' '}({((diff / devBefore) * 100).toFixed(1)}%)
+                                      </span>
+                                    )}
+                                  </span>
+                                }
+                              />
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    {draftPreview && 'error' in draftPreview && (draftPreview as any).error && (
+                      <Alert variant="destructive" className="py-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{(draftPreview as any).error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRateEditOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={!draftOverrides}
+                        onClick={() => setConfirmRateOpen(true)}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Confirmar y recalcular
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <AlertDialog open={confirmRateOpen} onOpenChange={setConfirmRateOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Aplicar la tasa registrada manualmente?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <span className="block">
+                          Se reemplazará la tasa del servicio por la que ingresaste y se recalculará
+                          la devolución de esta solicitud.
+                        </span>
+                        <span className="block text-xs">
+                          {typeof draftOverrides?.tasaBancoDesgravamen === 'number' && (
+                            <span className="block">
+                              Desgravamen: {fmtPct(draftOverrides.tasaBancoDesgravamen)}
+                            </span>
+                          )}
+                          {typeof draftOverrides?.tasaBancoCesantia === 'number' && (
+                            <span className="block">
+                              Cesantía: {fmtPct(draftOverrides.tasaBancoCesantia)}
+                            </span>
+                          )}
+                        </span>
+                        <span className="block text-xs">
+                          Los cambios se guardan al confirmar el paso “Revisar cambios”.
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Volver</AlertDialogCancel>
+                      <AlertDialogAction onClick={applyManualRates}>
+                        Sí, aplicar tasa manual
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
+
 
               <Separator />
 
