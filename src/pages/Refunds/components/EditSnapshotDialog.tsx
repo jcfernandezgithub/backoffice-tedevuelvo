@@ -699,7 +699,13 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
     form.setValue('manualBankRateDesgravamen', ov.tasaBancoDesgravamen as any, { shouldDirty: true })
     form.setValue('manualBankRateCesantia', ov.tasaBancoCesantia as any, { shouldDirty: true })
-    form.setValue('manualRateReason', draftReason, { shouldDirty: true })
+    const autoReason =
+      rateMode === 'prima' && primaTotalIngresada
+        ? `Tasa calculada: prima total ${fmtCLP(primaTotalIngresada)} ÷ crédito ${fmtCLP(montoCreditoBase)}`
+        : ''
+    const reasonFinal = draftReason?.trim() || autoReason
+    form.setValue('manualRateReason', reasonFinal, { shouldDirty: true })
+
     const res = runRecalculation({ force: true, overrides: ov })
     setConfirmRateOpen(false)
     setRateEditOpen(false)
