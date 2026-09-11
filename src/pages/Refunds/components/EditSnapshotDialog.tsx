@@ -435,6 +435,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // 'prima'   = se calcula como prima total confirmada / monto total del crédito
   const [rateMode, setRateMode] = useState<'directa' | 'prima'>('directa')
   const [draftPrimaTotal, setDraftPrimaTotal] = useState('')
+  // Base de crédito usada para la división (editable: por defecto el monto del cálculo)
+  const [draftMontoCredito, setDraftMontoCredito] = useState('')
 
 
   const toFraction = (pctText: string): number | undefined => {
