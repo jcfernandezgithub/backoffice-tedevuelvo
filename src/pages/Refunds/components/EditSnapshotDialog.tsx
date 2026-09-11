@@ -656,9 +656,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }, [draftPrimaTotal])
 
   // Tasa de desgravamen calculada = prima total confirmada / monto total del crédito
+  // La tasa se maneja con 2 decimales en porcentaje (ej: 2,5560% → 2,56%)
   const tasaCalculadaDesg = useMemo(() => {
     if (!primaTotalIngresada || !montoCreditoBase) return undefined
-    return primaTotalIngresada / montoCreditoBase
+    const pct = (primaTotalIngresada / montoCreditoBase) * 100
+    return Math.round(pct * 100) / 10000
   }, [primaTotalIngresada, montoCreditoBase])
 
   // Texto de tasa desgravamen efectivo según el modo elegido
@@ -712,7 +714,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     form.setValue('manualBankRateCesantia', ov.tasaBancoCesantia as any, { shouldDirty: true })
     const autoReason =
       rateMode === 'prima' && primaTotalIngresada
-        ? `Tasa calculada: prima total ${fmtCLP(primaTotalIngresada)} ÷ crédito ${fmtCLP(montoCreditoBase)}`
+        ? `Tasa calculada: prima total ${fmtCLP(primaTotalIngresada)} ÷ crédito ${fmtCLP(montoCreditoBase)} = ${((tasaCalculadaDesg ?? 0) * 100).toFixed(2)}%`
         : ''
     const reasonFinal = draftReason?.trim() || autoReason
     form.setValue('manualRateReason', reasonFinal, { shouldDirty: true })
@@ -1590,7 +1592,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                             label="Tasa de desgravamen calculada"
                             value={
                               tasaCalculadaDesg ? (
-                                <span className="text-primary font-semibold">{fmtPct(tasaCalculadaDesg)}</span>
+                                <span className="text-primary font-semibold">
+                                  {(tasaCalculadaDesg * 100).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                </span>
                               ) : (
                                 '—'
                               )
@@ -1604,9 +1608,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                           )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
-                          Tasa = prima total ÷ monto total del crédito. La tasa se usa con todos sus
-                          decimales, por eso puede diferir levemente de una tasa redondeada a dos
-                          decimales ingresada a mano.
+                          Tasa = prima total ÷ monto total del crédito, redondeada a 2 decimales.
                           {!montoCreditoBase && ' Falta el monto total del crédito en el cálculo.'}
                         </p>
                       </div>
