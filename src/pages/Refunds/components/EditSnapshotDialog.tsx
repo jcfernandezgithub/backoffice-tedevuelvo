@@ -125,6 +125,69 @@ function Section({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Tasas utilizadas (solo lectura)                                    */
+/* ------------------------------------------------------------------ */
+
+const fmtPct = (tasa: number) =>
+  `${(tasa * 100).toLocaleString('es-CL', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}%`
+
+const fmtCLP = (v?: number) =>
+  typeof v === 'number' && !Number.isNaN(v)
+    ? `$${Math.round(v).toLocaleString('es-CL')}`
+    : '—'
+
+const TRAMO_EDAD_LABEL: Record<string, string> = {
+  hasta_55: 'Hasta 55 años',
+  desde_56: 'Desde 56 años',
+}
+
+const TRAMO_MONTO_LABEL: Record<string, string> = {
+  tramo_1: '$500.000 – $1.000.000',
+  tramo_2: '$1.000.001 – $3.000.000',
+  tramo_3: '$3.000.001 – $5.000.000',
+  tramo_4: '$5.000.001 – $7.000.000',
+  tramo_5: 'Sobre $7.000.000',
+}
+
+function RateRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums text-right">{value}</span>
+    </div>
+  )
+}
+
+function RateCard({
+  title,
+  tasa,
+  rows,
+}: {
+  title: string
+  tasa: number
+  rows: { label: string; value: React.ReactNode }[]
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </span>
+        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary tabular-nums">
+          {fmtPct(tasa)}
+        </span>
+      </div>
+      <div className="space-y-1 pt-1 border-t">
+        {rows.map((r) => (
+          <RateRow key={r.label} label={r.label} value={r.value} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
+/* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
