@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw } from 'lucide-react'
+import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw, Percent, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
@@ -123,6 +123,69 @@ function Section({
     </div>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/*  Tasas utilizadas (solo lectura)                                    */
+/* ------------------------------------------------------------------ */
+
+const fmtPct = (tasa: number) =>
+  `${(tasa * 100).toLocaleString('es-CL', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}%`
+
+const fmtCLP = (v?: number) =>
+  typeof v === 'number' && !Number.isNaN(v)
+    ? `$${Math.round(v).toLocaleString('es-CL')}`
+    : '—'
+
+const TRAMO_EDAD_LABEL: Record<string, string> = {
+  hasta_55: 'Hasta 55 años',
+  desde_56: 'Desde 56 años',
+}
+
+const TRAMO_MONTO_LABEL: Record<string, string> = {
+  tramo_1: '$500.000 – $1.000.000',
+  tramo_2: '$1.000.001 – $3.000.000',
+  tramo_3: '$3.000.001 – $5.000.000',
+  tramo_4: '$5.000.001 – $7.000.000',
+  tramo_5: 'Sobre $7.000.000',
+}
+
+function RateRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums text-right">{value}</span>
+    </div>
+  )
+}
+
+function RateCard({
+  title,
+  tasa,
+  rows,
+}: {
+  title: string
+  tasa: number
+  rows: { label: string; value: React.ReactNode }[]
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </span>
+        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary tabular-nums">
+          {fmtPct(tasa)}
+        </span>
+      </div>
+      <div className="space-y-1 pt-1 border-t">
+        {rows.map((r) => (
+          <RateRow key={r.label} label={r.label} value={r.value} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -427,9 +490,57 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     overrideAhorros,
   ])
 
+  /* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */
+  const tasasInfo = useMemo(() => {
+    const banco = resolveBanco(refund.institutionId || '')
+    const age = Number(watchedAge)
+    const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
+    const saldoInsoluto = Number(
+      watchedConfirmedAverageInsuredBalance || form.getValues('averageInsuredBalance'),
+    )
+    const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
+    const cuotasPendientes = Number(
+      watchedConfirmedRemainingInstallments || watchedRemainingInstallments,
+    )
+    const ins = (watchedInsuranceType || 'desgravamen').toLowerCase()
+    const tipoSeguro = (ins.includes('ambos')
+      ? 'ambos'
+      : ins.includes('cesant')
+        ? 'cesantia'
+        : 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+
+    if (!banco) return { error: 'La institución de esta solicitud no tiene tarifas cargadas.' }
+    if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
+      return { error: 'Completa edad, monto y cuotas del crédito para ver las tasas.' }
+    }
+
+    try {
+      const r = calcularDevolucion(
+        banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro,
+        saldoInsoluto || undefined,
+      )
+      if (r.error) return { error: r.error }
+      return { banco, tipoSeguro, result: r }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'No se pudieron obtener las tasas.' }
+    }
+  }, [
+    refund.institutionId,
+    watchedAge,
+    watchedConfirmedTotalAmount,
+    watchedConfirmedAverageInsuredBalance,
+    watchedConfirmedOriginalInstallments,
+    watchedConfirmedRemainingInstallments,
+    watchedTotalAmount,
+    watchedOriginalInstallments,
+    watchedRemainingInstallments,
+    watchedInsuranceType,
+  ])
+
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
   ]
+
 
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
@@ -1036,6 +1147,91 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
               </div>
 
               <Separator />
+
+              {/* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-primary" />
+                  <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                    Tasas utilizadas en el cálculo
+                  </h4>
+                  <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Solo lectura
+                  </span>
+                </div>
+
+                {'error' in tasasInfo && tasasInfo.error ? (
+                  <Alert className="py-2">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">{tasasInfo.error}</AlertDescription>
+                  </Alert>
+                ) : (
+                  (() => {
+                    const info = tasasInfo as { banco: string; tipoSeguro: string; result: any }
+                    const r = info.result
+                    const desg = r.desgravamen
+                    const ces = r.cesantia
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="rounded-md border px-2 py-0.5">
+                            Institución: <span className="font-medium text-foreground">{info.banco}</span>
+                          </span>
+                          <span className="rounded-md border px-2 py-0.5">
+                            Seguro: <span className="font-medium text-foreground capitalize">{info.tipoSeguro}</span>
+                          </span>
+                          {typeof institutionMargin === 'number' && (
+                            <span className="rounded-md border px-2 py-0.5">
+                              Margen de seguridad:{' '}
+                              <span className="font-medium text-foreground">{institutionMargin}%</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {desg && (
+                            <RateCard
+                              title="Desgravamen · tasa banco"
+                              tasa={desg.tasaBanco}
+                              rows={[
+                                { label: 'Tramo de edad', value: TRAMO_EDAD_LABEL[r.tramoUsado] || r.tramoUsado || '—' },
+                                { label: 'Cuotas de la tabla', value: desg.cuotasUtilizadas ?? '—' },
+                                { label: 'Monto tarificado', value: fmtCLP(desg.montoRedondeado) },
+                                { label: 'Prima única banco', value: fmtCLP(desg.primaUnicaBanco) },
+                                { label: 'Prima mensual banco', value: fmtCLP(desg.primaMensualBanco) },
+                              ]}
+                            />
+                          )}
+                          {ces && (
+                            <RateCard
+                              title="Cesantía · tasa banco"
+                              tasa={ces.tasaBanco}
+                              rows={[
+                                {
+                                  label: 'Tramo de saldo',
+                                  value: TRAMO_MONTO_LABEL[ces.tramoUsado] || ces.tramoUsado || '—',
+                                },
+                                { label: 'Saldo insoluto', value: fmtCLP(ces.saldoInsoluto) },
+                                { label: 'Cuotas pendientes', value: ces.cuotasPendientes ?? '—' },
+                                { label: 'Prima restante banco', value: fmtCLP(ces.primaRestanteBanco) },
+                              ]}
+                            />
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground">
+                          Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
+                          actualizan automáticamente al modificar los datos del crédito.
+                        </p>
+                      </div>
+                    )
+                  })()
+                )}
+              </div>
+
+              <Separator />
+
+
 
               <Section icon={TrendingUp} title="Montos de devolución">
                 <NumberField control={form.control} name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
