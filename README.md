@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.1
+## Versión 4.4.2
 
 ## Changelog
+
+### Versión 4.4.2 - 2026-09-11
+
+#### Alerta de edición de tasa para Banco de Chile
+- Se agregó en el diálogo **Editar snapshot de cálculo** una alerta destacada cuando la solicitud pertenece al **Banco de Chile** y aún no se ha registrado una tasa manual.
+- La alerta recuerda al ejecutivo que la tasa real del crédito frecuentemente difiere de la tabla histórica, lo que afecta directamente el monto de devolución calculado.
+- Incluye un botón **Editar tasa** que abre directamente el editor manual, permitiendo ingresar la tasa mensual de Desgravamen o calcularla desde el monto total de la prima confirmada.
+- Una vez registrada una tasa manual o abierto el editor, la alerta se oculta automáticamente para evitar repetir información.
 
 ### Versión 4.4.1 - 2026-09-04
 
