@@ -656,9 +656,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   }, [draftPrimaTotal])
 
   // Tasa de desgravamen calculada = prima total confirmada / monto total del crédito
+  // La tasa se maneja con 2 decimales en porcentaje (ej: 2,5560% → 2,56%)
   const tasaCalculadaDesg = useMemo(() => {
     if (!primaTotalIngresada || !montoCreditoBase) return undefined
-    return primaTotalIngresada / montoCreditoBase
+    const pct = (primaTotalIngresada / montoCreditoBase) * 100
+    return Math.round(pct * 100) / 10000
   }, [primaTotalIngresada, montoCreditoBase])
 
   // Texto de tasa desgravamen efectivo según el modo elegido
