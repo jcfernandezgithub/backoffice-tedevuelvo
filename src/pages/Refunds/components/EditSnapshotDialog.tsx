@@ -454,7 +454,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     dirtyFields.insuranceToEvaluate
   )
 
-  const runRecalculation = useCallback((opts?: { force?: boolean }): { ok: boolean; reason?: string } => {
+  const runRecalculation = useCallback((opts?: { force?: boolean; overrides?: TasaOverrides | null }): { ok: boolean; reason?: string } => {
     const banco = resolveBanco(refund.institutionId || '')
     const age = Number(form.watch('age'))
     const monto = Number(form.watch('confirmedTotalAmount') || form.watch('totalAmount'))
@@ -462,6 +462,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     const cuotasTotales = Number(form.watch('confirmedOriginalInstallments') || form.watch('originalInstallments'))
     const cuotasPendientes = Number(form.watch('confirmedRemainingInstallments') || form.watch('remainingInstallments'))
     const tipoSeguro = (form.watch('insuranceToEvaluate') || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+    const ov = opts?.overrides === null ? undefined : (opts?.overrides ?? activeOverrides)
 
     if (!banco) return { ok: false, reason: 'Institución no soportada por la calculadora.' }
     if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
@@ -469,8 +470,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
 
     try {
-      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined)
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined, ov)
       if (result.error) return { ok: false, reason: result.error }
+
 
       const force = opts?.force === true
       if (force || !overridePrimas) {
