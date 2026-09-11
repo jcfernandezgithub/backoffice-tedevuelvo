@@ -66,10 +66,15 @@ const snapshotSchema = z.object({
   birthDate: z.string().trim().optional().or(z.literal('')),
   age: z.coerce.number().int().min(0).max(120).optional(),
   rateSet: z.string().trim().max(100).optional().or(z.literal('')),
+  // Tasas manuales (fracción mensual, ej: 0.00085). Se usan en lugar de las tasas del servicio.
+  manualBankRateDesgravamen: z.coerce.number().min(0).optional(),
+  manualBankRateCesantia: z.coerce.number().min(0).optional(),
+  manualRateReason: z.string().trim().max(200).optional().or(z.literal('')),
   // Campos root-level del refund
   estimatedAmountCLP: z.coerce.number().min(0).optional(),
   realAmount: z.coerce.number().min(0).optional(),
 })
+
 
 type SnapshotFormValues = z.infer<typeof snapshotSchema>
 
