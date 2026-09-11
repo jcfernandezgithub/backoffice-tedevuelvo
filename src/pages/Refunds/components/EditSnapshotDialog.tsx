@@ -1546,18 +1546,46 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     </div>
 
                     {rateMode === 'prima' && (
-                      <div className="rounded-md border bg-card p-3 space-y-2">
-                        <label className="text-xs font-medium">
-                          Monto total de la prima (confirmada del crédito)
-                        </label>
-                        <Input
-                          value={draftPrimaTotal ? fmtCLP(Number(draftPrimaTotal)) : ''}
-                          inputMode="numeric"
-                          placeholder="$0"
-                          onChange={(e) => setDraftPrimaTotal(e.target.value.replace(/[^0-9]/g, ''))}
-                        />
+                      <div className="rounded-md border bg-card p-3 space-y-3">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">
+                              Monto total de la prima (confirmada del crédito)
+                            </label>
+                            <Input
+                              value={draftPrimaTotal ? fmtCLP(Number(draftPrimaTotal)) : ''}
+                              inputMode="numeric"
+                              placeholder="$0"
+                              onChange={(e) => setDraftPrimaTotal(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium">Monto total del crédito (base)</label>
+                            <Input
+                              value={
+                                draftMontoCredito
+                                  ? fmtCLP(Number(draftMontoCredito))
+                                  : montoCreditoCalculo
+                                    ? fmtCLP(montoCreditoCalculo)
+                                    : ''
+                              }
+                              inputMode="numeric"
+                              placeholder="$0"
+                              onChange={(e) => setDraftMontoCredito(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                            <p className="text-[10px] text-muted-foreground">
+                              {montoCreditoEsConfirmado
+                                ? 'Monto confirmado del crédito'
+                                : 'Monto de la simulación (no hay monto confirmado)'}
+                              . Puedes corregirlo si el certificado del banco indica otro.
+                            </p>
+                          </div>
+                        </div>
                         <div className="space-y-1 pt-1">
-                          <RateRow label="Monto total del crédito" value={fmtCLP(montoCreditoBase)} />
+                          <RateRow
+                            label="División"
+                            value={`${fmtCLP(primaTotalIngresada)} ÷ ${fmtCLP(montoCreditoBase)}`}
+                          />
                           <RateRow
                             label="Tasa de desgravamen calculada"
                             value={
@@ -1568,9 +1596,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                               )
                             }
                           />
+                          {tasaCalculadaDesg && (
+                            <RateRow
+                              label="Prima única que reproduce el cálculo"
+                              value={fmtCLP(montoCreditoCalculo * tasaCalculadaDesg)}
+                            />
+                          )}
                         </div>
                         <p className="text-[10px] text-muted-foreground">
-                          Tasa = prima total ÷ monto total del crédito.
+                          Tasa = prima total ÷ monto total del crédito. La tasa se usa con todos sus
+                          decimales, por eso puede diferir levemente de una tasa redondeada a dos
+                          decimales ingresada a mano.
                           {!montoCreditoBase && ' Falta el monto total del crédito en el cálculo.'}
                         </p>
                       </div>
