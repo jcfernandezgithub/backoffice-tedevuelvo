@@ -697,6 +697,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     setDraftReason(form.getValues('manualRateReason') || '')
     setRateMode('directa')
     setDraftPrimaTotal('')
+    setDraftMontoCredito('')
     setRateEditOpen(true)
   }
 
