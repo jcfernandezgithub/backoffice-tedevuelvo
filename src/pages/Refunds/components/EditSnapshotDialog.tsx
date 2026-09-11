@@ -522,12 +522,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
           Math.round(result.ahorroTotal * (1 - margenPct / 100)),
         )
         form.setValue('totalSaving', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
+        // Con tasa manual la devolución estimada se sincroniza con el nuevo cálculo.
+        if (ov) {
+          form.setValue('estimatedAmountCLP', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
+        }
       }
       return { ok: true }
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : 'Error en el cálculo.' }
     }
-  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin])
+  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin, activeOverrides])
+
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
