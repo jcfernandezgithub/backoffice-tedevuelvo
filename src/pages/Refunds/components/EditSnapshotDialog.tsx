@@ -183,22 +183,34 @@ function RateCard({
   title,
   tasa,
   rows,
+  manual,
 }: {
   title: string
   tasa: number
   rows: { label: string; value: React.ReactNode }[]
+  manual?: boolean
 }) {
   return (
-    <div className="rounded-lg border bg-card p-3 space-y-2">
+    <div className={`rounded-lg border p-3 space-y-2 ${manual ? 'border-amber-500/50 bg-amber-500/5' : 'bg-card'}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </span>
-        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary tabular-nums">
+        <span
+          className={`rounded-md px-2 py-0.5 text-sm font-semibold tabular-nums ${
+            manual ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400' : 'bg-primary/10 text-primary'
+          }`}
+        >
           {fmtPct(tasa)}
         </span>
       </div>
+      {manual && (
+        <p className="text-[10px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+          Tasa ingresada manualmente
+        </p>
+      )}
       <div className="space-y-1 pt-1 border-t">
+
         {rows.map((r) => (
           <RateRow key={r.label} label={r.label} value={r.value} />
         ))}
