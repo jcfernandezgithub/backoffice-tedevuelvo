@@ -1148,6 +1148,91 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
+              {/* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-primary" />
+                  <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                    Tasas utilizadas en el cálculo
+                  </h4>
+                  <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Solo lectura
+                  </span>
+                </div>
+
+                {'error' in tasasInfo && tasasInfo.error ? (
+                  <Alert className="py-2">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">{tasasInfo.error}</AlertDescription>
+                  </Alert>
+                ) : (
+                  (() => {
+                    const info = tasasInfo as { banco: string; tipoSeguro: string; result: any }
+                    const r = info.result
+                    const desg = r.desgravamen
+                    const ces = r.cesantia
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="rounded-md border px-2 py-0.5">
+                            Institución: <span className="font-medium text-foreground">{info.banco}</span>
+                          </span>
+                          <span className="rounded-md border px-2 py-0.5">
+                            Seguro: <span className="font-medium text-foreground capitalize">{info.tipoSeguro}</span>
+                          </span>
+                          {typeof institutionMargin === 'number' && (
+                            <span className="rounded-md border px-2 py-0.5">
+                              Margen de seguridad:{' '}
+                              <span className="font-medium text-foreground">{institutionMargin}%</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {desg && (
+                            <RateCard
+                              title="Desgravamen · tasa banco"
+                              tasa={desg.tasaBanco}
+                              rows={[
+                                { label: 'Tramo de edad', value: TRAMO_EDAD_LABEL[r.tramoUsado] || r.tramoUsado || '—' },
+                                { label: 'Cuotas de la tabla', value: desg.cuotasUtilizadas ?? '—' },
+                                { label: 'Monto tarificado', value: fmtCLP(desg.montoRedondeado) },
+                                { label: 'Prima única banco', value: fmtCLP(desg.primaUnicaBanco) },
+                                { label: 'Prima mensual banco', value: fmtCLP(desg.primaMensualBanco) },
+                              ]}
+                            />
+                          )}
+                          {ces && (
+                            <RateCard
+                              title="Cesantía · tasa banco"
+                              tasa={ces.tasaBanco}
+                              rows={[
+                                {
+                                  label: 'Tramo de saldo',
+                                  value: TRAMO_MONTO_LABEL[ces.tramoUsado] || ces.tramoUsado || '—',
+                                },
+                                { label: 'Saldo insoluto', value: fmtCLP(ces.saldoInsoluto) },
+                                { label: 'Cuotas pendientes', value: ces.cuotasPendientes ?? '—' },
+                                { label: 'Prima restante banco', value: fmtCLP(ces.primaRestanteBanco) },
+                              ]}
+                            />
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-muted-foreground">
+                          Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
+                          actualizan automáticamente al modificar los datos del crédito.
+                        </p>
+                      </div>
+                    )
+                  })()
+                )}
+              </div>
+
+              <Separator />
+
+
+
               <Section icon={TrendingUp} title="Montos de devolución">
                 <NumberField control={form.control} name="estimatedAmountCLP" label="Monto estimado devolución" prefix="$" />
                 <NumberField control={form.control} name="realAmount" label="Monto real devolución" prefix="$" />
