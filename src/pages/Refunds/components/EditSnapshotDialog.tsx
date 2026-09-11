@@ -1502,9 +1502,62 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       </span>
                     </div>
                     <p className="text-[11px] text-muted-foreground">
-                      Ingresa la tasa mensual del banco tal como aparece en el documento del
-                      cliente. La devolución se recalculará con este valor.
+                      Si el cliente informó la tasa, ingrésala directamente. Si no la tiene, calcúlala
+                      a partir de la prima total del crédito.
                     </p>
+
+                    {/* Selector de modo */}
+                    <div className="inline-flex rounded-md border bg-card p-0.5">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={rateMode === 'directa' ? 'default' : 'ghost'}
+                        className="h-7 text-xs"
+                        onClick={() => setRateMode('directa')}
+                      >
+                        Conozco la tasa
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={rateMode === 'prima' ? 'default' : 'ghost'}
+                        className="h-7 text-xs"
+                        onClick={() => setRateMode('prima')}
+                      >
+                        Calcular desde la prima
+                      </Button>
+                    </div>
+
+                    {rateMode === 'prima' && (
+                      <div className="rounded-md border bg-card p-3 space-y-2">
+                        <label className="text-xs font-medium">
+                          Monto total de la prima (confirmada del crédito)
+                        </label>
+                        <Input
+                          value={draftPrimaTotal ? fmtCLP(Number(draftPrimaTotal)) : ''}
+                          inputMode="numeric"
+                          placeholder="$0"
+                          onChange={(e) => setDraftPrimaTotal(e.target.value.replace(/[^0-9]/g, ''))}
+                        />
+                        <div className="space-y-1 pt-1">
+                          <RateRow label="Monto total del crédito" value={fmtCLP(montoCreditoBase)} />
+                          <RateRow
+                            label="Tasa de desgravamen calculada"
+                            value={
+                              tasaCalculadaDesg ? (
+                                <span className="text-primary font-semibold">{fmtPct(tasaCalculadaDesg)}</span>
+                              ) : (
+                                '—'
+                              )
+                            }
+                          />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          Tasa = prima total ÷ monto total del crédito.
+                          {!montoCreditoBase && ' Falta el monto total del crédito en el cálculo.'}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       {(() => {
@@ -1513,9 +1566,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                         const showCes = !!base?.result?.cesantia
                         return (
                           <>
-                            {showDesg && (
+                            {showDesg && rateMode === 'directa' && (
                               <div className="space-y-1">
-                                <label className="text-xs font-medium">Tasa mensual · Desgravamen</label>
+                                <label className="text-xs font-medium">Tasa · Desgravamen</label>
                                 <div className="relative">
                                   <Input
                                     value={draftDesg}
@@ -1555,6 +1608,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                         )
                       })()}
                     </div>
+
 
                     <div className="space-y-1">
                       <label className="text-xs font-medium">Motivo / respaldo (opcional)</label>
