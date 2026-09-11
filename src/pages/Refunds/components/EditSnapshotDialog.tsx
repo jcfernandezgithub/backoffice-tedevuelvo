@@ -99,9 +99,13 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   birthDate: 'Fecha de nacimiento',
   age: 'Edad',
   rateSet: 'Versión de tarifas',
+  manualBankRateDesgravamen: 'Tasa manual banco · Desgravamen',
+  manualBankRateCesantia: 'Tasa manual banco · Cesantía',
+  manualRateReason: 'Motivo de la tasa manual',
   estimatedAmountCLP: 'Monto estimado devolución',
   realAmount: 'Monto real devolución',
 }
+
 
 /* ------------------------------------------------------------------ */
 /*  Section wrapper                                                    */
