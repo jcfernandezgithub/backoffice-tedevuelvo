@@ -701,25 +701,40 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   ]
 
 
+  const MANUAL_RATE_FIELDS: (keyof SnapshotFormValues)[] = [
+    'manualBankRateDesgravamen', 'manualBankRateCesantia',
+  ]
+
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
     for (const [key, value] of Object.entries(data) as [keyof SnapshotFormValues, any][]) {
       const original = defaults[key]
-      if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      const isClearedManualRate =
+        MANUAL_RATE_FIELDS.includes(key) &&
+        (value === undefined || value === '') &&
+        typeof original === 'number'
+      if (!isClearedManualRate) {
+        if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      }
+      const isManualRate = MANUAL_RATE_FIELDS.includes(key)
+      const fmtRate = (v: any) => (typeof v === 'number' ? fmtPct(v) : '')
       const isAutoField = AUTO_CALCULATED_FIELDS.includes(key)
       const isManuallyOverridden = 
         (key === 'currentMonthlyPremium' || key === 'newMonthlyPremium') ? overridePrimas :
         (key === 'monthlySaving' || key === 'totalSaving') ? overrideAhorros : false
       changes.push({
         label: FIELD_LABELS[key] || key,
-        from: String(original ?? ''),
-        to: String(value),
+        from: isManualRate ? (fmtRate(original) || 'Tasa del servicio') : String(original ?? ''),
+        to: isManualRate
+          ? (isClearedManualRate ? 'Tasa del servicio' : fmtRate(value))
+          : String(value),
         isAutoCalculated: isAutoField && !isManuallyOverridden,
-        isManualOverride: isAutoField && isManuallyOverridden,
+        isManualOverride: (isAutoField && isManuallyOverridden) || isManualRate,
       })
     }
     return changes
-  }, [defaults])
+  }, [defaults, overridePrimas, overrideAhorros])
+
 
   const mutation = useMutation({
     mutationFn: async (values: SnapshotFormValues) => {
