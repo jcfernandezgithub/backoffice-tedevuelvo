@@ -1438,8 +1438,29 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                     const r = info.result
                     const desg = r.desgravamen
                     const ces = r.cesantia
+                    const isBancoChile = info.banco === 'Chile'
                     return (
                       <div className="space-y-2">
+                        {isBancoChile && !hasManualRates && !rateEditOpen && (
+                          <div className="flex flex-wrap items-center gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 px-3 py-2">
+                            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                            <p className="flex-1 text-[11px] text-amber-800 dark:text-amber-300">
+                              <span className="font-semibold">Banco de Chile:</span> es frecuente que
+                              la tasa real del crédito difiera de la tabla. Si el cliente confirma
+                              una tasa o prima distinta, puedes registrarla manualmente.
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 gap-1.5 border-amber-500/60 text-xs text-amber-800 hover:bg-amber-500/10 dark:text-amber-300"
+                              onClick={openRateEditor}
+                            >
+                              <Unlock className="h-3.5 w-3.5" />
+                              Editar tasa
+                            </Button>
+                          </div>
+                        )}
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                           <span className="rounded-md border px-2 py-0.5">
                             Institución: <span className="font-medium text-foreground">{info.banco}</span>
