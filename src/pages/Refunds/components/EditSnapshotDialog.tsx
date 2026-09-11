@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw } from 'lucide-react'
+import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw, Percent, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
