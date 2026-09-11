@@ -1609,8 +1609,6 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                         </div>
                         <p className="text-[10px] text-muted-foreground">
                           Tasa = prima total ÷ monto total del crédito, redondeada a 2 decimales.
-                          decimales, por eso puede diferir levemente de una tasa redondeada a dos
-                          decimales ingresada a mano.
                           {!montoCreditoBase && ' Falta el monto total del crédito en el cálculo.'}
                         </p>
                       </div>
