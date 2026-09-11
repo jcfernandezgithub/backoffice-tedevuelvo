@@ -761,6 +761,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         }
       }
 
+      // Si se quitó una tasa manual previamente guardada, enviarla como null
+      // para volver a las tarifas del servicio.
+      for (const key of MANUAL_RATE_FIELDS) {
+        const value = (values as any)[key]
+        if ((value === undefined || value === '') && typeof (defaults as any)[key] === 'number') {
+          snapshotPatch[key] = null
+          snapshotPatch.manualRateReason = ''
+        }
+      }
+
+
       if (Object.keys(snapshotPatch).length === 0 && Object.keys(rootPatch).length === 0) {
         return Promise.reject(new Error('No hay cambios para guardar'))
       }
