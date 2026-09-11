@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
-import { calcularDevolucion } from '@/lib/calculadoraUtils'
+import { calcularDevolucion, type TasaOverrides } from '@/lib/calculadoraUtils'
 import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { useInstitutionMargin } from '@/hooks/useInstitutions'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
@@ -37,8 +37,20 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Calculator, CreditCard, Shield, TrendingUp, Settings2, Lock, Unlock, AlertTriangle, CheckCircle2, Copy, RefreshCw, Percent, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
+
 
 /* ------------------------------------------------------------------ */
 /*  Schema                                                             */
@@ -66,10 +78,15 @@ const snapshotSchema = z.object({
   birthDate: z.string().trim().optional().or(z.literal('')),
   age: z.coerce.number().int().min(0).max(120).optional(),
   rateSet: z.string().trim().max(100).optional().or(z.literal('')),
+  // Tasas manuales (fracción mensual, ej: 0.00085). Se usan en lugar de las tasas del servicio.
+  manualBankRateDesgravamen: z.coerce.number().min(0).optional(),
+  manualBankRateCesantia: z.coerce.number().min(0).optional(),
+  manualRateReason: z.string().trim().max(200).optional().or(z.literal('')),
   // Campos root-level del refund
   estimatedAmountCLP: z.coerce.number().min(0).optional(),
   realAmount: z.coerce.number().min(0).optional(),
 })
+
 
 type SnapshotFormValues = z.infer<typeof snapshotSchema>
 
@@ -94,9 +111,13 @@ const FIELD_LABELS: Record<keyof SnapshotFormValues, string> = {
   birthDate: 'Fecha de nacimiento',
   age: 'Edad',
   rateSet: 'Versión de tarifas',
+  manualBankRateDesgravamen: 'Tasa manual banco · Desgravamen',
+  manualBankRateCesantia: 'Tasa manual banco · Cesantía',
+  manualRateReason: 'Motivo de la tasa manual',
   estimatedAmountCLP: 'Monto estimado devolución',
   realAmount: 'Monto real devolución',
 }
+
 
 /* ------------------------------------------------------------------ */
 /*  Section wrapper                                                    */
@@ -162,22 +183,34 @@ function RateCard({
   title,
   tasa,
   rows,
+  manual,
 }: {
   title: string
   tasa: number
   rows: { label: string; value: React.ReactNode }[]
+  manual?: boolean
 }) {
   return (
-    <div className="rounded-lg border bg-card p-3 space-y-2">
+    <div className={`rounded-lg border p-3 space-y-2 ${manual ? 'border-amber-500/50 bg-amber-500/5' : 'bg-card'}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </span>
-        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-sm font-semibold text-primary tabular-nums">
+        <span
+          className={`rounded-md px-2 py-0.5 text-sm font-semibold tabular-nums ${
+            manual ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400' : 'bg-primary/10 text-primary'
+          }`}
+        >
           {fmtPct(tasa)}
         </span>
       </div>
+      {manual && (
+        <p className="text-[10px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+          Tasa ingresada manualmente
+        </p>
+      )}
       <div className="space-y-1 pt-1 border-t">
+
         {rows.map((r) => (
           <RateRow key={r.label} label={r.label} value={r.value} />
         ))}
@@ -345,6 +378,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       })() : '',
       age: currentSnapshot.age ?? undefined,
       rateSet: currentSnapshot.rateSet || '',
+      manualBankRateDesgravamen: (currentSnapshot as any).manualBankRateDesgravamen ?? undefined,
+      manualBankRateCesantia: (currentSnapshot as any).manualBankRateCesantia ?? undefined,
+      manualRateReason: (currentSnapshot as any).manualRateReason || '',
+
       estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
       realAmount: (() => {
         if ((refund as any).realAmount) return (refund as any).realAmount
@@ -384,6 +421,39 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const watchedOriginalInstallments = form.watch('originalInstallments')
   const watchedRemainingInstallments = form.watch('remainingInstallments')
   const watchedInsuranceType = form.watch('insuranceToEvaluate')
+  const watchedManualDesg = form.watch('manualBankRateDesgravamen')
+  const watchedManualCes = form.watch('manualBankRateCesantia')
+
+  /* ---- Tasas manuales (a solicitud del cliente) ---- */
+  const [rateEditOpen, setRateEditOpen] = useState(false)
+  const [confirmRateOpen, setConfirmRateOpen] = useState(false)
+  const [draftDesg, setDraftDesg] = useState('')
+  const [draftCes, setDraftCes] = useState('')
+  const [draftReason, setDraftReason] = useState('')
+
+  const toFraction = (pctText: string): number | undefined => {
+    const clean = (pctText || '').replace(',', '.').trim()
+    if (clean === '') return undefined
+    const n = Number(clean)
+    if (!isFinite(n) || n < 0) return undefined
+    return n / 100
+  }
+  const toPctText = (fraction?: number): string =>
+    typeof fraction === 'number' && !Number.isNaN(fraction)
+      ? String(Number((fraction * 100).toFixed(6)))
+      : ''
+
+  const activeOverrides = useMemo<TasaOverrides | undefined>(() => {
+    const d = Number(watchedManualDesg)
+    const c = Number(watchedManualCes)
+    const ov: TasaOverrides = {}
+    if (watchedManualDesg !== undefined && watchedManualDesg !== ('' as any) && isFinite(d) && d > 0) ov.tasaBancoDesgravamen = d
+    if (watchedManualCes !== undefined && watchedManualCes !== ('' as any) && isFinite(c) && c > 0) ov.tasaBancoCesantia = c
+    return Object.keys(ov).length > 0 ? ov : undefined
+  }, [watchedManualDesg, watchedManualCes])
+
+  const hasManualRates = !!activeOverrides
+
 
   const dirtyFields = form.formState.dirtyFields
   const hasCreditFieldEdits = Boolean(
@@ -396,7 +466,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     dirtyFields.insuranceToEvaluate
   )
 
-  const runRecalculation = useCallback((opts?: { force?: boolean }): { ok: boolean; reason?: string } => {
+  const runRecalculation = useCallback((opts?: { force?: boolean; overrides?: TasaOverrides | null }): { ok: boolean; reason?: string } => {
     const banco = resolveBanco(refund.institutionId || '')
     const age = Number(form.watch('age'))
     const monto = Number(form.watch('confirmedTotalAmount') || form.watch('totalAmount'))
@@ -404,6 +474,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     const cuotasTotales = Number(form.watch('confirmedOriginalInstallments') || form.watch('originalInstallments'))
     const cuotasPendientes = Number(form.watch('confirmedRemainingInstallments') || form.watch('remainingInstallments'))
     const tipoSeguro = (form.watch('insuranceToEvaluate') || 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+    const ov = opts?.overrides === null ? undefined : (opts?.overrides ?? activeOverrides)
 
     if (!banco) return { ok: false, reason: 'Institución no soportada por la calculadora.' }
     if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
@@ -411,8 +482,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
 
     try {
-      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined)
+      const result = calcularDevolucion(banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro, saldoInsoluto || undefined, ov)
       if (result.error) return { ok: false, reason: result.error }
+
 
       const force = opts?.force === true
       if (force || !overridePrimas) {
@@ -462,12 +534,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
           Math.round(result.ahorroTotal * (1 - margenPct / 100)),
         )
         form.setValue('totalSaving', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
+        // Con tasa manual la devolución estimada se sincroniza con el nuevo cálculo.
+        if (ov) {
+          form.setValue('estimatedAmountCLP', ahorroTotalConMargen, { shouldValidate: false, shouldDirty: true })
+        }
       }
       return { ok: true }
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : 'Error en el cálculo.' }
     }
-  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin])
+  }, [form, refund.institutionId, overridePrimas, overrideAhorros, institutionMargin, activeOverrides])
+
 
   useEffect(() => {
     // Evita sobreescribir valores guardados al abrir el modal;
@@ -490,8 +567,8 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     overrideAhorros,
   ])
 
-  /* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */
-  const tasasInfo = useMemo(() => {
+  /* ---- Tasas utilizadas en el cálculo ---- */
+  const computeRates = useCallback((ov?: TasaOverrides) => {
     const banco = resolveBanco(refund.institutionId || '')
     const age = Number(watchedAge)
     const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
@@ -517,7 +594,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     try {
       const r = calcularDevolucion(
         banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro,
-        saldoInsoluto || undefined,
+        saldoInsoluto || undefined, ov,
       )
       if (r.error) return { error: r.error }
       return { banco, tipoSeguro, result: r }
@@ -525,6 +602,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       return { error: e instanceof Error ? e.message : 'No se pudieron obtener las tasas.' }
     }
   }, [
+    form,
     refund.institutionId,
     watchedAge,
     watchedConfirmedTotalAmount,
@@ -537,30 +615,126 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     watchedInsuranceType,
   ])
 
+  // Devolución final aplicando el margen de seguridad de la institución
+  const devolucionDe = useCallback((r: any) => {
+    const margenPct = typeof institutionMargin === 'number' ? institutionMargin : 0
+    return Math.max(0, Math.round((r?.ahorroTotal || 0) * (1 - margenPct / 100)))
+  }, [institutionMargin])
+
+  const tasasInfo = useMemo(() => computeRates(activeOverrides), [computeRates, activeOverrides])
+
+  // Tasas del servicio (sin override) para comparar
+  const tasasServicio = useMemo(() => computeRates(undefined), [computeRates])
+
+  const draftOverrides = useMemo<TasaOverrides | undefined>(() => {
+    const ov: TasaOverrides = {}
+    const d = toFraction(draftDesg)
+    const c = toFraction(draftCes)
+    if (typeof d === 'number' && d > 0) ov.tasaBancoDesgravamen = d
+    if (typeof c === 'number' && c > 0) ov.tasaBancoCesantia = c
+    return Object.keys(ov).length > 0 ? ov : undefined
+  }, [draftDesg, draftCes])
+
+  const draftPreview = useMemo(
+    () => (rateEditOpen && draftOverrides ? computeRates(draftOverrides) : null),
+    [rateEditOpen, draftOverrides, computeRates],
+  )
+
+  const openRateEditor = () => {
+    const base = tasasServicio as any
+    setDraftDesg(
+      toPctText(
+        typeof watchedManualDesg === 'number'
+          ? watchedManualDesg
+          : base?.result?.desgravamen?.tasaBanco,
+      ),
+    )
+    setDraftCes(
+      toPctText(
+        typeof watchedManualCes === 'number'
+          ? watchedManualCes
+          : base?.result?.cesantia?.tasaBanco,
+      ),
+    )
+    setDraftReason(form.getValues('manualRateReason') || '')
+    setRateEditOpen(true)
+  }
+
+  const applyManualRates = () => {
+    const ov = draftOverrides
+    if (!ov) {
+      toast({ title: 'Ingresa una tasa válida', variant: 'destructive' })
+      return
+    }
+    form.setValue('manualBankRateDesgravamen', ov.tasaBancoDesgravamen as any, { shouldDirty: true })
+    form.setValue('manualBankRateCesantia', ov.tasaBancoCesantia as any, { shouldDirty: true })
+    form.setValue('manualRateReason', draftReason, { shouldDirty: true })
+    const res = runRecalculation({ force: true, overrides: ov })
+    setConfirmRateOpen(false)
+    setRateEditOpen(false)
+    if (!res.ok) {
+      toast({ title: 'No se pudo recalcular', description: res.reason, variant: 'destructive' })
+      return
+    }
+    toast({
+      title: 'Tasa manual aplicada',
+      description: 'La devolución se recalculó con la tasa ingresada. Revisa y guarda los cambios.',
+    })
+  }
+
+  const clearManualRates = () => {
+    form.setValue('manualBankRateDesgravamen', undefined as any, { shouldDirty: true })
+    form.setValue('manualBankRateCesantia', undefined as any, { shouldDirty: true })
+    form.setValue('manualRateReason', '', { shouldDirty: true })
+    setRateEditOpen(false)
+    const res = runRecalculation({ force: true, overrides: null })
+    if (res.ok) {
+      const total = Number(form.getValues('totalSaving')) || 0
+      form.setValue('estimatedAmountCLP', total, { shouldDirty: true })
+      toast({ title: 'Tasa del servicio restablecida', description: 'Se recalculó con las tarifas vigentes.' })
+    }
+  }
+
+
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
   ]
 
 
+  const MANUAL_RATE_FIELDS: (keyof SnapshotFormValues)[] = [
+    'manualBankRateDesgravamen', 'manualBankRateCesantia',
+  ]
+
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
     for (const [key, value] of Object.entries(data) as [keyof SnapshotFormValues, any][]) {
       const original = defaults[key]
-      if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      const isClearedManualRate =
+        MANUAL_RATE_FIELDS.includes(key) &&
+        (value === undefined || value === '') &&
+        typeof original === 'number'
+      if (!isClearedManualRate) {
+        if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
+      }
+      const isManualRate = MANUAL_RATE_FIELDS.includes(key)
+      const fmtRate = (v: any) => (typeof v === 'number' ? fmtPct(v) : '')
       const isAutoField = AUTO_CALCULATED_FIELDS.includes(key)
       const isManuallyOverridden = 
         (key === 'currentMonthlyPremium' || key === 'newMonthlyPremium') ? overridePrimas :
         (key === 'monthlySaving' || key === 'totalSaving') ? overrideAhorros : false
       changes.push({
         label: FIELD_LABELS[key] || key,
-        from: String(original ?? ''),
-        to: String(value),
+        from: isManualRate ? (fmtRate(original) || 'Tasa del servicio') : String(original ?? ''),
+        to: isManualRate
+          ? (isClearedManualRate ? 'Tasa del servicio' : fmtRate(value))
+          : String(value),
         isAutoCalculated: isAutoField && !isManuallyOverridden,
-        isManualOverride: isAutoField && isManuallyOverridden,
+        isManualOverride: (isAutoField && isManuallyOverridden) || isManualRate,
       })
     }
     return changes
-  }, [defaults])
+  }, [defaults, overridePrimas, overrideAhorros])
+
 
   const mutation = useMutation({
     mutationFn: async (values: SnapshotFormValues) => {
@@ -586,6 +760,17 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
             : value
         }
       }
+
+      // Si se quitó una tasa manual previamente guardada, enviarla como null
+      // para volver a las tarifas del servicio.
+      for (const key of MANUAL_RATE_FIELDS) {
+        const value = (values as any)[key]
+        if ((value === undefined || value === '') && typeof (defaults as any)[key] === 'number') {
+          snapshotPatch[key] = null
+          snapshotPatch.manualRateReason = ''
+        }
+      }
+
 
       if (Object.keys(snapshotPatch).length === 0 && Object.keys(rootPatch).length === 0) {
         return Promise.reject(new Error('No hay cambios para guardar'))
@@ -683,6 +868,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       setPendingData(null)
       setOverridePrimas(false)
       setOverrideAhorros(false)
+      setRateEditOpen(false)
+      setConfirmRateOpen(false)
+
     }
     setOpen(isOpen)
   }
@@ -1148,16 +1336,45 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
               <Separator />
 
-              {/* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */}
+              {/* ---- Tasas utilizadas en el cálculo ---- */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Percent className="h-4 w-4 text-primary" />
                   <h4 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
                     Tasas utilizadas en el cálculo
                   </h4>
-                  <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
-                    Solo lectura
-                  </span>
+                  <div className="ml-auto flex items-center gap-2">
+                    {hasManualRates && (
+                      <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        Tasa manual
+                      </span>
+                    )}
+                    {!rateEditOpen && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={openRateEditor}
+                        disabled={'error' in tasasServicio && !!(tasasServicio as any).error}
+                      >
+                        <Unlock className="h-3.5 w-3.5" />
+                        {hasManualRates ? 'Editar tasa manual' : 'Solicitar edición de tasa'}
+                      </Button>
+                    )}
+                    {hasManualRates && !rateEditOpen && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={clearManualRates}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Usar tasa del servicio
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {'error' in tasasInfo && tasasInfo.error ? (
@@ -1193,6 +1410,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                             <RateCard
                               title="Desgravamen · tasa banco"
                               tasa={desg.tasaBanco}
+                              manual={typeof activeOverrides?.tasaBancoDesgravamen === 'number'}
                               rows={[
                                 { label: 'Tramo de edad', value: TRAMO_EDAD_LABEL[r.tramoUsado] || r.tramoUsado || '—' },
                                 { label: 'Cuotas de la tabla', value: desg.cuotasUtilizadas ?? '—' },
@@ -1206,6 +1424,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                             <RateCard
                               title="Cesantía · tasa banco"
                               tasa={ces.tasaBanco}
+                              manual={typeof activeOverrides?.tasaBancoCesantia === 'number'}
                               rows={[
                                 {
                                   label: 'Tramo de saldo',
@@ -1219,15 +1438,211 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                           )}
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground">
-                          Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
-                          actualizan automáticamente al modificar los datos del crédito.
-                        </p>
+                        {hasManualRates ? (
+                          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-2 space-y-1">
+                            <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                              Esta solicitud usa una tasa registrada manualmente. La devolución
+                              estimada se calculó con ese valor, no con las tarifas del servicio.
+                            </p>
+                            {form.getValues('manualRateReason') && (
+                              <p className="text-[11px] text-muted-foreground">
+                                Motivo: {form.getValues('manualRateReason')}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-muted-foreground">
+                            Tasas mensuales vigentes según la configuración de Ajustes → Tasas. Se
+                            actualizan automáticamente al modificar los datos del crédito.
+                          </p>
+                        )}
                       </div>
                     )
                   })()
                 )}
+
+                {/* ---- Editor de tasa manual ---- */}
+                {rateEditOpen && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                        Registrar tasa manual (a solicitud del cliente)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      Ingresa la tasa mensual del banco tal como aparece en el documento del
+                      cliente. La devolución se recalculará con este valor.
+                    </p>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(() => {
+                        const base = tasasServicio as any
+                        const showDesg = !!base?.result?.desgravamen
+                        const showCes = !!base?.result?.cesantia
+                        return (
+                          <>
+                            {showDesg && (
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">Tasa mensual · Desgravamen</label>
+                                <div className="relative">
+                                  <Input
+                                    value={draftDesg}
+                                    inputMode="decimal"
+                                    onChange={(e) => setDraftDesg(e.target.value.replace(/[^0-9.,]/g, ''))}
+                                    className="pr-7"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Servicio: {fmtPct(base.result.desgravamen.tasaBanco)}
+                                </p>
+                              </div>
+                            )}
+                            {showCes && (
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">Tasa mensual · Cesantía</label>
+                                <div className="relative">
+                                  <Input
+                                    value={draftCes}
+                                    inputMode="decimal"
+                                    onChange={(e) => setDraftCes(e.target.value.replace(/[^0-9.,]/g, ''))}
+                                    className="pr-7"
+                                  />
+                                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                    %
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">
+                                  Servicio: {fmtPct(base.result.cesantia.tasaBanco)}
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Motivo / respaldo (opcional)</label>
+                      <Textarea
+                        value={draftReason}
+                        onChange={(e) => setDraftReason(e.target.value)}
+                        rows={2}
+                        maxLength={200}
+                        placeholder="Ej: tasa informada en certificado del banco entregado por el cliente"
+                        className="text-xs"
+                      />
+                    </div>
+
+                    {/* Vista previa del impacto */}
+                    {draftPreview && !('error' in draftPreview && (draftPreview as any).error) && (
+                      <div className="rounded-md border bg-card p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Impacto en la devolución
+                          </span>
+                        </div>
+                        {(() => {
+                          const before = (tasasServicio as any)?.result
+                          const after = (draftPreview as any).result
+                          const devBefore = devolucionDe(before)
+                          const devAfter = devolucionDe(after)
+                          const diff = devAfter - devBefore
+                          return (
+                            <div className="space-y-1">
+                              <RateRow label="Devolución con tasa del servicio" value={fmtCLP(devBefore)} />
+                              <RateRow
+                                label="Devolución con tasa manual"
+                                value={<span className="text-primary font-semibold">{fmtCLP(devAfter)}</span>}
+                              />
+                              <RateRow
+                                label="Diferencia"
+                                value={
+                                  <span className={diff >= 0 ? 'text-emerald-600' : 'text-destructive'}>
+                                    {diff >= 0 ? '+' : '−'}{fmtCLP(Math.abs(diff))}
+                                    {devBefore > 0 && (
+                                      <span className="text-muted-foreground font-normal">
+                                        {' '}({((diff / devBefore) * 100).toFixed(1)}%)
+                                      </span>
+                                    )}
+                                  </span>
+                                }
+                              />
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                    {draftPreview && 'error' in draftPreview && (draftPreview as any).error && (
+                      <Alert variant="destructive" className="py-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{(draftPreview as any).error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRateEditOpen(false)}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={!draftOverrides}
+                        onClick={() => setConfirmRateOpen(true)}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Confirmar y recalcular
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <AlertDialog open={confirmRateOpen} onOpenChange={setConfirmRateOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Aplicar la tasa registrada manualmente?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <span className="block">
+                          Se reemplazará la tasa del servicio por la que ingresaste y se recalculará
+                          la devolución de esta solicitud.
+                        </span>
+                        <span className="block text-xs">
+                          {typeof draftOverrides?.tasaBancoDesgravamen === 'number' && (
+                            <span className="block">
+                              Desgravamen: {fmtPct(draftOverrides.tasaBancoDesgravamen)}
+                            </span>
+                          )}
+                          {typeof draftOverrides?.tasaBancoCesantia === 'number' && (
+                            <span className="block">
+                              Cesantía: {fmtPct(draftOverrides.tasaBancoCesantia)}
+                            </span>
+                          )}
+                        </span>
+                        <span className="block text-xs">
+                          Los cambios se guardan al confirmar el paso “Revisar cambios”.
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Volver</AlertDialogCancel>
+                      <AlertDialogAction onClick={applyManualRates}>
+                        Sí, aplicar tasa manual
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
+
 
               <Separator />
 
