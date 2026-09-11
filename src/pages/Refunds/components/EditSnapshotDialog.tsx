@@ -427,9 +427,57 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     overrideAhorros,
   ])
 
+  /* ---- Tasas utilizadas en el cálculo (solo lectura) ---- */
+  const tasasInfo = useMemo(() => {
+    const banco = resolveBanco(refund.institutionId || '')
+    const age = Number(watchedAge)
+    const monto = Number(watchedConfirmedTotalAmount || watchedTotalAmount)
+    const saldoInsoluto = Number(
+      watchedConfirmedAverageInsuredBalance || form.getValues('averageInsuredBalance'),
+    )
+    const cuotasTotales = Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments)
+    const cuotasPendientes = Number(
+      watchedConfirmedRemainingInstallments || watchedRemainingInstallments,
+    )
+    const ins = (watchedInsuranceType || 'desgravamen').toLowerCase()
+    const tipoSeguro = (ins.includes('ambos')
+      ? 'ambos'
+      : ins.includes('cesant')
+        ? 'cesantia'
+        : 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
+
+    if (!banco) return { error: 'La institución de esta solicitud no tiene tarifas cargadas.' }
+    if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
+      return { error: 'Completa edad, monto y cuotas del crédito para ver las tasas.' }
+    }
+
+    try {
+      const r = calcularDevolucion(
+        banco, age, monto, cuotasTotales, cuotasPendientes, tipoSeguro,
+        saldoInsoluto || undefined,
+      )
+      if (r.error) return { error: r.error }
+      return { banco, tipoSeguro, result: r }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'No se pudieron obtener las tasas.' }
+    }
+  }, [
+    refund.institutionId,
+    watchedAge,
+    watchedConfirmedTotalAmount,
+    watchedConfirmedAverageInsuredBalance,
+    watchedConfirmedOriginalInstallments,
+    watchedConfirmedRemainingInstallments,
+    watchedTotalAmount,
+    watchedOriginalInstallments,
+    watchedRemainingInstallments,
+    watchedInsuranceType,
+  ])
+
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
     'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
   ]
+
 
   const getChanges = useCallback((data: SnapshotFormValues): FieldChange[] => {
     const changes: FieldChange[] = []
