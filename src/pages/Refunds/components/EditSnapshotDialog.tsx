@@ -634,11 +634,19 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   // Tasas del servicio (sin override) para comparar
   const tasasServicio = useMemo(() => computeRates(undefined), [computeRates])
 
-  // Monto total del crédito usado como base para calcular la tasa
-  const montoCreditoBase = useMemo(
+  // Monto total del crédito usado en el cálculo de la devolución
+  const montoCreditoCalculo = useMemo(
     () => Number(watchedConfirmedTotalAmount || watchedTotalAmount) || 0,
     [watchedConfirmedTotalAmount, watchedTotalAmount],
   )
+  const montoCreditoEsConfirmado = !!Number(watchedConfirmedTotalAmount)
+
+  // Base editable para la división prima ÷ crédito (por defecto, el monto del cálculo)
+  const montoCreditoBase = useMemo(() => {
+    const clean = (draftMontoCredito || '').replace(/[^0-9]/g, '')
+    const n = Number(clean)
+    return clean && isFinite(n) && n > 0 ? n : montoCreditoCalculo
+  }, [draftMontoCredito, montoCreditoCalculo])
 
   const primaTotalIngresada = useMemo(() => {
     const clean = (draftPrimaTotal || '').replace(/[^0-9]/g, '')
