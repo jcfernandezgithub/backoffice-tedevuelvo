@@ -409,6 +409,39 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const watchedOriginalInstallments = form.watch('originalInstallments')
   const watchedRemainingInstallments = form.watch('remainingInstallments')
   const watchedInsuranceType = form.watch('insuranceToEvaluate')
+  const watchedManualDesg = form.watch('manualBankRateDesgravamen')
+  const watchedManualCes = form.watch('manualBankRateCesantia')
+
+  /* ---- Tasas manuales (a solicitud del cliente) ---- */
+  const [rateEditOpen, setRateEditOpen] = useState(false)
+  const [confirmRateOpen, setConfirmRateOpen] = useState(false)
+  const [draftDesg, setDraftDesg] = useState('')
+  const [draftCes, setDraftCes] = useState('')
+  const [draftReason, setDraftReason] = useState('')
+
+  const toFraction = (pctText: string): number | undefined => {
+    const clean = (pctText || '').replace(',', '.').trim()
+    if (clean === '') return undefined
+    const n = Number(clean)
+    if (!isFinite(n) || n < 0) return undefined
+    return n / 100
+  }
+  const toPctText = (fraction?: number): string =>
+    typeof fraction === 'number' && !Number.isNaN(fraction)
+      ? String(Number((fraction * 100).toFixed(6)))
+      : ''
+
+  const activeOverrides = useMemo<TasaOverrides | undefined>(() => {
+    const d = Number(watchedManualDesg)
+    const c = Number(watchedManualCes)
+    const ov: TasaOverrides = {}
+    if (watchedManualDesg !== undefined && watchedManualDesg !== ('' as any) && isFinite(d) && d > 0) ov.tasaBancoDesgravamen = d
+    if (watchedManualCes !== undefined && watchedManualCes !== ('' as any) && isFinite(c) && c > 0) ov.tasaBancoCesantia = c
+    return Object.keys(ov).length > 0 ? ov : undefined
+  }, [watchedManualDesg, watchedManualCes])
+
+  const hasManualRates = !!activeOverrides
+
 
   const dirtyFields = form.formState.dirtyFields
   const hasCreditFieldEdits = Boolean(
