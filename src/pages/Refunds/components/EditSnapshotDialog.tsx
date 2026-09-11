@@ -830,6 +830,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
       setPendingData(null)
       setOverridePrimas(false)
       setOverrideAhorros(false)
+      setRateEditOpen(false)
+      setConfirmRateOpen(false)
+
     }
     setOpen(isOpen)
   }
