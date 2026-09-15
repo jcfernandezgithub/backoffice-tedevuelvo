@@ -612,7 +612,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         ? 'cesantia'
         : 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
 
-    if (!banco) return { error: 'La institución de esta solicitud no tiene tarifas cargadas.' }
+    if (!banco) {
+      return {
+        error: `No se pudieron asociar tarifas a la institución "${refund.institutionId || 'sin institución'}" de esta solicitud. Revisa que exista con ese nombre en Ajustes → Tasas.`,
+      }
+    }
     if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
       return { error: 'Completa edad, monto y cuotas del crédito para ver las tasas.' }
     }
