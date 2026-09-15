@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
-import { calcularDevolucion, type TasaOverrides } from '@/lib/calculadoraUtils'
+import { calcularDevolucion, resolveInstitutionKey, type TasaOverrides } from '@/lib/calculadoraUtils'
+import { getBankRateMatrix, getBankCesantiaRates } from '@/services/ratesService'
 import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { useInstitutionMargin } from '@/hooks/useInstitutions'
 import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
@@ -333,7 +334,24 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     if (INSTITUTION_TO_CALC[norm]) return INSTITUTION_TO_CALC[norm]
     // Probar también sin guiones (solo palabras)
     const firstWord = norm.split('-')[0]
-    return INSTITUTION_TO_CALC[firstWord]
+    if (INSTITUTION_TO_CALC[firstWord]) return INSTITUTION_TO_CALC[firstWord]
+
+    // Fallback: resolver directamente contra las claves de las tasas cargadas
+    // (desgravamen y cesantía). Así no dependemos de un diccionario fijo y
+    // toleramos variantes como "banco-ripley", "BANCO RIPLEY", "ripley banco".
+    const variants = [raw, raw.replace(/[-_]+/g, ' '), norm.replace(/-/g, ' '), firstWord]
+    for (const v of variants) {
+      if (!v) continue
+      try {
+        const fromMatrix = resolveInstitutionKey(v, Object.keys(getBankRateMatrix() || {}))
+        if (fromMatrix) return fromMatrix
+      } catch { /* tasas aún no cargadas */ }
+      try {
+        const fromCesantia = resolveInstitutionKey(v, Object.keys(getBankCesantiaRates() || {}))
+        if (fromCesantia) return fromCesantia
+      } catch { /* tasas aún no cargadas */ }
+    }
+    return undefined
   }
 
   const calcAge = useCallback((dateStr: string): number | undefined => {
@@ -594,7 +612,11 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         ? 'cesantia'
         : 'desgravamen') as 'desgravamen' | 'cesantia' | 'ambos'
 
-    if (!banco) return { error: 'La institución de esta solicitud no tiene tarifas cargadas.' }
+    if (!banco) {
+      return {
+        error: `No se pudieron asociar tarifas a la institución "${refund.institutionId || 'sin institución'}" de esta solicitud. Revisa que exista con ese nombre en Ajustes → Tasas.`,
+      }
+    }
     if (!age || !monto || !cuotasTotales || !cuotasPendientes) {
       return { error: 'Completa edad, monto y cuotas del crédito para ver las tasas.' }
     }
