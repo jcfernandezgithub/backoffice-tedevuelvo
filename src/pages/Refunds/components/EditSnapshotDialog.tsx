@@ -333,7 +333,24 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     if (INSTITUTION_TO_CALC[norm]) return INSTITUTION_TO_CALC[norm]
     // Probar también sin guiones (solo palabras)
     const firstWord = norm.split('-')[0]
-    return INSTITUTION_TO_CALC[firstWord]
+    if (INSTITUTION_TO_CALC[firstWord]) return INSTITUTION_TO_CALC[firstWord]
+
+    // Fallback: resolver directamente contra las claves de las tasas cargadas
+    // (desgravamen y cesantía). Así no dependemos de un diccionario fijo y
+    // toleramos variantes como "banco-ripley", "BANCO RIPLEY", "ripley banco".
+    const variants = [raw, raw.replace(/[-_]+/g, ' '), norm.replace(/-/g, ' '), firstWord]
+    for (const v of variants) {
+      if (!v) continue
+      try {
+        const fromMatrix = resolveInstitutionKey(v, Object.keys(getBankRateMatrix() || {}))
+        if (fromMatrix) return fromMatrix
+      } catch { /* tasas aún no cargadas */ }
+      try {
+        const fromCesantia = resolveInstitutionKey(v, Object.keys(getBankCesantiaRates() || {}))
+        if (fromCesantia) return fromCesantia
+      } catch { /* tasas aún no cargadas */ }
+    }
+    return undefined
   }
 
   const calcAge = useCallback((dateStr: string): number | undefined => {
