@@ -1,8 +1,16 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.2
+## Versión 4.4.3
 
 ## Changelog
+
+### Versión 4.4.3 - 2026-09-15
+
+#### Mejora en identificación de bancos al editar tasas del snapshot
+- Se corrigió en el diálogo **Editar snapshot de cálculo** la identificación del banco cuando el nombre guardado en la solicitud no coincidía exactamente con la lista interna de instituciones.
+- Ahora el editor busca directamente en las tasas cargadas en **Ajustes > Tasas para Cálculo**, tolerando variaciones en el nombre del banco (por ejemplo, "Banco Ripley" vs. variantes de escritura).
+- Si no se encuentran tasas para la institución, el mensaje de error indica el nombre exacto detectado, facilitando su revisión y carga en Ajustes.
+- Se mantienen ocultas las tasas preferenciales TDV; solo se permiten editar las tasas bancarias mensuales de Desgravamen y Cesantía.
 
 ### Versión 4.4.2 - 2026-09-11
 
