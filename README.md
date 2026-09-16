@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.3
+## Versión 4.4.4
 
 ## Changelog
+
+### Versión 4.4.4 - 2026-09-16
+
+#### Actualización de certificado de vigencia Falabella
+- Se reemplazó el certificado de vigencia de poderes utilizado en las cartas de corte para **Falabella**.
+- El nuevo documento corresponde al certificado emitido por el Conservador de Bienes Raíces de Santiago con fecha 15 de septiembre de 2026 y carátula 26083073, vigente al 14 de septiembre de 2026.
+- El archivo se actualizó en `src/assets/certificates/certificado-vigencia-falabella.jpg` y los tres flujos de generación de cartas de corte lo utilizan automáticamente sin cambios adicionales.
 
 ### Versión 4.4.3 - 2026-09-15
 
