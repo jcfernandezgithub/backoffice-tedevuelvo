@@ -1782,7 +1782,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                                 </p>
                               </div>
                             )}
-                            {showCes && (
+                            {showCes && rateMode === 'directa' && (
                               <div className="space-y-1">
                                 <label className="text-xs font-medium">Tasa mensual · Cesantía</label>
                                 <div className="relative">
