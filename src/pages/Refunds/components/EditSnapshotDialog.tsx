@@ -1625,21 +1625,13 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       </Button>
                     </div>
 
-                    {rateMode === 'prima' && (
-                      <div className="rounded-md border bg-card p-3 space-y-3">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium">
-                              Monto total de la prima (confirmada del crédito)
-                            </label>
-                            <Input
-                              value={draftPrimaTotal ? fmtCLP(Number(draftPrimaTotal)) : ''}
-                              inputMode="numeric"
-                              placeholder="$0"
-                              onChange={(e) => setDraftPrimaTotal(e.target.value.replace(/[^0-9]/g, ''))}
-                            />
-                          </div>
-                          <div className="space-y-1">
+                    {rateMode === 'prima' && (() => {
+                      const base = tasasServicio as any
+                      const hasDesg = !!base?.result?.desgravamen
+                      const hasCes = !!base?.result?.cesantia
+                      return (
+                        <div className="space-y-3">
+                          <div className="space-y-1 sm:max-w-[50%]">
                             <label className="text-xs font-medium">Monto total del crédito (base)</label>
                             <Input
                               value={
@@ -1660,37 +1652,109 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                               . Puedes corregirlo si el certificado del banco indica otro.
                             </p>
                           </div>
-                        </div>
-                        <div className="space-y-1 pt-1">
-                          <RateRow
-                            label="División"
-                            value={`${fmtCLP(primaTotalIngresada)} ÷ ${fmtCLP(montoCreditoBase)}`}
-                          />
-                          <RateRow
-                            label="Tasa de desgravamen calculada"
-                            value={
-                              tasaCalculadaDesg ? (
-                                <span className="text-primary font-semibold">
-                                  {(tasaCalculadaDesg * 100).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                                </span>
-                              ) : (
-                                '—'
-                              )
-                            }
-                          />
-                          {tasaCalculadaDesg && (
-                            <RateRow
-                              label="Prima única que reproduce el cálculo"
-                              value={fmtCLP(montoCreditoCalculo * tasaCalculadaDesg)}
-                            />
+
+                          {hasDesg && (
+                            <div className="rounded-md border bg-card p-3 space-y-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Desgravamen
+                              </span>
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">
+                                  Monto total de la prima (confirmada del crédito)
+                                </label>
+                                <Input
+                                  value={draftPrimaTotal ? fmtCLP(Number(draftPrimaTotal)) : ''}
+                                  inputMode="numeric"
+                                  placeholder="$0"
+                                  onChange={(e) => setDraftPrimaTotal(e.target.value.replace(/[^0-9]/g, ''))}
+                                />
+                              </div>
+                              <div className="space-y-1 pt-1">
+                                <RateRow
+                                  label="División"
+                                  value={`${fmtCLP(primaTotalIngresada)} ÷ ${fmtCLP(montoCreditoBase)}`}
+                                />
+                                <RateRow
+                                  label="Tasa de desgravamen calculada"
+                                  value={
+                                    tasaCalculadaDesg ? (
+                                      <span className="text-primary font-semibold">
+                                        {(tasaCalculadaDesg * 100).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                      </span>
+                                    ) : (
+                                      '—'
+                                    )
+                                  }
+                                />
+                                {tasaCalculadaDesg && (
+                                  <RateRow
+                                    label="Prima única que reproduce el cálculo"
+                                    value={fmtCLP(montoCreditoCalculo * tasaCalculadaDesg)}
+                                  />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                Tasa = prima total ÷ monto total del crédito, redondeada a 2 decimales.
+                              </p>
+                            </div>
+                          )}
+
+                          {hasCes && (
+                            <div className="rounded-md border bg-card p-3 space-y-3">
+                              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Cesantía
+                              </span>
+                              <div className="space-y-1">
+                                <label className="text-xs font-medium">
+                                  Monto total de la prima de cesantía (confirmada del crédito)
+                                </label>
+                                <Input
+                                  value={draftPrimaTotalCes ? fmtCLP(Number(draftPrimaTotalCes)) : ''}
+                                  inputMode="numeric"
+                                  placeholder="$0"
+                                  onChange={(e) => setDraftPrimaTotalCes(e.target.value.replace(/[^0-9]/g, ''))}
+                                />
+                              </div>
+                              <div className="space-y-1 pt-1">
+                                <RateRow
+                                  label="División"
+                                  value={`${fmtCLP(primaTotalIngresadaCes)} ÷ ${fmtCLP(montoCreditoBase)} ÷ ${cuotasOriginales || '—'} cuotas`}
+                                />
+                                <RateRow
+                                  label="Tasa mensual de cesantía calculada"
+                                  value={
+                                    tasaCalculadaCes ? (
+                                      <span className="text-primary font-semibold">
+                                        {(tasaCalculadaCes * 100).toLocaleString('es-CL', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}%
+                                      </span>
+                                    ) : (
+                                      '—'
+                                    )
+                                  }
+                                />
+                                {tasaCalculadaCes && cuotasOriginales > 0 && (
+                                  <RateRow
+                                    label="Prima total que reproduce el cálculo"
+                                    value={fmtCLP(Math.round(montoCreditoCalculo * tasaCalculadaCes * cuotasOriginales))}
+                                  />
+                                )}
+                              </div>
+                              <p className="text-[10px] text-muted-foreground">
+                                Tasa = prima total ÷ monto total del crédito ÷ cuotas originales
+                                ({cuotasOriginales || '—'}), redondeada a 4 decimales.
+                                {!cuotasOriginales && ' Faltan las cuotas originales del crédito en el cálculo.'}
+                              </p>
+                            </div>
+                          )}
+
+                          {!montoCreditoBase && (
+                            <p className="text-[10px] text-destructive">
+                              Falta el monto total del crédito en el cálculo.
+                            </p>
                           )}
                         </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          Tasa = prima total ÷ monto total del crédito, redondeada a 2 decimales.
-                          {!montoCreditoBase && ' Falta el monto total del crédito en el cálculo.'}
-                        </p>
-                      </div>
-                    )}
+                      )
+                    })()}
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       {(() => {
