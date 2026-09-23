@@ -747,6 +747,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     setDraftReason(form.getValues('manualRateReason') || '')
     setRateMode('directa')
     setDraftPrimaTotal('')
+    setDraftPrimaTotalCes('')
     setDraftMontoCredito('')
     setRateEditOpen(true)
   }
@@ -760,10 +761,18 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     }
     form.setValue('manualBankRateDesgravamen', ov.tasaBancoDesgravamen as any, { shouldDirty: true })
     form.setValue('manualBankRateCesantia', ov.tasaBancoCesantia as any, { shouldDirty: true })
-    const autoReason =
-      rateMode === 'prima' && primaTotalIngresada
-        ? `Tasa calculada: prima total ${fmtCLP(primaTotalIngresada)} ÷ crédito ${fmtCLP(montoCreditoBase)} = ${((tasaCalculadaDesg ?? 0) * 100).toFixed(2)}%`
-        : ''
+    const autoReasonParts: string[] = []
+    if (rateMode === 'prima' && primaTotalIngresada && tasaCalculadaDesg) {
+      autoReasonParts.push(
+        `Desgravamen: prima total ${fmtCLP(primaTotalIngresada)} ÷ crédito ${fmtCLP(montoCreditoBase)} = ${(tasaCalculadaDesg * 100).toFixed(2)}%`,
+      )
+    }
+    if (rateMode === 'prima' && primaTotalIngresadaCes && tasaCalculadaCes) {
+      autoReasonParts.push(
+        `Cesantía: prima total ${fmtCLP(primaTotalIngresadaCes)} ÷ crédito ${fmtCLP(montoCreditoBase)} ÷ ${cuotasOriginales} cuotas = ${(tasaCalculadaCes * 100).toFixed(4)}%`,
+      )
+    }
+    const autoReason = autoReasonParts.join(' | ')
     const reasonFinal = draftReason?.trim() || autoReason
     form.setValue('manualRateReason', reasonFinal, { shouldDirty: true })
 
