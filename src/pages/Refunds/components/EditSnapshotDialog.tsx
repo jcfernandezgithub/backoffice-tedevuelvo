@@ -448,11 +448,14 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
   const [draftDesg, setDraftDesg] = useState('')
   const [draftCes, setDraftCes] = useState('')
   const [draftReason, setDraftReason] = useState('')
-  // Modo de obtención de la tasa de desgravamen:
+  // Modo de obtención de la tasa:
   // 'directa' = el ejecutivo conoce la tasa mensual
-  // 'prima'   = se calcula como prima total confirmada / monto total del crédito
+  // 'prima'   = se calcula desde la prima total confirmada:
+  //             Desgravamen → prima ÷ monto del crédito
+  //             Cesantía    → prima ÷ monto del crédito ÷ cuotas originales
   const [rateMode, setRateMode] = useState<'directa' | 'prima'>('directa')
   const [draftPrimaTotal, setDraftPrimaTotal] = useState('')
+  const [draftPrimaTotalCes, setDraftPrimaTotalCes] = useState('')
   // Base de crédito usada para la división (editable: por defecto el monto del cálculo)
   const [draftMontoCredito, setDraftMontoCredito] = useState('')
 
