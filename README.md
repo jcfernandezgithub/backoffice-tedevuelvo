@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.4
+## Versión 4.4.5
 
 ## Changelog
+
+### Versión 4.4.5 - 2026-09-23
+
+#### Cálculo de tasa desde la prima para seguros de Cesantía
+- El modo "Calcular desde la prima" del diálogo **Editar snapshot de cálculo** ahora detecta automáticamente el tipo de seguro de la solicitud.
+- Para **Desgravamen** se mantiene la fórmula: tasa = prima total ÷ monto del crédito (redondeada a 2 decimales).
+- Para **Cesantía** se aplica la fórmula específica: tasa = prima total ÷ monto del crédito ÷ cuotas originales del crédito (redondeada a 4 decimales), ya que la prima de cesantía se cobra por cuota.
+- Antes de confirmar se muestra la fórmula aplicada, la tasa resultante y la prima reproducida por esa tasa, permitiendo validar el cálculo.
+- El motivo del cambio se completa automáticamente con la fórmula utilizada, dejando trazabilidad del origen de la tasa manual.
+- Se corrigió la reconstrucción de la prima total calculada al aplicar una tasa manual, evitando que quedara guardada en cero cuando el campo de override estaba vacío.
 
 ### Versión 4.4.4 - 2026-09-16
 
