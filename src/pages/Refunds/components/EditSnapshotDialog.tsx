@@ -721,7 +721,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     if (typeof d === 'number' && d > 0) ov.tasaBancoDesgravamen = d
     if (typeof c === 'number' && c > 0) ov.tasaBancoCesantia = c
     return Object.keys(ov).length > 0 ? ov : undefined
-  }, [desgPctText, draftCes])
+  }, [desgPctText, cesPctText])
 
   const draftPreview = useMemo(
     () => (rateEditOpen && draftOverrides ? computeRates(draftOverrides) : null),
