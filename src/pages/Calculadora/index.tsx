@@ -459,7 +459,7 @@ export default function CalculadoraPage() {
 
       if (!isCallcenter) {
         doc.setTextColor(80);
-        doc.text(`Tasa banco: ${(ces.tasaBanco * 1000).toFixed(4)}‰`, 25, y); y += 5;
+        doc.text(`Tasa banco: ${(ces.tasaBanco * 100).toFixed(4)}%`, 25, y); y += 5;
         
         doc.text(`Cuotas pendientes: ${cuotasPend}`, 25, y); y += 5;
         doc.text(`Tramo: ${ces.tramoUsado}`, 25, y); y += 5;
