@@ -1422,7 +1422,7 @@ export default function CalculadoraPage() {
                               {!isCallcenter && (
                                 <>
                                   <span className="text-muted-foreground">Tasa banco:</span>
-                                  <span className="font-mono">{(resultado.cesantia.tasaBanco * 1000).toFixed(4)}‰</span>
+                                  <span className="font-mono">{(resultado.cesantia.tasaBanco * 100).toFixed(4)}%</span>
                                 </>
                               )}
                             </div>
