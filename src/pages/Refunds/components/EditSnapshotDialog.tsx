@@ -10,7 +10,6 @@ import { calcularDevolucion, resolveInstitutionKey, type TasaOverrides } from '@
 import { getBankRateMatrix, getBankCesantiaRates } from '@/services/ratesService'
 import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { useInstitutionMargin } from '@/hooks/useInstitutions'
-import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBreakdownUtils'
 import {
   Dialog,
   DialogContent,
@@ -523,31 +522,10 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
         if (result.primaPreferencial !== 0 || tipoSeguro !== 'cesantia') {
           form.setValue('newMonthlyPremium', result.primaPreferencial, { shouldValidate: false, shouldDirty: true })
         }
-        // Calcula prima total preferida usando las mismas fórmulas que la vista de la solicitud
-        const snapForCalc = {
-          ...snapshot,
-          insuranceToEvaluate: tipoSeguro,
-          institutionId: refund.institutionId,
-          totalAmount: monto,
-          averageInsuredBalance: saldoInsoluto,
-          confirmedTotalAmount: monto,
-          confirmedAverageInsuredBalance: saldoInsoluto,
-          confirmedRemainingInstallments: cuotasPendientes,
-          remainingInstallments: cuotasPendientes,
-          currentMonthlyPremium: result.primaBanco,
-          newMonthlyPremium: result.primaPreferencial,
-          totalSaving: result.ahorroTotal,
-        }
-        let primaTotalAuto = 0
-        const bd = computeBreakdown(snapForCalc)
-        if (bd) {
-          primaTotalAuto = bd.desgravamen.primaTotalTDV + bd.cesantia.primaTotalTDV
-        } else {
-          const cesTotal = computePureCesantiaTotalTDV(snapForCalc)
-          primaTotalAuto = cesTotal !== null
-            ? cesTotal
-            : Math.round((result.primaPreferencial || 0) * (cuotasPendientes || 0))
-        }
+        // La calculadora ya entrega la prima TDV total para el tipo de seguro
+        // seleccionado. Usar ese resultado evita reconstrucciones que podían
+        // dejar Cesantía en cero al aplicar una tasa bancaria manual.
+        const primaTotalAuto = Math.max(0, Math.round(result.primaTotalPreferencial || 0))
         form.setValue('newTotalPremium', primaTotalAuto, { shouldValidate: false, shouldDirty: true })
       }
       if (force || !overrideAhorros) {
@@ -804,7 +782,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
 
 
   const AUTO_CALCULATED_FIELDS: (keyof SnapshotFormValues)[] = [
-    'currentMonthlyPremium', 'newMonthlyPremium', 'monthlySaving', 'totalSaving',
+    'currentMonthlyPremium', 'newMonthlyPremium', 'newTotalPremium', 'monthlySaving', 'totalSaving',
   ]
 
 
@@ -1302,9 +1280,9 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs flex items-center justify-between">
-                        <span>Prima total (override manual)</span>
+                        <span>Prima total calculada</span>
                         <span className="text-[10px] text-muted-foreground font-normal">
-                          {overridePrimas ? 'Editable' : 'Bloqueado · desbloquea primas para editar'}
+                          {overridePrimas ? 'Override manual' : 'Se recalcula automáticamente'}
                         </span>
                       </FormLabel>
                       <FormControl>
