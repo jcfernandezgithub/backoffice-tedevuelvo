@@ -110,7 +110,7 @@ export default function CalculadoraPage() {
   const overridesActivos: TasaOverrides | undefined = modoAnalisis
     ? {
         tasaBancoDesgravamen: parseTasa(tasasManuales.desgBanco, 100),
-        tasaBancoCesantia: parseTasa(tasasManuales.cesBanco, 1000),
+        tasaBancoCesantia: parseTasa(tasasManuales.cesBanco, 100),
       }
     : undefined;
 
@@ -123,9 +123,58 @@ export default function CalculadoraPage() {
       const base = resultadoBase ?? resultado;
       setTasasManuales({
         desgBanco: base?.desgravamen ? (base.desgravamen.tasaBanco * 100).toFixed(4) : "",
-        cesBanco: base?.cesantia ? (base.cesantia.tasaBanco * 1000).toFixed(4) : "",
+        cesBanco: base?.cesantia ? (base.cesantia.tasaBanco * 100).toFixed(4) : "",
       });
     }
+  };
+
+  // Calcular tasa desde la prima total confirmada (misma regla que el editor de solicitudes):
+  // Desgravamen: prima ÷ monto crédito (2 decimales %)
+  // Cesantía:    prima ÷ monto crédito ÷ cuotas originales (4 decimales %)
+  const [primasConfirmadas, setPrimasConfirmadas] = useState({ desg: "", ces: "" });
+  const renderPrimaCalc = (tipo: "desg" | "ces") => {
+    const monto = Number(form.watch("montoCredito")) || 0;
+    const cuotas = Number(form.watch("cuotasTotales")) || 0;
+    const prima = Number(primasConfirmadas[tipo].replace(/\./g, "").replace(",", ".")) || 0;
+    const pct =
+      prima > 0 && monto > 0 && (tipo === "desg" || cuotas > 0)
+        ? tipo === "desg"
+          ? Math.round((prima / monto) * 100 * 100) / 100
+          : Math.round((prima / monto / cuotas) * 100 * 10000) / 10000
+        : null;
+    const dec = tipo === "desg" ? 2 : 4;
+    return (
+      <div className="space-y-1 rounded-md border border-dashed border-amber-300/70 dark:border-amber-500/30 p-2">
+        <label className="text-xs font-medium">¿No conoces la tasa? Prima total confirmada ($)</label>
+        <div className="flex gap-2">
+          <Input
+            inputMode="numeric"
+            placeholder="1.162.067"
+            className="bg-background"
+            value={primasConfirmadas[tipo]}
+            onChange={(e) => setPrimasConfirmadas((p) => ({ ...p, [tipo]: e.target.value }))}
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={pct === null}
+            onClick={() =>
+              pct !== null &&
+              setTasasManuales((t) => ({ ...t, [tipo === "desg" ? "desgBanco" : "cesBanco"]: pct.toFixed(dec) }))
+            }
+          >
+            Usar
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          {tipo === "desg"
+            ? "Tasa = prima ÷ monto del crédito"
+            : `Tasa = prima ÷ monto del crédito ÷ ${cuotas || "cuotas"} cuotas`}
+          {pct !== null && <> = <span className="font-mono">{pct.toFixed(dec).replace(".", ",")}%</span></>}
+        </p>
+      </div>
+    );
   };
 
   const MARGENES_DISPONIBLES = generarMargenes(margenTeDevuelvo);
@@ -945,6 +994,7 @@ export default function CalculadoraPage() {
                                onChange={(e) => setTasasManuales((t) => ({ ...t, desgBanco: e.target.value }))}
                              />
                            </div>
+                           {renderPrimaCalc("desg")}
                         </div>
                       )}
 
@@ -954,15 +1004,16 @@ export default function CalculadoraPage() {
                             Cesantía
                           </p>
                            <div className="space-y-1">
-                             <label className="text-xs font-medium">Tasa banco (‰)</label>
+                             <label className="text-xs font-medium">Tasa banco mensual (%)</label>
                              <Input
                                inputMode="decimal"
-                               placeholder="1,2000"
+                               placeholder="0,1200"
                                className="bg-background"
                                value={tasasManuales.cesBanco}
                                onChange={(e) => setTasasManuales((t) => ({ ...t, cesBanco: e.target.value }))}
                              />
                            </div>
+                           {renderPrimaCalc("ces")}
                         </div>
                       )}
 
