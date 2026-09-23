@@ -680,6 +680,12 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     return isFinite(n) && n > 0 ? n : undefined
   }, [draftPrimaTotal])
 
+  // Cuotas originales del crédito (necesarias para la tasa de cesantía desde la prima)
+  const cuotasOriginales = useMemo(
+    () => Number(watchedConfirmedOriginalInstallments || watchedOriginalInstallments) || 0,
+    [watchedConfirmedOriginalInstallments, watchedOriginalInstallments],
+  )
+
   // Tasa de desgravamen calculada = prima total confirmada / monto total del crédito
   // La tasa se maneja con 2 decimales en porcentaje (ej: 2,5560% → 2,56%)
   const tasaCalculadaDesg = useMemo(() => {
@@ -688,13 +694,30 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
     return Math.round(pct * 100) / 10000
   }, [primaTotalIngresada, montoCreditoBase])
 
-  // Texto de tasa desgravamen efectivo según el modo elegido
-  const desgPctText = rateMode === 'prima' ? toPctText(tasaCalculadaDesg) : draftDesg
+  const primaTotalIngresadaCes = useMemo(() => {
+    const clean = (draftPrimaTotalCes || '').replace(/[^0-9]/g, '')
+    if (!clean) return undefined
+    const n = Number(clean)
+    return isFinite(n) && n > 0 ? n : undefined
+  }, [draftPrimaTotalCes])
+
+  // Tasa de cesantía calculada = prima total confirmada / monto total del crédito / cuotas originales
+  // (la prima de cesantía se cobra mensualmente sobre el saldo, por eso se divide por las cuotas)
+  // Se maneja con 4 decimales en porcentaje (ej: 0,1487%)
+  const tasaCalculadaCes = useMemo(() => {
+    if (!primaTotalIngresadaCes || !montoCreditoBase || !cuotasOriginales) return undefined
+    const pct = (primaTotalIngresadaCes / montoCreditoBase / cuotasOriginales) * 100
+    return Math.round(pct * 10000) / 1000000
+  }, [primaTotalIngresadaCes, montoCreditoBase, cuotasOriginales])
+
+  // Texto de tasa efectivo según el modo elegido
+  const desgPctText = rateMode === 'prima' && tasaCalculadaDesg ? toPctText(tasaCalculadaDesg) : draftDesg
+  const cesPctText = rateMode === 'prima' && tasaCalculadaCes ? toPctText(tasaCalculadaCes) : draftCes
 
   const draftOverrides = useMemo<TasaOverrides | undefined>(() => {
     const ov: TasaOverrides = {}
     const d = toFraction(desgPctText)
-    const c = toFraction(draftCes)
+    const c = toFraction(cesPctText)
     if (typeof d === 'number' && d > 0) ov.tasaBancoDesgravamen = d
     if (typeof c === 'number' && c > 0) ov.tasaBancoCesantia = c
     return Object.keys(ov).length > 0 ? ov : undefined
