@@ -14,6 +14,13 @@
 - El motivo del cambio se completa automáticamente con la fórmula utilizada, dejando trazabilidad del origen de la tasa manual.
 - Se corrigió la reconstrucción de la prima total calculada al aplicar una tasa manual, evitando que quedara guardada en cero cuando el campo de override estaba vacío.
 
+#### Corrección de tasas manuales en la Calculadora
+- Se unificó la unidad de ingreso de las tasas manuales de Cesantía con la utilizada en la edición de solicitudes: ahora se ingresan y muestran como porcentaje mensual (%), evitando cálculos diez veces menores por interpretarlas como por mil (‰).
+- El modo análisis de la Calculadora permite obtener automáticamente la tasa desde la prima total confirmada.
+- Para **Desgravamen**, la tasa se calcula como prima total ÷ monto del crédito y se redondea a 2 decimales.
+- Para **Cesantía**, la tasa mensual se calcula como prima total ÷ monto del crédito ÷ cuotas originales y se redondea a 4 decimales.
+- La Calculadora muestra la fórmula y la tasa resultante antes de aplicarla mediante el botón **Usar**, manteniendo oculta y sin posibilidad de edición la tasa preferencial TDV.
+
 ### Versión 4.4.4 - 2026-09-16
 
 #### Actualización de certificado de vigencia Falabella
