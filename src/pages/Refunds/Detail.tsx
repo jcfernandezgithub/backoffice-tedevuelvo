@@ -1018,20 +1018,21 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Banco</p>
-                    <p className="font-medium">{refund.bankInfo.bank || 'N/A'}</p>
+                    <p className="font-medium">{refund.bankInfo?.bank || '—'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Tipo de cuenta</p>
-                    <p className="font-medium">{refund.bankInfo.accountType || 'N/A'}</p>
+                    <p className="font-medium">{refund.bankInfo?.accountType || '—'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Número de cuenta</p>
-                    <p className="font-medium font-mono">{refund.bankInfo.accountNumber || 'N/A'}</p>
+                    <p className="font-medium font-mono">{refund.bankInfo?.accountNumber || '—'}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          )}
+            )
+          })()}
 
           <Card>
             <CardHeader>
