@@ -190,7 +190,7 @@ export default function CambiosBancariosPage() {
                       {tab !== 'PENDING' && c.reviewedAt && (
                         <div className="mt-2 border-t border-dashed pt-1.5">
                           <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {c.status === 'APPROVED' ? 'Aprobado por' : 'Rechazado por'}
+                            {c.status === 'APPROVED' ? 'Aprobado por' : c.status === 'CANCELED' ? 'Cancelado por' : 'Rechazado por'}
                           </div>
                           <div className="font-medium text-foreground">{c.reviewedBy?.name || c.reviewedBy?.email || '—'}</div>
                           <div className="text-muted-foreground">{fmtDate(c.reviewedAt)}</div>
@@ -277,7 +277,7 @@ export default function CambiosBancariosPage() {
                     {selected.reviewedAt && (
                       <div className="rounded-lg border bg-muted/40 p-3">
                         <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : 'Revisado por'}
+                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : selected.status === 'CANCELED' ? 'Cancelado por' : 'Revisado por'}
                         </div>
                         <div className="font-medium text-foreground">{selected.reviewedBy?.name || selected.reviewedBy?.email || '—'}</div>
                         <div className="text-xs text-muted-foreground">{fmtDate(selected.reviewedAt)}</div>
