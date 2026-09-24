@@ -4,13 +4,32 @@ import { Link } from 'react-router-dom'
 import { Landmark, Inbox, ExternalLink, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { bankInfoChangesApi, maskAccount, type BankInfoChange } from '@/services/bankInfoChangesApi'
+import {
+  bankInfoChangesApi,
+  maskAccount,
+  BANK_CHANGE_STATUS_LABELS,
+  type BankInfoChange,
+  type BankChangeStatus,
+} from '@/services/bankInfoChangesApi'
 import { BankChangeActions, BankChangeComparison } from '@/components/bankChanges/BankChangeReview'
 import { useAuth } from '@/state/AuthContext'
 
 const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '—')
 const fmtCLP = (n?: number) => (typeof n === 'number' ? n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }) : '—')
 const LIMIT = 20
+
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED'
+const TABS: { key: Tab; label: string; empty: string }[] = [
+  { key: 'PENDING', label: 'Pendientes', empty: 'No hay cambios pendientes de aprobación.' },
+  { key: 'APPROVED', label: 'Aprobadas', empty: 'Aún no hay cambios aprobados.' },
+  { key: 'REJECTED', label: 'Rechazadas', empty: 'Aún no hay cambios rechazados.' },
+]
+
+const STATUS_BADGE: Partial<Record<BankChangeStatus, string>> = {
+  PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  REJECTED: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+}
 
 const initials = (name?: string) =>
   (name || '?')
@@ -30,12 +49,13 @@ const bankInitials = (bank?: string) =>
 
 export default function CambiosBancariosPage() {
   const { user } = useAuth()
+  const [tab, setTab] = useState<Tab>('PENDING')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<BankInfoChange | null>(null)
 
   const q = useQuery({
-    queryKey: ['bank-info-changes-pending', page],
-    queryFn: () => bankInfoChangesApi.listPending(page, LIMIT),
+    queryKey: ['bank-info-changes-pending', tab, page],
+    queryFn: () => bankInfoChangesApi.list(tab, page, LIMIT),
     enabled: user?.rol === 'ADMIN',
   })
 
@@ -48,6 +68,12 @@ export default function CambiosBancariosPage() {
   const pages = Math.max(1, Math.ceil(total / LIMIT))
   const from = total === 0 ? 0 : (page - 1) * LIMIT + 1
   const to = Math.min(page * LIMIT, total)
+  const activeTab = TABS.find((t) => t.key === tab)!
+
+  const changeTab = (t: Tab) => {
+    setTab(t)
+    setPage(1)
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -60,15 +86,15 @@ export default function CambiosBancariosPage() {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-foreground">Cambios bancarios pendientes</h1>
-                {total > 0 && (
+                <h1 className="text-xl font-bold text-foreground">Cambios bancarios</h1>
+                {tab === 'PENDING' && total > 0 && (
                   <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
                     {total} pendiente{total === 1 ? '' : 's'}
                   </span>
                 )}
               </div>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                Revisa y aprueba las actualizaciones de cuentas bancarias solicitadas.
+                Revisa y aprueba las cuentas propuestas para transferir la devolución al cliente.
               </p>
             </div>
           </div>
@@ -76,6 +102,23 @@ export default function CambiosBancariosPage() {
             <RefreshCw className={`h-4 w-4 ${q.isFetching ? 'animate-spin' : ''}`} /> Actualizar
           </Button>
         </header>
+
+        {/* Pestañas */}
+        <div className="flex items-center gap-6 border-b bg-muted/40 px-8">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => changeTab(t.key)}
+              className={`-mb-px border-b-2 pb-3 pt-3 text-sm transition-colors ${
+                tab === t.key
+                  ? 'border-primary font-semibold text-primary'
+                  : 'border-transparent font-medium text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
         {/* Body */}
         {q.isLoading ? (
@@ -87,8 +130,10 @@ export default function CambiosBancariosPage() {
             <div className="rounded-full bg-muted p-4">
               <Inbox className="h-8 w-8" />
             </div>
-            <p className="text-sm font-medium">No hay cambios pendientes de aprobación.</p>
-            <p className="text-xs">Cuando un usuario solicite un cambio de cuenta, aparecerá aquí.</p>
+            <p className="text-sm font-medium">{activeTab.empty}</p>
+            {tab === 'PENDING' && (
+              <p className="text-xs">Cuando un usuario solicite un cambio de cuenta, aparecerá aquí.</p>
+            )}
           </div>
         ) : (
           <div className="divide-y">
@@ -115,7 +160,7 @@ export default function CambiosBancariosPage() {
                   {/* Cuenta propuesta */}
                   <div className="col-span-6 md:col-span-4">
                     <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Cuenta propuesta
+                      Cuenta propuesta para la devolución
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary">
@@ -143,19 +188,25 @@ export default function CambiosBancariosPage() {
                   </div>
                 </div>
 
-                {/* Acción */}
+                {/* Acción / estado */}
                 <div className="ml-4 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-primary/30 bg-primary/5 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelected(c)
-                    }}
-                  >
-                    Revisar
-                  </Button>
+                  {tab === 'PENDING' ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-primary/30 bg-primary/5 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelected(c)
+                      }}
+                    >
+                      Revisar
+                    </Button>
+                  ) : (
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[c.status] || 'bg-muted text-muted-foreground'}`}>
+                      {BANK_CHANGE_STATUS_LABELS[c.status] || c.status}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -166,7 +217,7 @@ export default function CambiosBancariosPage() {
         {!q.isLoading && !q.error && items.length > 0 && (
           <footer className="flex items-center justify-between border-t bg-muted/40 px-8 py-4">
             <span className="text-xs text-muted-foreground">
-              Mostrando {from}-{to} de {total} cambio{total === 1 ? '' : 's'} pendiente{total === 1 ? '' : 's'}
+              Mostrando {from}-{to} de {total} {activeTab.label.toLowerCase()}
             </span>
             <div className="flex items-center gap-1">
               <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
@@ -189,7 +240,14 @@ export default function CambiosBancariosPage() {
           {selected && (
             <>
               <DialogHeader>
-                <DialogTitle>{selected.fullName || 'Cambio de cuenta'}</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  {selected.fullName || 'Cambio de cuenta'}
+                  {selected.status !== 'PENDING' && (
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[selected.status] || 'bg-muted text-muted-foreground'}`}>
+                      {BANK_CHANGE_STATUS_LABELS[selected.status] || selected.status}
+                    </span>
+                  )}
+                </DialogTitle>
                 <DialogDescription>
                   RUT {selected.rut || '—'} · {selected.institutionId || '—'} · Monto a devolver {fmtCLP(selected.realAmount)}
                 </DialogDescription>
@@ -202,6 +260,15 @@ export default function CambiosBancariosPage() {
                     <span className="text-muted-foreground">Solicitado por: </span>
                     {selected.requestedBy?.name || selected.requestedBy?.email || '—'} · {fmtDate(selected.requestedAt)}
                   </p>
+                  {selected.reviewedAt && (
+                    <p>
+                      <span className="text-muted-foreground">Revisado por: </span>
+                      {selected.reviewedBy?.name || selected.reviewedBy?.email || '—'} · {fmtDate(selected.reviewedAt)}
+                    </p>
+                  )}
+                  {selected.reviewComment && (
+                    <p><span className="text-muted-foreground">Comentario de revisión: </span>{selected.reviewComment}</p>
+                  )}
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-3">
                   <Button asChild variant="link" size="sm" className="gap-1 px-0">

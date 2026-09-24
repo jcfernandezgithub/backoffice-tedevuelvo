@@ -37,7 +37,7 @@ export function BankChangeComparison({ change }: { change: BankInfoChange }) {
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
       <BankInfoBlock title="Cuenta vigente" info={change.previousBankInfo} tone="old" />
       <ArrowRight className="h-4 w-4 text-muted-foreground" />
-      <BankInfoBlock title="Cuenta propuesta" info={change.newBankInfo} tone="new" />
+      <BankInfoBlock title="Cuenta propuesta para transferir la devolución" info={change.newBankInfo} tone="new" />
     </div>
   )
 }
