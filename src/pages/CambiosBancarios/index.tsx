@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Landmark, Inbox, ExternalLink, RefreshCw } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Landmark, Inbox, ExternalLink, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { bankInfoChangesApi, maskAccount, type BankInfoChange } from '@/services/bankInfoChangesApi'
 import { BankChangeActions, BankChangeComparison } from '@/components/bankChanges/BankChangeReview'
@@ -13,6 +11,22 @@ import { useAuth } from '@/state/AuthContext'
 const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '—')
 const fmtCLP = (n?: number) => (typeof n === 'number' ? n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }) : '—')
 const LIMIT = 20
+
+const initials = (name?: string) =>
+  (name || '?')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('')
+
+const bankInitials = (bank?: string) =>
+  (bank || '?')
+    .split(' ')
+    .filter((w) => w.length > 2 || /^[A-ZÁÉÍÓÚ]/.test(w))
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('')
 
 export default function CambiosBancariosPage() {
   const { user } = useAuth()
@@ -32,71 +46,144 @@ export default function CambiosBancariosPage() {
   const items = q.data?.data || []
   const total = q.data?.meta?.total || 0
   const pages = Math.max(1, Math.ceil(total / LIMIT))
+  const from = total === 0 ? 0 : (page - 1) * LIMIT + 1
+  const to = Math.min(page * LIMIT, total)
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2"><Landmark className="h-6 w-6 text-primary" /> Cambios bancarios pendientes</h1>
-          <p className="text-sm text-muted-foreground">Revisa y aprueba los cambios de cuenta solicitados por otros usuarios.</p>
-        </div>
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => q.refetch()} disabled={q.isFetching}>
-          <RefreshCw className={`h-4 w-4 ${q.isFetching ? 'animate-spin' : ''}`} /> Actualizar
-        </Button>
+    <div className="mx-auto w-full max-w-5xl">
+      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b px-8 py-6">
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-primary/10 p-2.5">
+              <Landmark className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-foreground">Cambios bancarios pendientes</h1>
+                {total > 0 && (
+                  <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    {total} pendiente{total === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Revisa y aprueba las actualizaciones de cuentas bancarias solicitadas.
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => q.refetch()} disabled={q.isFetching}>
+            <RefreshCw className={`h-4 w-4 ${q.isFetching ? 'animate-spin' : ''}`} /> Actualizar
+          </Button>
+        </header>
+
+        {/* Body */}
+        {q.isLoading ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">Cargando…</p>
+        ) : q.error ? (
+          <p className="py-16 text-center text-sm text-destructive">{(q.error as Error).message}</p>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-20 text-muted-foreground">
+            <div className="rounded-full bg-muted p-4">
+              <Inbox className="h-8 w-8" />
+            </div>
+            <p className="text-sm font-medium">No hay cambios pendientes de aprobación.</p>
+            <p className="text-xs">Cuando un usuario solicite un cambio de cuenta, aparecerá aquí.</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {items.map((c) => (
+              <div
+                key={c._id}
+                className="group flex cursor-pointer items-center justify-between gap-4 px-8 py-6 transition-colors hover:bg-primary/5"
+                onClick={() => setSelected(c)}
+              >
+                <div className="grid flex-1 grid-cols-12 items-center gap-6">
+                  {/* Cliente */}
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-muted text-sm font-semibold text-muted-foreground">
+                        {initials(c.fullName)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-foreground">{c.fullName || '—'}</div>
+                        <div className="font-mono text-xs text-muted-foreground">{c.rut || '—'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cuenta propuesta */}
+                  <div className="col-span-6 md:col-span-4">
+                    <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Cuenta propuesta
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary">
+                        <span className="text-[8px] font-bold text-primary-foreground">{bankInitials(c.newBankInfo?.bank)}</span>
+                      </div>
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {c.newBankInfo?.bank || '—'}{' '}
+                        <span className="font-mono text-muted-foreground">{maskAccount(c.newBankInfo?.accountNumber)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Motivo + solicitante */}
+                  <div className="col-span-6 flex items-center justify-between gap-4 md:col-span-5">
+                    <div className="min-w-0">
+                      <div className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Motivo</div>
+                      <p className="max-w-[220px] truncate text-sm text-muted-foreground" title={c.reason}>
+                        {c.reason || '—'}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right text-xs">
+                      <div className="font-medium text-foreground">{c.requestedBy?.name || c.requestedBy?.email || '—'}</div>
+                      <div className="text-muted-foreground">{fmtDate(c.requestedAt)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Acción */}
+                <div className="ml-4 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary/30 bg-primary/5 font-semibold text-primary hover:bg-primary hover:text-primary-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelected(c)
+                    }}
+                  >
+                    Revisar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer / paginación */}
+        {!q.isLoading && !q.error && items.length > 0 && (
+          <footer className="flex items-center justify-between border-t bg-muted/40 px-8 py-4">
+            <span className="text-xs text-muted-foreground">
+              Mostrando {from}-{to} de {total} cambio{total === 1 ? '' : 's'} pendiente{total === 1 ? '' : 's'}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-2 text-xs text-muted-foreground">
+                {page} / {pages}
+              </span>
+              <Button size="icon" variant="ghost" className="h-8 w-8" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </footer>
+        )}
       </div>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">{total} pendiente(s)</CardTitle></CardHeader>
-        <CardContent>
-          {q.isLoading ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">Cargando…</p>
-          ) : q.error ? (
-            <p className="py-10 text-center text-sm text-destructive">{(q.error as Error).message}</p>
-          ) : items.length === 0 ? (
-            <div className="py-12 flex flex-col items-center gap-2 text-muted-foreground">
-              <Inbox className="h-8 w-8" />
-              <p className="text-sm">No hay cambios pendientes de aprobación.</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>RUT</TableHead>
-                  <TableHead>Solicitud</TableHead>
-                  <TableHead>Cuenta propuesta</TableHead>
-                  <TableHead>Motivo</TableHead>
-                  <TableHead>Solicitante</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((c) => (
-                  <TableRow key={c._id} className="cursor-pointer" onClick={() => setSelected(c)}>
-                    <TableCell className="font-medium">{c.fullName || '—'}</TableCell>
-                    <TableCell>{c.rut || '—'}</TableCell>
-                    <TableCell className="font-mono text-xs">{c.refundId.slice(0, 8)}…</TableCell>
-                    <TableCell>{c.newBankInfo?.bank} <span className="font-mono text-xs">{maskAccount(c.newBankInfo?.accountNumber)}</span></TableCell>
-                    <TableCell className="max-w-[220px] truncate" title={c.reason}>{c.reason || '—'}</TableCell>
-                    <TableCell>{c.requestedBy?.name || c.requestedBy?.email || '—'}</TableCell>
-                    <TableCell className="whitespace-nowrap">{fmtDate(c.requestedAt)}</TableCell>
-                    <TableCell><Button size="sm" variant="outline">Revisar</Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {pages > 1 && (
-            <div className="flex items-center justify-end gap-2 pt-4">
-              <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</Button>
-              <span className="text-sm text-muted-foreground">Página {page} de {pages}</span>
-              <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Siguiente</Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
+      {/* Diálogo de revisión */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="sm:max-w-xl">
           {selected && (
@@ -109,9 +196,12 @@ export default function CambiosBancariosPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <BankChangeComparison change={selected} />
-                <div className="text-sm space-y-1">
+                <div className="space-y-1 text-sm">
                   <p><span className="text-muted-foreground">Motivo: </span>{selected.reason || '—'}</p>
-                  <p><span className="text-muted-foreground">Solicitado por: </span>{selected.requestedBy?.name || selected.requestedBy?.email || '—'} · {fmtDate(selected.requestedAt)}</p>
+                  <p>
+                    <span className="text-muted-foreground">Solicitado por: </span>
+                    {selected.requestedBy?.name || selected.requestedBy?.email || '—'} · {fmtDate(selected.requestedAt)}
+                  </p>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t pt-3">
                   <Button asChild variant="link" size="sm" className="gap-1 px-0">
