@@ -18,17 +18,19 @@ const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString('es-CL', { dateS
 const fmtCLP = (n?: number) => (typeof n === 'number' ? n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }) : '—')
 const LIMIT = 20
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED'
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'
 const TABS: { key: Tab; label: string; empty: string }[] = [
   { key: 'PENDING', label: 'Pendientes', empty: 'No hay cambios pendientes de aprobación.' },
   { key: 'APPROVED', label: 'Aprobadas', empty: 'Aún no hay cambios aprobados.' },
   { key: 'REJECTED', label: 'Rechazadas', empty: 'Aún no hay cambios rechazados.' },
+  { key: 'CANCELED', label: 'Canceladas', empty: 'Aún no hay propuestas canceladas.' },
 ]
 
 const STATUS_BADGE: Partial<Record<BankChangeStatus, string>> = {
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
   REJECTED: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+  CANCELED: 'bg-muted text-muted-foreground',
 }
 
 const initials = (name?: string) =>
