@@ -264,18 +264,24 @@ export default function CambiosBancariosPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <BankChangeComparison change={selected} />
-                <div className="space-y-1 text-sm">
+                <div className="space-y-3 text-sm">
                   <p><span className="text-muted-foreground">Motivo: </span>{selected.reason || '—'}</p>
-                  <p>
-                    <span className="text-muted-foreground">Solicitado por: </span>
-                    {selected.requestedBy?.name || selected.requestedBy?.email || '—'} · {fmtDate(selected.requestedAt)}
-                  </p>
-                  {selected.reviewedAt && (
-                    <p>
-                      <span className="text-muted-foreground">Revisado por: </span>
-                      {selected.reviewedBy?.name || selected.reviewedBy?.email || '—'} · {fmtDate(selected.reviewedAt)}
-                    </p>
-                  )}
+                  <div className={`grid gap-3 ${selected.reviewedAt ? 'sm:grid-cols-2' : ''}`}>
+                    <div className="rounded-lg border bg-muted/40 p-3">
+                      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Solicitado por</div>
+                      <div className="font-medium text-foreground">{selected.requestedBy?.name || selected.requestedBy?.email || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{fmtDate(selected.requestedAt)}</div>
+                    </div>
+                    {selected.reviewedAt && (
+                      <div className="rounded-lg border bg-muted/40 p-3">
+                        <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : 'Revisado por'}
+                        </div>
+                        <div className="font-medium text-foreground">{selected.reviewedBy?.name || selected.reviewedBy?.email || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{fmtDate(selected.reviewedAt)}</div>
+                      </div>
+                    )}
+                  </div>
                   {selected.reviewComment && (
                     <p><span className="text-muted-foreground">Comentario de revisión: </span>{selected.reviewComment}</p>
                   )}
