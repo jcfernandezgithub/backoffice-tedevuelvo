@@ -6,6 +6,13 @@ import { usePublicInstitutions } from '@/hooks/useInstitutions'
 
 export function TopBar() {
   const { user, logout } = useAuth()
+  const roleLabel = user?.rolNombre ?? ({
+    ADMIN: 'Administrador',
+    OPERACIONES: 'Operaciones',
+    ALIANZAS: 'Alianzas',
+    READONLY: 'Solo lectura',
+    CALLCENTER: 'Call Center',
+  } as const)[user?.rol ?? 'READONLY']
   // Mantiene la cache de instituciones públicas tibia para que los helpers
   // sincrónicos (`getSafetyMarginByInstitutionId`) tengan datos disponibles.
   usePublicInstitutions()
@@ -18,7 +25,7 @@ export function TopBar() {
         <h1 className="text-lg font-semibold">Te devuelvo · Backoffice</h1>
       </div>
       <div className="flex items-center gap-3">
-        {user && <span className="text-sm text-muted-foreground">{user.nombre} · {user.rol}</span>}
+        {user && <span className="text-sm text-muted-foreground">{user.nombre} · {roleLabel}</span>}
         <Button variant="outline" size="sm" onClick={() => logout()}>Salir</Button>
       </div>
     </header>

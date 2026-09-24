@@ -5,6 +5,7 @@ export interface Usuario {
   nombre: string
   email: string
   rol: Rol
+  rolNombre?: string
   activo: boolean
   pages?: string[]
 }
