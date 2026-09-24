@@ -207,6 +207,8 @@ function BankChangeFormDialog({ refund, isAdmin, onClose }: { refund: RefundRequ
     retry: 1,
   })
   const catalogErr = catalogQ.error as BankChangeError | null
+  // Tipos de cuenta fijos: no dependen del catálogo del servicio
+  const ACCOUNT_TYPES = ['Cuenta Corriente', 'Cuenta Vista']
 
   const mutation = useMutation({
     mutationFn: () =>
