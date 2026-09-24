@@ -182,8 +182,18 @@ export default function CambiosBancariosPage() {
                       </p>
                     </div>
                     <div className="shrink-0 text-right text-xs">
+                      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Solicitado por</div>
                       <div className="font-medium text-foreground">{c.requestedBy?.name || c.requestedBy?.email || '—'}</div>
                       <div className="text-muted-foreground">{fmtDate(c.requestedAt)}</div>
+                      {tab !== 'PENDING' && c.reviewedAt && (
+                        <div className="mt-2 border-t border-dashed pt-1.5">
+                          <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            {c.status === 'APPROVED' ? 'Aprobado por' : 'Rechazado por'}
+                          </div>
+                          <div className="font-medium text-foreground">{c.reviewedBy?.name || c.reviewedBy?.email || '—'}</div>
+                          <div className="text-muted-foreground">{fmtDate(c.reviewedAt)}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -254,18 +264,24 @@ export default function CambiosBancariosPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <BankChangeComparison change={selected} />
-                <div className="space-y-1 text-sm">
+                <div className="space-y-3 text-sm">
                   <p><span className="text-muted-foreground">Motivo: </span>{selected.reason || '—'}</p>
-                  <p>
-                    <span className="text-muted-foreground">Solicitado por: </span>
-                    {selected.requestedBy?.name || selected.requestedBy?.email || '—'} · {fmtDate(selected.requestedAt)}
-                  </p>
-                  {selected.reviewedAt && (
-                    <p>
-                      <span className="text-muted-foreground">Revisado por: </span>
-                      {selected.reviewedBy?.name || selected.reviewedBy?.email || '—'} · {fmtDate(selected.reviewedAt)}
-                    </p>
-                  )}
+                  <div className={`grid gap-3 ${selected.reviewedAt ? 'sm:grid-cols-2' : ''}`}>
+                    <div className="rounded-lg border bg-muted/40 p-3">
+                      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Solicitado por</div>
+                      <div className="font-medium text-foreground">{selected.requestedBy?.name || selected.requestedBy?.email || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{fmtDate(selected.requestedAt)}</div>
+                    </div>
+                    {selected.reviewedAt && (
+                      <div className="rounded-lg border bg-muted/40 p-3">
+                        <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : 'Revisado por'}
+                        </div>
+                        <div className="font-medium text-foreground">{selected.reviewedBy?.name || selected.reviewedBy?.email || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{fmtDate(selected.reviewedAt)}</div>
+                      </div>
+                    )}
+                  </div>
                   {selected.reviewComment && (
                     <p><span className="text-muted-foreground">Comentario de revisión: </span>{selected.reviewComment}</p>
                   )}
