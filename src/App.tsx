@@ -10,6 +10,7 @@ import { TopBar } from "@/components/app/TopBar";
 import { AuthProvider } from "@/state/AuthContext";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import AdminRoute from "@/routes/AdminRoute";
+import CambiosBancariosPage from "@/pages/CambiosBancarios";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
 import SolicitudesList from "@/pages/Solicitudes/List";
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/cierre-mensual" element={<CierreMensualList />} />
                 <Route path="/cierre-mensual/:id" element={<CierreMensualDetail />} />
                 <Route path="/conciliacion" element={<ConciliacionPage />} />
+                <Route path="/cambios-bancarios" element={<CambiosBancariosPage />} />
                 <Route path="/procesos-masivos" element={<ProcesosMasivosPage />} />
               </Route>
             </Route>

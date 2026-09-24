@@ -257,7 +257,8 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts, exist
             <div className="flex-1 min-h-0 max-h-[52vh] overflow-y-auto border rounded-md">
               <div className="divide-y">
                 {filtered.map(r => {
-                  const added = isAlreadyAdded(r)
+                  const blocked = (r as any).hasPendingBankChange === true
+                  const added = isAlreadyAdded(r) || blocked
                   const amount = getRealAmount(r)
                   const refundId = getRefundId(r)
                   return (
@@ -278,7 +279,7 @@ export function AddFromRefundsDialog({ open, onClose, onAdd, existingRuts, exist
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm truncate">{r.fullName}</span>
-                          {added && <Badge variant="outline" className="text-[10px] shrink-0">Ya agregado</Badge>}
+                          {blocked ? <Badge variant="outline" className="text-[10px] shrink-0">Cambio bancario pendiente</Badge> : added && <Badge variant="outline" className="text-[10px] shrink-0">Ya agregado</Badge>}
                         </div>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
                           <span>{r.rut}</span>
