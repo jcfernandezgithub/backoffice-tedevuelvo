@@ -987,22 +987,34 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           </Card>
 
           {/* Sección de datos bancarios para Pago Programado */}
-          {(refund.status === 'payment_scheduled' || refund.status === 'paid') && refund.bankInfo && (
-            <Card className="border-emerald-500/30 bg-emerald-500/5">
+          {(refund.status === 'payment_scheduled' || (refund.status === 'paid' && refund.bankInfo)) && (() => {
+            const hasBank = !!(refund.bankInfo?.bank || refund.bankInfo?.accountType || refund.bankInfo?.accountNumber)
+            const editable = refund.status === 'payment_scheduled'
+            return (
+            <Card className={hasBank ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/40 bg-amber-500/5'}>
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-emerald-600">
+                <CardTitle className={`flex items-center gap-2 ${hasBank ? 'text-emerald-600' : 'text-amber-600'}`}>
                   <Landmark className="h-5 w-5" />
                   Datos para devolución
                 </CardTitle>
-                <EditBankInfoDialog refund={refund} />
+                {editable && <EditBankInfoDialog refund={refund} />}
               </CardHeader>
               <CardContent>
+                {hasBank ? (
                 <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                   <CheckCircle className="h-5 w-5 text-emerald-600" />
                   <span className="text-sm font-medium text-emerald-700">
-                    Los datos bancarios ya fueron registrados para procesar la devolución
+                    {editable ? 'Los datos bancarios ya fueron registrados para procesar la devolución' : 'Solicitud pagada: datos de solo lectura'}
                   </span>
                 </div>
+                ) : (
+                <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                  <Landmark className="h-5 w-5 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700">
+                    Faltan los datos bancarios del cliente. Usa "Completar" para registrarlos.
+                  </span>
+                </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Banco</p>
