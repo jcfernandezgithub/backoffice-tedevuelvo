@@ -34,9 +34,9 @@ import { toast } from '@/hooks/use-toast'
 import { ConfirmChangesStep, type FieldChange } from './ConfirmChangesStep'
 
 const bankSchema = z.object({
-  bankName: z.string().trim().max(100).optional().or(z.literal('')),
-  bankAccountType: z.string().trim().max(50).optional().or(z.literal('')),
-  bankAccountNumber: z.string().trim().max(30).optional().or(z.literal('')),
+  bankName: z.string().trim().min(1, 'Selecciona el banco').max(100),
+  bankAccountType: z.string().trim().min(1, 'Selecciona el tipo de cuenta').max(50),
+  bankAccountNumber: z.string().trim().min(4, 'Ingresa el número de cuenta').max(30).regex(/^[0-9-]+$/, 'Solo números y guiones'),
 })
 
 type BankFormValues = z.infer<typeof bankSchema>
@@ -54,6 +54,13 @@ const ACCOUNT_TYPE_OPTIONS = [
   'Cuenta RUT',
 ] as const
 
+const BANK_OPTIONS = [
+  'Banco de Chile', 'Banco Estado', 'Banco Santander', 'Banco BCI', 'Banco Itaú',
+  'Scotiabank', 'Banco BICE', 'Banco Security', 'Banco Falabella', 'Banco Ripley',
+  'Banco Consorcio', 'Banco Internacional', 'Banco BTG Pactual', 'HSBC Bank',
+  'Coopeuch', 'Tenpo', 'Mercado Pago', 'Tapp Caja Los Andes', 'Prepago Los Héroes',
+] as const
+
 interface EditBankInfoDialogProps {
   refund: RefundRequest
 }
@@ -69,6 +76,11 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
     bankAccountType: refund.bankInfo?.accountType || '',
     bankAccountNumber: refund.bankInfo?.accountNumber || '',
   }
+
+  const hasBankData = !!(defaults.bankName || defaults.bankAccountType || defaults.bankAccountNumber)
+  const bankOptions = defaults.bankName && !BANK_OPTIONS.includes(defaults.bankName as any)
+    ? [defaults.bankName, ...BANK_OPTIONS]
+    : [...BANK_OPTIONS]
 
   const form = useForm<BankFormValues>({
     resolver: zodResolver(bankSchema),
@@ -157,20 +169,20 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant={hasBankData ? 'outline' : 'default'} size="sm" className="gap-1.5">
           <Settings2 className="h-4 w-4" />
-          Editar
+          {hasBankData ? 'Editar' : 'Completar'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Landmark className="h-5 w-5 text-primary" />
-            {step === 'form' ? 'Editar datos bancarios' : 'Confirmar cambios'}
+            {step === 'form' ? (hasBankData ? 'Editar datos bancarios' : 'Registrar datos bancarios') : 'Confirmar cambios'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
             {step === 'form'
-              ? 'Solo se enviarán los campos que modifiques.'
+              ? 'Todos los campos son obligatorios.'
               : 'Revisa los cambios antes de guardar.'}
           </p>
         </DialogHeader>
@@ -192,7 +204,18 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs">Banco</FormLabel>
-                      <FormControl><Input {...field} placeholder="Banco Chile" /></FormControl>
+                      <Select value={field.value || ''} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona banco" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-72">
+                          {bankOptions.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -230,7 +253,7 @@ export function EditBankInfoDialog({ refund }: EditBankInfoDialogProps) {
                   render={({ field }) => (
                     <FormItem className="col-span-2">
                       <FormLabel className="text-xs">Número de cuenta</FormLabel>
-                      <FormControl><Input {...field} placeholder="1234567890" /></FormControl>
+                      <FormControl><Input {...field} inputMode="numeric" placeholder="1234567890" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
