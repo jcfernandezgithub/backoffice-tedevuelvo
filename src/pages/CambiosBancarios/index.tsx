@@ -18,17 +18,19 @@ const fmtDate = (d?: string) => (d ? new Date(d).toLocaleString('es-CL', { dateS
 const fmtCLP = (n?: number) => (typeof n === 'number' ? n.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }) : '—')
 const LIMIT = 20
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED'
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED'
 const TABS: { key: Tab; label: string; empty: string }[] = [
   { key: 'PENDING', label: 'Pendientes', empty: 'No hay cambios pendientes de aprobación.' },
   { key: 'APPROVED', label: 'Aprobadas', empty: 'Aún no hay cambios aprobados.' },
   { key: 'REJECTED', label: 'Rechazadas', empty: 'Aún no hay cambios rechazados.' },
+  { key: 'CANCELED', label: 'Canceladas', empty: 'Aún no hay propuestas canceladas.' },
 ]
 
 const STATUS_BADGE: Partial<Record<BankChangeStatus, string>> = {
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
   REJECTED: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+  CANCELED: 'bg-muted text-muted-foreground',
 }
 
 const initials = (name?: string) =>
@@ -188,7 +190,7 @@ export default function CambiosBancariosPage() {
                       {tab !== 'PENDING' && c.reviewedAt && (
                         <div className="mt-2 border-t border-dashed pt-1.5">
                           <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {c.status === 'APPROVED' ? 'Aprobado por' : 'Rechazado por'}
+                            {c.status === 'APPROVED' ? 'Aprobado por' : c.status === 'CANCELED' ? 'Cancelado por' : 'Rechazado por'}
                           </div>
                           <div className="font-medium text-foreground">{c.reviewedBy?.name || c.reviewedBy?.email || '—'}</div>
                           <div className="text-muted-foreground">{fmtDate(c.reviewedAt)}</div>
@@ -275,7 +277,7 @@ export default function CambiosBancariosPage() {
                     {selected.reviewedAt && (
                       <div className="rounded-lg border bg-muted/40 p-3">
                         <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : 'Revisado por'}
+                          {selected.status === 'APPROVED' ? 'Aprobado por' : selected.status === 'REJECTED' ? 'Rechazado por' : selected.status === 'CANCELED' ? 'Cancelado por' : 'Revisado por'}
                         </div>
                         <div className="font-medium text-foreground">{selected.reviewedBy?.name || selected.reviewedBy?.email || '—'}</div>
                         <div className="text-xs text-muted-foreground">{fmtDate(selected.reviewedAt)}</div>
