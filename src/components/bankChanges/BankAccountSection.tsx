@@ -308,10 +308,10 @@ function BankChangeFormDialog({ refund, isAdmin, onClose }: { refund: RefundRequ
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Tipo de cuenta</Label>
-                <Select value={accountType} onValueChange={setAccountType} disabled={disabled}>
-                  <SelectTrigger><SelectValue placeholder={catalogQ.isLoading ? 'Cargando…' : 'Selecciona tipo'} /></SelectTrigger>
+                <Select value={accountType} onValueChange={setAccountType}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona tipo" /></SelectTrigger>
                   <SelectContent>
-                    {(catalogQ.data?.accountTypes || []).map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {ACCOUNT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 {errors.accountType && <p className="text-xs text-destructive">{errors.accountType}</p>}
