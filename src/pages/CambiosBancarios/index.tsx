@@ -182,8 +182,18 @@ export default function CambiosBancariosPage() {
                       </p>
                     </div>
                     <div className="shrink-0 text-right text-xs">
+                      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Solicitado por</div>
                       <div className="font-medium text-foreground">{c.requestedBy?.name || c.requestedBy?.email || '—'}</div>
                       <div className="text-muted-foreground">{fmtDate(c.requestedAt)}</div>
+                      {tab !== 'PENDING' && c.reviewedAt && (
+                        <div className="mt-2 border-t border-dashed pt-1.5">
+                          <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            {c.status === 'APPROVED' ? 'Aprobado por' : 'Rechazado por'}
+                          </div>
+                          <div className="font-medium text-foreground">{c.reviewedBy?.name || c.reviewedBy?.email || '—'}</div>
+                          <div className="text-muted-foreground">{fmtDate(c.reviewedAt)}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
