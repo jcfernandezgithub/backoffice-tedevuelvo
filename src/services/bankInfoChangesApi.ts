@@ -98,6 +98,10 @@ export const bankInfoChangesApi = {
     request<{ data: BankInfoChange[]; meta: { total: number; page: number; limit: number } }>(
       `/bank-info-changes?status=PENDING&page=${page}&limit=${limit}`,
     ),
+  list: (status: BankChangeStatus, page = 1, limit = 20) =>
+    request<{ data: BankInfoChange[]; meta: { total: number; page: number; limit: number } }>(
+      `/bank-info-changes?status=${status}&page=${page}&limit=${limit}`,
+    ),
   countPending: () => request<{ count: number }>('/bank-info-changes/count?status=PENDING'),
   approve: (changeId: string, comment?: string) =>
     request(`/bank-info-changes/${changeId}/approve`, { method: 'POST', body: JSON.stringify(comment ? { comment } : {}) }),
