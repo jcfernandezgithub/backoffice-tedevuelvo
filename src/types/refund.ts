@@ -62,6 +62,7 @@ export interface RefundRequest {
   partnerUserId?: string | null
   source?: string | null
   bankInfo?: BankInfo
+  hasPendingBankChange?: boolean
   cloned?: boolean
   siblingId?: string
   // Datos personales / de crédito (PATCH /personal-information)
