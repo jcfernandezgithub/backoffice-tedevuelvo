@@ -1,7 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package, CalendarCheck, Landmark } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { bankInfoChangesApi } from '@/services/bankInfoChangesApi'
+import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package, CalendarCheck } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import { ROUTE_TO_PAGE_KEY, hasPageAccess } from '@/lib/pageAccess'
 import {
@@ -29,7 +27,6 @@ const items = [
   { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Conciliación', url: '/conciliacion', icon: Link2, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Procesos Masivos', url: '/procesos-masivos', icon: Package, status: 'live' as const, adminOnly: true, callCenterOnly: false },
-  { title: 'Cambios bancarios', url: '/cambios-bancarios', icon: Landmark, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Ajustes', url: '/ajustes', icon: Settings, status: 'live' as const, adminOnly: false, callCenterOnly: false },
 ]
 
@@ -44,17 +41,7 @@ export function AppSidebar() {
     isActive ? 'bg-muted text-primary font-medium' : 'hover:bg-muted/60'
 
   const pages = user?.pages
-  const isAdmin = user?.rol === 'ADMIN'
-  const { data: pendingCount } = useQuery({
-    queryKey: ['bank-info-changes-count'],
-    queryFn: () => bankInfoChangesApi.countPending().then((r) => r?.count ?? 0),
-    enabled: isAdmin,
-    refetchInterval: 60_000,
-    retry: false,
-  })
   const visibleItems = items.filter((item) => {
-    // Bandeja de cambios bancarios: exclusiva de ADMIN
-    if (item.url === '/cambios-bancarios') return isAdmin
     // Si el backend entrega pages, ese es el único filtro.
     if (pages && pages.length > 0) {
       const key = ROUTE_TO_PAGE_KEY[item.url]
@@ -92,9 +79,6 @@ export function AppSidebar() {
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
                           <span>{item.title}</span>
-                          {item.url === '/cambios-bancarios' && !!pendingCount && (
-                            <Badge className="h-5 min-w-5 justify-center px-1.5 text-[10px]">{pendingCount}</Badge>
-                          )}
                           {item.status === 'dev' && (
                             <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
                               En desarrollo
