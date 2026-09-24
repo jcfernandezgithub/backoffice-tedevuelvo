@@ -105,8 +105,23 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-12deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(0deg); }
+}
+
 /* Optimizaciones adicionales para móvil */
 @layer utilities {
+  .animate-bell-ring {
+    animation: bell-ring 1.6s ease-in-out infinite;
+    transform-origin: top center;
+  }
+
   .scroll-smooth {
     scroll-behavior: smooth;
   }
