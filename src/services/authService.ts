@@ -29,7 +29,7 @@ interface LoginResponse {
 const mapRoleToFrontend = (roles: string[]): Rol => {
   const safe = Array.isArray(roles) ? roles.map((r) => String(r).toLowerCase()) : []
   if (safe.includes('admin')) return 'ADMIN'
-  if (safe.includes('operaciones')) return 'OPERACIONES'
+  if (safe.some((r) => ['operaciones', 'operador', 'operator', 'operations', 'ops'].includes(r) || r.startsWith('operad') || r.startsWith('operacion'))) return 'OPERACIONES'
   if (safe.includes('alianzas')) return 'ALIANZAS'
   if (safe.includes('callcenter') || safe.includes('call_center')) return 'CALLCENTER'
   return 'READONLY'
