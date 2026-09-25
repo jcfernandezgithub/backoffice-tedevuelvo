@@ -40,6 +40,8 @@ export function BankChangeStatusBadge({ status }: { status: BankInfoChange['stat
 export function BankAccountSection({ refund }: { refund: RefundRequest }) {
   const { user } = useAuth()
   const isAdmin = user?.rol === 'ADMIN'
+  const isOperator = user?.rol === 'n'
+  const canUseBankEdit = isAdmin || isOperator
   const [formOpen, setFormOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
 
