@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import type { UserV2 } from '../types/userTypesV2'
 import { RoleAccessInfo } from './RoleAccessInfo'
-import { CURRENT_USER_EMAIL } from '../constants/roleAccess'
+import { useAuth } from '@/state/AuthContext'
 import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 
 interface Props {
@@ -24,6 +24,7 @@ interface Props {
 }
 
 export function ChangeRoleDialog({ user, open, onOpenChange, onConfirm }: Props) {
+  const CURRENT_USER_EMAIL = useAuth().user?.email ?? ''
   const { roles, getRole } = useRoles()
   const [role, setRole] = useState<string>('')
 
