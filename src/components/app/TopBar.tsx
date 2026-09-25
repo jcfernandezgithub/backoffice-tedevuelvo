@@ -46,15 +46,18 @@ export function TopBar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="relative h-9 w-9"
+                className={`relative h-9 w-9 rounded-full ${pendingCount > 0 ? 'animate-bell-glow' : ''}`}
                 aria-label={pendingCount > 0 ? `${pendingCount} cambios bancarios pendientes` : 'Cambios bancarios'}
                 title="Cambios bancarios"
               >
                 <Bell className={`h-5 w-5 ${pendingCount > 0 ? 'animate-bell-ring text-primary' : ''}`} />
                 {pendingCount > 0 && (
-                  <Badge className="absolute -right-1 -top-1 h-5 min-w-5 animate-pulse justify-center px-1 text-[10px]">
-                    {pendingCount > 99 ? '99+' : pendingCount}
-                  </Badge>
+                  <>
+                    <span className="animate-bell-dot-ping absolute -right-1 -top-1 h-5 w-5 rounded-full bg-destructive" />
+                    <Badge variant="destructive" className="absolute -right-1 -top-1 h-5 min-w-5 justify-center px-1 text-[10px] font-bold">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </Badge>
+                  </>
                 )}
               </Button>
             </PopoverTrigger>
