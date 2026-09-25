@@ -5,7 +5,7 @@ import { Pencil, ShieldCheck, Power, Mail, Phone, Calendar, Clock, UserCircle } 
 import type { UserV2 } from '../types/userTypesV2'
 import { RoleBadge, StateBadge } from './StateRoleBadges'
 import { RoleAccessInfo } from './RoleAccessInfo'
-import { CURRENT_USER_EMAIL } from '../constants/roleAccess'
+import { useAuth } from '@/state/AuthContext'
 import { useRoles } from '@/pages/Ajustes/hooks/useRoles'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -36,6 +36,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 export function UserDetailsSheet({ user, open, onOpenChange, onEdit, onChangeRole, onToggleState }: Props) {
+  const CURRENT_USER_EMAIL = useAuth().user?.email ?? ''
   const { getRole } = useRoles()
   if (!user) return null
   const isCurrent = user.email.toLowerCase() === CURRENT_USER_EMAIL.toLowerCase()
