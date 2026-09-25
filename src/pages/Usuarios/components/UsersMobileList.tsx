@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { UserV2 } from '../types/userTypesV2'
 import { RoleBadge, StateBadge } from './StateRoleBadges'
 import { UserRowActionsV2 } from './UserRowActionsV2'
-import { CURRENT_USER_EMAIL } from '../constants/roleAccess'
+import { useAuth } from '@/state/AuthContext'
 
 interface Props {
   users: UserV2[]
@@ -20,6 +20,7 @@ function fmt(iso?: string) {
 }
 
 export function UsersMobileList(props: Props) {
+  const CURRENT_USER_EMAIL = useAuth().user?.email ?? ''
   return (
     <div className="space-y-3">
       {props.users.map((u) => {

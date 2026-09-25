@@ -105,8 +105,50 @@ All colors MUST be HSL.
   }
 }
 
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  5% { transform: rotate(22deg); }
+  10% { transform: rotate(-20deg); }
+  15% { transform: rotate(18deg); }
+  20% { transform: rotate(-16deg); }
+  25% { transform: rotate(13deg); }
+  30% { transform: rotate(-10deg); }
+  35% { transform: rotate(7deg); }
+  40% { transform: rotate(-4deg); }
+  45% { transform: rotate(0deg); }
+}
+
+@keyframes bell-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.55), 0 0 0 0 hsl(var(--primary) / 0.35);
+    background-color: hsl(var(--primary) / 0.12);
+  }
+  50% {
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.18), 0 0 18px 2px hsl(var(--primary) / 0.45);
+    background-color: hsl(var(--primary) / 0.22);
+  }
+}
+
+@keyframes bell-dot-ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
 /* Optimizaciones adicionales para móvil */
 @layer utilities {
+  .animate-bell-ring {
+    animation: bell-ring 1.2s ease-in-out infinite;
+    transform-origin: top center;
+  }
+
+  .animate-bell-glow {
+    animation: bell-glow 1.2s ease-in-out infinite;
+  }
+
+  .animate-bell-dot-ping {
+    animation: bell-dot-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
   .scroll-smooth {
     scroll-behavior: smooth;
   }

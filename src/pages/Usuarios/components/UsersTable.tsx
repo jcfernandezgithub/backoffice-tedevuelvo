@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import type { UserV2 } from '../types/userTypesV2'
 import { RoleBadge, StateBadge } from './StateRoleBadges'
 import { UserRowActionsV2 } from './UserRowActionsV2'
-import { CURRENT_USER_EMAIL } from '../constants/roleAccess'
+import { useAuth } from '@/state/AuthContext'
 
 interface Props {
   users: UserV2[]
@@ -26,6 +26,7 @@ function formatDateTime(iso?: string) {
 }
 
 export function UsersTable(props: Props) {
+  const CURRENT_USER_EMAIL = useAuth().user?.email ?? ''
   const { users, loading } = props
 
   if (loading) {

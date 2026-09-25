@@ -1,8 +1,30 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.5
+## Versión 4.4.6
 
 ## Changelog
+
+### Versión 4.4.6 - 2026-09-25
+
+#### Flujo de aprobación de cambios de cuenta bancaria
+- Nueva página **Cambios bancarios** con bandeja de revisión para administradores: lista tipo correo con avatar del cliente, cuenta propuesta para la devolución (banco y cuenta enmascarada), motivo, solicitante y fecha.
+- Pestañas **Pendientes / Aprobadas / Rechazadas / Canceladas** para revisar el historial completo de solicitudes, mostrando quién solicitó y quién resolvió cada cambio con sus fechas.
+- El acceso a la bandeja se realiza desde una **campana de notificación** junto al nombre del usuario (solo administradores), con contador de pendientes y animación de alerta (sacudida, halo pulsante y contador rojo con onda expansiva) cuando hay cambios por revisar.
+- El tipo de cuenta se selecciona desde una lista fija ("Cuenta Corriente" / "Cuenta Vista"), sin depender del catálogo del servicio; el banco sigue viniendo del catálogo del servidor.
+
+#### Permisos sobre los datos para devolución
+- **Administrador**: edita y aplica el cambio de cuenta directamente, sin aprobación.
+- **Operaciones**: propone el cambio, que queda pendiente de aprobación de un administrador (motivo obligatorio).
+- **Alianzas, Call Center y Solo lectura**: solo visualizan los datos, sin opción de agregar ni modificar la cuenta.
+- Con un cambio pendiente, la edición queda bloqueada hasta que se resuelva, y el pago/nómina se bloquean para esa solicitud.
+
+#### Corrección en página de Usuarios
+- La marca "Tú" y los bloqueos de acciones (editar, cambiar rol, desactivar) ahora se calculan según el usuario con sesión iniciada, en lugar de estar fijados a un correo específico.
+
+#### Especificaciones para backend
+- Se agregó `docs/backend/inactive-user-login-block.md`: bloqueo de login para usuarios inactivos (respuesta `403 USER_INACTIVE`), invalidación inmediata de sesiones al desactivar un usuario, registro de `lastLoginAt` para la columna Último acceso, y validación de que ningún usuario pueda desactivarse a sí mismo.
+- Se agregó `docs/backend/bank-info-change-approval.md`: contrato completo del flujo de aprobación de cambios de cuenta bancaria (modelo de datos, endpoints, errores, notificaciones y bloqueo de pago).
+
 
 ### Versión 4.4.5 - 2026-09-23
 

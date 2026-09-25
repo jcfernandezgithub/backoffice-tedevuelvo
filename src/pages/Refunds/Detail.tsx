@@ -36,7 +36,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/state/AuthContext'
 import { publicFilesApi } from '@/services/publicFilesApi'
 import { EditClientDialog } from './components/EditClientDialog'
-import { EditBankInfoDialog } from './components/EditBankInfoDialog'
+import { BankAccountSection } from '@/components/bankChanges/BankAccountSection'
 import { EditSnapshotDialog } from './components/EditSnapshotDialog'
 import { getSafetyMarginByInstitutionId } from '@/hooks/useSafetyMargins'
 import { GenerateCorteDialog } from './components/GenerateCorteDialog'
@@ -290,6 +290,16 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
         })
         return
       }
+    }
+
+    // Bloquear pago si hay un cambio de cuenta bancaria pendiente
+    if (updateForm.status === 'paid' && refund?.hasPendingBankChange) {
+      toast({
+        title: 'Pago bloqueado',
+        description: 'Hay un cambio de cuenta bancaria pendiente. El pago está bloqueado hasta resolverlo.',
+        variant: 'destructive',
+      })
+      return
     }
 
     // Validar monto real obligatorio para pago programado
@@ -693,6 +703,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                     <SelectContent>
                       {Object.entries(statusLabels)
                         .filter(([value]) => {
+                          if (value === 'paid' && refund?.hasPendingBankChange) return false
                           if (user?.email === 'admin@callcenter.cl') {
                             return ['canceled', 'docs_pending', 'docs_received'].includes(value)
                           }
@@ -987,39 +998,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
           </Card>
 
           {/* Sección de datos bancarios para Pago Programado */}
-          {(refund.status === 'payment_scheduled' || refund.status === 'paid') && refund.bankInfo && (
-            <Card className="border-emerald-500/30 bg-emerald-500/5">
-              <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-emerald-600">
-                  <Landmark className="h-5 w-5" />
-                  Datos para devolución
-                </CardTitle>
-                <EditBankInfoDialog refund={refund} />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700">
-                    Los datos bancarios ya fueron registrados para procesar la devolución
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Banco</p>
-                    <p className="font-medium">{refund.bankInfo.bank || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Tipo de cuenta</p>
-                    <p className="font-medium">{refund.bankInfo.accountType || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Número de cuenta</p>
-                    <p className="font-medium font-mono">{refund.bankInfo.accountNumber || 'N/A'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <BankAccountSection refund={refund} />
 
           <Card>
             <CardHeader>

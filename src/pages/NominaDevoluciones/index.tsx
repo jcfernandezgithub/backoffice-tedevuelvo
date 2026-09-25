@@ -11,6 +11,7 @@ import { AddFromRefundsDialog } from './components/AddFromRefundsDialog'
 import { downloadTxtFile } from './logic/nomina_logic_complete'
 import { toast } from 'sonner'
 import { exportXLSX } from '@/services/reportesService'
+import { bankInfoChangesApi } from '@/services/bankInfoChangesApi'
 
 
 const CSV_TEMPLATE_HEADERS = [
@@ -31,7 +32,17 @@ export default function NominaDevoluciones() {
     else toast.error(`${result.errors.length} error(es) encontrado(s)`)
   }, [nom])
 
-  const handleGenerate = useCallback((grouped: boolean) => {
+  const handleGenerate = useCallback(async (grouped: boolean) => {
+    // Validar en el servidor que ninguna solicitud tenga cambios bancarios pendientes
+    const publicIds = nom.rows.map((r) => r.refundId).filter(Boolean) as string[]
+    if (publicIds.length > 0) {
+      try {
+        await bankInfoChangesApi.validatePayroll(publicIds)
+      } catch (e) {
+        toast.error(`No se generó la nómina: ${(e as Error).message}`)
+        return
+      }
+    }
     const res = nom.generate(grouped)
     if (res) {
       // Export Excel with the same row data (without touching TXT logic)

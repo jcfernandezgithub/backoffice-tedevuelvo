@@ -15,6 +15,7 @@ interface LoginResponse {
     fullName: string
     roles?: string[]
     role?: {
+      label?: string
       name?: string
       normalizedName?: string
       pages?: string[]
@@ -42,6 +43,24 @@ const extractRoles = (u: LoginResponse['user']): string[] => {
   }
   if (typeof u.role === 'string') return [u.role]
   return []
+}
+
+const ROLE_LABELS: Record<Rol, string> = {
+  ADMIN: 'Administrador',
+  OPERACIONES: 'Operaciones',
+  ALIANZAS: 'Alianzas',
+  READONLY: 'Solo lectura',
+  CALLCENTER: 'Call Center',
+}
+
+const extractRoleName = (u: LoginResponse['user'], mappedRole: Rol): string => {
+  if (u.role && typeof u.role === 'object') {
+    const visibleName = u.role.label || u.role.name || u.role.normalizedName
+    if (visibleName) return visibleName
+  }
+  if (typeof u.role === 'string' && u.role.trim()) return u.role
+  if (Array.isArray(u.roles) && u.roles.length > 0) return u.roles[0]
+  return ROLE_LABELS[mappedRole]
 }
 
 // Devuelve las pages informadas por el backend, o null si la respuesta no
@@ -106,11 +125,13 @@ export const authService = {
     save(REFRESH_TOKEN_KEY, data.refreshToken)
 
     // Mapear respuesta del backend al tipo Usuario del frontend
+    const mappedRole = mapRoleToFrontend(extractRoles(data.user))
     const user: Usuario = {
       id: data.user.id,
       nombre: data.user.fullName,
       email: data.user.email,
-      rol: mapRoleToFrontend(extractRoles(data.user)),
+      rol: mappedRole,
+      rolNombre: extractRoleName(data.user, mappedRole),
       activo: true,
       pages: extractPages(data),
     }
@@ -159,11 +180,15 @@ export const authService = {
     // Actualizar usuario preservando datos previos cuando el refresh venga incompleto.
     const rolesFromResponse = extractRoles(data.user)
     const pagesFromResponse = extractPagesStrict(data)
+    const mappedRole = rolesFromResponse.length ? mapRoleToFrontend(rolesFromResponse) : user.rol
     const updatedUser: Usuario = {
       id: data.user?.id ?? user.id,
       nombre: data.user?.fullName ?? user.nombre,
       email: data.user?.email ?? user.email,
-      rol: rolesFromResponse.length ? mapRoleToFrontend(rolesFromResponse) : user.rol,
+      rol: mappedRole,
+      rolNombre: rolesFromResponse.length
+        ? extractRoleName(data.user, mappedRole)
+        : (user.rolNombre ?? ROLE_LABELS[user.rol]),
       activo: true,
       // Si el backend informa pages (incluso vacío), esa es la verdad: así los
       // permisos revocados se reflejan sin necesidad de volver a iniciar sesión.
