@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.6
+## Versión 4.4.7
 
 ## Changelog
+
+### Versión 4.4.7 - 2026-09-25
+
+#### Corrección: reconocimiento del rol Operador
+- El servidor entrega el rol con el nombre "Operador", que la pantalla no reconocía (solo aceptaba "operaciones") y lo trataba como Solo lectura.
+- `mapRoleToFrontend` en `src/services/authService.ts` ahora también reconoce "operador"/"operator"/"operations" como `OPERACIONES`.
+- Con esto el Operador vuelve a ver el botón para proponer cambios en "Datos para devolución" (Pago programado), sujetos a aprobación de un administrador.
 
 ### Versión 4.4.6 - 2026-09-25
 
