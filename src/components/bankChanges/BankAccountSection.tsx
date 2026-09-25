@@ -57,7 +57,7 @@ export function BankAccountSection({ refund }: { refund: RefundRequest }) {
 
   const pending = history.find((c) => c.status === 'PENDING')
   const hasPending = !!pending || refund.hasPendingBankChange === true
-  const canEdit = isScheduled && !hasPending
+  const canEdit = isScheduled && !hasPending && canUseBankEdit
 
   if (!isScheduled && !(refund.status === 'paid' && hasBank)) return null
 
@@ -74,7 +74,7 @@ export function BankAccountSection({ refund }: { refund: RefundRequest }) {
           <Landmark className="h-5 w-5" />
           Datos para devolución
         </CardTitle>
-        {isScheduled && (
+        {isScheduled && canUseBankEdit && (
           <Button
             size="sm"
             variant={hasBank ? 'outline' : 'default'}
