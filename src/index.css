@@ -137,8 +137,16 @@ All colors MUST be HSL.
 /* Optimizaciones adicionales para móvil */
 @layer utilities {
   .animate-bell-ring {
-    animation: bell-ring 1.6s ease-in-out infinite;
+    animation: bell-ring 1.2s ease-in-out infinite;
     transform-origin: top center;
+  }
+
+  .animate-bell-glow {
+    animation: bell-glow 1.2s ease-in-out infinite;
+  }
+
+  .animate-bell-dot-ping {
+    animation: bell-dot-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 
   .scroll-smooth {
