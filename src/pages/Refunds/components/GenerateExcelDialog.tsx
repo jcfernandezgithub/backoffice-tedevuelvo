@@ -294,7 +294,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Generar Excel de Altas CIA - Desgravamen</DialogTitle>
           <DialogDescription>
@@ -340,7 +340,7 @@ export function GenerateExcelDialog({ selectedRefunds, onClose }: GenerateExcelD
           </div>
         )}
 
-        <div className="max-h-[50vh] overflow-y-auto pr-2">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2">
           {visibleRefunds.map((refund, index) => {
             const globalIndex = (dialogPage - 1) * DIALOG_PAGE_SIZE + index
             const data = refundData[refund.id] || EMPTY_REFUND_DATA
