@@ -493,7 +493,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Generar Excel de Altas CIA - {modeLabel}</DialogTitle>
           <DialogDescription>
@@ -593,7 +593,7 @@ export function GenerateExcelDialog({ selectedRefunds, mode = 'desgravamen', onC
           </div>
         )}
 
-        <div className="max-h-[50vh] overflow-y-auto pr-2">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2">
           {prefilling && (
             <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
