@@ -629,7 +629,7 @@ export function buildCesantiaFormFromRefund(
     inicioVigencia: today,
     terminoVigencia: '',
     montoCredito: String(montoCredito),
-    montoCuota: '',
+    montoCuota: (refund as any)?.cuotaActual != null ? String((refund as any).cuotaActual) : '',
     plazoMeses: String(plazoMeses),
     primaNeta: '',
     ...overrides,

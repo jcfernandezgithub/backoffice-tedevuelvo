@@ -1114,6 +1114,14 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                     {snap.confirmedRemainingInstallments || <span className="text-amber-600 dark:text-amber-400 italic text-sm">Sin confirmar</span>}
                                   </p>
                                 </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Valor cuota del crédito</p>
+                                  <p className="font-medium">
+                                    {refund.cuotaActual != null && Number(refund.cuotaActual) > 0
+                                      ? `$${formatCLPNumber(Number(refund.cuotaActual))} CLP`
+                                      : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Por Confirmar</span>}
+                                  </p>
+                                </div>
                               </div>
                             )}
                           </div>

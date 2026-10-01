@@ -1,8 +1,15 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.7
+## Versión 4.4.8
 
 ## Changelog
+
+### Versión 4.4.8 - 2026-10-01
+
+#### Correcciones y mejoras
+- **Excel Altas CIA (Solicitudes y Cierre Mensual)**: corregido el desplazamiento del formulario; la lista ocupa el espacio disponible y el encabezado y los botones quedan siempre visibles.
+- **Certificado de Cesantía**: el campo "Monto Cuota" ahora se precarga con el valor cuota guardado en la solicitud (`cuotaActual`), en Solicitudes, Cierre Mensual y Procesos Masivos.
+- **Detalle de solicitud**: nuevo campo "Valor cuota del crédito" en "Datos confirmados del crédito" (Solicitudes y Cierre Mensual); muestra "Por Confirmar" cuando no existe.
 
 ### Versión 4.4.7 - 2026-09-25
 
