@@ -187,7 +187,7 @@ export function GenerateCesantiaCertificateDialog({ refund, isMandateSigned = fa
       refund.calculationSnapshot?.averageInsuredBalance ||
       0
     ).toString(),
-    montoCuota: '',
+    montoCuota: (refund as any)?.cuotaActual != null ? String((refund as any).cuotaActual) : '',
     plazoMeses: (
       refund.calculationSnapshot?.confirmedRemainingInstallments ||
       refund.calculationSnapshot?.remainingInstallments ||
