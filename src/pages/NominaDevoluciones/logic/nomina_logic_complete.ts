@@ -366,6 +366,34 @@ export function bankMatchKey(value: string | null | undefined): string {
   return noChile || k;
 }
 
+// Códigos SBIF/CMF por clave canónica. El catálogo del servicio entrega solo
+// nombres, así que el código se resuelve aquí.
+export const SBIF_BY_BANK_KEY: Record<string, string> = {
+  CHILE: '001',
+  INTERNACIONAL: '009',
+  ESTADO: '012',
+  SCOTIABANK: '014',
+  CREDITOEINVERSIONES: '016',
+  MACH: '016',
+  BICE: '028',
+  HSBC: '031',
+  SANTANDER: '037',
+  ITAU: '039',
+  SECURITY: '049',
+  FALABELLA: '051',
+  RIPLEY: '053',
+  CONSORCIO: '055',
+  BTGPACTUAL: '059',
+  COOPEUCH: '672',
+  TAPP: '729',
+  TENPO: '730',
+  MERCADOPAGO: '875',
+};
+
+export function sbifCodeForBankName(name: string): string | null {
+  return SBIF_BY_BANK_KEY[bankMatchKey(name)] ?? null;
+}
+
 /** Busca el banco del catálogo que corresponde a un nombre (exacto, código SBIF o mapping). */
 export function findBancoInCatalog(input: string, bancos: BancoCatalogItem[]): BancoCatalogItem | null {
   if (!input) return null;
