@@ -171,7 +171,7 @@ export function NominaTable({ bancos, rows, errors, selectedIndex, onSelect, onU
                         <SelectValue placeholder="Seleccionar banco" />
                       </SelectTrigger>
                       <SelectContent>
-                        {bancos.map(b => <SelectItem key={b.sbifCode} value={b.name}>{b.name}</SelectItem>)}
+                        {bancos.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>
