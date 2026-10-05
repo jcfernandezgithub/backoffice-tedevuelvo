@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNomina } from './hooks/useNomina'
+import { useNominaBankCatalog } from './hooks/useNominaBankCatalog'
 import { NominaDraftBanner } from './components/NominaDraftBanner'
 import { NominaHeaderForm } from './components/NominaHeaderForm'
 import { NominaSummary } from './components/NominaSummary'
@@ -21,7 +22,8 @@ const CSV_TEMPLATE_HEADERS = [
 ]
 
 export default function NominaDevoluciones() {
-  const nom = useNomina()
+  const bankCatalog = useNominaBankCatalog()
+  const nom = useNomina(bankCatalog.catalogs)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [csvOpen, setCsvOpen] = useState(false)
   const [refundsOpen, setRefundsOpen] = useState(false)
@@ -138,7 +140,16 @@ export default function NominaDevoluciones() {
           rowCount={nom.rows.length}
         />
 
+        {(bankCatalog.isLoading || !bankCatalog.catalogs) && (
+          <div className={`text-sm rounded-lg border p-3 ${bankCatalog.isLoading ? 'bg-muted/40 text-muted-foreground' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+            {bankCatalog.isLoading
+              ? 'Cargando catálogo de bancos…'
+              : `No se pudo cargar el catálogo de bancos${bankCatalog.error ? `: ${bankCatalog.error.message}` : ' (sin bancos con código SBIF)'}. No es posible generar la nómina.`}
+          </div>
+        )}
+
         <NominaTable
+          bancos={bankCatalog.bancos}
           rows={nom.rows}
           errors={nom.errors}
           selectedIndex={selectedIndex}
