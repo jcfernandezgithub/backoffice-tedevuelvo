@@ -3,12 +3,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { NominaRowInput, ValidationError, DEFAULT_NOMINA_CATALOGS } from '../logic/nomina_logic_complete'
+import { NominaRowInput, ValidationError, DEFAULT_NOMINA_CATALOGS, findBancoInCatalog, type BancoCatalogItem } from '../logic/nomina_logic_complete'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronUp, AlertTriangle, Copy, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 interface Props {
+  bancos: BancoCatalogItem[]
   rows: NominaRowInput[]
   errors: ValidationError[]
   selectedIndex: number | null
@@ -31,7 +32,7 @@ function Field({ label, error, children, className }: { label: string; error?: b
   )
 }
 
-export function NominaTable({ rows, errors, selectedIndex, onSelect, onUpdate, onDuplicate, onRemove }: Props) {
+export function NominaTable({ bancos, rows, errors, selectedIndex, onSelect, onUpdate, onDuplicate, onRemove }: Props) {
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
   const rowErrorsByIndex = new Map<number, ValidationError[]>()
@@ -165,12 +166,12 @@ export function NominaTable({ rows, errors, selectedIndex, onSelect, onUpdate, o
                 {/* Row 2: Bank */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                   <Field label="Banco" error={fieldHasError(idx, 'bancoProveedor')}>
-                    <Select value={row.bancoProveedor} onValueChange={v => onUpdate(idx, { bancoProveedor: v })}>
+                    <Select value={findBancoInCatalog(row.bancoProveedor, bancos)?.name ?? ''} onValueChange={v => onUpdate(idx, { bancoProveedor: v })}>
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Seleccionar banco" />
                       </SelectTrigger>
                       <SelectContent>
-                        {catalogs.bancos.map(b => <SelectItem key={b.sbifCode} value={b.name}>{b.name}</SelectItem>)}
+                        {bancos.map(b => <SelectItem key={b.sbifCode} value={b.name}>{b.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>
