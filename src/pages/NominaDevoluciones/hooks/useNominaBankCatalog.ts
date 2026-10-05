@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { bankInfoChangesApi } from '@/services/bankInfoChangesApi'
 import {
   DEFAULT_NOMINA_CATALOGS,
+  sbifCodeForBankName,
   type BancoCatalogItem,
   type NominaCatalogs,
 } from '../logic/nomina_logic_complete'
@@ -23,9 +24,10 @@ export function parseBankCatalog(raw: any): BancoCatalogItem[] {
   const seen = new Set<string>()
   for (const b of Array.isArray(list) ? list : []) {
     const name = typeof b === 'string' ? b.trim() : pick(b, ['name', 'nombre', 'label', 'bank', 'banco'])
-    const sbifCode = typeof b === 'string'
+    const fromService = typeof b === 'string'
       ? ''
       : pick(b, ['sbifCode', 'sbif', 'codigoSbif', 'codSbif', 'sbif_code', 'code', 'codigo'])
+    const sbifCode = fromService || (name ? sbifCodeForBankName(name) ?? '' : '')
     if (!name || !sbifCode) {
       if (name) console.warn('[Nómina] Banco sin código SBIF en el catálogo, se omite:', name)
       continue
