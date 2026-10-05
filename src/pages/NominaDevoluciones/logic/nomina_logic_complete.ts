@@ -318,9 +318,74 @@ function buildCatalogLookup(catalogs: NominaCatalogs): CatalogLookup {
   };
 }
 
+// Alias de nombres de bancos -> clave canónica (para homologar nombres guardados
+// en solicitudes con los del catálogo del servicio).
+const BANK_ALIASES: Record<string, string> = {
+  BCI: 'CREDITOEINVERSIONES',
+  CREDITOINVERSIONES: 'CREDITOEINVERSIONES',
+  ESTADO: 'ESTADO',
+  BANCOESTADO: 'ESTADO',
+  ESTADOCHILE: 'ESTADO',
+  DELESTADO: 'ESTADO',
+  DELESTADOCHILE: 'ESTADO',
+  SCOTIABANK: 'SCOTIABANK',
+  SCOTIABANKCHILE: 'SCOTIABANK',
+  SCOTIABANKAZUL: 'SCOTIABANK',
+  ITAU: 'ITAU',
+  ITAUCORPBANCA: 'ITAU',
+  ITAUCHILE: 'ITAU',
+  CORPBANCA: 'ITAU',
+  SANTANDER: 'SANTANDER',
+  SANTANDERCHILE: 'SANTANDER',
+  CHILE: 'CHILE',
+  EDWARDS: 'CHILE',
+  EDWARDSCITI: 'CHILE',
+  MERCADOPAGO: 'MERCADOPAGO',
+  MERCADOPAGOEMISORA: 'MERCADOPAGO',
+  TAPP: 'TAPP',
+  TAPPCAJALOSANDES: 'TAPP',
+  CAJALOSANDES: 'TAPP',
+  LOSHEROES: 'LOSHEROES',
+  PREPAGOLOSHEROES: 'LOSHEROES',
+  BTG: 'BTGPACTUAL',
+  BTGPACTUAL: 'BTGPACTUAL',
+  HSBC: 'HSBC',
+  HSBCBANK: 'HSBC',
+};
+
+/** Clave canónica de un banco: sin tildes, sin "BANCO", "DE", "CHILE", espacios ni puntuación. */
+export function bankMatchKey(value: string | null | undefined): string {
+  let k = normalizeText(value)
+    .replace(/\(.*?\)/g, ' ')
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\b(BANCO|BANK|S\.?A|SA|DE|DEL|LA|EL|Y|E)\b/g, (m) => (m === 'E' || m === 'Y' ? 'E' : ' '))
+    .replace(/\s+/g, '');
+  if (BANK_ALIASES[k]) return BANK_ALIASES[k];
+  const noChile = k.replace(/CHILE$/, '');
+  if (noChile && BANK_ALIASES[noChile]) return BANK_ALIASES[noChile];
+  return noChile || k;
+}
+
+/** Busca el banco del catálogo que corresponde a un nombre (exacto, código SBIF o mapping). */
+export function findBancoInCatalog(input: string, bancos: BancoCatalogItem[]): BancoCatalogItem | null {
+  if (!input) return null;
+  const n = normalizeText(input);
+  const byName = bancos.find((b) => normalizeText(b.name) === n);
+  if (byName) return byName;
+  if (/^\d{1,3}$/.test(n)) {
+    const code = formatNumericField(n, 3);
+    const byCode = bancos.find((b) => formatNumericField(b.sbifCode, 3) === code);
+    if (byCode) return byCode;
+  }
+  const key = bankMatchKey(input);
+  return bancos.find((b) => bankMatchKey(b.name) === key) ?? null;
+}
+
 function resolveBanco(input: string, lookup: CatalogLookup): BancoCatalogItem | null {
   const normalized = normalizeText(input);
-  return lookup.bancosByName.get(normalized) ?? lookup.bancosByCode.get(formatNumericField(normalized, 3)) ?? null;
+  const direct = lookup.bancosByName.get(normalized) ?? lookup.bancosByCode.get(formatNumericField(normalized, 3));
+  if (direct) return direct;
+  return findBancoInCatalog(input, Array.from(lookup.bancosByName.values()));
 }
 
 function resolveFormaPago(input: string, lookup: CatalogLookup): FormaPagoCatalogItem | null {

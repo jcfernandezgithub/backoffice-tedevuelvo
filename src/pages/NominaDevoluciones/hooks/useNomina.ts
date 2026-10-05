@@ -4,7 +4,7 @@ import {
   NominaHeaderInput,
   NominaRowInput,
   ValidationError,
-  DEFAULT_NOMINA_CATALOGS,
+  NominaCatalogs,
   validateNominaInput,
   generateAndDownloadNominaTxt,
   MOCK_NOMINA_INPUT,
@@ -39,7 +39,7 @@ const emptyRow: NominaRowInput = {
   mensajeAviso: '',
 }
 
-export function useNomina() {
+export function useNomina(catalogs: NominaCatalogs | null) {
   const [header, setHeader] = useState<NominaHeaderInput>(emptyHeader)
   const [rows, setRows] = useState<NominaRowInput[]>([])
   const [errors, setErrors] = useState<ValidationError[]>([])
@@ -116,28 +116,33 @@ export function useNomina() {
   }, [header, autoSave])
 
   const validate = useCallback(() => {
-    const result = validateNominaInput({
-      header,
-      rows,
-      catalogs: DEFAULT_NOMINA_CATALOGS,
-    })
+    if (!catalogs) {
+      const errs: ValidationError[] = [{ scope: 'system', field: 'catalog', message: 'El catálogo de bancos no está disponible. Recarga la página o intenta más tarde.' }]
+      setErrors(errs)
+      return { valid: false, errors: errs } as ReturnType<typeof validateNominaInput>
+    }
+    const result = validateNominaInput({ header, rows, catalogs })
     setErrors(result.errors)
     return result
-  }, [header, rows])
+  }, [header, rows, catalogs])
 
   const generate = useCallback((grouped: boolean) => {
-    const result = validateNominaInput({ header, rows, catalogs: DEFAULT_NOMINA_CATALOGS })
+    if (!catalogs) {
+      setErrors([{ scope: 'system', field: 'catalog', message: 'El catálogo de bancos no está disponible. No se puede generar la nómina.' }])
+      return null
+    }
+    const result = validateNominaInput({ header, rows, catalogs })
     setErrors(result.errors)
     if (!result.valid) return null
     try {
-      const res = generateAndDownloadNominaTxt({ header, rows, catalogs: DEFAULT_NOMINA_CATALOGS, grouped })
+      const res = generateAndDownloadNominaTxt({ header, rows, catalogs, grouped })
       setLastExportResult({ fileName: res.fileName, lineCount: res.lineCount, totalAmount: res.totalAmount, mode: res.mode })
       return res
     } catch (e: any) {
       setErrors([{ scope: 'system', field: 'generation', message: e.message }])
       return null
     }
-  }, [header, rows])
+  }, [header, rows, catalogs])
 
   const restoreDraft = useCallback(() => {
     const draft = load<NominaDraft | null>(DRAFT_KEY, null)
