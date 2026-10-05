@@ -358,7 +358,7 @@ export function bankMatchKey(value: string | null | undefined): string {
   let k = normalizeText(value)
     .replace(/\(.*?\)/g, ' ')
     .replace(/[^A-Z0-9 ]/g, ' ')
-    .replace(/\b(BANCO|BANK|S\.?A|SA|DE|DEL|LA|EL|Y|E)\b/g, (m) => (m === 'E' || m === 'Y' ? 'E' : ' '))
+    .replace(/\b(BANCO|BANK|SA|DE|DEL|LA|EL|Y|E)\b/g, ' ')
     .replace(/\s+/g, '');
   if (BANK_ALIASES[k]) return BANK_ALIASES[k];
   const noChile = k.replace(/CHILE$/, '');
