@@ -182,6 +182,8 @@ export interface CalculationResult {
     primaRestantePreferencial?: number;
     saldoInsoluto?: number;
     cuotasPendientes?: number;
+    costoMensualBanco?: number;
+    costoMensualPreferencial?: number;
   };
   error?: string;
 }
@@ -324,15 +326,19 @@ const isOverride = (v?: number): v is number => typeof v === "number" && !isNaN(
 
 const calcularCesantia = (
   banco: string,
+  montoCredito: number,
   saldoInsoluto: number,
   cuotasPendientes: number,
   overrides?: TasaOverrides,
 ) => {
   const bancoMapeado = MAPEO_INSTITUCIONES[banco] || banco.toUpperCase();
-  const tramo = obtenerTramo(saldoInsoluto);
+  // El tramo y la prima del BANCO se calculan sobre el monto total del crédito
+  // (la prima se paga mes a mes sobre el monto original, no sobre el saldo).
+  const tramo = obtenerTramo(montoCredito);
   const tasaBanco = isOverride(overrides?.tasaBancoCesantia)
     ? overrides!.tasaBancoCesantia!
-    : obtenerTasaCesantiaBanco(bancoMapeado, saldoInsoluto);
+    : obtenerTasaCesantiaBanco(bancoMapeado, montoCredito);
+  // La TDV (preferencial) se calcula sobre el saldo insoluto del crédito.
   const tasaPreferencial = isOverride(overrides?.tasaPreferencialCesantia)
     ? overrides!.tasaPreferencialCesantia!
     : obtenerTasaCesantiaPreferencial(saldoInsoluto);
@@ -341,8 +347,12 @@ const calcularCesantia = (
     throw new Error(`No hay datos de cesantía para ${banco}`);
   }
 
-  const primaRestanteBanco = saldoInsoluto * tasaBanco * cuotasPendientes;
-  const primaRestantePreferencial = saldoInsoluto * tasaPreferencial * cuotasPendientes;
+  // Banco: costo mensual = monto crédito × tasa; restante = costo mensual × cuotas pendientes
+  const costoMensualBanco = montoCredito * tasaBanco;
+  const primaRestanteBanco = costoMensualBanco * cuotasPendientes;
+  // TDV: saldo insoluto × tasa × cuotas pendientes
+  const costoMensualPreferencial = saldoInsoluto * tasaPreferencial;
+  const primaRestantePreferencial = costoMensualPreferencial * cuotasPendientes;
   const montoDevolucion = primaRestanteBanco - primaRestantePreferencial;
 
   return {
@@ -356,6 +366,8 @@ const calcularCesantia = (
     primaRestantePreferencial: Math.round(primaRestantePreferencial),
     saldoInsoluto: Math.round(saldoInsoluto),
     cuotasPendientes,
+    costoMensualBanco: Math.round(costoMensualBanco),
+    costoMensualPreferencial: Math.round(costoMensualPreferencial),
   };
 };
 
@@ -374,7 +386,7 @@ export const calcularDevolucion = (
 
   try {
     if (tipoSeguro === "cesantia") {
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
+      const cesantia = calcularCesantia(banco, montoCredito, saldo, cuotasPendientes, overrides);
       const montoConMargen = aplicarMargenDevolucion(cesantia.montoDevolucion);
 
       return {
@@ -453,7 +465,7 @@ export const calcularDevolucion = (
         seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
       };
 
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
+      const cesantia = calcularCesantia(banco, montoCredito, saldo, cuotasPendientes, overrides);
       const montoDevolucionTotal = desgravamen.montoDevolucion + cesantia.montoDevolucion;
       const montoConMargen = aplicarMargenDevolucion(montoDevolucionTotal);
 

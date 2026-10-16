@@ -438,14 +438,16 @@ export default function CalculadoraPage() {
       const ces = resultado.cesantia;
       const saldoCes = ces.saldoInsoluto || formDataSnapshot.saldoInsoluto || formDataSnapshot.montoCredito;
       const cuotasPend = ces.cuotasPendientes || formDataSnapshot.cuotasPendientes;
-      const primaMensualBancoCes = Math.round(saldoCes * ces.tasaBanco);
-      const primaMensualPrefCes = Math.round(saldoCes * ces.tasaPreferencial);
+      const montoCreditoCes = formDataSnapshot?.montoCredito || saldoCes;
+      const primaMensualBancoCes = ces.costoMensualBanco || Math.round(montoCreditoCes * ces.tasaBanco);
+      const primaMensualPrefCes = ces.costoMensualPreferencial || Math.round(saldoCes * ces.tasaPreferencial);
       const seguroRestanteBancoCes = ces.primaRestanteBanco || ces.primaBanco;
       const seguroRestantePrefCes = ces.primaRestantePreferencial || ces.primaPreferencial;
 
       doc.setFontSize(9);
       doc.setTextColor(80);
       doc.text("Banco:", 25, y); y += 5;
+      doc.text(`  Monto credito: ${formatCurrency(montoCreditoCes)}`, 25, y); y += 5;
       doc.text(`  Prima mensual: ${formatCurrency(primaMensualBancoCes)}`, 25, y); y += 5;
       doc.text(`  Seguro restante: ${formatCurrency(seguroRestanteBancoCes)}`, 25, y); y += 6;
 
@@ -467,7 +469,8 @@ export default function CalculadoraPage() {
         y += 3;
         doc.setFontSize(8);
         doc.setTextColor(100);
-        doc.text("Formula: Prima mensual = Saldo insoluto x Tasa mensual", 25, y); y += 4;
+        doc.text("Formula: Prima mensual Banco = Monto credito x Tasa mensual", 25, y); y += 4;
+        doc.text("Formula: Prima mensual Preferencial = Saldo insoluto x Tasa mensual", 25, y); y += 4;
         doc.text("Seguro restante = Prima mensual x Cuotas pendientes", 25, y); y += 4;
         doc.text("Devolucion = Seguro restante banco - Seguro restante preferencial", 25, y);
         y += 10;
@@ -1357,6 +1360,11 @@ export default function CalculadoraPage() {
                             </div>
                             
                             <div className="bg-primary/10 p-2 rounded text-center">
+                              <p className="text-xs text-muted-foreground">Costo mensual del seguro:</p>
+                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.primaMensualBanco || 0)}</p>
+                            </div>
+
+                            <div className="bg-primary/10 p-2 rounded text-center">
                               <p className="text-xs text-muted-foreground">Devolución desgravamen:</p>
                               <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.montoDevolucion)}</p>
                             </div>
@@ -1429,16 +1437,23 @@ export default function CalculadoraPage() {
                             <div className="bg-muted/30 p-2 rounded text-xs space-y-1">
                               <p className="font-medium">Montos utilizados:</p>
                               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                                <span className="text-muted-foreground">Saldo insoluto:</span>
+                                <span className="text-muted-foreground">Monto crédito (base Banco):</span>
+                                <span className="font-mono">{formatCurrency(formDataSnapshot?.montoCredito || 0)}</span>
+                                <span className="text-muted-foreground">Saldo insoluto (base TDV):</span>
                                 <span className="font-mono">{formatCurrency(resultado.cesantia.saldoInsoluto || 0)}</span>
                                 <span className="text-muted-foreground">Cuotas pendientes:</span>
                                 <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
+                                <span className="text-muted-foreground font-medium">Costo mensual del seguro (Banco):</span>
+                                <span className="font-mono font-medium">{formatCurrency(resultado.cesantia.costoMensualBanco ?? 0)}</span>
+                                <span className="text-muted-foreground font-medium">Costo mensual del seguro (TDV):</span>
+                                <span className="font-mono font-medium">{formatCurrency(resultado.cesantia.costoMensualPreferencial ?? 0)}</span>
                               </div>
                             </div>
                             {!isCallcenter && (
                             <div className="bg-muted/50 p-2 rounded text-xs space-y-1">
                               <p><strong>Fórmula:</strong></p>
-                              <p className="text-muted-foreground">Prima restante = Saldo insoluto × Tasa mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Prima restante Banco = Monto crédito × Tasa mensual × Cuotas pendientes</p>
+                              <p className="text-muted-foreground">Prima restante Preferencial = Saldo insoluto × Tasa mensual × Cuotas pendientes</p>
                               <p className="text-muted-foreground">Devolución = Prima banco - Prima preferencial</p>
                               <p className="text-muted-foreground">Saldo insoluto = Monto crédito × (Cuotas pendientes / Cuotas totales)</p>
                             </div>

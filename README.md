@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.8
+## Versión 4.4.9
 
 ## Changelog
+
+### Versión 4.4.9 - 2026-10-16
+
+#### Corrección del cálculo de Cesantía
+- La prima restante del banco ahora se calcula sobre el **monto total del crédito**, no sobre el saldo insoluto: monto del crédito × tasa mensual del banco × cuotas pendientes.
+- El tramo y la tasa de Cesantía del banco se seleccionan utilizando el monto total del crédito.
+- El cálculo TeDevuelvo se mantiene sin cambios: saldo insoluto × tasa mensual preferencial × cuotas pendientes.
+- La corrección aplica en la Calculadora y en la edición del snapshot de solicitudes, mediante la función de cálculo compartida. No se modifica Desgravamen.
+- El detalle del cálculo y el PDF distinguen la base Banco de la base TeDevuelvo y muestran el costo mensual del seguro correspondiente.
+- Se actualizó la versión del login a **4.4.9** y se acercó el pie de versión al formulario.
 
 ### Versión 4.4.8 - 2026-10-01
 
