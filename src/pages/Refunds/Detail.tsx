@@ -1122,30 +1122,6 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                                       : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Por Confirmar</span>}
                                   </p>
                                 </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Costo mensual del seguro</p>
-                                  <p className="font-medium">
-                                    {(() => {
-                                      const insuranceType = getInsuranceType(snap)
-                                      const saldo = snap.confirmedAverageInsuredBalance || snap.averageInsuredBalance || snap.totalAmount || 0
-                                      // Cesantía: prima única = saldo × tasa × cuotas → costo mensual = saldo × tasa
-                                      const TASA_CESANTIA = 0.094 // % mensual (Southbridge)
-                                      const costoCesantia = insuranceType === 'cesantia' || insuranceType === 'ambos'
-                                        ? Math.round(saldo * (TASA_CESANTIA / 100))
-                                        : 0
-                                      const derived = insuranceType !== 'cesantia'
-                                        ? derivePremiumsFromSnapshot(snap, refund.institutionId)
-                                        : null
-                                      const costoDesgravamen = derived
-                                        ? (derived.currentMonthlyPremium || snap.currentMonthlyPremium || 0)
-                                        : 0
-                                      const costo = costoDesgravamen + costoCesantia
-                                      return costo > 0
-                                        ? `$${formatCLPNumber(costo)} CLP`
-                                        : <span className="text-amber-600 dark:text-amber-400 italic text-sm">Por Confirmar</span>
-                                    })()}
-                                  </p>
-                                </div>
                               </div>
                             )}
                           </div>
