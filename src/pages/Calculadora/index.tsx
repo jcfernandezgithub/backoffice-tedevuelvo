@@ -1438,6 +1438,8 @@ export default function CalculadoraPage() {
                                 <span className="font-mono">{formatCurrency(resultado.cesantia.saldoInsoluto || 0)}</span>
                                 <span className="text-muted-foreground">Cuotas pendientes:</span>
                                 <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
+                                <span className="text-muted-foreground font-medium">Costo mensual del seguro:</span>
+                                <span className="font-mono font-medium">{formatCurrency(resultado.cesantia.saldoInsoluto && resultado.cesantia.tasaBanco ? Math.round(resultado.cesantia.saldoInsoluto * resultado.cesantia.tasaBanco) : 0)}</span>
                               </div>
                             </div>
                             {!isCallcenter && (
