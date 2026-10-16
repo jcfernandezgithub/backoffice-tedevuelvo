@@ -1357,6 +1357,11 @@ export default function CalculadoraPage() {
                             </div>
                             
                             <div className="bg-primary/10 p-2 rounded text-center">
+                              <p className="text-xs text-muted-foreground">Costo mensual del seguro:</p>
+                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.primaMensualBanco || 0)}</p>
+                            </div>
+
+                            <div className="bg-primary/10 p-2 rounded text-center">
                               <p className="text-xs text-muted-foreground">Devolución desgravamen:</p>
                               <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.montoDevolucion)}</p>
                             </div>
