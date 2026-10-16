@@ -182,6 +182,8 @@ export interface CalculationResult {
     primaRestantePreferencial?: number;
     saldoInsoluto?: number;
     cuotasPendientes?: number;
+    costoMensualBanco?: number;
+    costoMensualPreferencial?: number;
   };
   error?: string;
 }
