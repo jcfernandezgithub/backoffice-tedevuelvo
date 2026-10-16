@@ -386,7 +386,7 @@ export const calcularDevolucion = (
 
   try {
     if (tipoSeguro === "cesantia") {
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
+      const cesantia = calcularCesantia(banco, montoCredito, saldo, cuotasPendientes, overrides);
       const montoConMargen = aplicarMargenDevolucion(cesantia.montoDevolucion);
 
       return {
@@ -465,7 +465,7 @@ export const calcularDevolucion = (
         seguroRestantePreferencial: Math.round(seguroRestantePreferencial),
       };
 
-      const cesantia = calcularCesantia(banco, saldo, cuotasPendientes, overrides);
+      const cesantia = calcularCesantia(banco, montoCredito, saldo, cuotasPendientes, overrides);
       const montoDevolucionTotal = desgravamen.montoDevolucion + cesantia.montoDevolucion;
       const montoConMargen = aplicarMargenDevolucion(montoDevolucionTotal);
 
