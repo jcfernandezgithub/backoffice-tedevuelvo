@@ -1357,6 +1357,11 @@ export default function CalculadoraPage() {
                             </div>
                             
                             <div className="bg-primary/10 p-2 rounded text-center">
+                              <p className="text-xs text-muted-foreground">Costo mensual del seguro:</p>
+                              <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.primaMensualBanco || 0)}</p>
+                            </div>
+
+                            <div className="bg-primary/10 p-2 rounded text-center">
                               <p className="text-xs text-muted-foreground">Devolución desgravamen:</p>
                               <p className="text-sm font-semibold text-primary">{formatCurrency(resultado.desgravamen.montoDevolucion)}</p>
                             </div>
@@ -1433,6 +1438,8 @@ export default function CalculadoraPage() {
                                 <span className="font-mono">{formatCurrency(resultado.cesantia.saldoInsoluto || 0)}</span>
                                 <span className="text-muted-foreground">Cuotas pendientes:</span>
                                 <span className="font-mono">{resultado.cesantia.cuotasPendientes ?? '-'}</span>
+                                <span className="text-muted-foreground font-medium">Costo mensual del seguro:</span>
+                                <span className="font-mono font-medium">{formatCurrency(resultado.cesantia.saldoInsoluto && resultado.cesantia.tasaBanco ? Math.round(resultado.cesantia.saldoInsoluto * resultado.cesantia.tasaBanco) : 0)}</span>
                               </div>
                             </div>
                             {!isCallcenter && (
