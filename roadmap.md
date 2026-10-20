@@ -1,4 +1,8 @@
 # Envío de Datos al Banco desde CSV
+## Call Center
+- [x] Excluir re-gestiones del conteo, primas, ticket y gráfico; cinco pruebas aprobadas y regla verificada con datos reales del último cruce.
+
+## Envío bancario
 - [x] Agregar pestaña, carga y revisión de solicitudes con validación del flujo individual.
 - [x] Ejecutar cambios a Documentos recibidos secuencialmente, con confirmación y resultados sin reintentos automáticos.
 - [x] Probar reglas y verificar la pantalla con respuestas simuladas; distinguir cambio de estado de finalización bancaria.
