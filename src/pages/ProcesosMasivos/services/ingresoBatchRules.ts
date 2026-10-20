@@ -29,7 +29,8 @@ export function ingresoBlockers(refund: RefundRequest, documents: RefundDocument
 
 export function parseIngresoCsv(text: string): IngresoCsvRow[] {
   const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), { skipEmptyLines: 'greedy' })
-  if (parsed.errors.length) throw new Error('El CSV contiene errores de formato: ' + parsed.errors[0].message)
+  const formatError = parsed.errors.find(error => error.code !== 'UndetectableDelimiter')
+  if (formatError) throw new Error('El CSV contiene errores de formato: ' + formatError.message)
   const [header, ...data] = parsed.data
   if (!header) throw new Error('El archivo está vacío.')
   const column = header.findIndex(value => ['id', 'idsolicitud', 'refundid', 'publicid'].includes(value.normalize('NFD').replace(/[\u0300-\u036f\s_]/g, '').toLowerCase()))

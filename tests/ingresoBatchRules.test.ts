@@ -20,6 +20,7 @@ describe('Ingreso bancario masivo', () => {
   })
   test('interpreta CSV con ID sin exigir datos de nómina', () => {
     expect(parseIngresoCsv('ID Solicitud;Nombre\nabc;Cliente')).toEqual([{ lineNumber: 2, refundId: 'abc' }])
+    expect(parseIngresoCsv('ID Solicitud\nabc\ndef')).toEqual([{ lineNumber: 2, refundId: 'abc' }, { lineNumber: 3, refundId: 'def' }])
   })
   test('espera cada llamada de estado antes de continuar', async () => {
     let active = 0; let peak = 0; const done: number[] = []
