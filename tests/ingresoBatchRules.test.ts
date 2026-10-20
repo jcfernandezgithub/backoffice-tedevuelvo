@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ingresoBlockers, parseIngresoCsv, runSequential } from './ingresoBatchRules'
+import { ingresoBlockers, parseIngresoCsv, runSequential } from '../src/pages/ProcesosMasivos/services/ingresoBatchRules'
 import type { RefundDocument, RefundRequest } from '@/types/refund'
 
 const refund = { status: 'docs_pending', calculationSnapshot: { nroPoliza: 'P1', nroCredito: 'C1', tipoSeguro: 'cesantia' }, cuotaActual: 120000 } as RefundRequest
