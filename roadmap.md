@@ -1,6 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Call Center
-- [ ] Excluir re-gestiones del conteo, primas, ticket y gráfico; probar la primera gestión histórica.
+- [x] Excluir re-gestiones del conteo, primas, ticket y gráfico; cinco pruebas aprobadas y regla verificada con datos reales del último cruce.
 
 ## Envío bancario
 - [x] Agregar pestaña, carga y revisión de solicitudes con validación del flujo individual.
