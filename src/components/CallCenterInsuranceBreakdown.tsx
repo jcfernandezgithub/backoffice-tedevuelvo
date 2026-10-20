@@ -1,6 +1,6 @@
 import { callCenterInsuranceBreakdown } from '@/lib/callCenterMetrics'
 import { Money } from '@/components/common/Money'
-import { ShieldCheck, BriefcaseBusiness, Layers, CircleHelp } from 'lucide-react'
+import { ShieldCheck, BriefcaseBusiness, Layers, CircleHelp, DollarSign, Receipt } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 type Groups = ReturnType<typeof callCenterInsuranceBreakdown>
@@ -13,35 +13,34 @@ export function CallCenterInsuranceBreakdown({ groups, total }: { groups: Groups
         <h3 className="text-sm font-semibold">Desglose por seguro</h3>
         <span className="text-xs text-muted-foreground">Primera gestión</span>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm" aria-label="Métricas Call Center por seguro">
-          <thead className="text-xs text-muted-foreground border-b border-border">
-            <tr>
-              <th className="py-3 pr-4 text-left font-medium">Seguro</th>
-              <th className="py-3 px-3 text-right font-medium">Gestionadas</th>
-              <th className="py-3 px-3 text-right font-medium whitespace-nowrap">Primas estimadas</th>
-              <th className="py-3 pl-3 text-right font-medium whitespace-nowrap">Ticket promedio</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="space-y-5">
             {groups.filter(group => group.count > 0 || ['desgravamen', 'cesantia'].includes(group.key)).map(group => {
               const Icon = icons[group.key as keyof typeof icons]
               return (
-                <tr key={group.key} className="border-b border-border/60 last:border-0 hover:bg-muted/40 transition-colors">
-                  <th scope="row" className="py-4 pr-4 text-left font-medium">
-                    <div className="flex items-center gap-2 whitespace-nowrap">
-                      <Icon className="h-4 w-4 text-primary shrink-0" />{group.label}
+                <section key={group.key} aria-label={`Métricas de ${group.label}`}>
+                    <div className="flex items-center gap-2 mb-2 text-sm font-medium">
+                      <Icon className="h-4 w-4 text-callcenter-foreground shrink-0" /><h4>{group.label}</h4>
+                      <span className="ml-auto text-xs font-normal text-muted-foreground">{total ? Math.round(group.count / total * 100) : 0}% de las gestionadas</span>
                       {group.key === 'ambos' && <Tooltip><TooltipTrigger asChild><CircleHelp aria-label="Criterio de ambos seguros" className="h-3.5 w-3.5 text-muted-foreground" tabIndex={0} /></TooltipTrigger><TooltipContent className="max-w-64">Solicitudes con ambos seguros, contadas una sola vez y con su prima registrada, sin duplicarlas en los otros grupos.</TooltipContent></Tooltip>}
                     </div>
-                  </th>
-                  <td className="py-4 px-3 text-right tabular-nums"><span className="font-semibold">{group.count.toLocaleString('es-CL')}</span><span className="text-xs text-muted-foreground ml-2">{total ? Math.round(group.count / total * 100) : 0}%</span></td>
-                  <td className="py-4 px-3 text-right font-semibold tabular-nums whitespace-nowrap"><Money value={group.premiums} /></td>
-                  <td className="py-4 pl-3 text-right tabular-nums whitespace-nowrap"><Money value={group.ticket} /></td>
-                </tr>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { label: 'Solicitudes gestionadas', value: group.count.toLocaleString('es-CL'), icon: Icon, large: true },
+                      { label: 'Total primas estimadas', value: <Money value={group.premiums} />, icon: DollarSign },
+                      { label: 'Ticket promedio', value: <Money value={group.ticket} />, icon: Receipt },
+                    ].map(metric => (
+                      <div key={metric.label} className="min-w-0 rounded-lg border border-callcenter-border bg-callcenter p-4">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs text-muted-foreground">{metric.label}</span>
+                          <metric.icon className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                        </div>
+                        <div className={`${metric.large ? 'text-2xl' : 'text-lg'} font-bold tabular-nums text-callcenter-foreground break-words`}>{metric.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
               )
             })}
-          </tbody>
-        </table>
       </div>
     </div>
   )

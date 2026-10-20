@@ -19,6 +19,11 @@ export default {
 		},
 		extend: {
 			colors: {
+				callcenter: {
+					DEFAULT: 'hsl(var(--callcenter))',
+					border: 'hsl(var(--callcenter-border))',
+					foreground: 'hsl(var(--callcenter-foreground))'
+				},
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

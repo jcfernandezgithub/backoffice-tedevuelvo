@@ -37,6 +37,9 @@ All colors MUST be HSL.
     --ring: 215 90% 45%;
 
     --radius: 0.6rem;
+    --callcenter: 166 76% 97%;
+    --callcenter-border: 168 84% 78%;
+    --callcenter-foreground: 175 77% 26%;
 
     --sidebar-background: 220 16% 98%;
     --sidebar-foreground: 220 15% 20%;
@@ -49,6 +52,9 @@ All colors MUST be HSL.
   }
 
   .dark {
+    --callcenter: 176 55% 10%;
+    --callcenter-border: 176 69% 22%;
+    --callcenter-foreground: 171 77% 64%;
     --background: 222.2 84% 5%;
     --foreground: 210 40% 98%;
 
