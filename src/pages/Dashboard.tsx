@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
+import { firstCallCenterManagementDate, firstManagedRefunds } from '@/lib/callCenterMetrics'
 import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -270,24 +271,9 @@ export default function Dashboard() {
       }, 0)
   }, [filteredRefunds])
 
-  // Call Center: solicitudes que transitaron a docs_received en el período (por statusHistory)
+  // Call Center: primera gestión histórica; no contabilizar re-gestiones.
   const callCenterRefunds = useMemo(() => {
-    if (!allRefunds.length) return []
-    return allRefunds.filter((r: any) => {
-      if (!r.statusHistory?.length) return false
-      if (r.status?.toLowerCase() === 'canceled') return false
-      return r.statusHistory.some((h: any) => {
-        const to = h.to?.toLowerCase()
-        if (to !== 'docs_received') return false
-        const from = h.from?.toLowerCase() || ''
-        if (from === to) return false
-        if (!h.at) return false
-        const transDate = h.at.split('T')[0]
-        if (desde && transDate < desde) return false
-        if (hasta && transDate > hasta) return false
-        return true
-      })
-    })
+    return firstManagedRefunds(allRefunds, desde, hasta)
   }, [allRefunds, desde, hasta])
 
   const callCenterCount = callCenterRefunds.length
@@ -360,19 +346,9 @@ export default function Dashboard() {
 
   const callCenterAggSeries = useMemo(() => {
     const map = new Map<string, number>()
-    for (const r of allRefunds) {
-      if (!r.statusHistory?.length) continue
-      // Omitir solicitudes en estado cancelado
-      if ((r as any).status?.toLowerCase() === 'canceled') continue
-      for (const h of r.statusHistory as any[]) {
-        const to = h.to?.toLowerCase()
-        if (to !== 'docs_received') continue
-        const from = h.from?.toLowerCase() || ''
-        if (from === to) continue
-        if (!h.at) continue
-        const transDate = h.at.split('T')[0]
-        if (desde && transDate < desde) continue
-        if (hasta && transDate > hasta) continue
+    for (const r of callCenterRefunds) {
+        const transDate = firstCallCenterManagementDate(r)
+        if (!transDate) continue
         let key = transDate
         if (agg === 'week') {
           const d = dayjs.tz(transDate)
@@ -380,8 +356,6 @@ export default function Dashboard() {
         }
         if (agg === 'month') key = dayjs.tz(transDate).format('YYYY-MM')
         map.set(key, (map.get(key) ?? 0) + 1)
-        break // contar solo la primera transición válida por solicitud por bucket
-      }
     }
     const toDate = (b: string) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
@@ -392,7 +366,7 @@ export default function Dashboard() {
       .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
       .sort((a, b) => a._s - b._s)
       .map(({ bucket, value }) => ({ bucket, value }))
-  }, [allRefunds, desde, hasta, agg])
+  }, [callCenterRefunds, agg])
 
   const pagosAggSeries = useMemo(() => {
     const map = new Map<string, number>()
@@ -580,7 +554,7 @@ export default function Dashboard() {
             icon={Headphones}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
-            tooltip="Solicitudes que transitaron a 'Docs. recibidos' en el período (excluye canceladas)."
+            tooltip="Solicitudes cuya primera gestión histórica en 'Docs. recibidos' ocurrió en el período. Excluye re-gestiones y canceladas."
             onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
@@ -589,7 +563,7 @@ export default function Dashboard() {
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
-            tooltip="Suma de las primas estimadas de las solicitudes gestionadas en el período: prima mensual nueva (newMonthlyPremium) × cuotas restantes (remainingInstallments) del snapshot de cálculo."
+            tooltip="Primas estimadas de las solicitudes gestionadas por primera vez en el período: prima mensual nueva × cuotas restantes del snapshot. Excluye re-gestiones y canceladas."
           />
           <SummaryKpi
             label="Ticket promedio"
