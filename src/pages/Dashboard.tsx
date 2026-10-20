@@ -589,7 +589,7 @@ export default function Dashboard() {
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
-            tooltip="Suma de la devolución estimada (estimatedAmountCLP) de las solicitudes gestionadas por Call Center en el período."
+            tooltip="Suma de las primas estimadas de las solicitudes gestionadas en el período: prima mensual nueva (newMonthlyPremium) × cuotas restantes (remainingInstallments) del snapshot de cálculo."
           />
           <SummaryKpi
             label="Ticket promedio"
@@ -597,7 +597,7 @@ export default function Dashboard() {
             icon={Receipt}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
-            tooltip="Promedio de la devolución estimada por solicitud gestionada por Call Center en el período."
+            tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
         </section>
         <section aria-label="Pipeline de solicitudes">
