@@ -1,6 +1,31 @@
 import Papa from 'papaparse'
+import type { RefundDocument, RefundRequest } from '@/types/refund'
 
 export interface IngresoCsvRow { lineNumber: number; refundId: string }
+
+export function ingresoBlockers(refund: RefundRequest, documents: RefundDocument[]): string[] {
+  const reasons: string[] = []
+  if (refund.status !== 'docs_pending') reasons.push('Solo admite Documentos pendientes.')
+  const required = [
+    { kinds: ['cedula-frente'], label: 'Cédula frontal' },
+    { kinds: ['cedula-trasera'], label: 'Cédula trasera' },
+    { kinds: ['signed-mandate'], label: 'Mandato firmado' },
+    { kinds: ['carta-de-corte', 'carta-de-corte-cesantia', 'carta-de-corte-desgravamen'], label: 'Carta de corte' },
+  ]
+  for (const requirement of required) {
+    if (!documents.some(doc => requirement.kinds.includes(doc.kind))) reasons.push(`Falta ${requirement.label}.`)
+  }
+  const snapshot = refund.calculationSnapshot || {}
+  if (!String(snapshot.nroPoliza ?? '').trim()) reasons.push('Falta Nº de póliza.')
+  if (!String(snapshot.nroCredito ?? '').trim()) reasons.push('Falta Nº de crédito.')
+  const insurance = String(snapshot.tipoSeguro || snapshot.insuranceToEvaluate || '').toLowerCase()
+  if (!insurance) reasons.push('Falta el tipo de seguro.')
+  if (/cesant|ambos|both/.test(insurance)) {
+    const cuota = Number(refund.cuotaActual ?? snapshot.cuotaActual ?? snapshot.valorCuota)
+    if (!Number.isFinite(cuota) || cuota <= 0) reasons.push('Falta valor cuota del crédito.')
+  }
+  return reasons
+}
 
 export function parseIngresoCsv(text: string): IngresoCsvRow[] {
   const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), { skipEmptyLines: 'greedy' })
