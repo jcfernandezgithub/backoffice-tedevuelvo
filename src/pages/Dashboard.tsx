@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { firstCallCenterManagementDate, firstManagedRefunds } from '@/lib/callCenterMetrics'
+import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown } from '@/lib/callCenterMetrics'
+import { CallCenterInsuranceBreakdown } from '@/components/CallCenterInsuranceBreakdown'
 import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -277,6 +278,7 @@ export default function Dashboard() {
   }, [allRefunds, desde, hasta])
 
   const callCenterCount = callCenterRefunds.length
+  const callCenterInsuranceGroups = useMemo(() => callCenterInsuranceBreakdown(callCenterRefunds), [callCenterRefunds])
 
   const callCenterTotalPrimas = useMemo(() => {
     return callCenterRefunds.reduce((sum: number, r: any) => {
@@ -573,6 +575,7 @@ export default function Dashboard() {
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
             tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
+          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} total={callCenterCount} />
         </section>
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
