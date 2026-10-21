@@ -2,6 +2,7 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 import type { RefundRequest } from '@/types/refund'
 import { ingresoBlockers, type IngresoCsvRow } from './ingresoBatchRules'
+import { batchStatusNote } from './batchStatusNote'
 
 export interface IngresoRow extends IngresoCsvRow {
   refund?: RefundRequest
@@ -29,7 +30,8 @@ export async function resolveIngresoRow(row: IngresoCsvRow): Promise<IngresoRow>
 }
 
 export async function submitIngresoRow(row: IngresoRow): Promise<RefundRequest> {
-  // Releer estado y requisitos justo antes de escribir: no forzar ni repetir envíos.
+  const note = batchStatusNote('Envío de Datos al Banco desde CSV')
+  // Releer estado y requisitos: forzar solo el retorno desde Ingresado, sin reintentos.
   const current = await resolveIngresoRow(row)
   if (current.reasons.length) throw new Error(current.reasons.join(' '))
   const refund = current.refund
@@ -43,7 +45,7 @@ export async function submitIngresoRow(row: IngresoRow): Promise<RefundRequest> 
   }
   return refundAdminApi.updateStatus(refund.publicId, {
     status: 'docs_received',
-    note: 'Proceso masivo de ingreso bancario desde CSV',
-    force: false,
+    note,
+    force: refund.status === 'submitted',
   })
 }

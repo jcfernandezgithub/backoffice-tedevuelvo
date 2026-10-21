@@ -6,6 +6,7 @@
 - [x] Excluir re-gestiones del conteo, primas, ticket y gráfico; cinco pruebas aprobadas y regla verificada con datos reales del último cruce.
 
 ## Envío bancario
+- [ ] Forzar Ingresado → Documentos recibidos y registrar proceso masivo y usuario en cada cambio masivo.
 - [x] Consultar el estado posterior al cambio y permitir actualizar resultados sin repetir el envío; cubrir transición diferida y estado intermedio con pruebas.
 - [x] Omitir validaciones con IA exclusivamente en Envío de Datos al Banco; nueve pruebas aprobadas, sin envíos bancarios reales.
 - [x] Agregar pestaña, carga y revisión de solicitudes con validación del flujo individual.

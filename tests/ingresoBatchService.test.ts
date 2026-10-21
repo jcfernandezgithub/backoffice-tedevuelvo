@@ -1,6 +1,8 @@
 import { afterEach, expect, spyOn, test } from 'bun:test'
 import { refundAdminApi } from '../src/services/refundAdminApi'
 import { aiImageValidationService } from '../src/services/aiImageValidationService'
+import { authService } from '../src/services/authService'
+import { beforeEach } from 'bun:test'
 import { submitIngresoRow, readIngresoCurrentState } from '../src/pages/ProcesosMasivos/services/ingresoBatchService'
 import type { RefundDocument, RefundRequest } from '../src/types/refund'
 
@@ -12,6 +14,11 @@ const documents = ['cedula-frente', 'cedula-trasera', 'signed-mandate', 'carta-d
   .map(kind => ({ kind }) as RefundDocument)
 const row = { lineNumber: 2, refundId: refund.publicId, reasons: [] }
 const spies: { mockRestore: () => void }[] = []
+beforeEach(() => {
+  spies.push(spyOn(authService, 'getCurrent').mockReturnValue({
+    id: 'executor-1', nombre: 'Usuario Ejecutor', email: 'ejecutor@example.cl', rol: 'ADMIN', activo: true,
+  }))
+})
 afterEach(() => { spies.splice(0).forEach(spy => spy.mockRestore()) })
 
 test('consulta el estado posterior y muestra ingresada sin repetir el cambio', async () => {
@@ -44,7 +51,7 @@ test('envío masivo omite IA aunque estén activadas ambas validaciones', async 
   expect(config).not.toHaveBeenCalled()
   expect(docs).toHaveBeenCalledTimes(1)
   expect(status).toHaveBeenCalledWith('bulk-request', {
-    status: 'docs_received', note: 'Proceso masivo de ingreso bancario desde CSV', force: false,
+    status: 'docs_received', note: 'Proceso masivo de cambio de estado — Envío de Datos al Banco desde CSV. Ejecutado por: Usuario Ejecutor (ejecutor@example.cl; ID: executor-1).', force: false,
   })
   expect(result.status).toBe('submitted')
 })
@@ -56,4 +63,16 @@ test('omitir IA no permite enviar sin documentos obligatorios', async () => {
   spies.push(get, docs, status)
   await expect(submitIngresoRow(row)).rejects.toThrow('Falta Cédula frontal.')
   expect(status).not.toHaveBeenCalled()
+})
+
+test('fuerza el retorno desde ingresada usando el estado recién consultado', async () => {
+  const get = spyOn(refundAdminApi, 'getById').mockResolvedValue({ ...refund, status: 'submitted' })
+  const docs = spyOn(refundAdminApi, 'listDocs').mockResolvedValue(documents)
+  const status = spyOn(refundAdminApi, 'updateStatus').mockResolvedValue({ ...refund, status: 'submitted' })
+  spies.push(get, docs, status)
+  await submitIngresoRow({ ...row, refund })
+  expect(status).toHaveBeenCalledWith('bulk-request', {
+    status: 'docs_received', force: true,
+    note: 'Proceso masivo de cambio de estado — Envío de Datos al Banco desde CSV. Ejecutado por: Usuario Ejecutor (ejecutor@example.cl; ID: executor-1).',
+  })
 })
