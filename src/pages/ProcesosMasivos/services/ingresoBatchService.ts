@@ -1,0 +1,51 @@
+import { refundAdminApi } from '@/services/refundAdminApi'
+import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
+import type { RefundRequest } from '@/types/refund'
+import { ingresoBlockers, type IngresoCsvRow } from './ingresoBatchRules'
+import { batchStatusNote } from './batchStatusNote'
+
+export interface IngresoRow extends IngresoCsvRow {
+  refund?: RefundRequest
+  reasons: string[]
+}
+
+// Solo lecturas: nunca repetir el cambio que activa el envío bancario.
+export async function readIngresoCurrentState(
+  id: string,
+  wait: () => Promise<void> = () => new Promise(resolve => setTimeout(resolve, 1500)),
+): Promise<RefundRequest> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await refundAdminApi.getById(id)
+    if (current.status !== 'docs_received' || attempt === 4) return current
+    await wait()
+  }
+  throw new Error('No se pudo consultar el estado actual.')
+}
+
+export async function resolveIngresoRow(row: IngresoCsvRow): Promise<IngresoRow> {
+  const refund = await refundAdminApi.getById(row.refundId)
+  if (!refund.publicId) throw new Error('La solicitud no tiene identificador público.')
+  const documents = await refundAdminApi.listDocs(getRefundDocumentsPublicId(refund))
+  return { ...row, refund, reasons: ingresoBlockers(refund, documents) }
+}
+
+export async function submitIngresoRow(row: IngresoRow): Promise<RefundRequest> {
+  const note = batchStatusNote('Envío de Datos al Banco desde CSV')
+  // Releer estado y requisitos: forzar solo el retorno desde Ingresado, sin reintentos.
+  const current = await resolveIngresoRow(row)
+  if (current.reasons.length) throw new Error(current.reasons.join(' '))
+  const refund = current.refund
+  if (!refund) throw new Error('No se encontró la solicitud.')
+  // Excepción del proceso masivo: conserva requisitos, pero no ejecuta IA.
+  const snapshot = refund.calculationSnapshot || {}
+  const insurance = String(snapshot.tipoSeguro || snapshot.insuranceToEvaluate || '').toLowerCase()
+  if (/cesant|ambos|both/.test(insurance)) {
+    const cuotaActual = Number(refund.cuotaActual ?? snapshot.cuotaActual ?? snapshot.valorCuota)
+    if (Number(refund.cuotaActual) !== cuotaActual) await refundAdminApi.updatePersonalInformation(refund.publicId, { cuotaActual })
+  }
+  return refundAdminApi.updateStatus(refund.publicId, {
+    status: 'docs_received',
+    note,
+    force: refund.status === 'submitted',
+  })
+}
