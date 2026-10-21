@@ -1,8 +1,29 @@
 # Welcome to your Lovable project
 
-## Versión 4.4.9
+## Versión 4.5.0
 
 ## Changelog
+
+### Versión 4.5.0 - 2026-10-21
+
+#### Envío de Datos al Banco desde CSV
+- Nueva pestaña en **Procesos Masivos** para cargar un CSV, revisar las solicitudes y confirmar el envío, mostrando nombre del cliente, RUT, entidad bancaria y estados con glosas en español.
+- Se consulta nuevamente el estado antes de ejecutar y se aceptan solicitudes en **Documentos pendientes** o **Ingresado**. Ambas pasan a **Documentos recibidos**, activando el flujo n8n que posteriormente las deja en **Ingresado**; desde Ingresado se fuerza el cambio.
+- Este proceso masivo omite las validaciones con IA de cédulas y documentos de crédito, manteniendo los demás requisitos documentales y del crédito, sin modificar las validaciones individuales.
+- Los cambios se ejecutan secuencialmente y se detienen ante errores inciertos, sin reintentos automáticos. La respuesta del cambio de estado no confirma la finalización de n8n ni garantiza que sus flujos no se solapen.
+- Los resultados consultan el estado actualizado con intentos limitados y permiten **Actualizar resultados** sin repetir el cambio de estado. Ver Ingresado no certifica que n8n haya finalizado.
+- Las observaciones de los cambios masivos, tanto de envío bancario como de pagos, identifican el proceso y al ejecutor (nombre, correo e ID); no se ejecutan sin un usuario identificado.
+
+#### Indicadores de Call Center
+- Se excluyen las re-gestiones: cada solicitud se cuenta únicamente en el período de su primera transición histórica válida a **Documentos recibidos**, ignorando auto-transiciones y solicitudes canceladas.
+- Solicitudes gestionadas, primas estimadas, ticket promedio y gráfico utilizan el mismo universo de primeras gestiones.
+- Nuevo desglose de los mismos indicadores por **Desgravamen** y **Cesantía**, presentado en calugas con la estética habitual, conservando los totales generales.
+- Los grupos **Ambos seguros** y **Sin tipo confirmado** se mantienen separados, sin duplicar solicitudes ni asignar primas de forma especulativa. La fórmula de primas sigue siendo prima mensual nueva × cuotas restantes del snapshot; no se sustituye por los importes de la planilla comercial.
+
+#### Nómina de devoluciones y versión
+- El selector de bancos utiliza el catálogo del servicio, con normalización de nombres y alias para mantener la compatibilidad con la generación existente de archivos.
+- Se corrigió la lectura de bancos que llegaban sin código SBIF, completándolo mediante el mapeo por nombre; los códigos aún no confirmados requieren validación antes de usarlos operativamente.
+- Se actualizó la versión visible del login a **4.5.0**.
 
 ### Versión 4.4.9 - 2026-10-16
 
