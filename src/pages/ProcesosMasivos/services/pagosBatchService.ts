@@ -1,5 +1,6 @@
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
+import { batchStatusNote } from './batchStatusNote'
 
 // ──────────────────────────────────────────────────────
 // Carga masiva de pagos: archivo "carga_tdv_*.csv" generado
@@ -219,7 +220,7 @@ export async function markRowAsPaid(row: ResolvedRow): Promise<PaidResult> {
     await refundAdminApi.updateStatus(target, {
       status: 'paid' as any,
       force: true,
-      note: MASSIVE_PAID_NOTE,
+      note: batchStatusNote('Pago de devoluciones desde CSV'),
       ...(row.monto > 0 ? { realAmount: Math.round(row.monto) } : {}),
     })
     return { ...base, status: 'success', reason: 'Estado actualizado a Pagada.' }
