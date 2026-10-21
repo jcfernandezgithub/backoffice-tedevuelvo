@@ -8,6 +8,19 @@ export interface IngresoRow extends IngresoCsvRow {
   reasons: string[]
 }
 
+// Solo lecturas: nunca repetir el cambio que activa el envío bancario.
+export async function readIngresoCurrentState(
+  id: string,
+  wait: () => Promise<void> = () => new Promise(resolve => setTimeout(resolve, 1500)),
+): Promise<RefundRequest> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const current = await refundAdminApi.getById(id)
+    if (current.status !== 'docs_received' || attempt === 4) return current
+    await wait()
+  }
+  throw new Error('No se pudo consultar el estado actual.')
+}
+
 export async function resolveIngresoRow(row: IngresoCsvRow): Promise<IngresoRow> {
   const refund = await refundAdminApi.getById(row.refundId)
   if (!refund.publicId) throw new Error('La solicitud no tiene identificador público.')
