@@ -1,13 +1,20 @@
 import { describe, expect, test } from 'bun:test'
-import { ingresoBlockers, parseIngresoCsv, runSequential } from '../src/pages/ProcesosMasivos/services/ingresoBatchRules'
+import { ingresoBlockers, ingresoStatusLabel, parseIngresoCsv, runSequential } from '../src/pages/ProcesosMasivos/services/ingresoBatchRules'
 import type { RefundDocument, RefundRequest } from '@/types/refund'
 
 const refund = { status: 'docs_pending', calculationSnapshot: { nroPoliza: 'P1', nroCredito: 'C1', tipoSeguro: 'cesantia' }, cuotaActual: 120000 } as RefundRequest
 const docs = ['cedula-frente', 'cedula-trasera', 'signed-mandate', 'carta-de-corte-cesantia'].map(kind => ({ kind }) as RefundDocument)
 describe('Ingreso bancario masivo', () => {
-  test('solo acepta el estado origen Documentos pendientes', () => {
+  test('acepta Documentos pendientes e Ingresado como estado origen', () => {
     expect(ingresoBlockers(refund, docs)).toEqual([])
-    expect(ingresoBlockers({ ...refund, status: 'submitted' }, docs)).toContain('Solo admite Documentos pendientes.')
+    expect(ingresoBlockers({ ...refund, status: 'submitted' }, docs)).toEqual([])
+    expect(ingresoBlockers({ ...refund, status: 'paid' }, docs)).toContain('Solo admite Documentos pendientes o Ingresado.')
+  })
+  test('muestra los estados con glosa en español', () => {
+    expect(ingresoStatusLabel('docs_pending')).toBe('Documentos pendientes')
+    expect(ingresoStatusLabel('docs_received')).toBe('Documentos recibidos')
+    expect(ingresoStatusLabel('submitted')).toBe('Ingresado')
+    expect(ingresoStatusLabel('paid')).toBe('paid')
   })
   test('requiere todos los documentos del cambio individual', () => {
     for (const doc of docs) expect(ingresoBlockers(refund, docs.filter(item => item !== doc)).length).toBe(1)
