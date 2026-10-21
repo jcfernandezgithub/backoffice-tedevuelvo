@@ -6,7 +6,7 @@
 - [x] Excluir re-gestiones del conteo, primas, ticket y gráfico; cinco pruebas aprobadas y regla verificada con datos reales del último cruce.
 
 ## Envío bancario
-- [ ] Omitir validaciones con IA exclusivamente en Envío de Datos al Banco y comprobar que se conservan los demás requisitos.
+- [x] Omitir validaciones con IA exclusivamente en Envío de Datos al Banco; nueve pruebas aprobadas, sin envíos bancarios reales.
 - [x] Agregar pestaña, carga y revisión de solicitudes con validación del flujo individual.
 - [x] Ejecutar cambios a Documentos recibidos secuencialmente, con confirmación y resultados sin reintentos automáticos.
 - [x] Probar reglas y verificar la pantalla con respuestas simuladas; distinguir cambio de estado de finalización bancaria.
