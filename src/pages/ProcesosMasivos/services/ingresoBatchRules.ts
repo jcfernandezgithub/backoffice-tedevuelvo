@@ -3,9 +3,16 @@ import type { RefundDocument, RefundRequest } from '@/types/refund'
 
 export interface IngresoCsvRow { lineNumber: number; refundId: string }
 
+const ingresoStatusLabels: Record<string, string> = {
+  docs_pending: 'Documentos pendientes',
+  docs_received: 'Documentos recibidos',
+  submitted: 'Ingresado',
+}
+export const ingresoStatusLabel = (status: string) => ingresoStatusLabels[status] ?? status
+
 export function ingresoBlockers(refund: RefundRequest, documents: RefundDocument[]): string[] {
   const reasons: string[] = []
-  if (refund.status !== 'docs_pending') reasons.push('Solo admite Documentos pendientes.')
+  if (refund.status !== 'docs_pending' && refund.status !== 'submitted') reasons.push('Solo admite Documentos pendientes o Ingresado.')
   const required = [
     { kinds: ['cedula-frente'], label: 'Cédula frontal' },
     { kinds: ['cedula-trasera'], label: 'Cédula trasera' },
