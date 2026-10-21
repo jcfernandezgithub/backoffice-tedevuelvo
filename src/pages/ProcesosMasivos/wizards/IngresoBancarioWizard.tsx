@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Upload, Play, Download, Loader2, ExternalLink, AlertTriangle } from 'lucide-react'
+import { Upload, Play, Download, Loader2, ExternalLink, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
@@ -10,10 +10,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog'
 import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import { parseIngresoCsv, runSequential } from '../services/ingresoBatchRules'
-import { resolveIngresoRow, submitIngresoRow, type IngresoRow } from '../services/ingresoBatchService'
+import { resolveIngresoRow, submitIngresoRow, readIngresoCurrentState, type IngresoRow } from '../services/ingresoBatchService'
 
 type Result = { row: IngresoRow; state: string; detail: string }
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'No se pudo completar la operación.'
+function currentResult(row: IngresoRow, updated: NonNullable<IngresoRow['refund']>): Result {
+  const known = updated.status === 'submitted' || updated.status === 'docs_received'
+  return {
+    row: { ...row, refund: updated },
+    state: updated.status === 'submitted' ? 'Ingresada' : known ? 'Documentos recibidos' : 'Por verificar',
+    detail: updated.status === 'submitted'
+      ? 'Estado actual confirmado: Ingresada. Esta consulta no verifica la finalización de n8n.'
+      : known ? 'Cambio confirmado. Aún figura en Documentos recibidos; el paso a Ingresada está pendiente. Actualiza el resultado para verificarlo.'
+      : `Estado actual: ${updated.status}. Revisar antes de repetir el envío.`,
+  }
+}
 
 export default function IngresoBancarioWizard({ onBusyChange }: { onBusyChange: (busy: boolean) => void }) {
   const queryClient = useQueryClient()
@@ -28,6 +39,7 @@ export default function IngresoBancarioWizard({ onBusyChange }: { onBusyChange: 
   const [results, setResults] = useState<Result[]>([])
   const [progress, setProgress] = useState(0)
   const [confirm, setConfirm] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const eligible = useMemo(() => rows.filter(row => row.reasons.length === 0), [rows])
   const selectedRows = eligible.filter(row => selected.has(row.lineNumber))
   const busy = phase === 'validating' || phase === 'processing'
@@ -70,9 +82,10 @@ export default function IngresoBancarioWizard({ onBusyChange }: { onBusyChange: 
           return false
         }
         try {
-          const updated = await submitIngresoRow(row)
+          const response = await submitIngresoRow(row)
+          const updated = await readIngresoCurrentState(response.publicId || row.refundId)
           const known = updated.status === 'submitted' || updated.status === 'docs_received'
-          accumulated.push({ row, state: updated.status === 'submitted' ? 'Ingresada' : known ? 'Documentos recibidos' : 'Por verificar', detail: known ? 'Cambio de estado confirmado. Finalización del envío bancario no verificada.' : 'La respuesta no confirma el estado esperado. Revisar antes de repetir.' })
+          accumulated.push(currentResult(row, updated))
           return known
         } catch (err) {
           accumulated.push({ row, state: 'Por verificar', detail: `${errorMessage(err)} Revisar el estado y el envío bancario antes de repetir.` })
@@ -86,6 +99,23 @@ export default function IngresoBancarioWizard({ onBusyChange }: { onBusyChange: 
         accumulated.push(...remaining.map(row => ({ row, state: 'No ejecutada', detail: 'Cola detenida; no se realizó el cambio de estado.' })))
       })
     } finally { setResults([...accumulated]); setPhase('results'); lock.current = false; onBusyChange(false) }
+  }
+
+  async function refreshResults() {
+    if (lock.current) return
+    lock.current = true; setRefreshing(true); onBusyChange(true); setError('')
+    try {
+      const refreshed: Result[] = []
+      for (const result of results) {
+        if (result.state === 'No ejecutada') { refreshed.push(result); continue }
+        try {
+          refreshed.push(currentResult(result.row, await readIngresoCurrentState(result.row.refund?.publicId || result.row.refundId)))
+        } catch (err) {
+          refreshed.push({ ...result, state: 'Por verificar', detail: `No se pudo actualizar el estado: ${errorMessage(err)} No se repitió el envío.` })
+        }
+      }
+      setResults(refreshed)
+    } finally { lock.current = false; setRefreshing(false); onBusyChange(false) }
   }
 
   function download(text: string, name: string) {
@@ -126,7 +156,7 @@ export default function IngresoBancarioWizard({ onBusyChange }: { onBusyChange: 
       </Table></div>
     </>}
     {(phase === 'results' || (phase === 'processing' && results.length > 0)) && <>
-      {phase === 'results' && <div className="flex flex-wrap items-center gap-3"><h3 className="font-semibold">Resultado: {results.filter(result => ['Ingresada', 'Documentos recibidos'].includes(result.state)).length} cambios confirmados de {results.length}</h3><Button variant="outline" onClick={summary}><Download className="mr-2 h-4 w-4" />Descargar resumen</Button><Button variant="ghost" onClick={() => { setPhase('upload'); setResults([]); setError('') }}>Nuevo archivo</Button></div>}
+      {phase === 'results' && <div className="flex flex-wrap items-center gap-3"><h3 className="font-semibold">Resultado: {results.filter(result => ['Ingresada', 'Documentos recibidos'].includes(result.state)).length} cambios confirmados de {results.length}</h3><Button variant="outline" disabled={refreshing} onClick={() => void refreshResults()}><RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />{refreshing ? 'Consultando estados…' : 'Actualizar resultados'}</Button><Button variant="outline" disabled={refreshing} onClick={summary}><Download className="mr-2 h-4 w-4" />Descargar resumen</Button><Button variant="ghost" disabled={refreshing} onClick={() => { setPhase('upload'); setResults([]); setError('') }}>Nuevo archivo</Button></div>}
       <div className="border rounded-md max-h-[460px] overflow-auto"><Table><TableHeader className="sticky top-0 bg-background"><TableRow><TableHead>Cliente / Solicitud</TableHead><TableHead>RUT</TableHead><TableHead>Entidad bancaria</TableHead><TableHead>Resultado</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader><TableBody>{results.map(result => <TableRow key={result.row.lineNumber}><TableCell><p>{result.row.refund?.fullName || '—'}</p><p className="text-xs text-muted-foreground break-all">{result.row.refundId}</p></TableCell><TableCell className="whitespace-nowrap">{result.row.refund?.rut || '—'}</TableCell><TableCell className="min-w-[160px]">{result.row.refund?.institutionId ? getInstitutionDisplayName(result.row.refund.institutionId) : '—'}</TableCell><TableCell><Badge variant={result.state === 'Por verificar' ? 'destructive' : 'secondary'}>{result.state}</Badge></TableCell><TableCell className="text-sm max-w-md">{result.detail}</TableCell></TableRow>)}</TableBody></Table></div>
     </>}
     <AlertDialog open={confirm} onOpenChange={setConfirm}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirmar envío de datos al banco</AlertDialogTitle><AlertDialogDescription>Se cambiarán {selectedRows.length} solicitudes de Documentos pendientes a Documentos recibidos. Esto activa el envío bancario existente y el paso automático a Ingresada. No se garantiza que n8n termine antes del siguiente cambio. Si ocurre un error, se detendrá el resto sin reintentar.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void process()}>Confirmar y procesar</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>

@@ -1,7 +1,7 @@
 import { afterEach, expect, spyOn, test } from 'bun:test'
 import { refundAdminApi } from '../src/services/refundAdminApi'
 import { aiImageValidationService } from '../src/services/aiImageValidationService'
-import { submitIngresoRow } from '../src/pages/ProcesosMasivos/services/ingresoBatchService'
+import { submitIngresoRow, readIngresoCurrentState } from '../src/pages/ProcesosMasivos/services/ingresoBatchService'
 import type { RefundDocument, RefundRequest } from '../src/types/refund'
 
 const refund = {
@@ -13,6 +13,26 @@ const documents = ['cedula-frente', 'cedula-trasera', 'signed-mandate', 'carta-d
 const row = { lineNumber: 2, refundId: refund.publicId, reasons: [] }
 const spies: { mockRestore: () => void }[] = []
 afterEach(() => { spies.splice(0).forEach(spy => spy.mockRestore()) })
+
+test('consulta el estado posterior y muestra ingresada sin repetir el cambio', async () => {
+  const get = spyOn(refundAdminApi, 'getById')
+    .mockResolvedValueOnce({ ...refund, status: 'docs_received' })
+    .mockResolvedValueOnce({ ...refund, status: 'submitted' })
+  const status = spyOn(refundAdminApi, 'updateStatus').mockResolvedValue(refund)
+  spies.push(get, status)
+  const current = await readIngresoCurrentState(refund.publicId, async () => {})
+  expect(current.status).toBe('submitted')
+  expect(get).toHaveBeenCalledTimes(2)
+  expect(status).not.toHaveBeenCalled()
+})
+
+test('no inventa ingresada si el backend todavía devuelve documentos recibidos', async () => {
+  const get = spyOn(refundAdminApi, 'getById').mockResolvedValue({ ...refund, status: 'docs_received' })
+  spies.push(get)
+  const current = await readIngresoCurrentState(refund.publicId, async () => {})
+  expect(current.status).toBe('docs_received')
+  expect(get).toHaveBeenCalledTimes(5)
+})
 
 test('envío masivo omite IA aunque estén activadas ambas validaciones', async () => {
   const get = spyOn(refundAdminApi, 'getById').mockResolvedValue(refund)
