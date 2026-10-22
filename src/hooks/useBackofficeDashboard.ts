@@ -8,7 +8,7 @@ import { createDashboardClient, DashboardApiError, dashboardQueryKey, type Dashb
 
 const api = createDashboardClient({ apiBaseUrl: configuredApiBaseUrl, fetchAuthenticated: authenticatedFetch })
 
-export function useBackofficeDashboard(range: DashboardRange, granularity: DashboardGranularity, activeChart: DashboardChart) {
+export function useBackofficeDashboard(range: DashboardRange, granularity: DashboardGranularity, activeChart: DashboardChart, enabled = true) {
   const { user } = useAuth()
   const client = useQueryClient()
   const scope = user ? JSON.stringify([user.id, user.email, user.rol, [...(user.pages ?? [])].sort(), user.activo]) : null
@@ -21,8 +21,8 @@ export function useBackofficeDashboard(range: DashboardRange, granularity: Dashb
     retry: (count: number, error: Error) => count < 1 && (error instanceof DashboardApiError ? error.status === 503 : error instanceof TypeError),
     retryDelay: 1500,
   }
-  const options = <E extends DashboardEndpoint>(endpoint: E, enabled: boolean) => ({
-    ...shared, queryKey: dashboardQueryKey(scope, endpoint, range, granularity), enabled: allowed && enabled,
+  const options = <E extends DashboardEndpoint>(endpoint: E, chartEnabled: boolean) => ({
+    ...shared, queryKey: dashboardQueryKey(scope, endpoint, range, granularity), enabled: allowed && enabled && chartEnabled,
     queryFn: ({ signal }: { signal: AbortSignal }) => {
       if (!authService.getAccessToken()) throw new DashboardApiError(401, 'INVALID_OR_MISSING_TOKEN', 'Tu sesión no está disponible. Vuelve a iniciar sesión.')
       return api.get(endpoint, range, signal, granularity)
