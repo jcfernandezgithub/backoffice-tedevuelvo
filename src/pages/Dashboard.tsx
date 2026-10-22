@@ -247,7 +247,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {blocks.accessError && <div role="alert" className="border border-destructive/40 rounded-md p-4 text-sm">{blocks.accessError.code === 'USER_INACTIVE' ? 'Tu cuenta está inactiva y no tiene acceso al dashboard.' : 'No tienes acceso al dashboard. Revisa tu sesión o tus permisos.'}{blocks.accessError.requestId && <p className="text-xs text-muted-foreground mt-1">Referencia: {blocks.accessError.requestId}</p>}</div>}
+        {blocks.accessError && <div role="alert" className="border border-destructive/40 rounded-md p-4 text-sm">{blocks.accessError.code === 'USER_INACTIVE' ? 'Tu cuenta está inactiva y no tiene acceso al dashboard.' : blocks.accessError.status === 401 ? 'Tu sesión no está disponible. Vuelve a iniciar sesión.' : 'No tienes permiso para consultar el dashboard.'}{blocks.accessError.status === 401 && <Button variant="outline" size="sm" className="ml-2" onClick={() => navigate('/login')}>Iniciar sesión</Button>}{blocks.accessError.requestId && <p className="text-xs text-muted-foreground mt-1">Referencia: {blocks.accessError.requestId}</p>}</div>}
         {!blocks.allowed && !blocks.accessError && <p role="alert">No tienes permiso para consultar el dashboard.</p>}
         {blocks.allowed && <>
         {/* KPIs de resumen */}

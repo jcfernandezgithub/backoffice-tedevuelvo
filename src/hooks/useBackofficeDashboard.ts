@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/state/AuthContext'
 import { authenticatedFetch } from '@/services/apiClient'
+import { authService } from '@/services/authService'
 import { configuredApiBaseUrl } from '@/services/apiConfig'
 import { createDashboardClient, DashboardApiError, dashboardQueryKey, type DashboardChart, type DashboardEndpoint, type DashboardGranularity, type DashboardRange } from '@/services/backofficeDashboardApi'
 
@@ -22,7 +23,10 @@ export function useBackofficeDashboard(range: DashboardRange, granularity: Dashb
   }
   const options = <E extends DashboardEndpoint>(endpoint: E, enabled: boolean) => ({
     ...shared, queryKey: dashboardQueryKey(scope, endpoint, range, granularity), enabled: allowed && enabled,
-    queryFn: ({ signal }: { signal: AbortSignal }) => api.get(endpoint, range, signal, granularity),
+    queryFn: ({ signal }: { signal: AbortSignal }) => {
+      if (!authService.getAccessToken()) throw new DashboardApiError(401, 'INVALID_OR_MISSING_TOKEN', 'Tu sesión no está disponible. Vuelve a iniciar sesión.')
+      return api.get(endpoint, range, signal, granularity)
+    },
   })
   const summary = useQuery(options('summary', true))
   const callCenter = useQuery(options('call-center-summary', true))
