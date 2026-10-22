@@ -1,10 +1,11 @@
 import { Usuario, Rol } from "@/types/domain"
 import { load, save } from "./storage"
+import { legacyApiBaseUrl } from './apiConfig'
 
 const AUTH_KEY = "td_auth_user"
 const ACCESS_TOKEN_KEY = "td_access_token"
 const REFRESH_TOKEN_KEY = "td_refresh_token"
-const API_BASE_URL = "https://tedevuelvo-app-be.onrender.com/api/v1"
+const API_BASE_URL = legacyApiBaseUrl
 
 export type LoginResult = { user: Usuario }
 

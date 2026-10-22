@@ -1,6 +1,7 @@
 import { authService } from './authService'
+import { legacyApiBaseUrl } from './apiConfig'
 
-export const API_BASE_URL = "https://tedevuelvo-app-be.onrender.com/api/v1"
+export const API_BASE_URL = legacyApiBaseUrl
 
 /**
  * Fetch sin autenticación para endpoints públicos (lectura de
@@ -20,8 +21,8 @@ let isRefreshing = false
 let refreshPromise: Promise<void> | null = null
 
 async function refreshTokenIfNeeded(): Promise<void> {
-  if (isRefreshing) {
-    return refreshPromise!
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
   }
 
   isRefreshing = true
@@ -41,7 +42,8 @@ async function refreshTokenIfNeeded(): Promise<void> {
 
 export async function authenticatedFetch(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  baseUrl: string = API_BASE_URL
 ): Promise<Response> {
   const accessToken = authService.getAccessToken()
 
@@ -53,7 +55,7 @@ export async function authenticatedFetch(
   headers.set('Authorization', `Bearer ${accessToken}`)
   headers.set('Content-Type', 'application/json')
 
-  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  let response = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
   })
@@ -67,7 +69,7 @@ export async function authenticatedFetch(
       const newAccessToken = authService.getAccessToken()
       headers.set('Authorization', `Bearer ${newAccessToken}`)
       
-      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      response = await fetch(`${baseUrl}${endpoint}`, {
         ...options,
         headers,
       })

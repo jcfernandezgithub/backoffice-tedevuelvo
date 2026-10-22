@@ -1,25 +1,27 @@
-import { createContext, useContext, useEffect, useMemo, useState, useRef } from 'react'
+import { useContext, useEffect, useMemo, useState, useRef } from 'react'
 import { Usuario, Rol } from '@/types/domain'
 import { authService } from '@/services/authService'
+import { useQueryClient } from '@tanstack/react-query'
 
-interface AuthContextValue {
-  user: Usuario | null
-  login: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  hasRole: (...roles: Rol[]) => boolean
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { AuthContext, type AuthContextValue } from './authContextStore'
 
 // Verificar cada minuto si el token está por expirar; solo se refresca cuando falta poco.
 const REFRESH_CHECK_INTERVAL = 60 * 1000
 const MAX_REFRESH_FAILURES = 3
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<Usuario | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
   const failuresRef = useRef<number>(0)
+  const dashboardScope = user ? JSON.stringify([user.id, user.email, user.rol, user.activo, [...(user.pages ?? [])].sort()]) : null
+  useEffect(() => {
+    return () => {
+      void queryClient.cancelQueries({ queryKey: ['backoffice-dashboard'] })
+      queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
+    }
+  }, [queryClient, dashboardScope])
 
   // Configurar auto-refresh del token
   useEffect(() => {
@@ -100,6 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       startRefreshTimer()
     },
     async logout() {
+      await queryClient.cancelQueries({ queryKey: ['backoffice-dashboard'] })
+      queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
       }
