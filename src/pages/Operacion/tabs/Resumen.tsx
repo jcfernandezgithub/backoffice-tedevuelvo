@@ -349,9 +349,9 @@ export function TabResumen() {
                   backgroundSize: '28px 28px',
                 }} />
 
-                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between px-4 py-4 sm:px-6 gap-4 md:gap-6">
+                <div className="relative flex flex-col xl:flex-row xl:items-center xl:justify-between px-4 py-4 sm:px-6 gap-4 xl:gap-6">
                   {/* Header móvil: icono + título + número principal */}
-                  <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="flex items-center gap-3 w-full xl:w-auto">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
@@ -366,7 +366,7 @@ export function TabResumen() {
                     </div>
                     {/* Total visible en mobile al lado del título */}
                     <div
-                      className="md:hidden text-right flex-shrink-0 cursor-pointer"
+                      className="xl:hidden text-right flex-shrink-0 cursor-pointer"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-2xl leading-none tabular-nums">
@@ -377,9 +377,9 @@ export function TabResumen() {
                   </div>
 
                   {/* Lado derecho: desglose + número principal */}
-                  <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6 flex-wrap md:flex-nowrap w-full md:w-auto">
+                  <div className="flex items-center justify-between xl:justify-end gap-3 sm:gap-6 flex-wrap xl:flex-nowrap w-full xl:w-auto">
                     {/* Desglose compacto (visible siempre, adapta tamaño) */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 md:flex md:items-center gap-1.5 sm:gap-2 w-full md:w-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center gap-1.5 sm:gap-2 w-full xl:w-auto">
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
@@ -391,12 +391,12 @@ export function TabResumen() {
                           <span className="text-white/65 text-[10px] mt-0.5 whitespace-normal sm:whitespace-nowrap">{label}</span>
                         </div>
                       ))}
-                      <div className="hidden md:block w-px h-8 bg-white/25 mx-1" />
+                      <div className="hidden xl:block w-px h-8 bg-white/25 mx-1" />
                     </div>
 
                     {/* Total grande (sólo desktop; en mobile va al lado del título) */}
                     <div
-                      className="hidden md:block text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
+                      className="hidden xl:block text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">
@@ -1030,10 +1030,10 @@ export function TabResumen() {
               )}
             </div>
             <ToggleGroup type="single" value={chartType} onValueChange={(value) => value && setChartType(value as 'pie' | 'bar')}>
-              <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-8 w-8 p-0">
+              <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
                 <PieChartIcon className="h-4 w-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="bar" aria-label="Gráfico de barras" className="h-8 w-8 p-0">
+              <ToggleGroupItem value="bar" aria-label="Gráfico de barras" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
                 <BarChart3 className="h-4 w-4" />
               </ToggleGroupItem>
             </ToggleGroup>

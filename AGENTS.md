@@ -9,3 +9,4 @@
 - Bulk status services share an actor-attributed note builder using the current session and reject unidentified executors, so bank submissions and payments consistently record who initiated the batch without changing individual updates.
 - Bulk status writes are sequential and stop on uncertain failures without automatic retries, because the API response does not confirm n8n completion.
 - Bulk bank results read the current refund state with bounded read-only polling and manual refresh; the initial write response is not the final state and a SUBMITTED read does not certify n8n completion.
+- Shared app flex columns use min-w-0; wide tabs and tables scroll within their own containers so mobile layouts cannot widen the document.
