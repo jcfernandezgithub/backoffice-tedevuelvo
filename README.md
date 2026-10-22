@@ -18,7 +18,13 @@
 - Se excluyen las re-gestiones: cada solicitud se cuenta únicamente en el período de su primera transición histórica válida a **Documentos recibidos**, ignorando auto-transiciones y solicitudes canceladas.
 - Solicitudes gestionadas, primas estimadas, ticket promedio y gráfico utilizan el mismo universo de primeras gestiones.
 - Nuevo desglose de los mismos indicadores por **Desgravamen** y **Cesantía**, presentado en calugas con la estética habitual, conservando los totales generales.
-- Los grupos **Ambos seguros** y **Sin tipo confirmado** se mantienen separados, sin duplicar solicitudes ni asignar primas de forma especulativa. La fórmula de primas sigue siendo prima mensual nueva × cuotas restantes del snapshot; no se sustituye por los importes de la planilla comercial.
+- Los grupos **Ambos seguros** y **Sin tipo confirmado** se mantienen separados, sin duplicar solicitudes ni asignar primas de forma especulativa.
+
+#### Prima de póliza en los indicadores de Call Center
+- **Total primas estimadas**, **ticket promedio** y el desglose por seguro usan ahora la **Prima total calculada** guardada en cada solicitud (`newTotalPremium`), la misma cifra del detalle, en lugar de multiplicar prima mensual nueva × cuotas restantes.
+- Cuando una solicitud no tiene ese valor guardado, se conserva la fórmula anterior (prima mensual × cuotas restantes) para no dejar el indicador en cero.
+- El número de solicitudes gestionadas no cambia: sigue siendo el universo de primeras gestiones del período.
+- Se corrigió el aviso del indicador, que describía la fórmula antigua, y se dejó de mostrar una pantalla en blanco al cargar el dashboard.
 
 #### Nómina de devoluciones y versión
 - El selector de bancos utiliza el catálogo del servicio, con normalización de nombres y alias para mantener la compatibilidad con la generación existente de archivos.
