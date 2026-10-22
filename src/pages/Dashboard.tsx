@@ -450,6 +450,11 @@ export default function Dashboard() {
                       {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
                     </span>
                     <span className={`text-xs font-semibold ${colors.text}`}>{phaseTotal} solicitudes</span>
+                    {cmpSummary && phaseTotal != null && (
+                      <span className={`text-[11px] tabular-nums ${deltaToneClass(countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).tone)}`}>
+                        {countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).deltaLabel} vs {cmpSummary.phaseCounts[phase.id]}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -490,6 +495,11 @@ export default function Dashboard() {
                                 <div className="text-left min-w-0">
                                   <p className={`text-xs leading-none truncate ${isUrgentDocs ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>{stage.label}</p>
                                   <p className={`text-2xl font-bold leading-tight ${isUrgentDocs ? 'text-orange-700 dark:text-orange-300' : ''}`}>{count}</p>
+                                  {cmpGranularCounts && (
+                                    <p className={`text-[10px] tabular-nums ${deltaToneClass(countDelta(count, cmpGranularCounts[stage.key] ?? 0).tone)}`}>
+                                      {countDelta(count, cmpGranularCounts[stage.key] ?? 0).deltaLabel} vs {cmpGranularCounts[stage.key] ?? 0}
+                                    </p>
+                                  )}
                                   <p className={`text-[10px] truncate ${isUrgentDocs ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-muted-foreground/70'}`}>
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
