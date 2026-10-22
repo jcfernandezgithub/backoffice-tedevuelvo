@@ -192,7 +192,14 @@ export default function Dashboard() {
   const callCenterAggSeries = blocks.managed.data ? adaptCountSeries(blocks.managed.data) : []
   const pagosAggSeries = blocks.payments.data ? adaptPaymentSeries(blocks.payments.data) : []
   const pieData = blocks.distribution.data?.items.map((p, i) => ({ name: p.label, value: p.count, pct: p.percentage.toFixed(1), color: PIE_COLORS[i % PIE_COLORS.length] })) ?? []
-  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution].some(q => q.isFetching)
+  // Series alineadas con el período de comparación (misma granularidad, alineación por posición)
+  const cmpSolicitudesSeries = compare.requests.data ? adaptCountSeries(compare.requests.data) : []
+  const cmpCallCenterSeries = compare.managed.data ? adaptCountSeries(compare.managed.data) : []
+  const cmpPagosSeries = compare.payments.data ? adaptPaymentSeries(compare.payments.data) : []
+  const mergedSolicitudes = compareOn && compareRange ? mergeCountSeries(solicitudesAggSeries, cmpSolicitudesSeries) : null
+  const mergedCallCenter = compareOn && compareRange ? mergeCountSeries(callCenterAggSeries, cmpCallCenterSeries) : null
+  const mergedPagos = compareOn && compareRange ? mergePaymentSeries(pagosAggSeries, cmpPagosSeries) : null
+  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution, ...(compareOn ? [compare.summary, compare.callCenter, compare.requests, compare.managed, compare.payments, compare.distribution] : [])].some(q => q.isFetching)
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
