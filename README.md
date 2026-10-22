@@ -4,7 +4,7 @@
 
 ## Changelog
 
-### Versión 4.5.0 - 2026-10-21
+### Versión 4.5.0 - 2026-10-22
 
 #### Envío de Datos al Banco desde CSV
 - Nueva pestaña en **Procesos Masivos** para cargar un CSV, revisar las solicitudes y confirmar el envío, mostrando nombre del cliente, RUT, entidad bancaria y estados con glosas en español.
@@ -25,6 +25,32 @@
 - Cuando una solicitud no tiene ese valor guardado, se conserva la fórmula anterior (prima mensual × cuotas restantes) para no dejar el indicador en cero.
 - El número de solicitudes gestionadas no cambia: sigue siendo el universo de primeras gestiones del período.
 - Se corrigió el aviso del indicador, que describía la fórmula antigua, y se dejó de mostrar una pantalla en blanco al cargar el dashboard.
+
+#### Dashboard conectado a servicios agregados
+- El Dashboard ya no descarga todas las solicitudes para calcular en el navegador: consume seis servicios agregados (`summary`, `call-center-summary`, `requests-timeseries`, `call-center-timeseries`, `payments-timeseries` y `status-distribution`) con el rango de fechas seleccionado.
+- Cada bloque tiene su propio estado (cargando, error o sin datos) y se puede reintentar sin afectar a los demás; un fallo parcial ya no deja la pantalla en blanco.
+- Las consultas se guardan de forma aislada por usuario y permisos, endpoint, rango de fechas y granularidad. Al cambiar de sesión o perder el acceso, las consultas del Dashboard se cancelan y se retiran de la caché, sin afectar a Operación.
+- La respuesta de cada servicio se valida antes de usarla, y se conservan los totales, las participaciones por seguro y el orden de las series que entrega el backend, sin recalcularlos en el front.
+- El Dashboard exige que la URL de la API esté definida explícitamente en el entorno (`VITE_API_BASE_URL`); si falta, no cae en una URL silenciosa. Los servicios antiguos mantienen su valor heredado.
+- Se agregó `docs/backend/dashboard-integration-validation.md` con la validación de contratos realizada.
+
+#### Comparación de períodos en el Dashboard
+- Nuevo interruptor **Comparar períodos**, con dos modos: **Período anterior** (de la misma duración que el rango seleccionado) o **rango personalizado**.
+- La desviación se muestra en las calugas de resumen, en el pipeline y como series comparativas en los gráficos, con cifras grandes, flechas y colores para distinguirla de un vistazo.
+- El valor del período anterior queda separado del dato principal, que sigue siendo el protagonista de cada caluga.
+- Con el interruptor apagado no se muestra ninguna comparación ni desviación.
+- La comparación vuelve a consultar los mismos servicios con el segundo rango, por lo que no requiere cambios de backend.
+
+#### Vista móvil de Dashboard y Operación
+- Fechas, filtros, pestañas y botones con área táctil amplia en móvil; los filtros rápidos y las pestañas se desplazan dentro de su propio contenedor sin ensanchar la página.
+- Las calugas de resumen pasan a una sola columna en los anchos más estrechos, el pipeline se apila verticalmente y los gráficos y reportes usan márgenes reducidos.
+- En la barra superior, el nombre y el rol se ajustan sin cortarse y la campana y el botón **Salir** mantienen su tamaño; el título del sitio se oculta en pantallas chicas.
+- Las columnas de la aplicación permiten reducirse y las tablas anchas se desplazan dentro de su tarjeta, de modo que ninguna vista móvil fuerza el ancho de la página.
+- La vista de escritorio conserva su distribución y los cálculos no cambian.
+
+#### Estabilidad de la sesión y etiqueta del menú
+- La identidad de la sesión se mantiene en un almacén independiente (`src/state/authContextStore.ts`) para que las actualizaciones del entorno en caliente no desmonten a los consumidores del contexto y el usuario conserve la sesión al refrescar un módulo.
+- Se retiró el distintivo **"En desarrollo"** del ítem **Dashboard** en el menú lateral; el menú ya no muestra esa etiqueta.
 
 #### Nómina de devoluciones y versión
 - El selector de bancos utiliza el catálogo del servicio, con normalización de nombres y alias para mantener la compatibilidad con la generación existente de archivos.
