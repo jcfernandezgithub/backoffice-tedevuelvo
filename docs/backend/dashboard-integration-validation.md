@@ -30,6 +30,8 @@ Pruebas locales: fechas sin conversión, limpiar/abrir rangos, granularidad solo
 
 No se modificó `useAllRefunds`, `dashboardService`, `callCenterMetrics`, ni los archivos de Operación. Dashboard ya no los consume ni realiza lecturas de mandatos por registro.
 
+Resultado local: **22 pruebas aprobadas**, compilación correcta. En navegador se comprobó que una sesión no disponible retira las métricas y ofrece volver al login; el botón lleva a `/login`, sin errores de ejecución. Este recorrido no valida los gráficos con datos reales ni el acceso autenticado a Operación.
+
 ## Validación real y límites
 
 El 22 de octubre de 2026 UTC, una consulta pública a las seis rutas respondió **404** en la URL indicada. Esto no acredita su disponibilidad con una sesión autorizada. La renovación de la sesión de prueba previamente disponible respondió **401**; no se inventaron credenciales ni se reusó una contraseña.

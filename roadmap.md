@@ -1,9 +1,11 @@
 # Envío de Datos al Banco desde CSV
 ## Integración Dashboard
 - [x] Entregar directiva al backend para conservar newTotalPremium y actualizar contrato y pruebas.
-- [ ] Conectar los seis servicios agregados conservando diseño, navegación y prima total calculada.
-- [ ] Incorporar consultas por sesión y bloque, cancelación, errores y actualización independiente.
-- [ ] Probar contrato y navegación; verificar disponibilidad real y conservar Operación sin cambios.
+- [x] Implementar cliente y presentación de los seis servicios sin recalcular primas; conservar diseño y navegación.
+- [x] Incorporar consultas por sesión y bloque, cancelación, errores y actualización independiente.
+- [x] Ejecutar 22 pruebas de contrato/regresión y verificar aviso de sesión vencida y regreso al login; compilación correcta, sin cambios en fuentes de Operación.
+- [ ] Verificar seis servicios con sesión válida, pestañas, filtros y Operación en vivo: rutas públicas responden 404 y la sesión anterior no renueva (401).
+- [ ] Confirmar prima total calculada en backend desplegado: PDF mantiene fórmula anterior; se entregó directiva, pendiente respuesta del equipo backend.
 
 ## Call Center
 - [x] Presentar el desglose por seguro con calugas alineadas a los indicadores actuales, sin modificar los cálculos.
