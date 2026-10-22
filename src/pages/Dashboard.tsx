@@ -151,8 +151,10 @@ export default function Dashboard() {
     return null
   }, [compareOn, compareMode, desde, hasta, cmpDesde, cmpHasta])
   const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, compareOn && Boolean(compareRange))
-  const cmpSummary = compare.summary.data
-  const cmpCallCenter = compare.callCenter.data
+  // Sin comparación activa las calugas muestran solo el valor del período principal, sin desviación.
+  const comparisonActive = compareOn && Boolean(compareRange)
+  const cmpSummary = comparisonActive ? compare.summary.data : undefined
+  const cmpCallCenter = comparisonActive ? compare.callCenter.data : undefined
   const cmpGranularCounts = cmpSummary ? Object.fromEntries(Object.entries(cmpSummary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : undefined
   const cmpInsuranceGroups = cmpCallCenter ? adaptInsuranceGroups(cmpCallCenter) : []
   const summary = blocks.accessError ? undefined : blocks.summary.data
