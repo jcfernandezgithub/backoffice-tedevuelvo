@@ -598,17 +598,18 @@ export default function Dashboard() {
                 <TabsContent value="solicitudes" className="mt-4">
                   <DashboardBlock query={blocks.requests}>
                   <div className="h-64">
-                    {solicitudesAggSeries.length > 0 ? (
+                    {(mergedSolicitudes ?? solicitudesAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={solicitudesAggSeries} barSize={14}>
+                        <BarChart data={mergedSolicitudes ?? solicitudesAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} solicitudes`, 'Cantidad']}
+                            formatter={(v: number, name: string) => [`${v} solicitudes`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedSolicitudes && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -616,23 +617,27 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedSolicitudes && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="callcenter" className="mt-4">
                   <DashboardBlock query={blocks.managed}>
                   <div className="h-64">
-                    {callCenterAggSeries.length > 0 ? (
+                    {(mergedCallCenter ?? callCenterAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={callCenterAggSeries} barSize={14}>
+                        <BarChart data={mergedCallCenter ?? callCenterAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} gestiones`, 'Call Center']}
+                            formatter={(v: number, name: string) => [`${v} gestiones`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedCallCenter && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(172,66%,50%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -640,22 +645,26 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedCallCenter && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="pagos" className="mt-4">
                   <DashboardBlock query={blocks.payments}>
                   <div className="h-64">
-                    {pagosAggSeries.length > 0 ? (
+                    {(mergedPagos ?? pagosAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={pagosAggSeries} barSize={14}>
+                        <BarChart data={mergedPagos ?? pagosAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
                           <RechartsTooltip
-                            formatter={(v: number) => [fmtCLP(v), 'Monto']}
+                            formatter={(v: number, name: string) => [fmtCLP(v), name === 'compareMonto' ? 'Comparación' : 'Actual']}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedPagos && <Bar dataKey="compareMonto" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="monto" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -663,11 +672,22 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedPagos && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="distribucion" className="mt-4">
                   <DashboardBlock query={blocks.distribution}>
+                  {compareOn && compareRange && blocks.distribution.data && compare.distribution.data && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Período de comparación: {compare.distribution.data.totalRequests.toLocaleString('es-CL')} solicitudes{' '}
+                      <span className={`tabular-nums ${deltaToneClass(countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).tone)}`}>
+                        ({countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).deltaLabel})
+                      </span>
+                    </p>
+                  )}
                   <div className="h-64">
                     {pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
