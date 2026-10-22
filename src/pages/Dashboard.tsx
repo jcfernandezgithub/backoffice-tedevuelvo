@@ -223,7 +223,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
           </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => blocks.refresh()}>Actualizar</Button>
+          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
         </header>
 
         {/* Filtros de fecha */}
