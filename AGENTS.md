@@ -1,4 +1,5 @@
 # Architecture rules
+- Auth context identity lives in a component-free store and survives Vite hot updates, so refreshed route consumers never detach from the mounted provider.
 - Dashboard consumes only the six aggregated backoffice-dashboard endpoints; metric rules belong to the backend, while shared legacy selectors remain for other consumers.
 - Dashboard queries are isolated by identity, permissions, endpoint, date range and series granularity; auth transitions and access denial cancel and remove only dashboard queries to prevent protected cache leakage without changing Operación.
 - Dashboard adapters preserve backend totals, insurance tickets/shares and final series order/buckets; per-block query states distinguish failures from valid empty results.

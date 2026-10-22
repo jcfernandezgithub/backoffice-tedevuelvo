@@ -1,16 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState, useRef } from 'react'
+import { useContext, useEffect, useMemo, useState, useRef } from 'react'
 import { Usuario, Rol } from '@/types/domain'
 import { authService } from '@/services/authService'
 import { useQueryClient } from '@tanstack/react-query'
 
-interface AuthContextValue {
-  user: Usuario | null
-  login: (email: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  hasRole: (...roles: Rol[]) => boolean
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { AuthContext, type AuthContextValue } from './authContextStore'
 
 // Verificar cada minuto si el token está por expirar; solo se refresca cuando falta poco.
 const REFRESH_CHECK_INTERVAL = 60 * 1000
