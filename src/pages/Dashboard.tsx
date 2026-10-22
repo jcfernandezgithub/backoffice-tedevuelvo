@@ -16,8 +16,12 @@ import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
   FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
-  DollarSign, Receipt,
+  DollarSign, Receipt, ArrowLeftRight,
 } from 'lucide-react'
+import {
+  previousRange, formatRange, countDelta, moneyDelta, rateDelta, deltaToneClass,
+  mergeCountSeries, mergePaymentSeries, type DeltaInfo,
+} from '@/lib/dashboardComparison'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -133,7 +137,23 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<DashboardGranularity>('day')
   const [activeChart, setActiveChart] = useState<DashboardChart>('solicitudes')
+  const [compareOn, setCompareOn] = useState(false)
+  const [compareMode, setCompareMode] = useState<'anterior' | 'custom'>('anterior')
+  const [cmpDesde, setCmpDesde] = useState('')
+  const [cmpHasta, setCmpHasta] = useState('')
   const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
+  // Período de comparación: mismo servicio consultado con el otro rango.
+  const compareRange = useMemo(() => {
+    if (!compareOn) return null
+    if (compareMode === 'anterior') return previousRange(desde, hasta)
+    if (cmpDesde && cmpHasta && cmpDesde <= cmpHasta) return { from: cmpDesde, to: cmpHasta }
+    return null
+  }, [compareOn, compareMode, desde, hasta, cmpDesde, cmpHasta])
+  const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, compareOn && Boolean(compareRange))
+  const cmpSummary = compare.summary.data
+  const cmpCallCenter = compare.callCenter.data
+  const cmpGranularCounts = cmpSummary ? Object.fromEntries(Object.entries(cmpSummary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : undefined
+  const cmpInsuranceGroups = cmpCallCenter ? adaptInsuranceGroups(cmpCallCenter) : []
   const summary = blocks.accessError ? undefined : blocks.summary.data
   const callCenter = blocks.accessError ? undefined : blocks.callCenter.data
   // Presentation adapters only: all metric rules and rounded values come from the API.
@@ -172,7 +192,14 @@ export default function Dashboard() {
   const callCenterAggSeries = blocks.managed.data ? adaptCountSeries(blocks.managed.data) : []
   const pagosAggSeries = blocks.payments.data ? adaptPaymentSeries(blocks.payments.data) : []
   const pieData = blocks.distribution.data?.items.map((p, i) => ({ name: p.label, value: p.count, pct: p.percentage.toFixed(1), color: PIE_COLORS[i % PIE_COLORS.length] })) ?? []
-  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution].some(q => q.isFetching)
+  // Series alineadas con el período de comparación (misma granularidad, alineación por posición)
+  const cmpSolicitudesSeries = compare.requests.data ? adaptCountSeries(compare.requests.data) : []
+  const cmpCallCenterSeries = compare.managed.data ? adaptCountSeries(compare.managed.data) : []
+  const cmpPagosSeries = compare.payments.data ? adaptPaymentSeries(compare.payments.data) : []
+  const mergedSolicitudes = compareOn && compareRange ? mergeCountSeries(solicitudesAggSeries, cmpSolicitudesSeries) : null
+  const mergedCallCenter = compareOn && compareRange ? mergeCountSeries(callCenterAggSeries, cmpCallCenterSeries) : null
+  const mergedPagos = compareOn && compareRange ? mergePaymentSeries(pagosAggSeries, cmpPagosSeries) : null
+  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution, ...(compareOn ? [compare.summary, compare.callCenter, compare.requests, compare.managed, compare.payments, compare.distribution] : [])].some(q => q.isFetching)
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
@@ -196,7 +223,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
           </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => blocks.refresh()}>Actualizar</Button>
+          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
         </header>
 
         {/* Filtros de fecha */}
@@ -239,6 +266,64 @@ export default function Dashboard() {
               </div>
             </div>
 
+            <div className="border-t pt-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={compareOn ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs px-2 gap-1.5"
+                  onClick={() => setCompareOn(v => !v)}
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Comparar períodos
+                </Button>
+                {compareOn && (
+                  <div className="flex rounded-md border border-input overflow-hidden h-7">
+                    {([['anterior', 'Período anterior'], ['custom', 'Personalizado']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setCompareMode(key)}
+                        className={`px-2.5 text-xs transition-colors ${compareMode === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {compareOn && compareMode === 'anterior' && compareRange && (
+                  <Badge variant="secondary" className="h-7 flex items-center text-xs">{formatRange(compareRange.from, compareRange.to)}</Badge>
+                )}
+                {compareOn && compareMode === 'anterior' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Selecciona primero el período principal</span>
+                )}
+                {compareOn && compareMode === 'custom' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Elige ambas fechas del período de comparación</span>
+                )}
+              </div>
+              {compareOn && compareMode === 'custom' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar desde</label>
+                    <input
+                      type="date" value={cmpDesde} max={cmpHasta || undefined}
+                      onChange={e => setCmpDesde(e.target.value)}
+                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpDesde ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar hasta</label>
+                    <input
+                      type="date" value={cmpHasta} min={cmpDesde || undefined}
+                      onChange={e => setCmpHasta(e.target.value)}
+                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpHasta ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                </div>
+              )}
+              {compareOn && compareRange && (
+                <p className="text-xs text-muted-foreground">Las calugas y gráficos muestran la desviación contra <span className="font-medium text-foreground">{formatRange(compareRange.from, compareRange.to)}</span>.</p>
+              )}
+            </div>
+
             {(desde || hasta) && (
               <Button variant="outline" size="sm" onClick={() => { setDesde(''); setHasta('') }}>
                 Limpiar fechas
@@ -256,6 +341,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
+            comparison={cmpSummary && totalSolicitudes != null ? countDelta(totalSolicitudes, cmpSummary.totals.totalRequests) : undefined}
             icon={Users}
             className="border-border"
             tooltip="Suma de todas las solicitudes en el período seleccionado, en cualquier estado del flujo."
@@ -263,6 +349,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="En proceso"
             value={inProgressCount}
+            comparison={cmpSummary && inProgressCount != null ? countDelta(inProgressCount, cmpSummary.totals.inProgress) : undefined}
             icon={Clock}
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
@@ -271,6 +358,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Pagados"
             value={paidCount}
+            comparison={cmpSummary && paidCount != null ? countDelta(paidCount, cmpSummary.totals.paidRequests) : undefined}
             icon={CheckCircle2}
             className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
             valueClass="text-emerald-700 dark:text-emerald-300"
@@ -279,6 +367,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Tasa de éxito"
             value={`${conversionRate}%`}
+            comparison={cmpSummary && conversionRate != null ? rateDelta(conversionRate, cmpSummary.totals.successRatePct) : undefined}
             icon={TrendingUp}
             alert={conversionRate === 0}
             className={conversionRate === 0
@@ -291,6 +380,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Monto pagado"
             value={<Money value={totalPaidAmount} />}
+            comparison={cmpSummary ? moneyDelta(totalPaidAmount, cmpSummary.totals.totalPaidAmountCLP) : undefined}
             icon={Wallet}
             className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
@@ -311,6 +401,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Solicitudes gestionadas"
             value={callCenterCount}
+            comparison={cmpCallCenter && callCenterCount != null ? countDelta(callCenterCount, cmpCallCenter.totals.managedRequests) : undefined}
             icon={Headphones}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
@@ -320,6 +411,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Total primas estimadas"
             value={<Money value={callCenterTotalPrimas} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTotalPrimas, cmpCallCenter.totals.estimatedPremiumsCLP) : undefined}
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
@@ -328,12 +420,16 @@ export default function Dashboard() {
           <SummaryKpi
             label="Ticket promedio"
             value={<Money value={callCenterTicketPromedio} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTicketPromedio, cmpCallCenter.totals.averageTicketCLP) : undefined}
             icon={Receipt}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
             tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
-          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} />
+          <CallCenterInsuranceBreakdown
+            groups={callCenterInsuranceGroups}
+            comparison={cmpCallCenter ? Object.fromEntries(cmpInsuranceGroups.map(g => [g.key, { count: g.count, premiums: g.premiums, ticket: g.ticket }])) : undefined}
+          />
         </section>
         </DashboardBlock>
         <DashboardBlock query={blocks.summary}>
@@ -354,6 +450,11 @@ export default function Dashboard() {
                       {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
                     </span>
                     <span className={`text-xs font-semibold ${colors.text}`}>{phaseTotal} solicitudes</span>
+                    {cmpSummary && phaseTotal != null && (
+                      <span className={`text-[11px] tabular-nums ${deltaToneClass(countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).tone)}`}>
+                        {countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).deltaLabel} vs {cmpSummary.phaseCounts[phase.id]}
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -394,6 +495,11 @@ export default function Dashboard() {
                                 <div className="text-left min-w-0">
                                   <p className={`text-xs leading-none truncate ${isUrgentDocs ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>{stage.label}</p>
                                   <p className={`text-2xl font-bold leading-tight ${isUrgentDocs ? 'text-orange-700 dark:text-orange-300' : ''}`}>{count}</p>
+                                  {cmpGranularCounts && (
+                                    <p className={`text-[10px] tabular-nums ${deltaToneClass(countDelta(count, cmpGranularCounts[stage.key] ?? 0).tone)}`}>
+                                      {countDelta(count, cmpGranularCounts[stage.key] ?? 0).deltaLabel} vs {cmpGranularCounts[stage.key] ?? 0}
+                                    </p>
+                                  )}
                                   <p className={`text-[10px] truncate ${isUrgentDocs ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-muted-foreground/70'}`}>
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
@@ -492,17 +598,18 @@ export default function Dashboard() {
                 <TabsContent value="solicitudes" className="mt-4">
                   <DashboardBlock query={blocks.requests}>
                   <div className="h-64">
-                    {solicitudesAggSeries.length > 0 ? (
+                    {(mergedSolicitudes ?? solicitudesAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={solicitudesAggSeries} barSize={14}>
+                        <BarChart data={mergedSolicitudes ?? solicitudesAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} solicitudes`, 'Cantidad']}
+                            formatter={(v: number, name: string) => [`${v} solicitudes`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedSolicitudes && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -510,23 +617,27 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedSolicitudes && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="callcenter" className="mt-4">
                   <DashboardBlock query={blocks.managed}>
                   <div className="h-64">
-                    {callCenterAggSeries.length > 0 ? (
+                    {(mergedCallCenter ?? callCenterAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={callCenterAggSeries} barSize={14}>
+                        <BarChart data={mergedCallCenter ?? callCenterAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} gestiones`, 'Call Center']}
+                            formatter={(v: number, name: string) => [`${v} gestiones`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedCallCenter && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(172,66%,50%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -534,22 +645,26 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedCallCenter && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="pagos" className="mt-4">
                   <DashboardBlock query={blocks.payments}>
                   <div className="h-64">
-                    {pagosAggSeries.length > 0 ? (
+                    {(mergedPagos ?? pagosAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={pagosAggSeries} barSize={14}>
+                        <BarChart data={mergedPagos ?? pagosAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
                           <RechartsTooltip
-                            formatter={(v: number) => [fmtCLP(v), 'Monto']}
+                            formatter={(v: number, name: string) => [fmtCLP(v), name === 'compareMonto' ? 'Comparación' : 'Actual']}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedPagos && <Bar dataKey="compareMonto" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="monto" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -557,11 +672,22 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedPagos && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
                 </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="distribucion" className="mt-4">
                   <DashboardBlock query={blocks.distribution}>
+                  {compareOn && compareRange && blocks.distribution.data && compare.distribution.data && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Período de comparación: {compare.distribution.data.totalRequests.toLocaleString('es-CL')} solicitudes{' '}
+                      <span className={`tabular-nums ${deltaToneClass(countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).tone)}`}>
+                        ({countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).deltaLabel})
+                      </span>
+                    </p>
+                  )}
                   <div className="h-64">
                     {pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -620,7 +746,7 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick,
+  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick, comparison,
 }: {
   label: string
   value: number | string | React.ReactNode
@@ -630,6 +756,7 @@ function SummaryKpi({
   tooltip?: string
   alert?: boolean
   onClick?: () => void
+  comparison?: DeltaInfo
 }): React.ReactElement {
   const card = (
     <Card className={`border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
@@ -645,6 +772,12 @@ function SummaryKpi({
           <Icon className="h-4 w-4 text-muted-foreground/60" />
         </div>
         <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
+        {comparison && (
+          <p className="text-[11px] text-muted-foreground tabular-nums leading-tight">
+            vs {comparison.previousText}{' '}
+            <span className={deltaToneClass(comparison.tone)}>({comparison.deltaLabel})</span>
+          </p>
+        )}
         {alert && (
           <p className="text-[10px] text-red-500 font-medium">⚠ Sin conversiones en el período</p>
         )}
