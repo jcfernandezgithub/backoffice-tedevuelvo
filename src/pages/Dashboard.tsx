@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
 import { type Aggregation } from '@/services/dashboardService'
 import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown } from '@/lib/callCenterMetrics'
+import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown, callCenterPremium } from '@/lib/callCenterMetrics'
 import { CallCenterInsuranceBreakdown } from '@/components/CallCenterInsuranceBreakdown'
 import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -281,12 +281,7 @@ export default function Dashboard() {
   const callCenterInsuranceGroups = useMemo(() => callCenterInsuranceBreakdown(callCenterRefunds), [callCenterRefunds])
 
   const callCenterTotalPrimas = useMemo(() => {
-    return callCenterRefunds.reduce((sum: number, r: any) => {
-      const snap = r.calculationSnapshot || {}
-      const newPremium = snap.newMonthlyPremium || 0
-      const remaining = snap.remainingInstallments || 0
-      return sum + (newPremium * remaining)
-    }, 0)
+    return callCenterRefunds.reduce((sum: number, r: any) => sum + callCenterPremium(r.calculationSnapshot || {}), 0)
   }, [callCenterRefunds])
 
   const callCenterTicketPromedio = useMemo(() => {

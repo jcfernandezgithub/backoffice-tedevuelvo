@@ -26,7 +26,14 @@ export function firstManagedRefunds<T extends ManagedRefund>(refunds: T[], from?
 
 type InsuranceSnapshot = {
   insuranceToEvaluate?: string; insuranceType?: string; tipoSeguro?: string
-  newMonthlyPremium?: number; remainingInstallments?: number
+  newMonthlyPremium?: number; remainingInstallments?: number; newTotalPremium?: number
+}
+
+/** Stored "Prima total calculada"; falls back to monthly × remaining installments when absent. */
+export function callCenterPremium(snap: InsuranceSnapshot = {}): number {
+  const total = Number(snap.newTotalPremium)
+  if (Number.isFinite(total) && total > 0) return total
+  return (snap.newMonthlyPremium || 0) * (snap.remainingInstallments || 0)
 }
 export function callCenterInsuranceBreakdown(refunds: { calculationSnapshot?: InsuranceSnapshot }[]) {
   const groups = [
@@ -43,7 +50,7 @@ export function callCenterInsuranceBreakdown(refunds: { calculationSnapshot?: In
     const group = groups.find(item => item.key === key)
     if (!group) continue
     group.count++
-    group.premiums += (snap.newMonthlyPremium || 0) * (snap.remainingInstallments || 0)
+    group.premiums += callCenterPremium(snap)
   }
   return groups.map(group => ({ ...group, ticket: group.count ? Math.round(group.premiums / group.count) : 0 }))
 }
