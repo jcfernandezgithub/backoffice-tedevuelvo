@@ -1,6 +1,8 @@
 # Architecture rules
-- Dashboard Call Center KPIs and chart share the first-management selector in callCenterMetrics so historical re-gestions cannot diverge across metrics.
-- Call Center insurance breakdown uses exclusive snapshot-type groups, retaining mixed and unknown groups separately to preserve overall counts and stored premiums without speculative allocation.
+- Dashboard consumes only the six aggregated backoffice-dashboard endpoints; metric rules belong to the backend, while shared legacy selectors remain for other consumers.
+- Dashboard queries are isolated by identity, permissions, endpoint, date range and series granularity; auth transitions and access denial cancel and remove only dashboard queries to prevent protected cache leakage without changing Operación.
+- Dashboard adapters preserve backend totals, insurance tickets/shares and final series order/buckets; per-block query states distinguish failures from valid empty results.
+- API clients and auth share an environment-configured API base URL; existing services keep their legacy default, but the dashboard requires an explicit environment value to prevent silent fallback.
 - Bulk bank submission uses the existing refund status API and separate CSV rules/wizard, keeping document prerequisites but no AI validation dependencies, to preserve the bank trigger without affecting individual validation; it accepts both docs_pending and submitted as source states, forces only the latter after re-reading state, and displays statuses with Spanish labels.
 - Bulk status services share an actor-attributed note builder using the current session and reject unidentified executors, so bank submissions and payments consistently record who initiated the batch without changing individual updates.
 - Bulk status writes are sequential and stop on uncertain failures without automatic retries, because the API response does not confirm n8n completion.

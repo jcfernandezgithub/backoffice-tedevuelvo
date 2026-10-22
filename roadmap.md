@@ -1,4 +1,10 @@
 # Envío de Datos al Banco desde CSV
+## Integración Dashboard
+- [x] Entregar directiva al backend para conservar newTotalPremium y actualizar contrato y pruebas.
+- [ ] Conectar los seis servicios agregados conservando diseño, navegación y prima total calculada.
+- [ ] Incorporar consultas por sesión y bloque, cancelación, errores y actualización independiente.
+- [ ] Probar contrato y navegación; verificar disponibilidad real y conservar Operación sin cambios.
+
 ## Call Center
 - [x] Presentar el desglose por seguro con calugas alineadas a los indicadores actuales, sin modificar los cálculos.
 - [x] Mantener totales y añadir desglose por seguro de gestionadas, primas y ticket; siete pruebas aprobadas y sumas verificadas con el último cruce real.

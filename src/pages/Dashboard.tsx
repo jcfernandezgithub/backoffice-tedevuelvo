@@ -1,15 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import { type Aggregation } from '@/services/dashboardService'
-import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown, callCenterPremium } from '@/lib/callCenterMetrics'
+import { useBackofficeDashboard } from '@/hooks/useBackofficeDashboard'
+import { DashboardBlock } from '@/components/DashboardBlock'
+import { adaptCountSeries, adaptPaymentSeries, adaptInsuranceGroups, type DashboardChart, type DashboardGranularity } from '@/services/backofficeDashboardApi'
 import { CallCenterInsuranceBreakdown } from '@/components/CallCenterInsuranceBreakdown'
-import { authService } from '@/services/authService'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Money } from '@/components/common/Money'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -23,16 +20,6 @@ import {
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import dayjs from 'dayjs'
-import isoWeek from 'dayjs/plugin/isoWeek'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-
-dayjs.extend(isoWeek)
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.tz.setDefault('America/Santiago')
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmtCLP = (v: number) =>
   v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
@@ -42,17 +29,6 @@ const toLocalDateString = (date: Date): string => {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
-}
-
-function filterByLocalDate(refunds: any[], desde?: string, hasta?: string): any[] {
-  if (!desde && !hasta) return refunds
-  return refunds.filter(r => {
-    if (!r.createdAt) return true
-    const dateStr = r.createdAt.split('T')[0]
-    if (desde && dateStr < desde) return false
-    if (hasta && dateStr > hasta) return false
-    return true
-  })
 }
 
 // ─── Definición de fases del flujo ──────────────────────────────────────────
@@ -146,23 +122,6 @@ const PIE_COLORS = [
   'hsl(0,72%,51%)',
 ]
 
-const PIE_LABELS: Record<string, string> = {
-  datos_sin_simulacion: 'Sin simulación',
-  simulated: 'Simulado',
-  requested: 'Solicitado',
-  qualifying: 'En calificación',
-  docs_pending: 'Docs. pendientes',
-  docs_received: 'Docs. recibidos',
-  submitted: 'Ingresado',
-  approved: 'Aprobado',
-  payment_scheduled: 'Pago programado',
-  paid: 'Pagado',
-  rejected: 'Rechazado',
-  canceled: 'Cancelado',
-}
-
-const API_BASE = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -172,128 +131,26 @@ export default function Dashboard() {
     return toLocalDateString(new Date(d.getFullYear(), d.getMonth(), 1))
   })
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
-  const [agg, setAgg] = useState<Aggregation>('day')
-
-  // Fuente de datos unificada (mismo caché que Operación).
-  // Enviamos las fechas filtradas (YYYY-MM-DD) al endpoint listV2 como since/to.
-  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds({
-    since: desde || undefined,
-    to: hasta || undefined,
-  })
-
-  // Filtrado por fecha (memoizado)
-  const filteredRefunds = useMemo(
-    () => filterByLocalDate(allRefunds, desde || undefined, hasta || undefined),
-    [allRefunds, desde, hasta]
-  )
-
-  // Conteos granulares por estado
-  const granularCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      datos_sin_simulacion: 0, simulated: 0, requested: 0,
-      qualifying: 0, docs_pending: 0, docs_received: 0,
-      submitted: 0, approved: 0, rejected: 0,
-      payment_scheduled: 0, paid: 0, canceled: 0,
-    }
-    for (const r of filteredRefunds) {
-      const s = r.status as string
-      if (s in counts) counts[s]++
-    }
-    return counts
-  }, [filteredRefunds])
-
-  // Sub-métricas: qualifying (mandatos)
-  const qualifyingRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'qualifying'),
-    [filteredRefunds]
-  )
-  const qualifyingPublicIds = useMemo(
-    () => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean),
-    [qualifyingRefunds]
-  )
-  const qualifyingIdsKey = useMemo(
-    () => [...qualifyingPublicIds].sort().join(','),
-    [qualifyingPublicIds]
-  )
-
-  // hasSignedPdf ya viene en cada refund desde listV2 — no se necesita un fetch por ítem.
-  const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {}
-    qualifyingRefunds.forEach((r: any) => {
-      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
-    })
-    return map
-  }, [qualifyingRefunds])
-  const isFetchingMandates = false
-
-  const qualifyingFirmados = useMemo(
-    () => qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
-    [qualifyingRefunds, mandateStatuses]
-  )
-  const qualifyingPendientes = useMemo(
-    () => qualifyingRefunds.filter((r: any) => !mandateStatuses?.[r.publicId]?.hasSignedPdf).length,
-    [qualifyingRefunds, mandateStatuses]
-  )
-
-  // Sub-métricas: payment_scheduled (datos bancarios)
-  const paymentScheduledRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'payment_scheduled'),
-    [filteredRefunds]
-  )
-  const paymentWithBank = useMemo(
-    () => paymentScheduledRefunds.filter((r: any) => r.bankInfo).length,
-    [paymentScheduledRefunds]
-  )
-  const paymentWithoutBank = useMemo(
-    () => paymentScheduledRefunds.filter((r: any) => !r.bankInfo).length,
-    [paymentScheduledRefunds]
-  )
-
-  // KPIs de resumen
-  const totalSolicitudes = useMemo(
-    () => Object.values(granularCounts).reduce((s, v) => s + v, 0),
-    [granularCounts]
-  )
-
-  const paidCount = granularCounts.paid
-  const inProgressCount = granularCounts.qualifying + granularCounts.docs_pending +
-    granularCounts.docs_received + granularCounts.submitted +
-    granularCounts.approved + granularCounts.payment_scheduled
-
-  const totalPaidAmount = useMemo(() => {
-    return filteredRefunds
-      .filter((r: any) => r.status === 'paid')
-      .reduce((sum: number, r: any) => {
-        const entry = r.statusHistory?.slice().reverse().find((h: any) => {
-          const to = h.to?.toLowerCase()
-          return (to === 'payment_scheduled' || to === 'paid') && h.realAmount
-        })
-        return sum + (entry?.realAmount || 0)
-      }, 0)
-  }, [filteredRefunds])
-
-  // Call Center: primera gestión histórica; no contabilizar re-gestiones.
-  const callCenterRefunds = useMemo(() => {
-    return firstManagedRefunds(allRefunds, desde, hasta)
-  }, [allRefunds, desde, hasta])
-
-  const callCenterCount = callCenterRefunds.length
-  const callCenterInsuranceGroups = useMemo(() => callCenterInsuranceBreakdown(callCenterRefunds), [callCenterRefunds])
-
-  const callCenterTotalPrimas = useMemo(() => {
-    return callCenterRefunds.reduce((sum: number, r: any) => sum + callCenterPremium(r.calculationSnapshot || {}), 0)
-  }, [callCenterRefunds])
-
-  const callCenterTicketPromedio = useMemo(() => {
-    if (!callCenterRefunds.length) return 0
-    return Math.round(callCenterTotalPrimas / callCenterRefunds.length)
-  }, [callCenterRefunds, callCenterTotalPrimas])
-
-  const conversionRate = useMemo(() => {
-    const base = totalSolicitudes - granularCounts.datos_sin_simulacion
-    if (!base) return 0
-    return Math.round((paidCount / base) * 100)
-  }, [paidCount, totalSolicitudes, granularCounts.datos_sin_simulacion])
+  const [agg, setAgg] = useState<DashboardGranularity>('day')
+  const [activeChart, setActiveChart] = useState<DashboardChart>('solicitudes')
+  const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
+  const summary = blocks.accessError ? undefined : blocks.summary.data
+  const callCenter = blocks.accessError ? undefined : blocks.callCenter.data
+  // Presentation adapters only: all metric rules and rounded values come from the API.
+  const granularCounts = summary ? Object.fromEntries(Object.entries(summary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : {}
+  const totalSolicitudes = summary?.totals.totalRequests
+  const paidCount = summary?.totals.paidRequests
+  const inProgressCount = summary?.totals.inProgress
+  const totalPaidAmount = summary?.totals.totalPaidAmountCLP ?? 0
+  const conversionRate = summary?.totals.successRatePct
+  const qualifyingFirmados = summary?.qualification.signedMandate
+  const qualifyingPendientes = summary?.qualification.pendingMandate
+  const paymentWithBank = summary?.scheduledPayment.withBankInfo ?? 0
+  const paymentWithoutBank = summary?.scheduledPayment.withoutBankInfo
+  const callCenterCount = callCenter?.totals.managedRequests
+  const callCenterTotalPrimas = callCenter?.totals.estimatedPremiumsCLP ?? 0
+  const callCenterTicketPromedio = callCenter?.totals.averageTicketCLP ?? 0
+  const callCenterInsuranceGroups = callCenter ? adaptInsuranceGroups(callCenter) : []
 
   // getActivePreset memoizado
   const activePreset = useMemo(() => {
@@ -311,124 +168,22 @@ export default function Dashboard() {
     return null
   }, [desde, hasta])
 
-  // Datos para gráficos
-  const paidRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'paid'),
-    [filteredRefunds]
-  )
-
-  const solicitudesAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of filteredRefunds) {
-      if (!r.createdAt) continue
-      const fecha = dayjs.tz(r.createdAt).format('YYYY-MM-DD')
-      let key = fecha
-      if (agg === 'week') {
-        const d = dayjs.tz(fecha)
-        key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-      }
-      if (agg === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
-      map.set(key, (map.get(key) ?? 0) + 1)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, value }) => ({ bucket, value }))
-  }, [filteredRefunds, agg])
-
-  const callCenterAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of callCenterRefunds) {
-        const transDate = firstCallCenterManagementDate(r)
-        if (!transDate) continue
-        let key = transDate
-        if (agg === 'week') {
-          const d = dayjs.tz(transDate)
-          key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-        }
-        if (agg === 'month') key = dayjs.tz(transDate).format('YYYY-MM')
-        map.set(key, (map.get(key) ?? 0) + 1)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, value }) => ({ bucket, value }))
-  }, [callCenterRefunds, agg])
-
-  const pagosAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of paidRefunds) {
-      if (!r.updatedAt) continue
-      const fecha = dayjs.tz(r.updatedAt).format('YYYY-MM-DD')
-      let key = fecha
-      if (agg === 'week') {
-        const d = dayjs.tz(fecha)
-        key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-      }
-      if (agg === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
-      const entry = r.statusHistory?.slice().reverse().find((h: any) => {
-        const to = h.to?.toLowerCase()
-        return (to === 'payment_scheduled' || to === 'paid') && h.realAmount
-      })
-      const monto = entry?.realAmount || r.estimatedAmountCLP || 0
-      map.set(key, (map.get(key) ?? 0) + monto)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, monto: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, monto }) => ({ bucket, monto }))
-  }, [paidRefunds, agg])
-
-  const pieData = useMemo(() => {
-    return Object.entries(granularCounts)
-      .filter(([, v]) => v > 0)
-      .map(([k, v], i) => ({
-        name: PIE_LABELS[k] ?? k,
-        value: v,
-        pct: totalSolicitudes > 0 ? ((v / totalSolicitudes) * 100).toFixed(1) : '0',
-        color: PIE_COLORS[i % PIE_COLORS.length],
-      }))
-  }, [granularCounts, totalSolicitudes])
-
-  const isRefreshing = isFetchingRefunds || isFetchingMandates
+  const solicitudesAggSeries = blocks.requests.data ? adaptCountSeries(blocks.requests.data) : []
+  const callCenterAggSeries = blocks.managed.data ? adaptCountSeries(blocks.managed.data) : []
+  const pagosAggSeries = blocks.payments.data ? adaptPaymentSeries(blocks.payments.data) : []
+  const pieData = blocks.distribution.data?.items.map((p, i) => ({ name: p.label, value: p.count, pct: p.percentage.toFixed(1), color: PIE_COLORS[i % PIE_COLORS.length] })) ?? []
+  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution].some(q => q.isFetching)
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
     p.set('status', refundStatus)
     p.set('autoSearch', 'true')
-    p.set('from', desde)
-    p.set('to', hasta)
+    if (desde) p.set('from', desde)
+    if (hasta) p.set('to', hasta)
     navigate(`/refunds?${p.toString()}`)
   }
 
   const applyDateRange = (d: string, h: string) => { setDesde(d); setHasta(h) }
-
-  if (isLoadingRefunds) {
-    return (
-      <main className="p-4 md:p-6 space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
-        </div>
-        <Skeleton className="h-64" />
-      </main>
-    )
-  }
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -441,6 +196,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
           </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => blocks.refresh()}>Actualizar</Button>
         </header>
 
         {/* Filtros de fecha */}
@@ -491,7 +247,11 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {blocks.accessError && <div role="alert" className="border border-destructive/40 rounded-md p-4 text-sm">{blocks.accessError.code === 'USER_INACTIVE' ? 'Tu cuenta está inactiva y no tiene acceso al dashboard.' : 'No tienes acceso al dashboard. Revisa tu sesión o tus permisos.'}{blocks.accessError.requestId && <p className="text-xs text-muted-foreground mt-1">Referencia: {blocks.accessError.requestId}</p>}</div>}
+        {!blocks.allowed && !blocks.accessError && <p role="alert">No tienes permiso para consultar el dashboard.</p>}
+        {blocks.allowed && <>
         {/* KPIs de resumen */}
+        <DashboardBlock query={blocks.summary} empty={totalSolicitudes === 0}>
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
@@ -514,7 +274,7 @@ export default function Dashboard() {
             icon={CheckCircle2}
             className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
             valueClass="text-emerald-700 dark:text-emerald-300"
-            tooltip="Solicitudes cuyo pago fue transferido exitosamente al cliente dentro del período seleccionado."
+            tooltip="Solicitudes actualmente pagadas, seleccionadas por fecha de creación; no por fecha de transferencia."
           />
           <SummaryKpi
             label="Tasa de éxito"
@@ -534,11 +294,14 @@ export default function Dashboard() {
             icon={Wallet}
             className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
-            tooltip="Suma del monto real pagado a clientes (campo realAmount del historial de estados). No es el monto estimado."
+            tooltip="Monto real del historial de solicitudes actualmente pagadas, filtradas por creación. Puede diferir del gráfico, que admite monto estimado cuando no hay monto real."
           />
         </section>
 
+        </DashboardBlock>
+
         {/* KPIs Call Center */}
+        <DashboardBlock query={blocks.callCenter} empty={callCenterCount === 0}>
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3" aria-label="Métricas Call Center">
           <div className="md:col-span-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -551,7 +314,7 @@ export default function Dashboard() {
             icon={Headphones}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
-            tooltip="Solicitudes cuya primera gestión histórica en 'Docs. recibidos' ocurrió en el período. Excluye re-gestiones y canceladas."
+            tooltip="Solicitudes cuya primera gestión histórica ocurrió en el período. Excluye re-gestiones y canceladas. El listado enlazado filtra por estado actual y fecha de creación; puede tener un universo distinto."
             onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
@@ -570,8 +333,10 @@ export default function Dashboard() {
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
             tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
-          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} total={callCenterCount} />
+          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} />
         </section>
+        </DashboardBlock>
+        <DashboardBlock query={blocks.summary}>
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
@@ -580,7 +345,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {PHASES.map((phase, phaseIdx) => {
               const colors = PHASE_COLORS[phase.color]
-              const phaseTotal = phase.stages.reduce((s, st) => s + (granularCounts?.[st.key] ?? 0), 0)
+              const phaseTotal = summary?.phaseCounts[phase.id]
 
               return (
                 <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-4`}>
@@ -633,7 +398,7 @@ export default function Dashboard() {
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {isQualifying && mandateStatuses && (
+                                  {isQualifying && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
@@ -692,6 +457,8 @@ export default function Dashboard() {
           </div>
         </section>
 
+        </DashboardBlock>
+
         {/* Gráficos */}
         <section>
           <Card>
@@ -714,7 +481,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-              <Tabs defaultValue="solicitudes">
+              <Tabs value={activeChart} onValueChange={value => setActiveChart(value as DashboardChart)}>
                 <TabsList className="grid w-full grid-cols-4 h-8 text-xs">
                   <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
                   <TabsTrigger value="callcenter" className="text-xs">Call Center</TabsTrigger>
@@ -723,6 +490,7 @@ export default function Dashboard() {
                 </TabsList>
 
                 <TabsContent value="solicitudes" className="mt-4">
+                  <DashboardBlock query={blocks.requests}>
                   <div className="h-64">
                     {solicitudesAggSeries.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -742,9 +510,11 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="callcenter" className="mt-4">
+                  <DashboardBlock query={blocks.managed}>
                   <div className="h-64">
                     {callCenterAggSeries.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -764,9 +534,11 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="pagos" className="mt-4">
+                  <DashboardBlock query={blocks.payments}>
                   <div className="h-64">
                     {pagosAggSeries.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -785,9 +557,11 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="distribucion" className="mt-4">
+                  <DashboardBlock query={blocks.distribution}>
                   <div className="h-64">
                     {pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -830,12 +604,14 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                </DashboardBlock>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
         </section>
 
+        </>}
       </main>
     </TooltipProvider>
   )
