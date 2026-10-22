@@ -16,8 +16,12 @@ import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
   FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
-  DollarSign, Receipt,
+  DollarSign, Receipt, ArrowLeftRight,
 } from 'lucide-react'
+import {
+  previousRange, formatRange, countDelta, moneyDelta, rateDelta, deltaToneClass,
+  mergeCountSeries, mergePaymentSeries, type DeltaInfo,
+} from '@/lib/dashboardComparison'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 // ─── helpers ────────────────────────────────────────────────────────────────
