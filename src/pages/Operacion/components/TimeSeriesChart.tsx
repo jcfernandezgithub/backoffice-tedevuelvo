@@ -295,9 +295,9 @@ export function TimeSeriesChart({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <Card className="min-w-0">
+      <CardHeader className="p-3 sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg">{title}</CardTitle>
           <Select value={granularidad} onValueChange={onGranularidadChange}>
             <SelectTrigger className="w-32">
@@ -311,7 +311,7 @@ export function TimeSeriesChart({
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2 pt-0 sm:p-6 sm:pt-0">
         {isLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-4 w-3/4" />

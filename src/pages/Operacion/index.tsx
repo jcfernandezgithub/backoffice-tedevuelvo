@@ -75,7 +75,7 @@ export default function Operacion() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-4 sm:p-6">
+    <div className="min-w-0 flex-1 space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -95,14 +95,14 @@ export default function Operacion() {
         <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
-              <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6 md:max-w-4xl">
+              <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-6 md:max-w-4xl h-auto md:h-10">
                 {tabs.map((tab) => {
                   const trigger = (
                     <TabsTrigger
                       value={tab.value}
                       disabled={tab.disabled}
                       className={cn(
-                        'whitespace-nowrap gap-1.5 w-full h-full',
+                        'whitespace-nowrap gap-1.5 w-auto md:w-full min-h-11 md:min-h-0 h-full',
                         tab.disabled && 'cursor-not-allowed opacity-60'
                       )}
                     >
@@ -116,14 +116,14 @@ export default function Operacion() {
                   return tab.disabled ? (
                     <Tooltip key={tab.value}>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex w-full h-full cursor-not-allowed">{trigger}</span>
+                        <span className="inline-flex shrink-0 w-auto md:w-full h-full cursor-not-allowed">{trigger}</span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p>Sección en mantenimiento</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <span key={tab.value} className="inline-flex w-full h-full">
+                    <span key={tab.value} className="inline-flex shrink-0 w-auto md:w-full h-full">
                       {trigger}
                     </span>
                   );

@@ -31,22 +31,22 @@ export function TopBar() {
   // sincrónicos (`getSafetyMarginByInstitutionId`) tengan datos disponibles.
   usePublicInstitutions()
   return (
-    <header className="h-14 flex items-center justify-between border-b bg-background px-3">
-      <div className="flex items-center gap-2">
+    <header className="min-h-14 shrink-0 flex items-center justify-between border-b bg-background px-3 py-2 sm:py-0">
+      <div className="flex shrink-0 items-center gap-2">
         <SidebarTrigger className="hover:bg-muted rounded-md p-2 transition-all duration-200">
           <Menu className="h-5 w-5" />
         </SidebarTrigger>
-        <h1 className="text-lg font-semibold">Te devuelvo · Backoffice</h1>
+        <h1 className="hidden lg:block text-lg font-semibold">Te devuelvo · Backoffice</h1>
       </div>
-      <div className="flex items-center gap-3">
-        {user && <span className="text-sm text-muted-foreground">{user.nombre} · {roleLabel}</span>}
+      <div className="min-w-0 flex items-center gap-2 sm:gap-3">
+        {user && <span className="min-w-0 text-right text-xs sm:text-sm text-muted-foreground"><span className="block max-w-40 truncate sm:max-w-none sm:inline" title={user.nombre}>{user.nombre}</span><span className="block sm:inline"> <span className="hidden sm:inline">· </span>{roleLabel}</span></span>}
         {isAdmin && (
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className={`relative h-9 w-9 rounded-full ${pendingCount > 0 ? 'animate-bell-glow' : ''}`}
+                className={`relative shrink-0 h-11 w-11 sm:h-9 sm:w-9 rounded-full ${pendingCount > 0 ? 'animate-bell-glow' : ''}`}
                 aria-label={pendingCount > 0 ? `${pendingCount} cambios bancarios pendientes` : 'Cambios bancarios'}
                 title="Cambios bancarios"
               >
@@ -61,7 +61,7 @@ export function TopBar() {
                 )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 space-y-4">
+            <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] space-y-4">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 rounded-md bg-muted p-2 text-primary">
                   <Landmark className="h-4 w-4" />
@@ -87,7 +87,7 @@ export function TopBar() {
             </PopoverContent>
           </Popover>
         )}
-        <Button variant="outline" size="sm" onClick={() => logout()}>Salir</Button>
+        <Button variant="outline" size="sm" className="shrink-0 h-11 sm:h-9" onClick={() => logout()}>Salir</Button>
       </div>
     </header>
   )
