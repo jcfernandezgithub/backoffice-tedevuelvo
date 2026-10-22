@@ -1,4 +1,8 @@
 # Envío de Datos al Banco desde CSV
+## Vista móvil Dashboard y Operación
+- [ ] Optimizar filtros, calugas y gráficos en móviles conservando escritorio y cálculos.
+- [ ] Quitar etiqueta de desarrollo del Dashboard y verificar ambas páginas en varios tamaños.
+
 ## Integración Dashboard
 - [x] Entregar directiva al backend para conservar newTotalPremium y actualizar contrato y pruebas.
 - [x] Implementar cliente y presentación de los seis servicios sin recalcular primas; conservar diseño y navegación.
