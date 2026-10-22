@@ -20,7 +20,7 @@ export function CallCenterInsuranceBreakdown({ groups, comparison }: { groups: G
               const Icon = icons[group.key as keyof typeof icons]
               return (
                 <section key={group.key} aria-label={`Métricas de ${group.label}`}>
-                    <div className="flex items-center gap-2 mb-2 text-sm font-medium">
+                    <div className="flex flex-wrap items-center gap-2 mb-2 text-sm font-medium">
                       <Icon className="h-4 w-4 text-callcenter-foreground shrink-0" /><h4>{group.label}</h4>
                       <span className="ml-auto text-xs font-normal text-muted-foreground">{group.sharePct}% de las gestionadas</span>
                       {group.key === 'ambos' && <Tooltip><TooltipTrigger asChild><CircleHelp aria-label="Criterio de ambos seguros" className="h-3.5 w-3.5 text-muted-foreground" tabIndex={0} /></TooltipTrigger><TooltipContent className="max-w-64">Solicitudes con ambos seguros, contadas una sola vez y con su prima registrada, sin duplicarlas en los otros grupos.</TooltipContent></Tooltip>}

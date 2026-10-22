@@ -138,7 +138,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
   const hasDateFilter = !!(filtros.fechaDesde || filtros.fechaHasta);
 
   return (
-    <Card className="mb-6">
+    <Card className="min-w-0 mb-6">
       <CardHeader className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -148,7 +148,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
           <div className="flex items-center gap-2 flex-shrink-0">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" aria-label="Exportar" className="h-11 sm:h-9">
                   <Download className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Exportar</span>
                 </Button>
@@ -198,7 +198,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const primerDia = toLocalDateString(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
                 handleDateRangeChange(primerDia, toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2 flex-shrink-0"
+              className="h-11 sm:h-7 text-xs px-2 flex-shrink-0"
             >
               Mes actual
             </Button>
@@ -209,7 +209,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const hoy = toLocalDateString(new Date());
                 handleDateRangeChange(hoy, hoy);
               }}
-              className="h-7 text-xs px-2 flex-shrink-0"
+              className="h-11 sm:h-7 text-xs px-2 flex-shrink-0"
             >
               Hoy
             </Button>
@@ -222,7 +222,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 const ayerStr = toLocalDateString(ayer);
                 handleDateRangeChange(ayerStr, ayerStr);
               }}
-              className="h-7 text-xs px-2 flex-shrink-0"
+              className="h-11 sm:h-7 text-xs px-2 flex-shrink-0"
             >
               Ayer
             </Button>
@@ -235,7 +235,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 semanaAtras.setDate(hoy.getDate() - 7);
                 handleDateRangeChange(toLocalDateString(semanaAtras), toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2 flex-shrink-0"
+              className="h-11 sm:h-7 text-xs px-2 flex-shrink-0"
             >
               Última semana
             </Button>
@@ -248,7 +248,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 mesAtras.setMonth(hoy.getMonth() - 1);
                 handleDateRangeChange(toLocalDateString(mesAtras), toLocalDateString(hoy));
               }}
-              className="h-7 text-xs px-2 flex-shrink-0"
+              className="h-11 sm:h-7 text-xs px-2 flex-shrink-0"
             >
               Último mes
             </Button>
@@ -258,14 +258,14 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
               </Badge>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <Label className="text-sm text-muted-foreground">Desde</Label>
               <Input
                 type="date"
                 value={filtros.fechaDesde || ''}
                 onChange={(e) => handleDateChange('fechaDesde', e.target.value)}
-                className={hasDateFilter ? 'border-primary' : ''}
+                className={`min-w-0 max-w-full h-11 sm:h-10 ${hasDateFilter ? 'border-primary' : ''}`}
               />
             </div>
             <div>
@@ -274,7 +274,7 @@ export function FiltersBar({ onExport }: FiltersBarProps) {
                 type="date"
                 value={filtros.fechaHasta || ''}
                 onChange={(e) => handleDateChange('fechaHasta', e.target.value)}
-                className={hasDateFilter ? 'border-primary' : ''}
+                className={`min-w-0 max-w-full h-11 sm:h-10 ${hasDateFilter ? 'border-primary' : ''}`}
               />
             </div>
           </div>

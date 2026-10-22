@@ -349,9 +349,9 @@ export function TabResumen() {
                   backgroundSize: '28px 28px',
                 }} />
 
-                <div className="relative flex flex-col md:flex-row md:items-center md:justify-between px-4 py-4 sm:px-6 gap-4 md:gap-6">
+                <div className="relative flex flex-col xl:flex-row xl:items-center xl:justify-between px-4 py-4 sm:px-6 gap-4 xl:gap-6">
                   {/* Header móvil: icono + título + número principal */}
-                  <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="flex items-center gap-3 w-full xl:w-auto">
                     <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex-shrink-0">
                       <Zap className="h-5 w-5 text-white" />
                     </div>
@@ -366,7 +366,7 @@ export function TabResumen() {
                     </div>
                     {/* Total visible en mobile al lado del título */}
                     <div
-                      className="md:hidden text-right flex-shrink-0 cursor-pointer"
+                      className="xl:hidden text-right flex-shrink-0 cursor-pointer"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-2xl leading-none tabular-nums">
@@ -377,9 +377,9 @@ export function TabResumen() {
                   </div>
 
                   {/* Lado derecho: desglose + número principal */}
-                  <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6 flex-wrap md:flex-nowrap w-full md:w-auto">
+                  <div className="flex items-center justify-between xl:justify-end gap-3 sm:gap-6 flex-wrap xl:flex-nowrap w-full xl:w-auto">
                     {/* Desglose compacto (visible siempre, adapta tamaño) */}
-                    <div className="grid grid-cols-4 md:flex md:items-center gap-1.5 sm:gap-2 w-full md:w-auto">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 xl:flex xl:items-center gap-1.5 sm:gap-2 w-full xl:w-auto">
                       {[
                         { label: 'Docs', count: c.documentsReceived.total },
                         { label: 'Ingresadas', count: c.entered.total },
@@ -388,15 +388,15 @@ export function TabResumen() {
                       ].map(({ label, count }) => (
                         <div key={label} className="flex flex-col items-center px-2 py-1.5 rounded-lg bg-white/15 backdrop-blur-sm">
                           <span className="text-white font-bold text-base sm:text-lg leading-none tabular-nums">{count}</span>
-                          <span className="text-white/65 text-[10px] mt-0.5 whitespace-nowrap">{label}</span>
+                          <span className="text-white/65 text-[10px] mt-0.5 whitespace-normal sm:whitespace-nowrap">{label}</span>
                         </div>
                       ))}
-                      <div className="hidden md:block w-px h-8 bg-white/25 mx-1" />
+                      <div className="hidden xl:block w-px h-8 bg-white/25 mx-1" />
                     </div>
 
                     {/* Total grande (sólo desktop; en mobile va al lado del título) */}
                     <div
-                      className="hidden md:block text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
+                      className="hidden xl:block text-right flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity ml-auto"
                       onClick={() => navigate(buildRefundsUrl({ status: 'docs_received,submitted,payment_scheduled,paid' }))}
                     >
                       <div className="text-white font-black text-3xl sm:text-4xl leading-none tabular-nums">
@@ -477,16 +477,16 @@ export function TabResumen() {
                 >
                   {c.qualification.total}
                 </div>
-                <div className="flex gap-4 mt-3">
+                <div className="flex flex-wrap gap-3 sm:gap-4 mt-3">
                   <div 
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex flex-wrap items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'signed' }))}
                   >
                     <Badge variant="default" className="bg-green-600">Firmado</Badge>
                     <span className="font-semibold">{c.qualification.signed}</span>
                   </div>
                   <div 
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex flex-wrap items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'qualifying', mandate: 'pending' }))}
                   >
                     <Badge variant="secondary">Pendiente</Badge>
@@ -689,7 +689,7 @@ export function TabResumen() {
                 </div>
                 <div className="flex flex-col gap-2 mt-3">
                   <div 
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex flex-wrap items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'ready' }))}
                   >
                     <Badge variant="default" className={`text-xs ${c.scheduledPayment.withBank > 0 ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`}>
@@ -698,7 +698,7 @@ export function TabResumen() {
                     <span className="font-semibold">{c.scheduledPayment.withBank}</span>
                   </div>
                   <div 
-                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex flex-wrap items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled', bank: 'pending' }))}
                   >
                     <Badge variant="secondary" className="bg-amber-500/15 text-amber-600 border-amber-500/30 text-xs">Sin datos para transferencia</Badge>
@@ -761,7 +761,7 @@ export function TabResumen() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Grupo 1: Solicitudes Ingresadas (estimado) */}
-            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 dark:border-indigo-900/40 dark:bg-indigo-950/20 p-5 flex flex-col gap-5">
+            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 dark:border-indigo-900/40 dark:bg-indigo-950/20 min-w-0 p-3 sm:p-5 flex flex-col gap-5">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
                   <FileInput className="h-6 w-6 text-white" />
@@ -777,11 +777,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-indigo-500 shadow-sm transition-shadow hover:shadow-md dark:border-l-indigo-500"
                   onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finSubmittedSavingTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -803,11 +803,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-indigo-400 shadow-sm transition-shadow hover:shadow-md dark:border-l-indigo-400"
                   onClick={() => navigate(buildRefundsUrl({ status: 'submitted' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finSubmittedPremiumTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -828,7 +828,7 @@ export function TabResumen() {
             </div>
 
             {/* Grupo 2: Solicitudes en Pago Programado */}
-            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 dark:border-cyan-900/40 dark:bg-cyan-950/20 p-5 flex flex-col gap-5">
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50/50 dark:border-cyan-900/40 dark:bg-cyan-950/20 min-w-0 p-3 sm:p-5 flex flex-col gap-5">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-cyan-600 rounded-xl shadow-lg shadow-cyan-200 dark:shadow-cyan-900/50">
                   <CalendarClock className="h-6 w-6 text-white" />
@@ -844,11 +844,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-cyan-500 shadow-sm transition-shadow hover:shadow-md dark:border-l-cyan-500"
                   onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finToPayTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -870,11 +870,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-cyan-400 shadow-sm transition-shadow hover:shadow-md dark:border-l-cyan-400"
                   onClick={() => navigate(buildRefundsUrl({ status: 'payment_scheduled' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finScheduledPremiumTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -895,7 +895,7 @@ export function TabResumen() {
             </div>
 
             {/* Grupo 3: Solicitudes Pagadas */}
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20 p-5 flex flex-col gap-5">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20 min-w-0 p-3 sm:p-5 flex flex-col gap-5">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/50">
                   <CheckCircle2 className="h-6 w-6 text-white" />
@@ -911,11 +911,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-emerald-500 shadow-sm transition-shadow hover:shadow-md dark:border-l-emerald-500"
                   onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finPaidTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -937,11 +937,11 @@ export function TabResumen() {
                   className="cursor-pointer rounded-2xl border border-border border-l-4 border-l-emerald-400 shadow-sm transition-shadow hover:shadow-md dark:border-l-emerald-400"
                   onClick={() => navigate(buildRefundsUrl({ status: 'paid' }))}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex justify-between items-center gap-4">
-                      <div className="space-y-1">
+                  <CardContent className="p-3 sm:p-5">
+                    <div className="flex justify-between items-center gap-2 sm:gap-4">
+                      <div className="min-w-0 space-y-1">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{finPremiumTitle}</p>
-                        <p className="text-2xl font-extrabold text-foreground tracking-tight">
+                        <p className="text-2xl font-extrabold text-foreground tracking-tight break-words">
                           {new Intl.NumberFormat('es-CL', {
                             style: 'currency',
                             currency: 'CLP',
@@ -1017,7 +1017,7 @@ export function TabResumen() {
 
         {/* Distribución por estado */}
         <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <CardHeader className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
             <div>
               <CardTitle>Distribución por Estado</CardTitle>
               {distribucionTotal > 0 && (
@@ -1030,10 +1030,10 @@ export function TabResumen() {
               )}
             </div>
             <ToggleGroup type="single" value={chartType} onValueChange={(value) => value && setChartType(value as 'pie' | 'bar')}>
-              <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-8 w-8 p-0">
+              <ToggleGroupItem value="pie" aria-label="Gráfico de torta" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
                 <PieChartIcon className="h-4 w-4" />
               </ToggleGroupItem>
-              <ToggleGroupItem value="bar" aria-label="Gráfico de barras" className="h-8 w-8 p-0">
+              <ToggleGroupItem value="bar" aria-label="Gráfico de barras" className="h-11 w-11 sm:h-8 sm:w-8 p-0">
                 <BarChart3 className="h-4 w-4" />
               </ToggleGroupItem>
             </ToggleGroup>

@@ -217,16 +217,16 @@ export default function Dashboard() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <main className="p-3 sm:p-4 md:p-6 space-y-6" role="main">
+      <main className="min-w-0 p-3 sm:p-4 md:p-6 space-y-6" role="main">
 
         {/* Header */}
-        <header className="flex items-center gap-2">
+        <header className="flex flex-wrap sm:flex-nowrap items-center gap-2">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
           </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          <Button variant="outline" size="sm" className="ml-auto" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
+          <Button variant="outline" size="sm" className="ml-auto h-11 sm:h-9 shrink-0" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
         </header>
 
         {/* Filtros de fecha */}
@@ -241,7 +241,7 @@ export default function Dashboard() {
                 { key: 'semana', label: 'Última semana', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 7)), toLocalDateString(n)) } },
                 { key: 'ultimomes', label: 'Último mes', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth() - 1, n.getDate())), toLocalDateString(n)) } },
               ].map(p => (
-                <Button key={p.key} variant={activePreset === p.key ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={p.action}>
+                <Button key={p.key} variant={activePreset === p.key ? 'default' : 'outline'} size="sm" className="h-11 sm:h-7 text-xs px-2" onClick={p.action}>
                   {p.label}
                 </Button>
               ))}
@@ -256,7 +256,7 @@ export default function Dashboard() {
                 <input
                   type="date" value={desde} max={hasta}
                   onChange={e => setDesde(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${desde ? 'border-primary' : 'border-input'}`}
+                  className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${desde ? 'border-primary' : 'border-input'}`}
                 />
               </div>
               <div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
                 <input
                   type="date" value={hasta} min={desde}
                   onChange={e => setHasta(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasta ? 'border-primary' : 'border-input'}`}
+                  className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasta ? 'border-primary' : 'border-input'}`}
                 />
               </div>
             </div>
@@ -274,21 +274,22 @@ export default function Dashboard() {
                 <Button
                   variant={compareOn ? 'default' : 'outline'}
                   size="sm"
-                  className="h-7 text-xs px-2 gap-1.5"
+                  className="h-11 sm:h-7 text-xs px-2 gap-1.5"
                   onClick={() => setCompareOn(v => !v)}
                 >
                   <ArrowLeftRight className="h-3.5 w-3.5" /> Comparar períodos
                 </Button>
                 {compareOn && (
-                  <div className="flex rounded-md border border-input overflow-hidden h-7">
+                  <div className="flex rounded-md border border-input overflow-hidden h-11 sm:h-7">
                     {([['anterior', 'Período anterior'], ['custom', 'Personalizado']] as const).map(([key, label]) => (
-                      <button
+                      <Button
+                        variant="ghost"
                         key={key}
                         onClick={() => setCompareMode(key)}
-                        className={`px-2.5 text-xs transition-colors ${compareMode === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
+                        className={`h-full rounded-none px-2.5 text-xs transition-colors ${compareMode === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
                       >
                         {label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -309,7 +310,7 @@ export default function Dashboard() {
                     <input
                       type="date" value={cmpDesde} max={cmpHasta || undefined}
                       onChange={e => setCmpDesde(e.target.value)}
-                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpDesde ? 'border-primary' : 'border-input'}`}
+                      className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpDesde ? 'border-primary' : 'border-input'}`}
                     />
                   </div>
                   <div>
@@ -317,7 +318,7 @@ export default function Dashboard() {
                     <input
                       type="date" value={cmpHasta} min={cmpDesde || undefined}
                       onChange={e => setCmpHasta(e.target.value)}
-                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpHasta ? 'border-primary' : 'border-input'}`}
+                      className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpHasta ? 'border-primary' : 'border-input'}`}
                     />
                   </div>
                 </div>
@@ -340,7 +341,7 @@ export default function Dashboard() {
         {blocks.allowed && <>
         {/* KPIs de resumen */}
         <DashboardBlock query={blocks.summary} empty={totalSolicitudes === 0}>
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
+        <section className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
@@ -447,7 +448,7 @@ export default function Dashboard() {
               const phaseTotal = summary?.phaseCounts[phase.id]
 
               return (
-                <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-4`}>
+                <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-3 sm:p-4`}>
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${colors.badge}`}>
                       {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
@@ -458,7 +459,7 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
                     {phase.stages.map((stage, stageIdx) => {
                       const count = granularCounts?.[stage.key] ?? 0
                       const IconComp = stage.icon
@@ -469,7 +470,7 @@ export default function Dashboard() {
                       const isUrgentDocs = isDocsReceived && count >= 1
 
                       return (
-                        <div key={stage.key} className="flex items-center gap-2">
+                        <div key={stage.key} className="min-w-0 flex items-center gap-2">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
@@ -477,7 +478,7 @@ export default function Dashboard() {
                                 className={`
                                   group flex items-start gap-3 rounded-lg border p-3
                                   hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
-                                  cursor-pointer min-w-[140px]
+                                  cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[140px]
                                   ${isUrgentDocs
                                     ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-300 dark:border-orange-700 ring-1 ring-orange-300 dark:ring-orange-700'
                                     : `bg-background/80 ${colors.cardHover}`
@@ -550,7 +551,7 @@ export default function Dashboard() {
                             </TooltipContent>
                           </Tooltip>
                           {!isLast && (
-                            <ArrowRight className={`h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
+                            <ArrowRight className={`hidden sm:block h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
                           )}
                         </div>
                       )
@@ -576,7 +577,7 @@ export default function Dashboard() {
                       key={g}
                       variant={agg === g ? 'default' : 'outline'}
                       size="sm"
-                      className="h-7 text-xs px-2"
+                      className="h-11 sm:h-7 text-xs px-2"
                       onClick={() => setAgg(g)}
                     >
                       {{ day: 'Día', week: 'Semana', month: 'Mes' }[g]}
@@ -587,11 +588,11 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <Tabs value={activeChart} onValueChange={value => setActiveChart(value as DashboardChart)}>
-                <TabsList className="grid w-full grid-cols-4 h-8 text-xs">
-                  <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
-                  <TabsTrigger value="callcenter" className="text-xs">Call Center</TabsTrigger>
-                  <TabsTrigger value="pagos" className="text-xs">Montos pagados</TabsTrigger>
-                  <TabsTrigger value="distribucion" className="text-xs">Distribución</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-8 text-xs">
+                  <TabsTrigger value="solicitudes" className="text-xs min-h-11 sm:min-h-0">Solicitudes</TabsTrigger>
+                  <TabsTrigger value="callcenter" className="text-xs min-h-11 sm:min-h-0">Call Center</TabsTrigger>
+                  <TabsTrigger value="pagos" className="text-xs min-h-11 sm:min-h-0">Montos pagados</TabsTrigger>
+                  <TabsTrigger value="distribucion" className="text-xs min-h-11 sm:min-h-0">Distribución</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="solicitudes" className="mt-4">
@@ -682,7 +683,7 @@ export default function Dashboard() {
                   {compareOn && compareRange && blocks.distribution.data && compare.distribution.data && (
                     <DashboardComparison compact delta={countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests)} />
                   )}
-                  <div className="h-64">
+                  <div className="h-[420px] sm:h-64">
                     {pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -715,7 +716,7 @@ export default function Dashboard() {
                             layout="horizontal" verticalAlign="bottom" align="center"
                             wrapperStyle={{ fontSize: '10px', paddingTop: '12px' }}
                             formatter={(_, entry: any) => (
-                              <span className="text-xs">{entry.payload.name} ({entry.payload.pct}%)</span>
+                              <span className="text-xs min-h-11 sm:min-h-0">{entry.payload.name} ({entry.payload.pct}%)</span>
                             )}
                           />
                         </PieChart>
@@ -753,7 +754,7 @@ function SummaryKpi({
   comparison?: DeltaInfo
 }): React.ReactElement {
   const card = (
-    <Card className={`border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
+    <Card className={`min-w-0 border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       {alert && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -761,9 +762,9 @@ function SummaryKpi({
         </span>
       )}
       <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground font-medium">{label}</span>
-          <Icon className="h-4 w-4 text-muted-foreground/60" />
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground/60" />
         </div>
         <p className={`text-2xl font-bold tabular-nums break-words ${valueClass}`}>{value}</p>
         {comparison && <DashboardComparison delta={comparison} />}
