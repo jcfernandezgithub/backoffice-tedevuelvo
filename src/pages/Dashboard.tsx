@@ -137,6 +137,10 @@ export default function Dashboard() {
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
   const [agg, setAgg] = useState<DashboardGranularity>('day')
   const [activeChart, setActiveChart] = useState<DashboardChart>('solicitudes')
+  const [compareOn, setCompareOn] = useState(false)
+  const [compareMode, setCompareMode] = useState<'anterior' | 'custom'>('anterior')
+  const [cmpDesde, setCmpDesde] = useState('')
+  const [cmpHasta, setCmpHasta] = useState('')
   const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
   const summary = blocks.accessError ? undefined : blocks.summary.data
   const callCenter = blocks.accessError ? undefined : blocks.callCenter.data
