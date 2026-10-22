@@ -1,15 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useMemo, useState } from 'react'
-import { type Aggregation } from '@/services/dashboardService'
-import { useAllRefunds } from '@/pages/Operacion/hooks/useAllRefunds'
-import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown } from '@/lib/callCenterMetrics'
+import { useBackofficeDashboard } from '@/hooks/useBackofficeDashboard'
+import { DashboardBlock } from '@/components/DashboardBlock'
+import { adaptCountSeries, adaptPaymentSeries, adaptInsuranceGroups, type DashboardChart, type DashboardGranularity } from '@/services/backofficeDashboardApi'
 import { CallCenterInsuranceBreakdown } from '@/components/CallCenterInsuranceBreakdown'
-import { authService } from '@/services/authService'
+import { DashboardComparison } from '@/components/DashboardComparison'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Money } from '@/components/common/Money'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -19,20 +17,14 @@ import {
   FileText, Clock, CheckCircle2, XCircle, Loader2, ArrowRight,
   Wallet, FileSignature, Users, TrendingUp, AlertCircle,
   FileCheck, Building2, ThumbsUp, CalendarCheck, CircleOff, Headphones,
-  DollarSign, Receipt,
+  DollarSign, Receipt, ArrowLeftRight,
 } from 'lucide-react'
+import {
+  previousRange, formatRange, countDelta, moneyDelta, rateDelta,
+  mergeCountSeries, mergePaymentSeries, type DeltaInfo,
+} from '@/lib/dashboardComparison'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import dayjs from 'dayjs'
-import isoWeek from 'dayjs/plugin/isoWeek'
-import utc from 'dayjs/plugin/utc'
-import timezone from 'dayjs/plugin/timezone'
-
-dayjs.extend(isoWeek)
-dayjs.extend(utc)
-dayjs.extend(timezone)
-dayjs.tz.setDefault('America/Santiago')
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 const fmtCLP = (v: number) =>
   v.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
@@ -42,17 +34,6 @@ const toLocalDateString = (date: Date): string => {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
-}
-
-function filterByLocalDate(refunds: any[], desde?: string, hasta?: string): any[] {
-  if (!desde && !hasta) return refunds
-  return refunds.filter(r => {
-    if (!r.createdAt) return true
-    const dateStr = r.createdAt.split('T')[0]
-    if (desde && dateStr < desde) return false
-    if (hasta && dateStr > hasta) return false
-    return true
-  })
 }
 
 // ─── Definición de fases del flujo ──────────────────────────────────────────
@@ -146,23 +127,6 @@ const PIE_COLORS = [
   'hsl(0,72%,51%)',
 ]
 
-const PIE_LABELS: Record<string, string> = {
-  datos_sin_simulacion: 'Sin simulación',
-  simulated: 'Simulado',
-  requested: 'Solicitado',
-  qualifying: 'En calificación',
-  docs_pending: 'Docs. pendientes',
-  docs_received: 'Docs. recibidos',
-  submitted: 'Ingresado',
-  approved: 'Aprobado',
-  payment_scheduled: 'Pago programado',
-  paid: 'Pagado',
-  rejected: 'Rechazado',
-  canceled: 'Cancelado',
-}
-
-const API_BASE = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -172,133 +136,44 @@ export default function Dashboard() {
     return toLocalDateString(new Date(d.getFullYear(), d.getMonth(), 1))
   })
   const [hasta, setHasta] = useState<string>(() => toLocalDateString(new Date()))
-  const [agg, setAgg] = useState<Aggregation>('day')
-
-  // Fuente de datos unificada (mismo caché que Operación).
-  // Enviamos las fechas filtradas (YYYY-MM-DD) al endpoint listV2 como since/to.
-  const { data: allRefunds = [], isLoading: isLoadingRefunds, isFetching: isFetchingRefunds } = useAllRefunds({
-    since: desde || undefined,
-    to: hasta || undefined,
-  })
-
-  // Filtrado por fecha (memoizado)
-  const filteredRefunds = useMemo(
-    () => filterByLocalDate(allRefunds, desde || undefined, hasta || undefined),
-    [allRefunds, desde, hasta]
-  )
-
-  // Conteos granulares por estado
-  const granularCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      datos_sin_simulacion: 0, simulated: 0, requested: 0,
-      qualifying: 0, docs_pending: 0, docs_received: 0,
-      submitted: 0, approved: 0, rejected: 0,
-      payment_scheduled: 0, paid: 0, canceled: 0,
-    }
-    for (const r of filteredRefunds) {
-      const s = r.status as string
-      if (s in counts) counts[s]++
-    }
-    return counts
-  }, [filteredRefunds])
-
-  // Sub-métricas: qualifying (mandatos)
-  const qualifyingRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'qualifying'),
-    [filteredRefunds]
-  )
-  const qualifyingPublicIds = useMemo(
-    () => qualifyingRefunds.map((r: any) => r.publicId).filter(Boolean),
-    [qualifyingRefunds]
-  )
-  const qualifyingIdsKey = useMemo(
-    () => [...qualifyingPublicIds].sort().join(','),
-    [qualifyingPublicIds]
-  )
-
-  // hasSignedPdf ya viene en cada refund desde listV2 — no se necesita un fetch por ítem.
-  const mandateStatuses = useMemo(() => {
-    const map: Record<string, { hasSignedPdf: boolean }> = {}
-    qualifyingRefunds.forEach((r: any) => {
-      if (r.publicId) map[r.publicId] = { hasSignedPdf: !!r.hasSignedPdf }
-    })
-    return map
-  }, [qualifyingRefunds])
-  const isFetchingMandates = false
-
-  const qualifyingFirmados = useMemo(
-    () => qualifyingRefunds.filter((r: any) => mandateStatuses?.[r.publicId]?.hasSignedPdf === true).length,
-    [qualifyingRefunds, mandateStatuses]
-  )
-  const qualifyingPendientes = useMemo(
-    () => qualifyingRefunds.filter((r: any) => !mandateStatuses?.[r.publicId]?.hasSignedPdf).length,
-    [qualifyingRefunds, mandateStatuses]
-  )
-
-  // Sub-métricas: payment_scheduled (datos bancarios)
-  const paymentScheduledRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'payment_scheduled'),
-    [filteredRefunds]
-  )
-  const paymentWithBank = useMemo(
-    () => paymentScheduledRefunds.filter((r: any) => r.bankInfo).length,
-    [paymentScheduledRefunds]
-  )
-  const paymentWithoutBank = useMemo(
-    () => paymentScheduledRefunds.filter((r: any) => !r.bankInfo).length,
-    [paymentScheduledRefunds]
-  )
-
-  // KPIs de resumen
-  const totalSolicitudes = useMemo(
-    () => Object.values(granularCounts).reduce((s, v) => s + v, 0),
-    [granularCounts]
-  )
-
-  const paidCount = granularCounts.paid
-  const inProgressCount = granularCounts.qualifying + granularCounts.docs_pending +
-    granularCounts.docs_received + granularCounts.submitted +
-    granularCounts.approved + granularCounts.payment_scheduled
-
-  const totalPaidAmount = useMemo(() => {
-    return filteredRefunds
-      .filter((r: any) => r.status === 'paid')
-      .reduce((sum: number, r: any) => {
-        const entry = r.statusHistory?.slice().reverse().find((h: any) => {
-          const to = h.to?.toLowerCase()
-          return (to === 'payment_scheduled' || to === 'paid') && h.realAmount
-        })
-        return sum + (entry?.realAmount || 0)
-      }, 0)
-  }, [filteredRefunds])
-
-  // Call Center: primera gestión histórica; no contabilizar re-gestiones.
-  const callCenterRefunds = useMemo(() => {
-    return firstManagedRefunds(allRefunds, desde, hasta)
-  }, [allRefunds, desde, hasta])
-
-  const callCenterCount = callCenterRefunds.length
-  const callCenterInsuranceGroups = useMemo(() => callCenterInsuranceBreakdown(callCenterRefunds), [callCenterRefunds])
-
-  const callCenterTotalPrimas = useMemo(() => {
-    return callCenterRefunds.reduce((sum: number, r: any) => {
-      const snap = r.calculationSnapshot || {}
-      const newPremium = snap.newMonthlyPremium || 0
-      const remaining = snap.remainingInstallments || 0
-      return sum + (newPremium * remaining)
-    }, 0)
-  }, [callCenterRefunds])
-
-  const callCenterTicketPromedio = useMemo(() => {
-    if (!callCenterRefunds.length) return 0
-    return Math.round(callCenterTotalPrimas / callCenterRefunds.length)
-  }, [callCenterRefunds, callCenterTotalPrimas])
-
-  const conversionRate = useMemo(() => {
-    const base = totalSolicitudes - granularCounts.datos_sin_simulacion
-    if (!base) return 0
-    return Math.round((paidCount / base) * 100)
-  }, [paidCount, totalSolicitudes, granularCounts.datos_sin_simulacion])
+  const [agg, setAgg] = useState<DashboardGranularity>('day')
+  const [activeChart, setActiveChart] = useState<DashboardChart>('solicitudes')
+  const [compareOn, setCompareOn] = useState(false)
+  const [compareMode, setCompareMode] = useState<'anterior' | 'custom'>('anterior')
+  const [cmpDesde, setCmpDesde] = useState('')
+  const [cmpHasta, setCmpHasta] = useState('')
+  const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
+  // Período de comparación: mismo servicio consultado con el otro rango.
+  const compareRange = useMemo(() => {
+    if (!compareOn) return null
+    if (compareMode === 'anterior') return previousRange(desde, hasta)
+    if (cmpDesde && cmpHasta && cmpDesde <= cmpHasta) return { from: cmpDesde, to: cmpHasta }
+    return null
+  }, [compareOn, compareMode, desde, hasta, cmpDesde, cmpHasta])
+  const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, compareOn && Boolean(compareRange))
+  // Sin comparación activa las calugas muestran solo el valor del período principal, sin desviación.
+  const comparisonActive = compareOn && Boolean(compareRange)
+  const cmpSummary = comparisonActive ? compare.summary.data : undefined
+  const cmpCallCenter = comparisonActive ? compare.callCenter.data : undefined
+  const cmpGranularCounts = cmpSummary ? Object.fromEntries(Object.entries(cmpSummary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : undefined
+  const cmpInsuranceGroups = cmpCallCenter ? adaptInsuranceGroups(cmpCallCenter) : []
+  const summary = blocks.accessError ? undefined : blocks.summary.data
+  const callCenter = blocks.accessError ? undefined : blocks.callCenter.data
+  // Presentation adapters only: all metric rules and rounded values come from the API.
+  const granularCounts = summary ? Object.fromEntries(Object.entries(summary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : {}
+  const totalSolicitudes = summary?.totals.totalRequests
+  const paidCount = summary?.totals.paidRequests
+  const inProgressCount = summary?.totals.inProgress
+  const totalPaidAmount = summary?.totals.totalPaidAmountCLP ?? 0
+  const conversionRate = summary?.totals.successRatePct
+  const qualifyingFirmados = summary?.qualification.signedMandate
+  const qualifyingPendientes = summary?.qualification.pendingMandate
+  const paymentWithBank = summary?.scheduledPayment.withBankInfo ?? 0
+  const paymentWithoutBank = summary?.scheduledPayment.withoutBankInfo
+  const callCenterCount = callCenter?.totals.managedRequests
+  const callCenterTotalPrimas = callCenter?.totals.estimatedPremiumsCLP ?? 0
+  const callCenterTicketPromedio = callCenter?.totals.averageTicketCLP ?? 0
+  const callCenterInsuranceGroups = callCenter ? adaptInsuranceGroups(callCenter) : []
 
   // getActivePreset memoizado
   const activePreset = useMemo(() => {
@@ -316,136 +191,42 @@ export default function Dashboard() {
     return null
   }, [desde, hasta])
 
-  // Datos para gráficos
-  const paidRefunds = useMemo(
-    () => filteredRefunds.filter((r: any) => r.status === 'paid'),
-    [filteredRefunds]
-  )
-
-  const solicitudesAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of filteredRefunds) {
-      if (!r.createdAt) continue
-      const fecha = dayjs.tz(r.createdAt).format('YYYY-MM-DD')
-      let key = fecha
-      if (agg === 'week') {
-        const d = dayjs.tz(fecha)
-        key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-      }
-      if (agg === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
-      map.set(key, (map.get(key) ?? 0) + 1)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, value }) => ({ bucket, value }))
-  }, [filteredRefunds, agg])
-
-  const callCenterAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of callCenterRefunds) {
-        const transDate = firstCallCenterManagementDate(r)
-        if (!transDate) continue
-        let key = transDate
-        if (agg === 'week') {
-          const d = dayjs.tz(transDate)
-          key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-        }
-        if (agg === 'month') key = dayjs.tz(transDate).format('YYYY-MM')
-        map.set(key, (map.get(key) ?? 0) + 1)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, value: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, value }) => ({ bucket, value }))
-  }, [callCenterRefunds, agg])
-
-  const pagosAggSeries = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const r of paidRefunds) {
-      if (!r.updatedAt) continue
-      const fecha = dayjs.tz(r.updatedAt).format('YYYY-MM-DD')
-      let key = fecha
-      if (agg === 'week') {
-        const d = dayjs.tz(fecha)
-        key = `${d.year()}-W${String(d.isoWeek()).padStart(2, '0')}`
-      }
-      if (agg === 'month') key = dayjs.tz(fecha).format('YYYY-MM')
-      const entry = r.statusHistory?.slice().reverse().find((h: any) => {
-        const to = h.to?.toLowerCase()
-        return (to === 'payment_scheduled' || to === 'paid') && h.realAmount
-      })
-      const monto = entry?.realAmount || r.estimatedAmountCLP || 0
-      map.set(key, (map.get(key) ?? 0) + monto)
-    }
-    const toDate = (b: string) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b)) return dayjs.tz(b)
-      if (/^\d{4}-W\d{2}$/.test(b)) { const [y, w] = b.split('-W'); return dayjs.tz(y).isoWeek(parseInt(w, 10)).startOf('week') }
-      return dayjs.tz(b + '-01')
-    }
-    return [...map.entries()]
-      .map(([k, v]) => ({ bucket: k, monto: v, _s: toDate(k).valueOf() }))
-      .sort((a, b) => a._s - b._s)
-      .map(({ bucket, monto }) => ({ bucket, monto }))
-  }, [paidRefunds, agg])
-
-  const pieData = useMemo(() => {
-    return Object.entries(granularCounts)
-      .filter(([, v]) => v > 0)
-      .map(([k, v], i) => ({
-        name: PIE_LABELS[k] ?? k,
-        value: v,
-        pct: totalSolicitudes > 0 ? ((v / totalSolicitudes) * 100).toFixed(1) : '0',
-        color: PIE_COLORS[i % PIE_COLORS.length],
-      }))
-  }, [granularCounts, totalSolicitudes])
-
-  const isRefreshing = isFetchingRefunds || isFetchingMandates
+  const solicitudesAggSeries = blocks.requests.data ? adaptCountSeries(blocks.requests.data) : []
+  const callCenterAggSeries = blocks.managed.data ? adaptCountSeries(blocks.managed.data) : []
+  const pagosAggSeries = blocks.payments.data ? adaptPaymentSeries(blocks.payments.data) : []
+  const pieData = blocks.distribution.data?.items.map((p, i) => ({ name: p.label, value: p.count, pct: p.percentage.toFixed(1), color: PIE_COLORS[i % PIE_COLORS.length] })) ?? []
+  // Series alineadas con el período de comparación (misma granularidad, alineación por posición)
+  const cmpSolicitudesSeries = compare.requests.data ? adaptCountSeries(compare.requests.data) : []
+  const cmpCallCenterSeries = compare.managed.data ? adaptCountSeries(compare.managed.data) : []
+  const cmpPagosSeries = compare.payments.data ? adaptPaymentSeries(compare.payments.data) : []
+  const mergedSolicitudes = compareOn && compareRange ? mergeCountSeries(solicitudesAggSeries, cmpSolicitudesSeries) : null
+  const mergedCallCenter = compareOn && compareRange ? mergeCountSeries(callCenterAggSeries, cmpCallCenterSeries) : null
+  const mergedPagos = compareOn && compareRange ? mergePaymentSeries(pagosAggSeries, cmpPagosSeries) : null
+  const isRefreshing = [blocks.summary, blocks.callCenter, blocks.requests, blocks.managed, blocks.payments, blocks.distribution, ...(compareOn ? [compare.summary, compare.callCenter, compare.requests, compare.managed, compare.payments, compare.distribution] : [])].some(q => q.isFetching)
 
   const goToRefunds = (refundStatus: string) => {
     const p = new URLSearchParams()
     p.set('status', refundStatus)
     p.set('autoSearch', 'true')
-    p.set('from', desde)
-    p.set('to', hasta)
+    if (desde) p.set('from', desde)
+    if (hasta) p.set('to', hasta)
     navigate(`/refunds?${p.toString()}`)
   }
 
   const applyDateRange = (d: string, h: string) => { setDesde(d); setHasta(h) }
 
-  if (isLoadingRefunds) {
-    return (
-      <main className="p-4 md:p-6 space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
-        </div>
-        <Skeleton className="h-64" />
-      </main>
-    )
-  }
-
   return (
     <TooltipProvider delayDuration={300}>
-      <main className="p-3 sm:p-4 md:p-6 space-y-6" role="main">
+      <main className="min-w-0 p-3 sm:p-4 md:p-6 space-y-6" role="main">
 
         {/* Header */}
-        <header className="flex items-center gap-2">
+        <header className="flex flex-wrap sm:flex-nowrap items-center gap-2">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
             <p className="text-sm text-muted-foreground mt-0.5">Vista general del producto · todas las etapas del flujo</p>
           </div>
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          <Button variant="outline" size="sm" className="ml-auto h-11 sm:h-9 shrink-0" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
         </header>
 
         {/* Filtros de fecha */}
@@ -460,7 +241,7 @@ export default function Dashboard() {
                 { key: 'semana', label: 'Última semana', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth(), n.getDate() - 7)), toLocalDateString(n)) } },
                 { key: 'ultimomes', label: 'Último mes', action: () => { const n = new Date(); applyDateRange(toLocalDateString(new Date(n.getFullYear(), n.getMonth() - 1, n.getDate())), toLocalDateString(n)) } },
               ].map(p => (
-                <Button key={p.key} variant={activePreset === p.key ? 'default' : 'outline'} size="sm" className="h-7 text-xs px-2" onClick={p.action}>
+                <Button key={p.key} variant={activePreset === p.key ? 'default' : 'outline'} size="sm" className="h-11 sm:h-7 text-xs px-2" onClick={p.action}>
                   {p.label}
                 </Button>
               ))}
@@ -475,7 +256,7 @@ export default function Dashboard() {
                 <input
                   type="date" value={desde} max={hasta}
                   onChange={e => setDesde(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${desde ? 'border-primary' : 'border-input'}`}
+                  className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${desde ? 'border-primary' : 'border-input'}`}
                 />
               </div>
               <div>
@@ -483,9 +264,68 @@ export default function Dashboard() {
                 <input
                   type="date" value={hasta} min={desde}
                   onChange={e => setHasta(e.target.value)}
-                  className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasta ? 'border-primary' : 'border-input'}`}
+                  className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${hasta ? 'border-primary' : 'border-input'}`}
                 />
               </div>
+            </div>
+
+            <div className="border-t pt-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={compareOn ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-11 sm:h-7 text-xs px-2 gap-1.5"
+                  onClick={() => setCompareOn(v => !v)}
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Comparar períodos
+                </Button>
+                {compareOn && (
+                  <div className="flex rounded-md border border-input overflow-hidden h-11 sm:h-7">
+                    {([['anterior', 'Período anterior'], ['custom', 'Personalizado']] as const).map(([key, label]) => (
+                      <Button
+                        variant="ghost"
+                        key={key}
+                        onClick={() => setCompareMode(key)}
+                        className={`h-full rounded-none px-2.5 text-xs transition-colors ${compareMode === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
+                      >
+                        {label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                {compareOn && compareMode === 'anterior' && compareRange && (
+                  <Badge variant="secondary" className="h-7 flex items-center text-xs">{formatRange(compareRange.from, compareRange.to)}</Badge>
+                )}
+                {compareOn && compareMode === 'anterior' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Selecciona primero el período principal</span>
+                )}
+                {compareOn && compareMode === 'custom' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Elige ambas fechas del período de comparación</span>
+                )}
+              </div>
+              {compareOn && compareMode === 'custom' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar desde</label>
+                    <input
+                      type="date" value={cmpDesde} max={cmpHasta || undefined}
+                      onChange={e => setCmpDesde(e.target.value)}
+                      className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpDesde ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar hasta</label>
+                    <input
+                      type="date" value={cmpHasta} min={cmpDesde || undefined}
+                      onChange={e => setCmpHasta(e.target.value)}
+                      className={`min-w-0 max-w-full w-full h-11 sm:h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpHasta ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                </div>
+              )}
+              {compareOn && compareRange && (
+                <p className="text-xs text-muted-foreground">Las calugas y gráficos muestran la desviación contra <span className="font-medium text-foreground">{formatRange(compareRange.from, compareRange.to)}</span>.</p>
+              )}
             </div>
 
             {(desde || hasta) && (
@@ -496,11 +336,16 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
+        {blocks.accessError && <div role="alert" className="border border-destructive/40 rounded-md p-4 text-sm">{blocks.accessError.code === 'USER_INACTIVE' ? 'Tu cuenta está inactiva y no tiene acceso al dashboard.' : blocks.accessError.status === 401 ? 'Tu sesión no está disponible. Vuelve a iniciar sesión.' : 'No tienes permiso para consultar el dashboard.'}{blocks.accessError.status === 401 && <Button variant="outline" size="sm" className="ml-2" onClick={() => navigate('/login')}>Iniciar sesión</Button>}{blocks.accessError.requestId && <p className="text-xs text-muted-foreground mt-1">Referencia: {blocks.accessError.requestId}</p>}</div>}
+        {!blocks.allowed && !blocks.accessError && <p role="alert">No tienes permiso para consultar el dashboard.</p>}
+        {blocks.allowed && <>
         {/* KPIs de resumen */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
+        <DashboardBlock query={blocks.summary} empty={totalSolicitudes === 0}>
+        <section className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" aria-label="Resumen general">
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
+            comparison={cmpSummary && totalSolicitudes != null ? countDelta(totalSolicitudes, cmpSummary.totals.totalRequests) : undefined}
             icon={Users}
             className="border-border"
             tooltip="Suma de todas las solicitudes en el período seleccionado, en cualquier estado del flujo."
@@ -508,6 +353,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="En proceso"
             value={inProgressCount}
+            comparison={cmpSummary && inProgressCount != null ? countDelta(inProgressCount, cmpSummary.totals.inProgress) : undefined}
             icon={Clock}
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
@@ -516,14 +362,16 @@ export default function Dashboard() {
           <SummaryKpi
             label="Pagados"
             value={paidCount}
+            comparison={cmpSummary && paidCount != null ? countDelta(paidCount, cmpSummary.totals.paidRequests) : undefined}
             icon={CheckCircle2}
             className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
             valueClass="text-emerald-700 dark:text-emerald-300"
-            tooltip="Solicitudes cuyo pago fue transferido exitosamente al cliente dentro del período seleccionado."
+            tooltip="Solicitudes actualmente pagadas, seleccionadas por fecha de creación; no por fecha de transferencia."
           />
           <SummaryKpi
             label="Tasa de éxito"
             value={`${conversionRate}%`}
+            comparison={cmpSummary && conversionRate != null ? rateDelta(conversionRate, cmpSummary.totals.successRatePct) : undefined}
             icon={TrendingUp}
             alert={conversionRate === 0}
             className={conversionRate === 0
@@ -536,14 +384,18 @@ export default function Dashboard() {
           <SummaryKpi
             label="Monto pagado"
             value={<Money value={totalPaidAmount} />}
+            comparison={cmpSummary ? moneyDelta(totalPaidAmount, cmpSummary.totals.totalPaidAmountCLP) : undefined}
             icon={Wallet}
             className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
-            tooltip="Suma del monto real pagado a clientes (campo realAmount del historial de estados). No es el monto estimado."
+            tooltip="Monto real del historial de solicitudes actualmente pagadas, filtradas por creación. Puede diferir del gráfico, que admite monto estimado cuando no hay monto real."
           />
         </section>
 
+        </DashboardBlock>
+
         {/* KPIs Call Center */}
+        <DashboardBlock query={blocks.callCenter} empty={callCenterCount === 0}>
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3" aria-label="Métricas Call Center">
           <div className="md:col-span-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -553,30 +405,38 @@ export default function Dashboard() {
           <SummaryKpi
             label="Solicitudes gestionadas"
             value={callCenterCount}
+            comparison={cmpCallCenter && callCenterCount != null ? countDelta(callCenterCount, cmpCallCenter.totals.managedRequests) : undefined}
             icon={Headphones}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
-            tooltip="Solicitudes cuya primera gestión histórica en 'Docs. recibidos' ocurrió en el período. Excluye re-gestiones y canceladas."
+            tooltip="Solicitudes cuya primera gestión histórica ocurrió en el período. Excluye re-gestiones y canceladas. El listado enlazado filtra por estado actual y fecha de creación; puede tener un universo distinto."
             onClick={() => goToRefunds('docs_received')}
           />
           <SummaryKpi
             label="Total primas estimadas"
             value={<Money value={callCenterTotalPrimas} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTotalPrimas, cmpCallCenter.totals.estimatedPremiumsCLP) : undefined}
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
-            tooltip="Primas estimadas de las solicitudes gestionadas por primera vez en el período: prima mensual nueva × cuotas restantes del snapshot. Excluye re-gestiones y canceladas."
+            tooltip="Primas de las solicitudes gestionadas por primera vez en el período: prima total calculada guardada en cada solicitud. Si no está guardada, se usa prima mensual nueva × cuotas restantes. Excluye re-gestiones y canceladas."
           />
           <SummaryKpi
             label="Ticket promedio"
             value={<Money value={callCenterTicketPromedio} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTicketPromedio, cmpCallCenter.totals.averageTicketCLP) : undefined}
             icon={Receipt}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
             tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
-          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} total={callCenterCount} />
+          <CallCenterInsuranceBreakdown
+            groups={callCenterInsuranceGroups}
+            comparison={cmpCallCenter ? Object.fromEntries(cmpInsuranceGroups.map(g => [g.key, { count: g.count, premiums: g.premiums, ticket: g.ticket }])) : undefined}
+          />
         </section>
+        </DashboardBlock>
+        <DashboardBlock query={blocks.summary}>
         <section aria-label="Pipeline de solicitudes">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Pipeline de solicitudes</h2>
@@ -585,18 +445,21 @@ export default function Dashboard() {
           <div className="space-y-4">
             {PHASES.map((phase, phaseIdx) => {
               const colors = PHASE_COLORS[phase.color]
-              const phaseTotal = phase.stages.reduce((s, st) => s + (granularCounts?.[st.key] ?? 0), 0)
+              const phaseTotal = summary?.phaseCounts[phase.id]
 
               return (
-                <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-4`}>
-                  <div className="flex items-center gap-2 mb-3">
+                <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-3 sm:p-4`}>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${colors.badge}`}>
                       {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
                     </span>
                     <span className={`text-xs font-semibold ${colors.text}`}>{phaseTotal} solicitudes</span>
+                    {cmpSummary && phaseTotal != null && (
+                      <DashboardComparison compact delta={countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id])} />
+                    )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
                     {phase.stages.map((stage, stageIdx) => {
                       const count = granularCounts?.[stage.key] ?? 0
                       const IconComp = stage.icon
@@ -607,7 +470,7 @@ export default function Dashboard() {
                       const isUrgentDocs = isDocsReceived && count >= 1
 
                       return (
-                        <div key={stage.key} className="flex items-center gap-2">
+                        <div key={stage.key} className="min-w-0 flex items-center gap-2">
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
@@ -615,7 +478,7 @@ export default function Dashboard() {
                                 className={`
                                   group flex items-start gap-3 rounded-lg border p-3
                                   hover:shadow-md hover:-translate-y-0.5 transition-all duration-200
-                                  cursor-pointer min-w-[140px]
+                                  cursor-pointer w-full sm:w-auto min-w-0 sm:min-w-[140px]
                                   ${isUrgentDocs
                                     ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-300 dark:border-orange-700 ring-1 ring-orange-300 dark:ring-orange-700'
                                     : `bg-background/80 ${colors.cardHover}`
@@ -634,11 +497,14 @@ export default function Dashboard() {
                                 <div className="text-left min-w-0">
                                   <p className={`text-xs leading-none truncate ${isUrgentDocs ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>{stage.label}</p>
                                   <p className={`text-2xl font-bold leading-tight ${isUrgentDocs ? 'text-orange-700 dark:text-orange-300' : ''}`}>{count}</p>
+                                  {cmpGranularCounts && (
+                                    <DashboardComparison compact delta={countDelta(count, cmpGranularCounts[stage.key] ?? 0)} />
+                                  )}
                                   <p className={`text-[10px] truncate ${isUrgentDocs ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-muted-foreground/70'}`}>
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
                                   </p>
 
-                                  {isQualifying && mandateStatuses && (
+                                  {isQualifying && (
                                     <div className="flex flex-col gap-1 mt-2" onClick={e => e.stopPropagation()}>
                                       <div
                                         className="flex items-center gap-1.5 cursor-pointer hover:opacity-80"
@@ -685,7 +551,7 @@ export default function Dashboard() {
                             </TooltipContent>
                           </Tooltip>
                           {!isLast && (
-                            <ArrowRight className={`h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
+                            <ArrowRight className={`hidden sm:block h-4 w-4 flex-shrink-0 ${colors.text} opacity-50`} />
                           )}
                         </div>
                       )
@@ -696,6 +562,8 @@ export default function Dashboard() {
             })}
           </div>
         </section>
+
+        </DashboardBlock>
 
         {/* Gráficos */}
         <section>
@@ -709,7 +577,7 @@ export default function Dashboard() {
                       key={g}
                       variant={agg === g ? 'default' : 'outline'}
                       size="sm"
-                      className="h-7 text-xs px-2"
+                      className="h-11 sm:h-7 text-xs px-2"
                       onClick={() => setAgg(g)}
                     >
                       {{ day: 'Día', week: 'Semana', month: 'Mes' }[g]}
@@ -719,27 +587,29 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-              <Tabs defaultValue="solicitudes">
-                <TabsList className="grid w-full grid-cols-4 h-8 text-xs">
-                  <TabsTrigger value="solicitudes" className="text-xs">Solicitudes</TabsTrigger>
-                  <TabsTrigger value="callcenter" className="text-xs">Call Center</TabsTrigger>
-                  <TabsTrigger value="pagos" className="text-xs">Montos pagados</TabsTrigger>
-                  <TabsTrigger value="distribucion" className="text-xs">Distribución</TabsTrigger>
+              <Tabs value={activeChart} onValueChange={value => setActiveChart(value as DashboardChart)}>
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-8 text-xs">
+                  <TabsTrigger value="solicitudes" className="text-xs min-h-11 sm:min-h-0">Solicitudes</TabsTrigger>
+                  <TabsTrigger value="callcenter" className="text-xs min-h-11 sm:min-h-0">Call Center</TabsTrigger>
+                  <TabsTrigger value="pagos" className="text-xs min-h-11 sm:min-h-0">Montos pagados</TabsTrigger>
+                  <TabsTrigger value="distribucion" className="text-xs min-h-11 sm:min-h-0">Distribución</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="solicitudes" className="mt-4">
+                  <DashboardBlock query={blocks.requests}>
                   <div className="h-64">
-                    {solicitudesAggSeries.length > 0 ? (
+                    {(mergedSolicitudes ?? solicitudesAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={solicitudesAggSeries} barSize={14}>
+                        <BarChart data={mergedSolicitudes ?? solicitudesAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} solicitudes`, 'Cantidad']}
+                            formatter={(v: number, name: string) => [`${v} solicitudes`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedSolicitudes && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -747,21 +617,27 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedSolicitudes && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="callcenter" className="mt-4">
+                  <DashboardBlock query={blocks.managed}>
                   <div className="h-64">
-                    {callCenterAggSeries.length > 0 ? (
+                    {(mergedCallCenter ?? callCenterAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={callCenterAggSeries} barSize={14}>
+                        <BarChart data={mergedCallCenter ?? callCenterAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                           <RechartsTooltip
-                            formatter={(v: number) => [`${v} gestiones`, 'Call Center']}
+                            formatter={(v: number, name: string) => [`${v} gestiones`, name === 'compareValue' ? 'Comparación' : 'Actual']}
                             labelFormatter={l => `Período: ${l}`}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedCallCenter && <Bar dataKey="compareValue" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="value" fill="hsl(172,66%,50%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -769,20 +645,26 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedCallCenter && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="pagos" className="mt-4">
+                  <DashboardBlock query={blocks.payments}>
                   <div className="h-64">
-                    {pagosAggSeries.length > 0 ? (
+                    {(mergedPagos ?? pagosAggSeries).length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={pagosAggSeries} barSize={14}>
+                        <BarChart data={mergedPagos ?? pagosAggSeries} barSize={14}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                           <XAxis dataKey="bucket" tick={{ fontSize: 10 }} angle={-35} textAnchor="end" height={55} />
                           <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1_000_000).toFixed(1) + 'M'} />
                           <RechartsTooltip
-                            formatter={(v: number) => [fmtCLP(v), 'Monto']}
+                            formatter={(v: number, name: string) => [fmtCLP(v), name === 'compareMonto' ? 'Comparación' : 'Actual']}
                             contentStyle={{ borderRadius: 8, fontSize: 12 }}
                           />
+                          {mergedPagos && <Bar dataKey="compareMonto" fill="hsl(var(--muted-foreground))" fillOpacity={0.3} radius={[4, 4, 0, 0]} />}
                           <Bar dataKey="monto" fill="hsl(142,71%,45%)" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -790,10 +672,18 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                  {mergedPagos && compareRange && (
+                    <p className="text-[10px] text-muted-foreground text-center mt-1">Barra tenue: período de comparación ({formatRange(compareRange.from, compareRange.to)})</p>
+                  )}
+                </DashboardBlock>
                 </TabsContent>
 
                 <TabsContent value="distribucion" className="mt-4">
-                  <div className="h-64">
+                  <DashboardBlock query={blocks.distribution}>
+                  {compareOn && compareRange && blocks.distribution.data && compare.distribution.data && (
+                    <DashboardComparison compact delta={countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests)} />
+                  )}
+                  <div className="h-[420px] sm:h-64">
                     {pieData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -826,7 +716,7 @@ export default function Dashboard() {
                             layout="horizontal" verticalAlign="bottom" align="center"
                             wrapperStyle={{ fontSize: '10px', paddingTop: '12px' }}
                             formatter={(_, entry: any) => (
-                              <span className="text-xs">{entry.payload.name} ({entry.payload.pct}%)</span>
+                              <span className="text-xs min-h-11 sm:min-h-0">{entry.payload.name} ({entry.payload.pct}%)</span>
                             )}
                           />
                         </PieChart>
@@ -835,12 +725,14 @@ export default function Dashboard() {
                       <EmptyChart />
                     )}
                   </div>
+                </DashboardBlock>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
         </section>
 
+        </>}
       </main>
     </TooltipProvider>
   )
@@ -849,7 +741,7 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick,
+  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick, comparison,
 }: {
   label: string
   value: number | string | React.ReactNode
@@ -859,9 +751,10 @@ function SummaryKpi({
   tooltip?: string
   alert?: boolean
   onClick?: () => void
+  comparison?: DeltaInfo
 }): React.ReactElement {
   const card = (
-    <Card className={`border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
+    <Card className={`min-w-0 border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
       {alert && (
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -869,11 +762,12 @@ function SummaryKpi({
         </span>
       )}
       <CardContent className="p-3 sm:p-4 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground font-medium">{label}</span>
-          <Icon className="h-4 w-4 text-muted-foreground/60" />
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground/60" />
         </div>
-        <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
+        <p className={`text-2xl font-bold tabular-nums break-words ${valueClass}`}>{value}</p>
+        {comparison && <DashboardComparison delta={comparison} />}
         {alert && (
           <p className="text-[10px] text-red-500 font-medium">⚠ Sin conversiones en el período</p>
         )}

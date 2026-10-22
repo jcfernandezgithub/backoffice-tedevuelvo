@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown } from '../src/lib/callCenterMetrics'
+import { firstCallCenterManagementDate, firstManagedRefunds, callCenterInsuranceBreakdown, callCenterPremium } from '../src/lib/callCenterMetrics'
 
 const transition = (at: string, from = 'docs_pending') => ({ from, to: 'DOCS_RECEIVED', at })
 describe('Call Center: solo primera gestión histórica', () => {
@@ -48,5 +48,13 @@ describe('Call Center: solo primera gestión histórica', () => {
     const premium = selected.reduce((sum, r) => sum + r.calculationSnapshot.newMonthlyPremium * r.calculationSnapshot.remainingInstallments, 0)
     expect(premium).toBe(120000)
     expect(premium / selected.length).toBe(120000)
+  })
+})
+describe('Call Center: prima total calculada', () => {
+  test('usa newTotalPremium cuando existe', () => {
+    expect(callCenterPremium({ newTotalPremium: 608013, newMonthlyPremium: 18111, remainingInstallments: 34 })).toBe(608013)
+  })
+  test('sin newTotalPremium usa prima mensual × cuotas restantes', () => {
+    expect(callCenterPremium({ newMonthlyPremium: 1000, remainingInstallments: 12 })).toBe(12000)
   })
 })

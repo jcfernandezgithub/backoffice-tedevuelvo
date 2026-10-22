@@ -1,4 +1,17 @@
 # Envío de Datos al Banco desde CSV
+## Vista móvil Dashboard y Operación
+- [x] Optimizar filtros, calugas y gráficos en móviles conservando escritorio y cálculos.
+- [x] Quitar etiqueta de desarrollo del Dashboard; verificar ambas páginas en 360, 390, 768 y 1683 px con respuestas simuladas, sin sesión real.
+- [x] Documentar en el README, bajo la versión 4.5.0, la integración con servicios agregados, la comparación de períodos, la vista móvil y la estabilidad de sesión.
+
+## Integración Dashboard
+- [x] Entregar directiva al backend para conservar newTotalPremium y actualizar contrato y pruebas.
+- [x] Implementar cliente y presentación de los seis servicios sin recalcular primas; conservar diseño y navegación.
+- [x] Incorporar consultas por sesión y bloque, cancelación, errores y actualización independiente.
+- [x] Ejecutar 22 pruebas de contrato/regresión y verificar aviso de sesión vencida y regreso al login; compilación correcta, sin cambios en fuentes de Operación.
+- [ ] Verificar seis servicios con sesión válida, pestañas, filtros y Operación en vivo: rutas públicas responden 404 y la sesión anterior no renueva (401).
+- [ ] Confirmar prima total calculada en backend desplegado: PDF mantiene fórmula anterior; se entregó directiva, pendiente respuesta del equipo backend.
+
 ## Call Center
 - [x] Presentar el desglose por seguro con calugas alineadas a los indicadores actuales, sin modificar los cálculos.
 - [x] Mantener totales y añadir desglose por seguro de gestionadas, primas y ticket; siete pruebas aprobadas y sumas verificadas con el último cruce real.

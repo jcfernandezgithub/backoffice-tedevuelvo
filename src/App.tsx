@@ -40,9 +40,9 @@ const Shell = () => {
   <SidebarProvider>
     <div className="flex min-h-screen w-full">
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0">
         <TopBar />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Outlet />
         </div>
       </SidebarInset>

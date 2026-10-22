@@ -13,10 +13,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Badge } from '@/components/ui/badge'
 
 const items = [
-  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'dev' as const, adminOnly: false, callCenterOnly: false },
+  { title: 'Dashboard', url: '/dashboard', icon: Home, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Solicitudes', url: '/refunds', icon: FileText, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Cierre Mensual', url: '/cierre-mensual', icon: CalendarCheck, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
@@ -79,11 +78,6 @@ export function AppSidebar() {
                       {!collapsed && (
                         <div className="flex items-center justify-between flex-1 gap-2">
                           <span>{item.title}</span>
-                          {item.status === 'dev' && (
-                            <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] px-1.5 py-0">
-                              En desarrollo
-                            </Badge>
-                          )}
                         </div>
                       )}
                     </NavLink>
