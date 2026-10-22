@@ -142,6 +142,18 @@ export default function Dashboard() {
   const [cmpDesde, setCmpDesde] = useState('')
   const [cmpHasta, setCmpHasta] = useState('')
   const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
+  // Período de comparación: mismo servicio consultado con el otro rango.
+  const compareRange = useMemo(() => {
+    if (!compareOn) return null
+    if (compareMode === 'anterior') return previousRange(desde, hasta)
+    if (cmpDesde && cmpHasta && cmpDesde <= cmpHasta) return { from: cmpDesde, to: cmpHasta }
+    return null
+  }, [compareOn, compareMode, desde, hasta, cmpDesde, cmpHasta])
+  const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, compareOn && Boolean(compareRange))
+  const cmpSummary = compare.summary.data
+  const cmpCallCenter = compare.callCenter.data
+  const cmpGranularCounts = cmpSummary ? Object.fromEntries(Object.entries(cmpSummary.statusCounts).map(([status, count]) => [status.toLowerCase(), count])) : undefined
+  const cmpInsuranceGroups = cmpCallCenter ? adaptInsuranceGroups(cmpCallCenter) : []
   const summary = blocks.accessError ? undefined : blocks.summary.data
   const callCenter = blocks.accessError ? undefined : blocks.callCenter.data
   // Presentation adapters only: all metric rules and rounded values come from the API.
