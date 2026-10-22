@@ -560,7 +560,7 @@ export default function Dashboard() {
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
-            tooltip="Primas estimadas de las solicitudes gestionadas por primera vez en el período: prima mensual nueva × cuotas restantes del snapshot. Excluye re-gestiones y canceladas."
+            tooltip="Primas de las solicitudes gestionadas por primera vez en el período: prima total calculada guardada en cada solicitud. Si no está guardada, se usa prima mensual nueva × cuotas restantes. Excluye re-gestiones y canceladas."
           />
           <SummaryKpi
             label="Ticket promedio"
