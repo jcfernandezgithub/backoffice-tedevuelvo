@@ -1,7 +1,8 @@
 import { Money } from '@/components/common/Money'
 import { ShieldCheck, BriefcaseBusiness, Layers, CircleHelp, DollarSign, Receipt } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { countDelta, moneyDelta, deltaToneClass } from '@/lib/dashboardComparison'
+import { countDelta, moneyDelta } from '@/lib/dashboardComparison'
+import { DashboardComparison } from '@/components/DashboardComparison'
 
 type Groups = { key: string; label: string; count: number; premiums: number; ticket: number; sharePct: number }[]
 type GroupComparison = Record<string, { count: number; premiums: number; ticket: number }>
@@ -36,12 +37,7 @@ export function CallCenterInsuranceBreakdown({ groups, comparison }: { groups: G
                           <metric.icon className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden="true" />
                         </div>
                         <div className={`${metric.large ? 'text-2xl' : 'text-lg'} font-bold tabular-nums text-callcenter-foreground break-words`}>{metric.value}</div>
-                        {metric.delta && (
-                          <p className="text-[11px] text-muted-foreground tabular-nums leading-tight mt-0.5">
-                            vs {metric.delta.previousText}{' '}
-                            <span className={deltaToneClass(metric.delta.tone)}>({metric.delta.deltaLabel})</span>
-                          </p>
-                        )}
+                        {metric.delta && <DashboardComparison delta={metric.delta} />}
                       </div>
                     ))}
                   </div>
