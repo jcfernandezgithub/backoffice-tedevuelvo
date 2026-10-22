@@ -341,6 +341,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Total solicitudes"
             value={totalSolicitudes}
+            comparison={cmpSummary && totalSolicitudes != null ? countDelta(totalSolicitudes, cmpSummary.totals.totalRequests) : undefined}
             icon={Users}
             className="border-border"
             tooltip="Suma de todas las solicitudes en el período seleccionado, en cualquier estado del flujo."
@@ -348,6 +349,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="En proceso"
             value={inProgressCount}
+            comparison={cmpSummary && inProgressCount != null ? countDelta(inProgressCount, cmpSummary.totals.inProgress) : undefined}
             icon={Clock}
             className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20"
             valueClass="text-amber-700 dark:text-amber-300"
@@ -356,6 +358,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Pagados"
             value={paidCount}
+            comparison={cmpSummary && paidCount != null ? countDelta(paidCount, cmpSummary.totals.paidRequests) : undefined}
             icon={CheckCircle2}
             className="border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"
             valueClass="text-emerald-700 dark:text-emerald-300"
@@ -364,6 +367,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Tasa de éxito"
             value={`${conversionRate}%`}
+            comparison={cmpSummary && conversionRate != null ? rateDelta(conversionRate, cmpSummary.totals.successRatePct) : undefined}
             icon={TrendingUp}
             alert={conversionRate === 0}
             className={conversionRate === 0
@@ -376,6 +380,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Monto pagado"
             value={<Money value={totalPaidAmount} />}
+            comparison={cmpSummary ? moneyDelta(totalPaidAmount, cmpSummary.totals.totalPaidAmountCLP) : undefined}
             icon={Wallet}
             className="border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950/20"
             valueClass="text-violet-700 dark:text-violet-300 text-lg"
@@ -396,6 +401,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Solicitudes gestionadas"
             value={callCenterCount}
+            comparison={cmpCallCenter && callCenterCount != null ? countDelta(callCenterCount, cmpCallCenter.totals.managedRequests) : undefined}
             icon={Headphones}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300"
@@ -405,6 +411,7 @@ export default function Dashboard() {
           <SummaryKpi
             label="Total primas estimadas"
             value={<Money value={callCenterTotalPrimas} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTotalPrimas, cmpCallCenter.totals.estimatedPremiumsCLP) : undefined}
             icon={DollarSign}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
@@ -413,12 +420,16 @@ export default function Dashboard() {
           <SummaryKpi
             label="Ticket promedio"
             value={<Money value={callCenterTicketPromedio} />}
+            comparison={cmpCallCenter ? moneyDelta(callCenterTicketPromedio, cmpCallCenter.totals.averageTicketCLP) : undefined}
             icon={Receipt}
             className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20"
             valueClass="text-teal-700 dark:text-teal-300 text-lg"
             tooltip="Total primas estimadas ÷ solicitudes gestionadas en el período."
           />
-          <CallCenterInsuranceBreakdown groups={callCenterInsuranceGroups} />
+          <CallCenterInsuranceBreakdown
+            groups={callCenterInsuranceGroups}
+            comparison={cmpCallCenter ? Object.fromEntries(cmpInsuranceGroups.map(g => [g.key, { count: g.count, premiums: g.premiums, ticket: g.ticket }])) : undefined}
+          />
         </section>
         </DashboardBlock>
         <DashboardBlock query={blocks.summary}>
