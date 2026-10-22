@@ -37,6 +37,10 @@ All colors MUST be HSL.
     --ring: 215 90% 45%;
 
     --radius: 0.6rem;
+    --comparison-up: 152 69% 25%;
+    --comparison-up-background: 152 60% 94%;
+    --comparison-down: 0 70% 39%;
+    --comparison-down-background: 0 75% 96%;
     --callcenter: 166 76% 97%;
     --callcenter-border: 168 84% 78%;
     --callcenter-foreground: 175 77% 26%;
@@ -52,6 +56,10 @@ All colors MUST be HSL.
   }
 
   .dark {
+    --comparison-up: 152 65% 70%;
+    --comparison-up-background: 152 40% 15%;
+    --comparison-down: 0 80% 78%;
+    --comparison-down-background: 0 40% 18%;
     --callcenter: 176 55% 10%;
     --callcenter-border: 176 69% 22%;
     --callcenter-foreground: 171 77% 64%;
@@ -141,6 +149,21 @@ All colors MUST be HSL.
 }
 
 /* Optimizaciones adicionales para móvil */
+@layer components {
+  .dashboard-variation-up {
+    color: hsl(var(--comparison-up));
+    background-color: hsl(var(--comparison-up-background));
+  }
+  .dashboard-variation-down {
+    color: hsl(var(--comparison-down));
+    background-color: hsl(var(--comparison-down-background));
+  }
+  .dashboard-variation-flat {
+    color: hsl(var(--muted-foreground));
+    background-color: hsl(var(--muted));
+  }
+}
+
 @layer utilities {
   .animate-bell-ring {
     animation: bell-ring 1.2s ease-in-out infinite;

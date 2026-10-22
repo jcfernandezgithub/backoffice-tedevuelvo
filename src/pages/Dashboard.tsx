@@ -4,6 +4,7 @@ import { useBackofficeDashboard } from '@/hooks/useBackofficeDashboard'
 import { DashboardBlock } from '@/components/DashboardBlock'
 import { adaptCountSeries, adaptPaymentSeries, adaptInsuranceGroups, type DashboardChart, type DashboardGranularity } from '@/services/backofficeDashboardApi'
 import { CallCenterInsuranceBreakdown } from '@/components/CallCenterInsuranceBreakdown'
+import { DashboardComparison } from '@/components/DashboardComparison'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,7 +20,7 @@ import {
   DollarSign, Receipt, ArrowLeftRight,
 } from 'lucide-react'
 import {
-  previousRange, formatRange, countDelta, moneyDelta, rateDelta, deltaToneClass,
+  previousRange, formatRange, countDelta, moneyDelta, rateDelta,
   mergeCountSeries, mergePaymentSeries, type DeltaInfo,
 } from '@/lib/dashboardComparison'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -445,15 +446,13 @@ export default function Dashboard() {
 
               return (
                 <div key={phase.id} className={`rounded-xl border ${colors.ring} ${colors.bg} p-4`}>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${colors.badge}`}>
                       {String(phaseIdx + 1).padStart(2, '0')} {phase.label}
                     </span>
                     <span className={`text-xs font-semibold ${colors.text}`}>{phaseTotal} solicitudes</span>
                     {cmpSummary && phaseTotal != null && (
-                      <span className={`text-[11px] tabular-nums ${deltaToneClass(countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).tone)}`}>
-                        {countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id]).deltaLabel} vs {cmpSummary.phaseCounts[phase.id]}
-                      </span>
+                      <DashboardComparison compact delta={countDelta(phaseTotal, cmpSummary.phaseCounts[phase.id])} />
                     )}
                   </div>
 
@@ -496,9 +495,7 @@ export default function Dashboard() {
                                   <p className={`text-xs leading-none truncate ${isUrgentDocs ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-muted-foreground'}`}>{stage.label}</p>
                                   <p className={`text-2xl font-bold leading-tight ${isUrgentDocs ? 'text-orange-700 dark:text-orange-300' : ''}`}>{count}</p>
                                   {cmpGranularCounts && (
-                                    <p className={`text-[10px] tabular-nums ${deltaToneClass(countDelta(count, cmpGranularCounts[stage.key] ?? 0).tone)}`}>
-                                      {countDelta(count, cmpGranularCounts[stage.key] ?? 0).deltaLabel} vs {cmpGranularCounts[stage.key] ?? 0}
-                                    </p>
+                                    <DashboardComparison compact delta={countDelta(count, cmpGranularCounts[stage.key] ?? 0)} />
                                   )}
                                   <p className={`text-[10px] truncate ${isUrgentDocs ? 'text-orange-500 dark:text-orange-400 font-medium' : 'text-muted-foreground/70'}`}>
                                     {isUrgentDocs ? '⚠ Ingresar al banco' : stage.sublabel}
@@ -681,12 +678,7 @@ export default function Dashboard() {
                 <TabsContent value="distribucion" className="mt-4">
                   <DashboardBlock query={blocks.distribution}>
                   {compareOn && compareRange && blocks.distribution.data && compare.distribution.data && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Período de comparación: {compare.distribution.data.totalRequests.toLocaleString('es-CL')} solicitudes{' '}
-                      <span className={`tabular-nums ${deltaToneClass(countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).tone)}`}>
-                        ({countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests).deltaLabel})
-                      </span>
-                    </p>
+                    <DashboardComparison compact delta={countDelta(blocks.distribution.data.totalRequests, compare.distribution.data.totalRequests)} />
                   )}
                   <div className="h-64">
                     {pieData.length > 0 ? (
@@ -771,13 +763,8 @@ function SummaryKpi({
           <span className="text-xs text-muted-foreground font-medium">{label}</span>
           <Icon className="h-4 w-4 text-muted-foreground/60" />
         </div>
-        <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
-        {comparison && (
-          <p className="text-[11px] text-muted-foreground tabular-nums leading-tight">
-            vs {comparison.previousText}{' '}
-            <span className={deltaToneClass(comparison.tone)}>({comparison.deltaLabel})</span>
-          </p>
-        )}
+        <p className={`text-2xl font-bold tabular-nums break-words ${valueClass}`}>{value}</p>
+        {comparison && <DashboardComparison delta={comparison} />}
         {alert && (
           <p className="text-[10px] text-red-500 font-medium">⚠ Sin conversiones en el período</p>
         )}
