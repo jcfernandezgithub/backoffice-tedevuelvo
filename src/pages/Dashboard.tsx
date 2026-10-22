@@ -746,7 +746,7 @@ export default function Dashboard() {
 // ── Sub-componentes ──────────────────────────────────────────────────────────
 
 function SummaryKpi({
-  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick,
+  label, value, icon: Icon, className = '', valueClass = '', tooltip, alert = false, onClick, comparison,
 }: {
   label: string
   value: number | string | React.ReactNode
@@ -756,6 +756,7 @@ function SummaryKpi({
   tooltip?: string
   alert?: boolean
   onClick?: () => void
+  comparison?: DeltaInfo
 }): React.ReactElement {
   const card = (
     <Card className={`border relative ${className} ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={onClick}>
@@ -771,6 +772,12 @@ function SummaryKpi({
           <Icon className="h-4 w-4 text-muted-foreground/60" />
         </div>
         <p className={`text-2xl font-bold ${valueClass}`}>{value}</p>
+        {comparison && (
+          <p className="text-[11px] text-muted-foreground tabular-nums leading-tight">
+            vs {comparison.previousText}{' '}
+            <span className={deltaToneClass(comparison.tone)}>({comparison.deltaLabel})</span>
+          </p>
+        )}
         {alert && (
           <p className="text-[10px] text-red-500 font-medium">⚠ Sin conversiones en el período</p>
         )}
