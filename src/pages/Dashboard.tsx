@@ -266,6 +266,64 @@ export default function Dashboard() {
               </div>
             </div>
 
+            <div className="border-t pt-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant={compareOn ? 'default' : 'outline'}
+                  size="sm"
+                  className="h-7 text-xs px-2 gap-1.5"
+                  onClick={() => setCompareOn(v => !v)}
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" /> Comparar períodos
+                </Button>
+                {compareOn && (
+                  <div className="flex rounded-md border border-input overflow-hidden h-7">
+                    {([['anterior', 'Período anterior'], ['custom', 'Personalizado']] as const).map(([key, label]) => (
+                      <button
+                        key={key}
+                        onClick={() => setCompareMode(key)}
+                        className={`px-2.5 text-xs transition-colors ${compareMode === key ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {compareOn && compareMode === 'anterior' && compareRange && (
+                  <Badge variant="secondary" className="h-7 flex items-center text-xs">{formatRange(compareRange.from, compareRange.to)}</Badge>
+                )}
+                {compareOn && compareMode === 'anterior' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Selecciona primero el período principal</span>
+                )}
+                {compareOn && compareMode === 'custom' && !compareRange && (
+                  <span className="text-xs text-muted-foreground">Elige ambas fechas del período de comparación</span>
+                )}
+              </div>
+              {compareOn && compareMode === 'custom' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar desde</label>
+                    <input
+                      type="date" value={cmpDesde} max={cmpHasta || undefined}
+                      onChange={e => setCmpDesde(e.target.value)}
+                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpDesde ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground block mb-1">Comparar hasta</label>
+                    <input
+                      type="date" value={cmpHasta} min={cmpDesde || undefined}
+                      onChange={e => setCmpHasta(e.target.value)}
+                      className={`w-full h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-1 focus-visible:ring-ring ${cmpHasta ? 'border-primary' : 'border-input'}`}
+                    />
+                  </div>
+                </div>
+              )}
+              {compareOn && compareRange && (
+                <p className="text-xs text-muted-foreground">Las calugas y gráficos muestran la desviación contra <span className="font-medium text-foreground">{formatRange(compareRange.from, compareRange.to)}</span>.</p>
+              )}
+            </div>
+
             {(desde || hasta) && (
               <Button variant="outline" size="sm" onClick={() => { setDesde(''); setHasta('') }}>
                 Limpiar fechas
