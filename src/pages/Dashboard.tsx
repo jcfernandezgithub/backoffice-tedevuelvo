@@ -281,12 +281,7 @@ export default function Dashboard() {
   const callCenterInsuranceGroups = useMemo(() => callCenterInsuranceBreakdown(callCenterRefunds), [callCenterRefunds])
 
   const callCenterTotalPrimas = useMemo(() => {
-    return callCenterRefunds.reduce((sum: number, r: any) => {
-      const snap = r.calculationSnapshot || {}
-      const newPremium = snap.newMonthlyPremium || 0
-      const remaining = snap.remainingInstallments || 0
-      return sum + (newPremium * remaining)
-    }, 0)
+    return callCenterRefunds.reduce((sum: number, r: any) => sum + callCenterPremium(r.calculationSnapshot || {}), 0)
   }, [callCenterRefunds])
 
   const callCenterTicketPromedio = useMemo(() => {
