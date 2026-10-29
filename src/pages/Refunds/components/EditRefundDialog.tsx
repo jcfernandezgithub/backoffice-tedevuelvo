@@ -21,6 +21,9 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { InstitutionSelect } from '@/components/InstitutionSelect'
+import { usePublicInstitutions } from '@/hooks/useInstitutions'
+import { validInstitutionChange, selectedInstitution } from '@/lib/institutionSelection'
 import { Button } from '@/components/ui/button'
 import { Pencil } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
@@ -52,6 +55,8 @@ interface EditRefundDialogProps {
 export function EditRefundDialog({ refund }: EditRefundDialogProps) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
+  const institutionsQuery = usePublicInstitutions()
+  const institutions = institutionsQuery.data ?? []
   const updatedFieldsRef = useRef<Record<string, any>>({})
 
   const defaults: EditFormValues = {
@@ -119,7 +124,13 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
     },
   })
 
-  const onSubmit = (data: EditFormValues) => mutation.mutate(data)
+  const onSubmit = (data: EditFormValues) => {
+    if (!validInstitutionChange(data.institutionId, defaults.institutionId, institutions, institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData)) {
+      form.setError('institutionId', { message: 'Selecciona una institución válida del catálogo.' })
+      return
+    }
+    mutation.mutate(data)
+  }
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) form.reset(defaults)
@@ -213,7 +224,9 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
                   <FormItem>
                     <FormLabel>Institución</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="ej: banco_chile" />
+                      <InstitutionSelect value={field.value} onChange={field.onChange}
+                        institutions={institutions} loading={institutionsQuery.isLoading}
+                        error={institutionsQuery.isError} onRetry={() => { void institutionsQuery.refetch() }} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

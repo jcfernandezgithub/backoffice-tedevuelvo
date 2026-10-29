@@ -21,6 +21,9 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { InstitutionSelect } from '@/components/InstitutionSelect'
+import { usePublicInstitutions } from '@/hooks/useInstitutions'
+import { validInstitutionChange, selectedInstitution } from '@/lib/institutionSelection'
 import { Button } from '@/components/ui/button'
 import { Settings2, User } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
@@ -65,6 +68,8 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
   const [step, setStep] = useState<'form' | 'confirm'>('form')
   const [pendingData, setPendingData] = useState<ClientFormValues | null>(null)
   const queryClient = useQueryClient()
+  const institutionsQuery = usePublicInstitutions()
+  const institutions = institutionsQuery.data ?? []
 
   const calcAge = useCallback((dateStr: string): number | undefined => {
     if (!dateStr) return undefined
@@ -117,12 +122,12 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
       if (value === original || (value === '' && (original === '' || original === undefined)) || value === undefined) continue
       changes.push({
         label: FIELD_LABELS[key] || key,
-        from: String(original ?? ''),
-        to: String(value),
+        from: key === 'institutionId' ? selectedInstitution(original as string, institutions)?.label || String(original ?? '') : String(original ?? ''),
+        to: key === 'institutionId' ? selectedInstitution(value, institutions)?.label || String(value) : String(value),
       })
     }
     return changes
-  }, [defaults])
+  }, [defaults, institutions])
 
   const mutation = useMutation({
     mutationFn: async (data: ClientFormValues) => {
@@ -161,7 +166,7 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
       }
     },
     onSuccess: () => {
-      const changes = getChanges(pendingData!)
+      const changes = pendingData ? getChanges(pendingData) : []
       toast({
         title: '✅ Datos del cliente actualizados',
         description: `${changes.length} campo${changes.length > 1 ? 's' : ''} actualizado${changes.length > 1 ? 's' : ''}`,
@@ -176,6 +181,11 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
   })
 
   const onSubmit = (data: ClientFormValues) => {
+    if (!validInstitutionChange(data.institutionId, defaults.institutionId, institutions, institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData)) {
+      form.setError('institutionId', { message: 'Selecciona una institución válida del catálogo.' })
+      return
+    }
+
     const changes = getChanges(data)
     if (changes.length === 0) {
       toast({ title: 'Sin cambios', description: 'No se detectaron modificaciones', variant: 'destructive' })
@@ -186,7 +196,12 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
   }
 
   const handleConfirm = () => {
-    if (pendingData) mutation.mutate(pendingData)
+    if (!pendingData) return
+    if (!validInstitutionChange(pendingData.institutionId, defaults.institutionId, institutions, institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData)) {
+      form.setError('institutionId', { message: 'Selecciona una institución válida del catálogo.' })
+      return
+    }
+    mutation.mutate(pendingData)
   }
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -301,7 +316,9 @@ export function EditClientDialog({ refund }: EditClientDialogProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs">Institución</FormLabel>
-                      <FormControl><Input {...field} placeholder="ej: banco_chile" /></FormControl>
+                      <FormControl><InstitutionSelect value={field.value} onChange={field.onChange}
+                        institutions={institutions} loading={institutionsQuery.isLoading}
+                        error={institutionsQuery.isError} onRetry={() => { void institutionsQuery.refetch() }} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
