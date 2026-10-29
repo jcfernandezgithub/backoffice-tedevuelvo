@@ -1,5 +1,5 @@
 # Architecture rules
-- Refund institution editors share a searchable selector backed by the public active institution catalog and save canonical lowercase values; unchanged legacy values are preserved to avoid unrelated data migrations.
+- Refund institution is read-only in backoffice edit dialogs (displayed with the catalog label, never editable); canonical values are lowercase and legacy values are shown as-is without migration.
 - Dashboard comparison indicators share one presentation component with semantic theme tokens so summaries, insurance groups and pipeline variations remain visually consistent without changing calculations.
 - Auth context identity lives in a component-free store and survives Vite hot updates, so refreshed route consumers never detach from the mounted provider.
 - Dashboard consumes only the six aggregated backoffice-dashboard endpoints; metric rules belong to the backend, while shared legacy selectors remain for other consumers.
