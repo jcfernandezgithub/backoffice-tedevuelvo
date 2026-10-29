@@ -21,9 +21,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { InstitutionSelect } from '@/components/InstitutionSelect'
 import { usePublicInstitutions } from '@/hooks/useInstitutions'
-import { validInstitutionChange, selectedInstitution } from '@/lib/institutionSelection'
+import { selectedInstitution } from '@/lib/institutionSelection'
 import { Button } from '@/components/ui/button'
 import { Settings2, User } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
