@@ -26,6 +26,8 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { PolicyNumberInput } from '@/components/common/PolicyNumberInput'
+import { isNonPortablePolicy, NON_PORTABLE_POLICY_MESSAGE } from '@/lib/policyPortability'
 import {
   Select,
   SelectContent,
@@ -68,7 +70,7 @@ const snapshotSchema = z.object({
   confirmedAverageInsuredBalance: z.coerce.number({ required_error: 'Requerido' }).positive('Debe ser mayor a 0'),
   confirmedOriginalInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
   confirmedRemainingInstallments: z.coerce.number({ required_error: 'Requerido' }).int().positive('Debe ser mayor a 0'),
-  nroPoliza: z.string().trim().max(50).optional().or(z.literal('')),
+  nroPoliza: z.string().trim().max(50).optional().or(z.literal('')).refine(value => !isNonPortablePolicy(value), NON_PORTABLE_POLICY_MESSAGE),
   nroCredito: z.string().trim().max(50).optional().or(z.literal('')),
   currentMonthlyPremium: z.coerce.number().min(0).optional(),
   newMonthlyPremium: z.coerce.number().min(0).optional(),
@@ -1155,7 +1157,7 @@ export function EditSnapshotDialog({ refund }: EditSnapshotDialogProps) {
                       <FormItem>
                         <FormLabel className="text-xs">Nro. Póliza</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Ej: 12345" />
+                          <PolicyNumberInput {...field} placeholder="Ej: 12345" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
