@@ -1,4 +1,5 @@
 import { authService } from './authService'
+import { assertPortablePolicy } from '@/lib/policyPortability'
 import type {
   RefundRequest,
   RefundDocument,
@@ -292,6 +293,7 @@ class RefundAdminApiClient {
   }
 
   async updateData(id: string, data: Record<string, any>): Promise<RefundRequest> {
+    assertPortablePolicy(data.calculationSnapshot?.nroPoliza)
     const response = await fetch(`${API_BASE_URL}/refund-requests/admin/${id}/update`, {
       method: 'PATCH',
       headers: await this.getAuthHeaders(),

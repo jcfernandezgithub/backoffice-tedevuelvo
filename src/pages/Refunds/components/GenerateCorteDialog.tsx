@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { PolicyNumberInput } from '@/components/common/PolicyNumberInput'
+import { isNonPortablePolicy, NON_PORTABLE_POLICY_MESSAGE } from '@/lib/policyPortability'
 
 import { FileText, Download, Upload, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { RefundRequest } from '@/types/refund'
@@ -533,9 +535,13 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
   const [companyName, setCompanyName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim()
+  const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim() && !isNonPortablePolicy(policyNumber)
 
   const handleGenerate = async () => {
+    if (isNonPortablePolicy(policyNumber)) {
+      toast({ title: 'Póliza no portable', description: NON_PORTABLE_POLICY_MESSAGE, variant: 'destructive' })
+      return
+    }
     if (!creditNumber.trim() || !policyNumber.trim() || !companyName.trim()) {
       toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
       return
@@ -600,7 +606,7 @@ function GenericForm({ refund, onGenerate }: GenericFormProps) {
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Nº de Póliza <span className="text-destructive">*</span></Label>
-            <Input
+            <PolicyNumberInput
               value={policyNumber}
               onChange={e => setPolicyNumber(e.target.value)}
               placeholder="Número de póliza"
@@ -670,9 +676,13 @@ function SantanderForm({ refund, onGenerate, formatLabel = 'Banco Santander' }: 
   const [insuranceName, setInsuranceName] = useState(derivedInsuranceName)
   const [isSaving, setIsSaving] = useState(false)
 
-  const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim()
+  const creditDataComplete = !!creditNumber.trim() && !!policyNumber.trim() && !isNonPortablePolicy(policyNumber)
 
   const handleGenerate = async () => {
+    if (isNonPortablePolicy(policyNumber)) {
+      toast({ title: 'Póliza no portable', description: NON_PORTABLE_POLICY_MESSAGE, variant: 'destructive' })
+      return
+    }
     if (!creditNumber.trim() || !policyNumber.trim() || !companyName.trim() || !insuranceName.trim()) {
       toast({ title: 'Campos requeridos', description: 'Por favor completa todos los campos obligatorios', variant: 'destructive' })
       return
@@ -742,7 +752,7 @@ function SantanderForm({ refund, onGenerate, formatLabel = 'Banco Santander' }: 
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Nº de Póliza <span className="text-destructive">*</span></Label>
-            <Input
+            <PolicyNumberInput
               value={policyNumber}
               onChange={e => setPolicyNumber(e.target.value)}
               placeholder="Número de póliza"

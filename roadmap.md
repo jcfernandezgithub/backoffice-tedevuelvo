@@ -1,4 +1,7 @@
 # Envío de Datos al Banco desde CSV
+## Póliza mensualizada
+- [x] Bloquear el ingreso de la póliza Cardiff 226071739 con aviso inmediato en edición y carta de corte; impedir guardado por vías alternativas. Pruebas aprobadas y comprobación visual del formulario con datos de prueba, sin alterar solicitudes reales.
+
 ## Vista móvil Dashboard y Operación
 - [x] Optimizar filtros, calugas y gráficos en móviles conservando escritorio y cálculos.
 - [x] Quitar etiqueta de desarrollo del Dashboard; verificar ambas páginas en 360, 390, 768 y 1683 px con respuestas simuladas, sin sesión real.
