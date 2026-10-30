@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Póliza mensualizada
+- [x] Registrar cambios en README bajo 4.5.1 y actualizar la versión del login.
 - [x] Bloquear el ingreso de la póliza Cardiff 226071739 con aviso inmediato en edición y carta de corte; impedir guardado por vías alternativas. Pruebas aprobadas y comprobación visual del formulario con datos de prueba, sin alterar solicitudes reales.
 
 ## Vista móvil Dashboard y Operación

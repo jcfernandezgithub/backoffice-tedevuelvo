@@ -1,8 +1,20 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.0
+## Versión 4.5.1
 
 ## Changelog
+
+### Versión 4.5.1 - 2026-10-30
+
+#### Validación de póliza mensualizada de Cardiff
+- Se bloquea el ingreso de la póliza **226071739** de Cardiff, porque es mensualizada y no permite gestionar la portabilidad del cliente.
+- Al escribir ese número, se muestra un aviso inmediato al ejecutivo junto al campo de póliza en la edición de datos confirmados y en las cartas de corte de Solicitudes, Call Center y Cierre Mensual.
+- La edición impide guardar esa póliza y las cartas de corte bloquean la vista previa; al corregir el número, desaparece el aviso.
+- La validación compartida también rechaza los intentos de guardar esa póliza desde otras vías del frontend, antes de enviar la actualización al servicio. No se modificó el backend ni se migraron solicitudes existentes.
+- Se agregaron pruebas para el número restringido, espacios exteriores y otras pólizas; se verificó visualmente el aviso y bloqueo con datos de prueba, sin modificar solicitudes reales.
+
+#### Versión visible
+- Se actualizó la versión del login a **4.5.1**.
 
 ### Versión 4.5.0 - 2026-10-22
 
