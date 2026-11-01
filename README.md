@@ -1,8 +1,25 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.1
+## Versión 4.5.2
 
 ## Changelog
+
+### Versión 4.5.2 - 2026-10-31
+
+#### Solicitud masiva de datos bancarios
+- Nueva pestaña en **Procesos Masivos** para seleccionar solicitudes en **Pago programado**, revisar los destinatarios y confirmar el envío de correos usando el mismo servicio del envío individual.
+- Selección individual, por página o mediante **Seleccionar todas**, que reúne todas las páginas del filtro actual y excluye solicitudes sin correo válido o monto aprobado. Si falla la carga de una página, no se aplica una selección parcial.
+- El nombre y el identificador de cada solicitud permiten abrir su detalle en una nueva pestaña, conservando la selección del lote.
+- Antes de cada envío se consulta nuevamente la solicitud; los correos se procesan secuencialmente, sin cambiar estados ni reintentar automáticamente.
+- Los casos ya procesados muestran una advertencia y permiten continuar; los errores reales detienen el lote. Un fallo en la consulta previa no se registra como intento de envío.
+- Se utiliza el identificador público para consultar el detalle y enviar el correo. La respuesta del servicio no certifica la recepción en la bandeja del cliente.
+- Se aprobaron 13 pruebas y se verificó la selección entre páginas, la apertura del detalle y la limpieza de selección con respuestas simuladas, sin enviar correos ni modificar solicitudes reales.
+
+#### Desplazamiento de listados
+- Solicitudes, Cierre Mensual y Call Center incorporan una barra superior siempre visible para desplazarse horizontalmente y acceder a todas las columnas, sin ensanchar la página ni cambiar las tarjetas móviles.
+
+#### Versión visible
+- Se actualizó la versión del login a **4.5.2**.
 
 ### Versión 4.5.1 - 2026-10-30
 
