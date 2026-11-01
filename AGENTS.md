@@ -1,4 +1,5 @@
 # Architecture rules
+- Bulk bank-data emails use the existing individual resend endpoint with paginated explicit selection, fresh per-request eligibility checks, sequential writes and stop-on-error without retries; responses confirm the service result, not inbox delivery.
 - Policy-number entry forms share the portability rule and immediate accessible warning; the frontend update client also rejects blocked policy payloads before sending them, so alternate entry paths cannot bypass the same restriction.
 - Refund institution is read-only in backoffice edit dialogs (displayed with the catalog label, never editable); canonical values are lowercase and legacy values are shown as-is without migration.
 - Dashboard comparison indicators share one presentation component with semantic theme tokens so summaries, insurance groups and pipeline variations remain visually consistent without changing calculations.

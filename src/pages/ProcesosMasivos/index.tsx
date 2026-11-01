@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { Package, FileText, Shield, Wallet, Landmark } from 'lucide-react'
+import { Package, FileText, Shield, Wallet, Landmark, Mail } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import CartasCorteWizard from './wizards/CartasCorteWizard'
 import CertificadosCoberturaWizard from './wizards/CertificadosCoberturaWizard'
 import PagosMasivosWizard from './wizards/PagosMasivosWizard'
 import IngresoBancarioWizard from './wizards/IngresoBancarioWizard'
+import BankEmailsWizard from './wizards/BankEmailsWizard'
 
-type ProcessTab = 'cartas' | 'certificados' | 'pagos' | 'ingreso'
+type ProcessTab = 'cartas' | 'certificados' | 'pagos' | 'ingreso' | 'correos'
 
 export default function ProcesosMasivosPage() {
   const [tab, setTab] = useState<ProcessTab>('cartas')
   const [ingresoBusy, setIngresoBusy] = useState(false)
+  const [emailBusy, setEmailBusy] = useState(false)
+  const busy = ingresoBusy || emailBusy
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -24,21 +27,22 @@ export default function ProcesosMasivosPage() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={(v) => { if (!ingresoBusy) setTab(v as ProcessTab) }} className="space-y-4">
+      <Tabs value={tab} onValueChange={(v) => { if (!busy) setTab(v as ProcessTab) }} className="space-y-4">
         <TabsList className="flex flex-wrap h-auto justify-start">
-          <TabsTrigger disabled={ingresoBusy} value="cartas" className="flex items-center gap-2">
+          <TabsTrigger disabled={busy} value="cartas" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Cartas de Corte
           </TabsTrigger>
-          <TabsTrigger disabled={ingresoBusy} value="certificados" className="flex items-center gap-2">
+          <TabsTrigger disabled={busy} value="certificados" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Certificados de Cobertura
           </TabsTrigger>
-          <TabsTrigger disabled={ingresoBusy} value="pagos" className="flex items-center gap-2">
+          <TabsTrigger disabled={busy} value="pagos" className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
             Pagos (carga_tdv)
           </TabsTrigger>
-          <TabsTrigger value="ingreso" className="flex items-center gap-2"><Landmark className="h-4 w-4" />Envío de Datos al Banco</TabsTrigger>
+          <TabsTrigger disabled={busy} value="ingreso" className="flex items-center gap-2"><Landmark className="h-4 w-4" />Envío de Datos al Banco</TabsTrigger>
+          <TabsTrigger disabled={busy} value="correos" className="flex items-center gap-2"><Mail className="h-4 w-4" />Correos de datos bancarios</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cartas" className="mt-0">
@@ -52,6 +56,9 @@ export default function ProcesosMasivosPage() {
         </TabsContent>
         <TabsContent forceMount value="ingreso" className="mt-0 data-[state=inactive]:hidden">
           <IngresoBancarioWizard onBusyChange={setIngresoBusy} />
+        </TabsContent>
+        <TabsContent forceMount value="correos" className="mt-0 data-[state=inactive]:hidden">
+          <BankEmailsWizard active={tab === 'correos'} onBusyChange={setEmailBusy} />
         </TabsContent>
       </Tabs>
     </div>
