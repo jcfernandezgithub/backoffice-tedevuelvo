@@ -1,4 +1,5 @@
 # Architecture rules
+- Wide operational lists opt into the shared Table horizontal-scroll mode with synchronized upper and lower native scrollbars; other tables and mobile cards retain their existing presentation.
 - Bulk bank-data emails use publicId for detail and resend endpoints, paginated explicit selection and sequential writes without retries; known already-processed cases warn and continue, real failures stop, and a failed preflight is never marked as an attempted email. Responses do not certify inbox delivery.
 - Policy-number entry forms share the portability rule and immediate accessible warning; the frontend update client also rejects blocked policy payloads before sending them, so alternate entry paths cannot bypass the same restriction.
 - Refund institution is read-only in backoffice edit dialogs (displayed with the catalog label, never editable); canonical values are lowercase and legacy values are shown as-is without migration.

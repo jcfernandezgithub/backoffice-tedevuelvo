@@ -1,4 +1,6 @@
 # Envío de Datos al Banco desde CSV
+## Columnas de listados
+- [ ] Incorporar desplazamiento horizontal superior e inferior en Solicitudes, Cierre Mensual y Call Center; verificar acceso a Acciones en resoluciones estrechas sin cambiar filtros ni tarjetas móviles.
 ## Correos de datos bancarios
 - [x] Corregir identificador público en consulta y envío; tratar ya procesada como advertencia no bloqueante y diferenciar fallo previo de envío intentado. Diez pruebas aprobadas; lote con dos advertencias y un envío verificado con respuestas simuladas, sin correos reales.
 - [x] Añadir pestaña con lista paginada y selección de solicitudes en Pago programado, confirmación y envío secuencial usando el servicio individual.

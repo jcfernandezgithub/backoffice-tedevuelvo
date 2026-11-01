@@ -150,6 +150,18 @@ All colors MUST be HSL.
 
 /* Optimizaciones adicionales para móvil */
 @layer components {
+  .table-horizontal-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted));
+  }
+  .table-horizontal-scroll::-webkit-scrollbar { height: 14px; }
+  .table-horizontal-scroll::-webkit-scrollbar-track { background: hsl(var(--muted)); }
+  .table-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border: 3px solid hsl(var(--muted));
+    border-radius: 6px;
+  }
+  .table-horizontal-scroll::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary)); }
   .dashboard-variation-up {
     color: hsl(var(--comparison-up));
     background-color: hsl(var(--comparison-up-background));

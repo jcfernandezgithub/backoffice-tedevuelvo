@@ -4,16 +4,53 @@ import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  React.HTMLAttributes<HTMLTableElement> & { horizontalScroll?: boolean }
+>(({ className, horizontalScroll = false, ...props }, ref) => {
+  const viewport = React.useRef<HTMLDivElement>(null)
+  const top = React.useRef<HTMLDivElement>(null)
+  const [width, setWidth] = React.useState(0)
+  const [overflow, setOverflow] = React.useState(false)
+  React.useEffect(() => {
+    if (!horizontalScroll) return
+    const element = viewport.current
+    const table = element?.querySelector('table')
+    if (!element || !table) return
+    const measure = () => {
+      setWidth(element.scrollWidth)
+      setOverflow(element.scrollWidth > element.clientWidth + 1)
+      if (top.current) top.current.scrollLeft = element.scrollLeft
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    observer.observe(table)
+    measure()
+    return () => observer.disconnect()
+  }, [horizontalScroll])
+  const sync = (source: HTMLDivElement, target: HTMLDivElement | null) => {
+    if (target && Math.abs(target.scrollLeft - source.scrollLeft) > 1) target.scrollLeft = source.scrollLeft
+  }
+  return <div className="min-w-0 max-w-full">
+    {horizontalScroll && overflow && <div
+      ref={top}
+      role="region"
+      aria-label="Desplazamiento horizontal de columnas"
+      tabIndex={0}
+      className="table-horizontal-scroll mb-2 w-full overflow-x-scroll overflow-y-hidden rounded border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onScroll={event => sync(event.currentTarget, viewport.current)}
+    ><div style={{ width }} className="h-1" /></div>}
+  <div ref={viewport} className={cn("relative w-full min-w-0 max-w-full overflow-auto", horizontalScroll && "table-horizontal-scroll focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+    tabIndex={horizontalScroll ? 0 : undefined}
+    role={horizontalScroll ? 'region' : undefined}
+    aria-label={horizontalScroll ? 'Tabla de solicitudes, todas las columnas' : undefined}
+    onScroll={horizontalScroll ? event => sync(event.currentTarget, top.current) : undefined}>
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
+      className={cn("w-full caption-bottom text-sm", horizontalScroll && "min-w-max [&_th]:whitespace-nowrap", className)}
       {...props}
     />
   </div>
-))
+  </div>
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
