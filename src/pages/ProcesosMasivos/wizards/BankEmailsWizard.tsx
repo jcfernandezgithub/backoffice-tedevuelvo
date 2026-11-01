@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Mail, RefreshCw, Search, Square, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Mail, RefreshCw, Search, Square, CheckCircle2, AlertCircle, ListChecks, Loader2, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import { refundAdminApi } from '@/services/refundAdminApi'
 import type { RefundRequest } from '@/types/refund'
@@ -11,6 +12,7 @@ import { Progress } from '@/components/ui/progress'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { bankEmailEligibility, runBankEmailBatch, type BankEmailResult } from '../services/bankEmailBatchService'
+import { loadAllBankEmailRecipients } from '../services/bankEmailSelection'
 
 const money = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(value) : 'Sin monto'
 
@@ -24,6 +26,9 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
   const [busy, setBusy] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [batchSize, setBatchSize] = useState(0)
+  const [selectingAll, setSelectingAll] = useState(false)
+  const [selectionError, setSelectionError] = useState('')
+  const selectionController = useRef<AbortController | null>(null)
   const stop = useRef(false)
   const lock = useRef(false)
   const attempted = useRef(new Set<string>())
@@ -35,11 +40,13 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
     retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false,
   })
   useEffect(() => {
+    selectionController.current?.abort()
     stop.current = true
     setSelected(new Map())
     setResults([])
     attempted.current.clear()
   }, [scope])
+  useEffect(() => () => { selectionController.current?.abort() }, [])
   useEffect(() => {
     if (!busy) return
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
@@ -50,6 +57,26 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
   const rows = data?.items ?? []
   const selectable = rows.filter(row => !bankEmailEligibility(row))
   const allChecked = selectable.length > 0 && selectable.every(row => selected.has(row.id))
+  const someChecked = selectable.some(row => selected.has(row.id))
+  const controlsDisabled = busy || selectingAll
+  const selectAll = async () => {
+    if (controlsDisabled || selectionController.current) return
+    const controller = new AbortController()
+    selectionController.current = controller
+    setSelectingAll(true)
+    setSelectionError('')
+    onBusyChange(true)
+    try {
+      const recipients = await loadAllBankEmailRecipients(search, controller.signal)
+      if (!controller.signal.aborted) setSelected(prev => new Map([...prev, ...recipients]))
+    } catch (error) {
+      if (!controller.signal.aborted) setSelectionError(error instanceof Error ? error.message : 'No fue posible seleccionar todas las solicitudes.')
+    } finally {
+      selectionController.current = null
+      setSelectingAll(false)
+      onBusyChange(false)
+    }
+  }
   const toggle = (row: RefundRequest, checked: boolean) => setSelected(prev => {
     const next = new Map(prev)
     if (checked) next.set(row.id, row); else next.delete(row.id)
@@ -80,25 +107,32 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
   return <div className="space-y-5 min-w-0">
     <div className="flex flex-wrap justify-between items-start gap-3 border-b pb-4">
       <div><h2 className="text-xl font-semibold flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Solicitud de datos bancarios</h2><p className="text-sm text-muted-foreground mt-1">Clientes con devolución en Pago programado</p></div>
-      <Button disabled={busy || !selected.size || isFetching} onClick={() => setConfirm(true)}><Mail className="mr-2 h-4 w-4" />Enviar a seleccionados ({selected.size})</Button>
+      <Button disabled={controlsDisabled || !selected.size || isFetching} onClick={() => setConfirm(true)}><Mail className="mr-2 h-4 w-4" />Enviar a seleccionados ({selected.size})</Button>
     </div>
     <form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); setPage(1); setSearch(text.trim()) }}>
-      <Input aria-label="Buscar cliente, RUT o solicitud" placeholder="Cliente, RUT o solicitud" value={text} onChange={event => setText(event.target.value)} disabled={busy} className="max-w-sm" />
-      <Button type="submit" variant="outline" disabled={busy || isFetching}><Search className="h-4 w-4 mr-2" />Buscar</Button>
-      <Button type="button" variant="outline" disabled={busy || isFetching} onClick={() => void refetch()}><RefreshCw className="h-4 w-4 mr-2" />Actualizar</Button>
-      {!!selected.size && <Button type="button" variant="ghost" disabled={busy} onClick={() => setSelected(new Map())}>Limpiar selección</Button>}
+      <Input aria-label="Buscar cliente, RUT o solicitud" placeholder="Cliente, RUT o solicitud" value={text} onChange={event => setText(event.target.value)} disabled={controlsDisabled} className="max-w-sm" />
+      <Button type="submit" variant="outline" disabled={controlsDisabled || isFetching}><Search className="h-4 w-4 mr-2" />Buscar</Button>
+      <Button type="button" variant="outline" disabled={controlsDisabled || isFetching} onClick={() => void refetch()}><RefreshCw className="h-4 w-4 mr-2" />Actualizar</Button>
+      {!!selected.size && <Button type="button" variant="ghost" disabled={controlsDisabled} onClick={() => setSelected(new Map())}>Limpiar selección</Button>}
     </form>
-    <p className="text-sm text-muted-foreground">{data?.total ?? 0} solicitudes · {selected.size} seleccionadas entre páginas</p>
+    <div className="flex flex-wrap items-center justify-between gap-3" aria-live="polite">
+      <p className="text-sm text-muted-foreground">{data?.total ?? 0} solicitudes · {selected.size} seleccionadas entre páginas</p>
+      <Button variant="outline" disabled={controlsDisabled || isFetching || !!error || !data?.total} onClick={() => void selectAll()}>
+        {selectingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ListChecks className="h-4 w-4 mr-2" />}
+        {selectingAll ? 'Seleccionando todas…' : `Seleccionar todas (${data?.total ?? 0})`}
+      </Button>
+    </div>
+    {selectionError && <div role="alert" className="border border-destructive rounded-md p-4 text-destructive">{selectionError}</div>}
     {error && <div role="alert" className="border border-destructive rounded-md p-4 text-destructive">{error.message === 'UNAUTHORIZED' ? 'La sesión venció. Vuelve a ingresar para cargar las solicitudes.' : error.message}</div>}
     <div className="overflow-x-auto border rounded-md">
-      <Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox aria-label="Seleccionar página" checked={allChecked} disabled={busy || isFetching || !selectable.length} onCheckedChange={checked => setSelected(prev => { const next = new Map(prev); selectable.forEach(row => { if (checked === true) next.set(row.id, row); else next.delete(row.id) }); return next })} /></TableHead><TableHead>Cliente / Solicitud</TableHead><TableHead>RUT</TableHead><TableHead>Correo destinatario</TableHead><TableHead className="text-right">Monto aprobado</TableHead><TableHead>Disponibilidad</TableHead></TableRow></TableHeader>
+      <Table><TableHeader><TableRow><TableHead className="w-12"><Checkbox aria-label="Seleccionar página" checked={allChecked ? true : someChecked ? 'indeterminate' : false} disabled={controlsDisabled || isFetching || !selectable.length} onCheckedChange={checked => setSelected(prev => { const next = new Map(prev); selectable.forEach(row => { if (checked === true) next.set(row.id, row); else next.delete(row.id) }); return next })} /></TableHead><TableHead>Cliente / Solicitud</TableHead><TableHead>RUT</TableHead><TableHead>Correo destinatario</TableHead><TableHead className="text-right">Monto aprobado</TableHead><TableHead>Disponibilidad</TableHead></TableRow></TableHeader>
       <TableBody>{rows.map(row => {
         const reason = bankEmailEligibility(row)
         const sent = attempted.current.has(row.id)
-        return <TableRow key={row.id}><TableCell><Checkbox aria-label={`Seleccionar ${row.fullName}`} checked={selected.has(row.id)} disabled={busy || isFetching || !!reason} onCheckedChange={checked => toggle(row, checked === true)} /></TableCell><TableCell><div className="font-medium">{row.fullName}</div><div className="text-xs text-muted-foreground">{row.publicId || row.id}</div></TableCell><TableCell className="whitespace-nowrap">{row.rut}</TableCell><TableCell className="break-all">{row.email || 'Sin correo'}</TableCell><TableCell className="text-right whitespace-nowrap">{money((row as RefundRequest & { realAmount?: number }).realAmount)}</TableCell><TableCell className="text-sm">{sent ? 'Advertencia: envío ya intentado; se omitirá' : reason || 'Pago programado'}</TableCell></TableRow>
+        return <TableRow key={row.id}><TableCell><Checkbox aria-label={`Seleccionar ${row.fullName}`} checked={selected.has(row.id)} disabled={controlsDisabled || isFetching || !!reason} onCheckedChange={checked => toggle(row, checked === true)} /></TableCell><TableCell><Link to={`/solicitudes/${encodeURIComponent(row.publicId || row.id)}`} target="_blank" rel="noopener noreferrer" className="group block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Ver detalle de ${row.fullName} (nueva pestaña)`}><div className="font-medium text-primary group-hover:underline flex items-center gap-2">{row.fullName}<ExternalLink className="h-3.5 w-3.5 shrink-0" /></div><div className="text-xs text-muted-foreground break-all">{row.publicId || row.id}</div></Link></TableCell><TableCell className="whitespace-nowrap">{row.rut}</TableCell><TableCell className="break-all">{row.email || 'Sin correo'}</TableCell><TableCell className="text-right whitespace-nowrap">{money((row as RefundRequest & { realAmount?: number }).realAmount)}</TableCell><TableCell className="text-sm">{sent ? 'Advertencia: envío ya intentado; se omitirá' : reason || 'Pago programado'}</TableCell></TableRow>
       })}{!rows.length && <TableRow><TableCell colSpan={6} className="h-28 text-center text-muted-foreground">{isFetching ? 'Cargando solicitudes…' : error ? 'No fue posible cargar la lista.' : 'No hay solicitudes para estos filtros.'}</TableCell></TableRow>}</TableBody></Table>
     </div>
-    <div className="flex items-center justify-end gap-3"><Button variant="outline" disabled={busy || isFetching || page <= 1} onClick={() => setPage(prev => prev - 1)}>Anterior</Button><span className="text-sm">Página {page} de {data?.totalPages ?? 1}</span><Button variant="outline" disabled={busy || isFetching || !data?.hasNext} onClick={() => setPage(prev => prev + 1)}>Siguiente</Button></div>
+    <div className="flex items-center justify-end gap-3"><Button variant="outline" disabled={controlsDisabled || isFetching || page <= 1} onClick={() => setPage(prev => prev - 1)}>Anterior</Button><span className="text-sm">Página {page} de {data?.totalPages ?? 1}</span><Button variant="outline" disabled={controlsDisabled || isFetching || !data?.hasNext} onClick={() => setPage(prev => prev + 1)}>Siguiente</Button></div>
     {(busy || results.length > 0) && <section className="border-t pt-5 space-y-3" aria-live="polite">
       <div className="flex flex-wrap justify-between gap-3 items-center"><h3 className="font-semibold">{busy ? 'Envío en curso' : results.some(result => result.status === 'error') ? 'Lote detenido por error' : results.length < batchSize ? 'Envío detenido' : 'Proceso finalizado'}</h3>{busy && <Button variant="outline" onClick={() => { stop.current = true }}><Square className="h-4 w-4 mr-2" />Detener después del actual</Button>}</div>
       <Progress value={batchSize ? results.length / batchSize * 100 : 0} />
