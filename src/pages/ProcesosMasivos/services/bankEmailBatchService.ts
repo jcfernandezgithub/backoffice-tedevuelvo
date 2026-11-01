@@ -22,7 +22,7 @@ export function bankEmailPayload(refund: RefundRequest) {
   }
 }
 
-export type BankEmailResult = { id: string; name: string; email: string; status: 'success' | 'skipped' | 'error'; detail: string }
+export type BankEmailResult = { id: string; name: string; email: string; status: 'success' | 'skipped' | 'error'; detail: string; attempted?: boolean }
 
 // All writes are explicit, sequential and never retried: a failed response can hide an email already sent.
 export async function runBankEmailBatch(
@@ -30,25 +30,38 @@ export async function runBankEmailBatch(
   onResult: (result: BankEmailResult) => void,
   shouldStop: () => boolean,
   wait: () => Promise<void> = () => new Promise(resolve => setTimeout(resolve, 1000)),
+  processed: ReadonlySet<string> = new Set(),
 ) {
   const seen = new Set<string>()
   for (const row of selected) {
     if (shouldStop()) break
     if (seen.has(row.id)) continue
     seen.add(row.id)
+    if (processed.has(row.id)) {
+      onResult({ id: row.id, name: row.fullName, email: row.email, status: 'skipped', detail: 'Advertencia: ya procesada en esta sesión; se continúa con las demás.' })
+      continue
+    }
     let current: RefundRequest
+    let attempted = false
     try {
-      current = await refundAdminApi.getById(row.id)
+      const publicId = row.publicId || row.id
+      current = await refundAdminApi.getById(publicId)
       const reason = bankEmailEligibility(current)
       if (reason) {
         onResult({ id: row.id, name: current.fullName, email: current.email, status: 'skipped', detail: reason })
         continue
       }
-      const response = await refundAdminApi.resendScheduledPaymentEmail(row.id, bankEmailPayload(current))
+      attempted = true
+      const response = await refundAdminApi.resendScheduledPaymentEmail(publicId, bankEmailPayload(current))
       if (response.ok !== true) throw new Error('El servicio no confirmó el envío.')
-      onResult({ id: row.id, name: current.fullName, email: current.email, status: 'success', detail: 'Servicio confirmó el envío; entrega en bandeja no verificada.' })
+      onResult({ id: row.id, name: current.fullName, email: current.email, status: 'success', attempted, detail: 'Servicio confirmó el envío; entrega en bandeja no verificada.' })
     } catch (error) {
-      onResult({ id: row.id, name: row.fullName, email: row.email, status: 'error', detail: `${error instanceof Error ? error.message : 'Error desconocido'}. Lote detenido; verificar el envío antes de reintentar.` })
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      if (attempted && /\b(ya (?:fue |ha sido |est[aá] )?procesad[ao]|already processed)\b/i.test(message)) {
+        onResult({ id: row.id, name: row.fullName, email: row.email, status: 'skipped', attempted, detail: `Advertencia: ${message}. Se continúa con las demás.` })
+        continue
+      }
+      onResult({ id: row.id, name: row.fullName, email: row.email, status: 'error', attempted, detail: `${message}. Lote detenido; ${attempted ? 'verificar el envío' : 'no se ejecutó el envío de esta solicitud'} antes de reintentar.` })
       break
     }
     if (!shouldStop()) await wait()
