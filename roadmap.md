@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Correos de datos bancarios
+- [ ] Corregir identificador público en consulta y envío; tratar ya procesada como advertencia no bloqueante y diferenciar fallo previo de envío intentado.
 - [x] Añadir pestaña con lista paginada y selección de solicitudes en Pago programado, confirmación y envío secuencial usando el servicio individual.
 - [x] Probar selección, revalidación del estado, payload y detención sin reintentos; siete pruebas nuevas y cinco de regresión aprobadas; interfaz verificada con respuestas simuladas sin enviar correos reales.
 - [ ] Verificar envío real: pendiente corrección del error n8n reportado y sesión con destinatarios autorizados; no se enviaron correos reales.

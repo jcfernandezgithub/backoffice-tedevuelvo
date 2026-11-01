@@ -25,14 +25,14 @@ test('omite solicitudes que ya no están en Pago programado al ejecutar', async 
   expect(results[0].status).toBe('skipped')
 })
 test('envía secuencialmente, sin duplicados ni cambios de estado', async () => {
-  const second = { ...row, id: 'two' }
+  const second = { ...row, id: 'two', publicId: 'public-two' }
   const events: string[] = []
   const get = spyOn(refundAdminApi, 'getById').mockImplementation(async id => { events.push(`read:${id}`); return { ...row, id, realAmount: 456000 } })
   const send = spyOn(refundAdminApi, 'resendScheduledPaymentEmail').mockImplementation(async id => { events.push(`send:${id}`); await Promise.resolve(); events.push(`done:${id}`); return { ok: true, data: null } })
   const status = spyOn(refundAdminApi, 'updateStatus')
   spies.push(get, send, status)
   await runBankEmailBatch([row, row, second], () => {}, () => false, async () => {})
-  expect(events).toEqual(['read:one', 'send:one', 'done:one', 'read:two', 'send:two', 'done:two'])
+  expect(events).toEqual(['read:public-one', 'send:public-one', 'done:public-one', 'read:public-two', 'send:public-two', 'done:public-two'])
   expect(send.mock.calls[0][1].monto_aprobado).toBe(456000)
   expect(status).not.toHaveBeenCalled()
 })
@@ -57,4 +57,33 @@ test('detener después del actual conserva las restantes sin enviar', async () =
 test('no envía montos inválidos ni correos vacíos', () => {
   expect(() => bankEmailPayload({ ...row, realAmount: 0 } as RefundRequest)).toThrow('Monto aprobado')
   expect(() => bankEmailPayload({ ...row, email: '' })).toThrow('Correo')
+})
+test('ya procesada es advertencia y continúa con la siguiente sin reenviar', async () => {
+  const get = spyOn(refundAdminApi, 'getById').mockResolvedValue(row)
+  const send = spyOn(refundAdminApi, 'resendScheduledPaymentEmail').mockRejectedValueOnce(new Error('Solicitud ya fue procesada')).mockResolvedValueOnce({ ok: true, data: null })
+  spies.push(get, send)
+  const results: BankEmailResult[] = []
+  await runBankEmailBatch([row, { ...row, id: 'two', publicId: 'public-two' }], result => results.push(result), () => false, async () => {})
+  expect(results.map(result => result.status)).toEqual(['skipped', 'success'])
+  expect(send).toHaveBeenCalledTimes(2)
+  expect(get.mock.calls[0][0]).toBe('public-one')
+})
+test('error de consulta no se marca como envío intentado', async () => {
+  const get = spyOn(refundAdminApi, 'getById').mockRejectedValue(new Error('Solicitud no encontrada'))
+  const send = spyOn(refundAdminApi, 'resendScheduledPaymentEmail')
+  spies.push(get, send)
+  const results: BankEmailResult[] = []
+  await runBankEmailBatch([row], result => results.push(result), () => false)
+  expect(results[0].attempted).toBe(false)
+  expect(send).not.toHaveBeenCalled()
+})
+test('solicitud procesada en la sesión se omite y no bloquea otras', async () => {
+  const get = spyOn(refundAdminApi, 'getById').mockResolvedValue(row)
+  const send = spyOn(refundAdminApi, 'resendScheduledPaymentEmail').mockResolvedValue({ ok: true, data: null })
+  spies.push(get, send)
+  const results: BankEmailResult[] = []
+  await runBankEmailBatch([row, { ...row, id: 'two', publicId: 'public-two' }], result => results.push(result), () => false, async () => {}, new Set(['one']))
+  expect(results.map(result => result.status)).toEqual(['skipped', 'success'])
+  expect(get).toHaveBeenCalledTimes(1)
+  expect(send).toHaveBeenCalledTimes(1)
 })
