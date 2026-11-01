@@ -8,8 +8,6 @@ const Table = React.forwardRef<
   React.HTMLAttributes<HTMLTableElement> & { horizontalScroll?: boolean }
 >(({ className, horizontalScroll = false, ...props }, ref) => {
   const viewport = React.useRef<HTMLDivElement>(null)
-  const top = React.useRef<HTMLDivElement>(null)
-  const [width, setWidth] = React.useState(0)
   const [overflow, setOverflow] = React.useState(false)
   const [offset, setOffset] = React.useState(0)
   const [maxOffset, setMaxOffset] = React.useState(0)
@@ -19,10 +17,9 @@ const Table = React.forwardRef<
     const table = element?.querySelector('table')
     if (!element || !table) return
     const measure = () => {
-      setWidth(element.scrollWidth)
       setOverflow(element.scrollWidth > element.clientWidth + 1)
       setMaxOffset(Math.max(0, element.scrollWidth - element.clientWidth))
-      if (top.current) top.current.scrollLeft = element.scrollLeft
+      setOffset(element.scrollLeft)
     }
     const observer = new ResizeObserver(measure)
     observer.observe(element)
@@ -30,12 +27,8 @@ const Table = React.forwardRef<
     measure()
     return () => observer.disconnect()
   }, [horizontalScroll])
-  const sync = (source: HTMLDivElement, target: HTMLDivElement | null) => {
-    if (target && Math.abs(target.scrollLeft - source.scrollLeft) > 1) target.scrollLeft = source.scrollLeft
-  }
   return <div className="min-w-0 max-w-full">
     {horizontalScroll && overflow && <div
-      ref={top}
       role="region"
       aria-label="Desplazamiento horizontal de columnas"
       tabIndex={0}
