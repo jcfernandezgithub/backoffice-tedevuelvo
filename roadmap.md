@@ -1,4 +1,8 @@
 # Envío de Datos al Banco desde CSV
+## Correos de datos bancarios
+- [ ] Añadir pestaña con lista paginada y selección de solicitudes en Pago programado, confirmación y envío secuencial usando el servicio individual.
+- [ ] Probar selección, revalidación del estado, payload y detención sin reintentos; verificar interfaz sin enviar correos reales.
+
 ## Póliza mensualizada
 - [x] Registrar cambios en README bajo 4.5.1 y actualizar la versión del login.
 - [x] Bloquear el ingreso de la póliza Cardiff 226071739 con aviso inmediato en edición y carta de corte; impedir guardado por vías alternativas. Pruebas aprobadas y comprobación visual del formulario con datos de prueba, sin alterar solicitudes reales.
