@@ -2,7 +2,7 @@
 ## Columnas de listados
 - [x] Incorporar barra superior siempre visible y desplazamiento horizontal inferior en Solicitudes, Cierre Mensual y Call Center. Acciones accesibles sin ensanchar la página en 1568, 1024 y 768 px con respuestas simuladas; filtros y tarjetas móviles sin cambios.
 ## Correos de datos bancarios
-- [ ] Añadir selección de todas las páginas filtradas y acceso al detalle sin perder la selección; verificar sin enviar correos reales.
+- [x] Añadir selección de todas las páginas filtradas y acceso al detalle en nueva pestaña sin perder la selección; 13 pruebas aprobadas y flujo verificado con respuestas simuladas, sin enviar correos ni modificar solicitudes reales.
 - [x] Corregir identificador público en consulta y envío; tratar ya procesada como advertencia no bloqueante y diferenciar fallo previo de envío intentado. Diez pruebas aprobadas; lote con dos advertencias y un envío verificado con respuestas simuladas, sin correos reales.
 - [x] Añadir pestaña con lista paginada y selección de solicitudes en Pago programado, confirmación y envío secuencial usando el servicio individual.
 - [x] Probar selección, revalidación del estado, payload y detención sin reintentos; siete pruebas nuevas y cinco de regresión aprobadas; interfaz verificada con respuestas simuladas sin enviar correos reales.
