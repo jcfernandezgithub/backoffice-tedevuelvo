@@ -1,19 +1,56 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { Slider } from '@/components/ui/slider'
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  React.HTMLAttributes<HTMLTableElement> & { horizontalScroll?: boolean }
+>(({ className, horizontalScroll = false, ...props }, ref) => {
+  const viewport = React.useRef<HTMLDivElement>(null)
+  const [overflow, setOverflow] = React.useState(false)
+  const [offset, setOffset] = React.useState(0)
+  const [maxOffset, setMaxOffset] = React.useState(0)
+  React.useEffect(() => {
+    if (!horizontalScroll) return
+    const element = viewport.current
+    const table = element?.querySelector('table')
+    if (!element || !table) return
+    const measure = () => {
+      setOverflow(element.scrollWidth > element.clientWidth + 1)
+      setMaxOffset(Math.max(0, element.scrollWidth - element.clientWidth))
+      setOffset(element.scrollLeft)
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    observer.observe(table)
+    measure()
+    return () => observer.disconnect()
+  }, [horizontalScroll])
+  return <div className="min-w-0 max-w-full">
+    {horizontalScroll && overflow && <div
+      role="region"
+      aria-label="Desplazamiento horizontal de columnas"
+      tabIndex={0}
+      className="mb-2 w-full rounded border bg-muted px-3 py-2"
+    ><Slider aria-label="Desplazar columnas" value={[offset]} max={maxOffset} step={1} onValueChange={values => {
+      const value = values[0] ?? 0
+      setOffset(value)
+      if (viewport.current) viewport.current.scrollLeft = value
+    }} /></div>}
+  <div ref={viewport} className={cn("relative w-full min-w-0 max-w-full overflow-auto", horizontalScroll && "table-horizontal-scroll focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+    tabIndex={horizontalScroll ? 0 : undefined}
+    role={horizontalScroll ? 'region' : undefined}
+    aria-label={horizontalScroll ? 'Tabla de solicitudes, todas las columnas' : undefined}
+    onScroll={horizontalScroll ? event => setOffset(event.currentTarget.scrollLeft) : undefined}>
     <table
       ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
+      className={cn("w-full caption-bottom text-sm", horizontalScroll && "min-w-max [&_th]:whitespace-nowrap", className)}
       {...props}
     />
   </div>
-))
+  </div>
+})
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<

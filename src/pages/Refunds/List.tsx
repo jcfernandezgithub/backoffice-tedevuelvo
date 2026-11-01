@@ -1464,8 +1464,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
               )}
 
               {/* Vista Desktop - Tabla */}
-              <div className="hidden md:block">
-                <Table>
+              <div className="hidden md:block min-w-0 max-w-full">
+                <Table horizontalScroll>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">
