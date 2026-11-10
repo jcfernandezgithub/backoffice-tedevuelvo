@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { canManageFinancialContacts, financialContactSchema, pageAfterContactDeletion } from '../src/lib/financialInstitutionContacts'
+import { canManageFinancialContacts, financialContactSchema, financialContactRolesFromBackend, pageAfterContactDeletion } from '../src/lib/financialInstitutionContacts'
 import { FinancialContactError, readContactResponse } from '../src/services/financialInstitutionContactsApi'
 
 test('solo roles explícitos ADMIN permiten el directorio, no rol ni pages', () => {
@@ -10,6 +10,17 @@ test('solo roles explícitos ADMIN permiten el directorio, no rol ni pages', () 
   expect(canManageFinancialContacts(null)).toBe(false)
   expect(canManageFinancialContacts({})).toBe(false)
   expect(canManageFinancialContacts({ roles: ['ADMIN'], email: 'admin@callcenter.cl' })).toBe(false)
+})
+test('login y renovación normalizan ADMIN entregado por el backend como objeto role', () => {
+  const roles = financialContactRolesFromBackend({ role: { name: 'ADMIN', normalizedName: 'ADMIN' } })
+  expect(roles).toEqual(['ADMIN'])
+  expect(canManageFinancialContacts({ roles })).toBe(true)
+  expect(canManageFinancialContacts({ roles: financialContactRolesFromBackend({ role: { name: 'OPERADOR' } }) })).toBe(false)
+})
+test('roles explícitos vacíos revocan acceso y datos ausentes no inventan roles', () => {
+  expect(financialContactRolesFromBackend({ roles: [], role: { name: 'ADMIN' } })).toEqual([])
+  expect(financialContactRolesFromBackend({})).toBeUndefined()
+  expect(financialContactRolesFromBackend({ role: 'ADMIN' })).toEqual(['ADMIN'])
 })
 test('nombre obligatorio hasta 160 caracteres con normalización Unicode y espacios', () => {
   expect(financialContactSchema.parse({ name: '  Banco   Ａ  ', email: 'test@example.cl' }).name).toBe('Banco A')

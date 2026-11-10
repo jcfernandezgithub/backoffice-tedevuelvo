@@ -1,5 +1,15 @@
 import { z } from 'zod'
 
+export function financialContactRolesFromBackend(user: {
+  roles?: string[]
+  role?: { normalizedName?: string; name?: string } | string
+} | null | undefined): string[] | undefined {
+  if (Array.isArray(user?.roles)) return user.roles
+  if (typeof user?.role === 'string') return [user.role]
+  const name = user?.role?.normalizedName ?? user?.role?.name
+  return name ? [name] : undefined
+}
+
 export function canManageFinancialContacts(user: { roles?: string[]; email?: string } | null | undefined): boolean {
   return user?.email !== 'admin@callcenter.cl' && user?.roles?.includes('ADMIN') === true
 }

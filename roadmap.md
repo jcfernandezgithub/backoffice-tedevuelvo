@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Entidades financieras
+- [x] Corregir menú oculto cuando login/renovación entregan ADMIN en objeto role en vez de arreglo roles; nueve pruebas aprobadas y navegación con formato real verificada mediante respuestas de prueba, operador sigue sin acceso.
 - [x] Integrar directorio administrativo exclusivo ADMIN con listado paginado, consulta, creación, edición y eliminación confirmada; independiente de calculadora y correos.
 - [x] Probar contratos, permisos, validaciones y navegación: diez pruebas aprobadas, CRUD y conflicto 409 verificados con respuestas interceptadas, operador sin acceso y móvil sin ensanchar la página; compilación correcta.
 - [ ] Verificar directorio con datos reales: el endpoint desplegado responde 404 sin autenticación y no hay sesión administrativa disponible; requiere servicio desplegado y sesión autorizada. No se modificaron contactos reales.
