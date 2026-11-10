@@ -132,6 +132,7 @@ export const authService = {
       nombre: data.user.fullName,
       email: data.user.email,
       rol: mappedRole,
+      roles: Array.isArray(data.user.roles) ? data.user.roles : [],
       rolNombre: extractRoleName(data.user, mappedRole),
       activo: true,
       pages: extractPages(data),
@@ -187,6 +188,7 @@ export const authService = {
       nombre: data.user?.fullName ?? user.nombre,
       email: data.user?.email ?? user.email,
       rol: mappedRole,
+      roles: Array.isArray(data.user?.roles) ? data.user.roles : (user.roles ?? []),
       rolNombre: rolesFromResponse.length
         ? extractRoleName(data.user, mappedRole)
         : (user.rolNombre ?? ROLE_LABELS[user.rol]),

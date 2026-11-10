@@ -1,4 +1,8 @@
 # Envío de Datos al Banco desde CSV
+## Entidades financieras
+- [x] Integrar directorio administrativo exclusivo ADMIN con listado paginado, consulta, creación, edición y eliminación confirmada; independiente de calculadora y correos.
+- [x] Probar contratos, permisos, validaciones y navegación: diez pruebas aprobadas, CRUD y conflicto 409 verificados con respuestas interceptadas, operador sin acceso y móvil sin ensanchar la página; compilación correcta.
+- [ ] Verificar directorio con datos reales: el endpoint desplegado responde 404 sin autenticación y no hay sesión administrativa disponible; requiere servicio desplegado y sesión autorizada. No se modificaron contactos reales.
 ## Columnas de listados
 - [x] Incorporar barra superior siempre visible y desplazamiento horizontal inferior en Solicitudes, Cierre Mensual y Call Center. Acciones accesibles sin ensanchar la página en 1568, 1024 y 768 px con respuestas simuladas; filtros y tarjetas móviles sin cambios.
 ## Correos de datos bancarios
