@@ -11,7 +11,6 @@ import { AuthProvider } from "@/state/AuthContext";
 import ProtectedRoute from "@/routes/ProtectedRoute";
 import AdminRoute from "@/routes/AdminRoute";
 import CambiosBancariosPage from "@/pages/CambiosBancarios";
-import EntidadesFinancieras from "@/pages/EntidadesFinancieras";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
 import SolicitudesList from "@/pages/Solicitudes/List";
@@ -77,7 +76,7 @@ const App = () => (
                 <Route path="/calculadora" element={<CalculadoraPage />} />
                 <Route path="/nomina-devoluciones" element={<NominaDevoluciones />} />
                 <Route path="/ajustes" element={<AjustesPage />} />
-                <Route path="/entidades-financieras" element={<EntidadesFinancieras />} />
+                <Route path="/entidades-financieras" element={<Navigate to="/ajustes?tab=entidades-financieras" replace />} />
               </Route>
             </Route>
             <Route element={<AdminRoute />}>

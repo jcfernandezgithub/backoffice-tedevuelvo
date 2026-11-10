@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/state/AuthContext';
+import { Button } from '@/components/ui/button';
+import { canManageFinancialContacts } from '@/lib/financialInstitutionContacts';
+import EntidadesFinancieras from '@/pages/EntidadesFinancieras';
 import { cn } from '@/lib/utils';
 import { StageObjectivesSection } from './components/StageObjectivesSection';
 import { PlanCumplimientoForm } from './components/PlanCumplimientoForm';
@@ -30,9 +34,19 @@ interface NavItem {
   icon: React.ElementType;
   group: string;
   component: React.ReactNode;
+  contactsAdminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
+  {
+    id: 'entidades-financieras',
+    label: 'Entidades financieras',
+    description: 'Correos de contacto',
+    icon: Building2,
+    group: 'Administración',
+    component: <EntidadesFinancieras />,
+    contactsAdminOnly: true,
+  },
   {
     id: 'objetivos-etapa',
     label: 'Objetivos por etapa',
@@ -99,36 +113,36 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-// Agrupar los ítems por categoría
-const GROUPS = NAV_ITEMS.reduce<Record<string, NavItem[]>>((acc, item) => {
-  if (!acc[item.group]) acc[item.group] = [];
-  acc[item.group].push(item);
-  return acc;
-}, {});
-
 // ─── Componente principal ────────────────────────────────────────────────────
 
 export default function AjustesPage() {
+  const { user } = useAuth();
+  const visibleItems = NAV_ITEMS.filter(item => !item.contactsAdminOnly || canManageFinancialContacts(user));
+  const groups = visibleItems.reduce<Record<string, NavItem[]>>((acc, item) => {
+    (acc[item.group] ??= []).push(item);
+    return acc;
+  }, {});
   const [activeId, setActiveId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    return NAV_ITEMS.find(i => i.id === tab)?.id ?? NAV_ITEMS[0].id;
+    return visibleItems.find(i => i.id === tab)?.id ?? 'objetivos-etapa';
   });
-  const activeItem = NAV_ITEMS.find(i => i.id === activeId)!;
-
+  const activeItem = visibleItems.find(i => i.id === activeId) ?? visibleItems.find(i => i.id === 'objetivos-etapa');
   useEffect(() => {
+    if (!activeItem) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('tab') !== activeId) {
-      params.set('tab', activeId);
+    if (params.get('tab') !== activeItem.id) {
+      params.set('tab', activeItem.id);
       window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
     }
-  }, [activeId]);
+  }, [activeItem?.id]);
 
+  if (!activeItem) return null;
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen min-w-0 flex-col md:flex-row bg-background">
       {/* ── Sidebar de navegación ── */}
-      <aside className="w-64 shrink-0 border-r border-border/60 bg-muted/20">
+      <aside className="w-full md:w-64 shrink-0 border-r border-border/60 bg-muted/20">
         {/* Header del sidebar */}
         <div className="px-5 py-6 border-b border-border/60">
           <div className="flex items-center gap-2.5">
@@ -144,7 +158,7 @@ export default function AjustesPage() {
 
         {/* Grupos de navegación */}
         <nav className="p-3 space-y-5">
-          {Object.entries(GROUPS).map(([group, items]) => (
+          {Object.entries(groups).map(([group, items]) => (
             <div key={group}>
               <p className="px-2 mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
                 {group}
@@ -154,11 +168,11 @@ export default function AjustesPage() {
                   const Icon = item.icon;
                   const isActive = activeId === item.id;
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={item.id}
                       onClick={() => setActiveId(item.id)}
                       className={cn(
-                        'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150',
+                        'h-auto w-full flex items-center justify-start gap-3 rounded-lg px-3 py-2.5 text-left transition-all duration-150',
                         isActive
                           ? 'bg-primary text-primary-foreground shadow-sm'
                           : 'text-foreground/70 hover:text-foreground hover:bg-muted'
@@ -172,7 +186,7 @@ export default function AjustesPage() {
                         </p>
                       </div>
                       {isActive && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary-foreground/60" />}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -182,7 +196,7 @@ export default function AjustesPage() {
       </aside>
 
       {/* ── Área de contenido ── */}
-      <main className="flex-1 overflow-auto">
+      <main className="min-w-0 flex-1 overflow-auto">
         {/* Breadcrumb / título de sección */}
         <div className="px-8 py-5 border-b border-border/60 bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">

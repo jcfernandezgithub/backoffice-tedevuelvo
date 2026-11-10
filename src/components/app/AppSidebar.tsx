@@ -1,6 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package, CalendarCheck, Building2 } from 'lucide-react'
-import { canManageFinancialContacts } from '@/lib/financialInstitutionContacts'
+import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package, CalendarCheck } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import { ROUTE_TO_PAGE_KEY, hasPageAccess } from '@/lib/pageAccess'
 import {
@@ -22,7 +21,6 @@ const items = [
   { title: 'Call Center', url: '/gestion-callcenter', icon: Headphones, status: 'live' as const, adminOnly: false, callCenterOnly: true },
   { title: 'Alianzas', url: '/alianzas', icon: Briefcase, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Usuarios', url: '/usuarios', icon: Users, status: 'live' as const, adminOnly: false, callCenterOnly: false },
-  { title: 'Entidades financieras', url: '/entidades-financieras', icon: Building2, status: 'live' as const, adminOnly: true, callCenterOnly: false },
   { title: 'Operación', url: '/operacion', icon: Activity, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Calculadora', url: '/calculadora', icon: Calculator, status: 'live' as const, adminOnly: false, callCenterOnly: false },
   { title: 'Nómina', url: '/nomina-devoluciones', icon: FileSpreadsheet, status: 'live' as const, adminOnly: false, callCenterOnly: false },
@@ -43,7 +41,6 @@ export function AppSidebar() {
 
   const pages = user?.pages
   const visibleItems = items.filter((item) => {
-    if (item.url === '/entidades-financieras') return canManageFinancialContacts(user)
     // Si el backend entrega pages, ese es el único filtro.
     if (pages && pages.length > 0) {
       const key = ROUTE_TO_PAGE_KEY[item.url]
