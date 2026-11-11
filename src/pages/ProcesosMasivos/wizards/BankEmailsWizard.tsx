@@ -34,8 +34,8 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
   const attempted = useRef(new Set<string>())
   const scope = `${user?.id}:${user?.rol}:${JSON.stringify(user?.pages ?? [])}`
   const { data, isFetching, error, refetch } = useQuery({
-    queryKey: ['bank-email-recipients', scope, page, search],
-    queryFn: ({ signal }) => refundAdminApi.search({ status: 'payment_scheduled', page, limit: 25, q: search || undefined }, signal),
+    queryKey: ['bank-email-recipients', scope, page, search, { hasBankInfo: 0 }],
+    queryFn: ({ signal }) => refundAdminApi.search({ status: 'payment_scheduled', hasBankInfo: 0, page, limit: 25, q: search || undefined }, signal),
     enabled: active && !!user && !busy,
     retry: false, staleTime: 0, gcTime: 0, refetchOnWindowFocus: false,
   })
@@ -106,7 +106,7 @@ export default function BankEmailsWizard({ active, onBusyChange }: { active: boo
   const success = results.filter(result => result.status === 'success').length
   return <div className="space-y-5 min-w-0">
     <div className="flex flex-wrap justify-between items-start gap-3 border-b pb-4">
-      <div><h2 className="text-xl font-semibold flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Solicitud de datos bancarios</h2><p className="text-sm text-muted-foreground mt-1">Clientes con devolución en Pago programado</p></div>
+      <div><h2 className="text-xl font-semibold flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Solicitud de datos bancarios</h2><p className="text-sm text-muted-foreground mt-1">Clientes con devolución en Pago programado sin datos de transferencia</p></div>
       <Button disabled={controlsDisabled || !selected.size || isFetching} onClick={() => setConfirm(true)}><Mail className="mr-2 h-4 w-4" />Enviar a seleccionados ({selected.size})</Button>
     </div>
     <form className="flex flex-wrap gap-2" onSubmit={event => { event.preventDefault(); setPage(1); setSearch(text.trim()) }}>

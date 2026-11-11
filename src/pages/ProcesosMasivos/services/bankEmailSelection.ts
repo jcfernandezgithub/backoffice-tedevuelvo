@@ -8,7 +8,7 @@ export async function loadAllBankEmailRecipients(search: string, signal: AbortSi
   let page = 1
   while (true) {
     signal.throwIfAborted()
-    const response = await refundAdminApi.search({ status: 'payment_scheduled', page, limit: 25, q: search || undefined }, signal)
+    const response = await refundAdminApi.search({ status: 'payment_scheduled', hasBankInfo: 0, page, limit: 25, q: search || undefined }, signal)
     signal.throwIfAborted()
     for (const row of response.items) {
       if (!bankEmailEligibility(row)) selected.set(row.id, row)

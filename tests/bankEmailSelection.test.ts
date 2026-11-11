@@ -12,7 +12,7 @@ test('seleccionar todos incluye todas las páginas del filtro, sin duplicados ni
   const signal = new AbortController().signal
   const selected = await loadAllBankEmailRecipients('Cliente', signal)
   expect([...selected.keys()]).toEqual(['one', 'two'])
-  expect(mock.mock.calls.map(call => call[0])).toEqual([1, 2].map(page => ({ status: 'payment_scheduled', page, limit: 25, q: 'Cliente' })))
+  expect(mock.mock.calls.map(call => call[0])).toEqual([1, 2].map(page => ({ status: 'payment_scheduled', hasBankInfo: 0, page, limit: 25, q: 'Cliente' })))
 })
 
 test('un fallo de página no devuelve una selección incompleta', async () => {
