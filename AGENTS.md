@@ -7,7 +7,7 @@
 - Refund institution is read-only in backoffice edit dialogs (displayed with the catalog label, never editable); canonical values are lowercase and legacy values are shown as-is without migration.
 - Dashboard comparison indicators share one presentation component with semantic theme tokens so summaries, insurance groups and pipeline variations remain visually consistent without changing calculations.
 - Auth context identity lives in a component-free store and survives Vite hot updates, so refreshed route consumers never detach from the mounted provider.
-- Dashboard indicators consume only the six aggregated backoffice-dashboard endpoints; the separate alerts tab uses backoffice-alerts, with all metric and detection rules in the backend and shared legacy selectors retained for other consumers.
+- Dashboard indicators consume only the six aggregated backoffice-dashboard endpoints; operational alerts mount independently under Operación with their own filters and backoffice-alerts endpoints, so alerts-only access never grants operational reports or Dashboard metrics; all metric and detection rules remain in the backend.
 - Dashboard queries are isolated by identity, permissions, endpoint, date range and series granularity; auth transitions and access denial cancel and remove only dashboard queries to prevent protected cache leakage without changing Operación.
 - Dashboard adapters preserve backend totals, insurance tickets/shares and final series order/buckets; per-block query states distinguish failures from valid empty results.
 - API clients and auth share an environment-configured API base URL; existing services keep their legacy default, but the dashboard requires an explicit environment value to prevent silent fallback.

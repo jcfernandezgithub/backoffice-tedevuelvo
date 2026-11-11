@@ -17,6 +17,7 @@ export function alertsAccess(user: Usuario | null) {
   const allowed = admin || (!excluded && roles.includes('OPERADOR') && Boolean(user?.pages?.includes('ALERTAS_OPERATIVAS')))
   return { allowed, admin }
 }
+export const alertsEntryAccess = (user: Usuario | null, pathname: string) => pathname === '/operacion' && alertsAccess(user).allowed
 export const ruleFields: Record<RuleCode, string[]> = {
   SAME_RUT_MULTIPLE_ACCOUNTS: ['paidWindowDays'],
   SAME_RUT_MONTHLY_PAID_VOLUME: ['minPaidRequests', 'minTotalPaidAmountCLP'],

@@ -40,7 +40,7 @@ export function hasPageAccess(pages: string[] | undefined, key: string | null, r
 
 export function firstAllowedRoute(pages: string[] | undefined): string {
   if (!pages || pages.length === 0) return '/login'
-  if (pages.includes('ALERTAS_OPERATIVAS') && !pages.includes('DASHBOARD') && pages.length === 1) return '/dashboard'
+  if (pages.includes('ALERTAS_OPERATIVAS') && pages.length === 1) return '/operacion'
   // Preferencias por orden natural del menú.
   const preferred = [
     '/operacion',

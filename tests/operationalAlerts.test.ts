@@ -1,9 +1,21 @@
 import {describe,expect,test} from 'bun:test'
-import {alertsAccess,actionSchemas,alertMoney,validateRuleUpdate} from '../src/lib/operationalAlerts'
+import {alertsAccess,alertsEntryAccess,actionSchemas,alertMoney,validateRuleUpdate} from '../src/lib/operationalAlerts'
+import {firstAllowedRoute} from '../src/lib/pageAccess'
 import {createAlertsClient} from '../src/services/operationalAlertsApi'
 import type {Usuario} from '../src/types/domain'
 const user:Usuario={id:'admin',nombre:'Prueba',email:'test@example.test',rol:'ADMIN',roles:['ADMIN'],activo:true,pages:['DASHBOARD']}
 describe('Operational alerts permissions',()=>{
+  test('alerts-only access opens Operación, never grants Dashboard',()=>{
+    const operator:Usuario={...user,rol:'OPERACIONES',roles:['OPERADOR'],pages:['ALERTAS_OPERATIVAS']}
+    expect(alertsEntryAccess(operator,'/operacion')).toBe(true)
+    expect(alertsEntryAccess(operator,'/dashboard')).toBe(false)
+    expect(firstAllowedRoute(operator.pages)).toBe('/operacion')
+  })
+  test('moving alerts preserves role exclusions at the new entry',()=>{
+    expect(alertsEntryAccess({...user,rol:'CALLCENTER',roles:['CALLCENTER'],pages:['ALERTAS_OPERATIVAS']},'/operacion')).toBe(false)
+    expect(alertsEntryAccess({...user,roles:['ADMIN']},'/operacion')).toBe(true)
+    expect(alertsEntryAccess({...user,activo:false},'/operacion')).toBe(false)
+  })
   test('ADMIN can access without dashboard grant',()=>expect(alertsAccess({...user,pages:[]}).allowed).toBe(true))
   test('OPERADOR needs explicit ALERTAS_OPERATIVAS, DASHBOARD alone is insufficient',()=>{
     expect(alertsAccess({...user,rol:'OPERACIONES',roles:['OPERADOR']}).allowed).toBe(false)

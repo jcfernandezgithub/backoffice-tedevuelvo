@@ -16,7 +16,10 @@ import { TabDetalleFinanciero } from './tabs/DetalleFinanciero';
 import { TabTendencias } from './tabs/Tendencias';
 import { TabCuellosBotella } from './tabs/CuellosBotella';
 import { TabSegmentos } from './tabs/Segmentos';
-import { TabAlertas } from './tabs/Alertas';
+import { OperationalAlerts } from '@/components/operational-alerts/OperationalAlerts';
+import { useAuth } from '@/state/AuthContext';
+import { alertsAccess } from '@/lib/operationalAlerts';
+import { hasPageAccess } from '@/lib/pageAccess';
 import { exportCSV, exportXLSX } from '@/services/reportesService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,11 +29,18 @@ const tabs = [
   { value: 'tendencias', label: 'Tendencias', disabled: true },
   { value: 'cuellos', label: 'Cuellos de botella', disabled: true },
   { value: 'segmentos', label: 'Segmentos', disabled: true },
-  { value: 'alertas', label: 'Alertas', disabled: true },
 ];
 
 export default function Operacion() {
-  const [tabActivo, setTabActivo] = useState('resumen');
+  const { user } = useAuth();
+  const canSeeAlerts = alertsAccess(user).allowed;
+  const canSeeReports = hasPageAccess(user?.pages, 'OPERACION', user?.rol) || !user?.pages?.length;
+  const [selectedTab, setTabActivo] = useState(() => canSeeReports ? 'resumen' : 'alertas');
+  const tabActivo = selectedTab === 'alertas' ? (canSeeAlerts ? 'alertas' : 'resumen') : (canSeeReports ? selectedTab : 'alertas');
+  const visibleTabs = [
+    ...(canSeeReports ? tabs : []),
+    ...(canSeeAlerts ? [{ value: 'alertas', label: 'Alertas operativas', disabled: false }] : []),
+  ];
   const { toast } = useToast();
 
   const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
@@ -88,21 +98,21 @@ export default function Operacion() {
       </div>
 
       {/* Filtros globales */}
-      <FiltersBar onExport={handleExport} />
+      {canSeeReports && tabActivo !== 'alertas' && <FiltersBar onExport={handleExport} />}
 
       {/* Tabs principales */}
       <TooltipProvider delayDuration={100}>
         <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
-              <TabsList className="inline-flex w-max xl:grid xl:w-full xl:grid-cols-6 xl:max-w-4xl h-auto xl:h-10">
-                {tabs.map((tab) => {
+              <TabsList className="inline-flex w-max h-auto">
+                {visibleTabs.map((tab) => {
                   const trigger = (
                     <TabsTrigger
                       value={tab.value}
                       disabled={tab.disabled}
                       className={cn(
-                        'whitespace-nowrap gap-1.5 w-auto xl:w-full min-h-11 xl:min-h-0 h-full',
+                        'whitespace-nowrap gap-1.5 w-auto min-h-11 xl:min-h-0 h-full',
                         tab.disabled && 'cursor-not-allowed opacity-60'
                       )}
                     >
@@ -116,14 +126,14 @@ export default function Operacion() {
                   return tab.disabled ? (
                     <Tooltip key={tab.value}>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex shrink-0 w-auto xl:w-full h-full cursor-not-allowed">{trigger}</span>
+                        <span className="inline-flex shrink-0 w-auto h-full cursor-not-allowed">{trigger}</span>
                       </TooltipTrigger>
                       <TooltipContent side="bottom">
                         <p>Sección en mantenimiento</p>
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <span key={tab.value} className="inline-flex shrink-0 w-auto xl:w-full h-full">
+                    <span key={tab.value} className="inline-flex shrink-0 w-auto h-full">
                       {trigger}
                     </span>
                   );
@@ -132,7 +142,7 @@ export default function Operacion() {
             </div>
           </div>
 
-          <TabsContent value="resumen" className="space-y-6">
+          {canSeeReports && <><TabsContent value="resumen" className="space-y-6">
             <TabResumen />
           </TabsContent>
 
@@ -150,11 +160,11 @@ export default function Operacion() {
 
           <TabsContent value="segmentos" className="space-y-6">
             <TabSegmentos />
-          </TabsContent>
+          </TabsContent></>}
 
-          <TabsContent value="alertas" className="space-y-6">
-            <TabAlertas />
-          </TabsContent>
+          {canSeeAlerts && <TabsContent value="alertas" className="space-y-6">
+            <OperationalAlerts />
+          </TabsContent>}
         </Tabs>
       </TooltipProvider>
     </div>

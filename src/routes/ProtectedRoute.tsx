@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/state/AuthContext'
 import { Rol } from '@/types/domain'
 import { firstAllowedRoute, hasPageAccess, pageKeyForPath } from '@/lib/pageAccess'
-import { alertsAccess } from '@/lib/operationalAlerts'
+import { alertsEntryAccess } from '@/lib/operationalAlerts'
 
 export default function ProtectedRoute({ roles }: { roles?: Rol[] }) {
   const { user } = useAuth()
@@ -15,8 +15,8 @@ export default function ProtectedRoute({ roles }: { roles?: Rol[] }) {
   // Control de acceso por páginas asignadas al rol (backend login).
   if (user.pages && user.pages.length > 0) {
     const key = pageKeyForPath(location.pathname)
-    const alertsDashboard = location.pathname === '/dashboard' && alertsAccess(user).allowed
-    if (key && !hasPageAccess(user.pages, key, user.rol) && !alertsDashboard) {
+    const alertsOperation = alertsEntryAccess(user, location.pathname)
+    if (key && !hasPageAccess(user.pages, key, user.rol) && !alertsOperation) {
       return <Navigate to={firstAllowedRoute(user.pages)} replace />
     }
   } else if (user.email === 'admin@callcenter.cl') {

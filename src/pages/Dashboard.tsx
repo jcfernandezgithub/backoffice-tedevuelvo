@@ -1,7 +1,4 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/state/AuthContext'
-import { alertsAccess } from '@/lib/operationalAlerts'
-import { OperationalAlerts } from '@/components/operational-alerts/OperationalAlerts'
 import { useMemo, useState } from 'react'
 import { useBackofficeDashboard } from '@/hooks/useBackofficeDashboard'
 import { DashboardBlock } from '@/components/DashboardBlock'
@@ -133,9 +130,6 @@ const PIE_COLORS = [
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const [dashboardTab, setDashboardTab] = useState(() => !user?.pages?.includes('DASHBOARD') && alertsAccess(user).allowed ? 'alerts' : 'overview')
-  const canSeeAlerts = alertsAccess(user).allowed
 
   const [desde, setDesde] = useState<string>(() => {
     const d = new Date()
@@ -148,7 +142,7 @@ export default function Dashboard() {
   const [compareMode, setCompareMode] = useState<'anterior' | 'custom'>('anterior')
   const [cmpDesde, setCmpDesde] = useState('')
   const [cmpHasta, setCmpHasta] = useState('')
-  const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart, dashboardTab === 'overview')
+  const blocks = useBackofficeDashboard({ from: desde || undefined, to: hasta || undefined }, agg, activeChart)
   // Período de comparación: mismo servicio consultado con el otro rango.
   const compareRange = useMemo(() => {
     if (!compareOn) return null
@@ -156,7 +150,7 @@ export default function Dashboard() {
     if (cmpDesde && cmpHasta && cmpDesde <= cmpHasta) return { from: cmpDesde, to: cmpHasta }
     return null
   }, [compareOn, compareMode, desde, hasta, cmpDesde, cmpHasta])
-  const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, dashboardTab === 'overview' && compareOn && Boolean(compareRange))
+  const compare = useBackofficeDashboard(compareRange ?? {}, agg, activeChart, compareOn && Boolean(compareRange))
   // Sin comparación activa las calugas muestran solo el valor del período principal, sin desviación.
   const comparisonActive = compareOn && Boolean(compareRange)
   const cmpSummary = comparisonActive ? compare.summary.data : undefined
@@ -234,11 +228,6 @@ export default function Dashboard() {
           {isRefreshing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <Button variant="outline" size="sm" className="ml-auto h-11 sm:h-9 shrink-0" disabled={isRefreshing || !blocks.allowed} onClick={() => { blocks.refresh(); if (compareOn) compare.refresh() }}>Actualizar</Button>
         </header>
-
-        <Tabs value={dashboardTab} onValueChange={setDashboardTab}>
-          <TabsList><TabsTrigger value="overview">Resumen general</TabsTrigger>{canSeeAlerts && <TabsTrigger value="alerts">Alertas operativas</TabsTrigger>}</TabsList>
-        </Tabs>
-        {dashboardTab === 'alerts' && canSeeAlerts ? <OperationalAlerts /> : <>
 
         {/* Filtros de fecha */}
         <Card>
@@ -743,7 +732,6 @@ export default function Dashboard() {
           </Card>
         </section>
 
-        </>}
         </>}
       </main>
     </TooltipProvider>
