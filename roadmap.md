@@ -1,4 +1,9 @@
 # Envío de Datos al Banco desde CSV
+## Alertas operativas
+- [x] Integrar pestaña Dashboard, corte común, permisos, filtros, evidencia e historial paginados.
+- [x] Incorporar revisión segura y configuración ADMIN sin activar reglas automáticamente.
+- [x] Probar contratos y permisos, conflicto con conservación de borrador, toma, comentario, resolución, historial y detalle en nueva pestaña; comprobación móvil con datos simulados, sin modificar solicitudes reales.
+- [ ] Verificar alertas con datos reales: el servicio responde 401 sin autenticación; no hay sesión autorizada disponible y el README no confirma despliegue/activación. Requiere acceso de prueba autorizado y confirmar ambiente del backend.
 ## Entidades financieras
 - [x] Mover directorio a Ajustes → Entidades financieras, quitar menú principal y conservar enlaces anteriores; nueve pruebas y navegación ADMIN/operador verificadas con respuestas simuladas.
 - [x] Corregir menú oculto cuando login/renovación entregan ADMIN en objeto role en vez de arreglo roles; nueve pruebas aprobadas y navegación con formato real verificada mediante respuestas de prueba, operador sigue sin acceso.

@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { Briefcase, FileText, Home, Headphones, Settings, Users, Activity, Calculator, FileSpreadsheet, Link2, Package, CalendarCheck } from 'lucide-react'
 import { useAuth } from '@/state/AuthContext'
 import { ROUTE_TO_PAGE_KEY, hasPageAccess } from '@/lib/pageAccess'
+import { alertsAccess } from '@/lib/operationalAlerts'
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +42,7 @@ export function AppSidebar() {
 
   const pages = user?.pages
   const visibleItems = items.filter((item) => {
+    if (item.url === '/dashboard' && alertsAccess(user).allowed) return true
     // Si el backend entrega pages, ese es el único filtro.
     if (pages && pages.length > 0) {
       const key = ROUTE_TO_PAGE_KEY[item.url]

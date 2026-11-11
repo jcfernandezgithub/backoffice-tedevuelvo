@@ -15,11 +15,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
   const failuresRef = useRef<number>(0)
-  const dashboardScope = user ? JSON.stringify([user.id, user.email, user.rol, user.activo, [...(user.pages ?? [])].sort()]) : null
+  const dashboardScope = user ? JSON.stringify([user.id, user.email, user.rol, user.roles, user.activo, [...(user.pages ?? [])].sort()]) : null
   useEffect(() => {
     return () => {
       void queryClient.cancelQueries({ queryKey: ['backoffice-dashboard'] })
       queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
+      void queryClient.cancelQueries({ queryKey: ['operational-alerts'] })
+      queryClient.removeQueries({ queryKey: ['operational-alerts'] })
     }
   }, [queryClient, dashboardScope])
 
@@ -104,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async logout() {
       await queryClient.cancelQueries({ queryKey: ['backoffice-dashboard'] })
       queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
+      await queryClient.cancelQueries({ queryKey: ['operational-alerts'] })
+      queryClient.removeQueries({ queryKey: ['operational-alerts'] })
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
       }
