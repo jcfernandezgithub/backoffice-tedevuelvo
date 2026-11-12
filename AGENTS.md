@@ -1,4 +1,5 @@
 # Architecture rules
+- Manual evaluation hook and view reset on Vite refresh so hook-slot edits remount query observers instead of reusing incompatible React state; pending requests remain recoverable from identity-scoped storage.
 - Manual alert evaluations use the existing authenticated backend without snapshots; persist only the pending empty request/key per API project and user, never retry POST automatically, recover jobs on entry and poll active jobs with server pacing; renew the alert snapshot only after global success.
 - Operational alert diagnostics and secondary filters use progressive disclosure; keep freshness and data-quality warnings visible and preserve server-owned detection and review contracts.
 - Alert situation labels use only conditionStatus, never conditionActive alone; display currentRule and lastEvaluation separately from positive-detection version/priority to avoid presenting historical evidence as a confirmed current result.

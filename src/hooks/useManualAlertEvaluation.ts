@@ -1,3 +1,5 @@
+// @refresh reset
+// Adding hook slots during live updates must remount consumers, not reuse a query observer as state.
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { operationalAlertsApi as api, AlertsApiError, type EvaluationRun } from '@/services/operationalAlertsApi'
