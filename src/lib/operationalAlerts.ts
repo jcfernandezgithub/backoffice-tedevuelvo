@@ -19,12 +19,15 @@ export function alertsAccess(user: Usuario | null) {
   return { allowed, admin }
 }
 export const alertsEntryAccess = (user: Usuario | null, pathname: string) => pathname === '/operacion' && alertsAccess(user).allowed
+export function isAlertAssigneeRole(role: { normalizedName?: string; name?: string }) {
+  const name = (role.normalizedName ?? role.name ?? '').trim().toUpperCase()
+  return ['ADMIN', 'ADMINISTRADOR', 'OPERADOR', 'OPERACIONES', 'OPERATOR', 'OPERATIONS'].includes(name)
+}
 // Candidate filtering is presentation-only; the alerts service authorizes reassignment.
 export function isAlertAssignee(user: BackendUser) {
-  const role = (user.role?.normalizedName ?? user.role?.name ?? '').trim().toUpperCase()
   return user.status === 'active' && Boolean(user.id ?? user._id)
     && user.email.trim().toLowerCase() !== 'admin@callcenter.cl'
-    && ['ADMIN', 'ADMINISTRADOR', 'OPERADOR', 'OPERACIONES', 'OPERATOR', 'OPERATIONS'].includes(role)
+    && isAlertAssigneeRole(user.role ?? {})
 }
 export const ruleFields: Record<RuleCode, string[]> = {
   SAME_RUT_MULTIPLE_ACCOUNTS: ['paidWindowDays'],

@@ -3,6 +3,9 @@ import { pageLabelsToKeys, type PlatformPage } from '@/pages/Usuarios/constants/
 import type { RoleDefinition } from './rolesStore'
 
 export interface RoleApi extends RoleDefinition {
+  _id?: string
+  name?: string
+  normalizedName?: string
   usersAssigned?: number
 }
 

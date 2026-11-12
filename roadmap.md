@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Corregir lista vacía de responsables: consultar usuarios por rol antes de paginar, sin contar ni recorrer clientes.
 - [x] Filtrar responsables de reasignación por rol y estado del servicio de usuarios, validar la selección antes de enviar y conservar autorización del servidor.
 - [x] Destacar el motivo de detección y qué datos revisar por tipo de alerta, sin inferir el campo causante cuando el servicio no lo identifica.
 - [x] Ocultar datos actuales del detalle y conservar antecedentes de detección, banco, tipo y cuenta enmascarada; 21 pruebas y revisión en computador/teléfono con datos simulados aprobadas.
