@@ -1,4 +1,5 @@
 # Architecture rules
+- Operational alert diagnostics and secondary filters use progressive disclosure; keep freshness and data-quality warnings visible and preserve server-owned detection and review contracts.
 - Operational alerts use only backoffice-alerts endpoints with a shared server snapshot isolated by session/permissions; discard the whole cut on expiry or mutation, retain uncertain write keys/bodies, and keep detection and payment authorization server-side.
 - Financial contacts use an independent authenticated CRUD client and identity-scoped queries; gate their settings section on ADMIN in backend-derived roles (normalize role.name/normalizedName when roles is absent, preserve explicit empty roles), never page grants or calculator membership; redirect the legacy standalone URL to the settings tab to preserve bookmarks; server authorization remains authoritative.
 - Wide operational lists opt into shared Table horizontal-scroll mode with an always-visible upper slider synchronized to the native scroll viewport, so OS-hidden scrollbars cannot hide navigation; other tables and mobile cards retain their existing presentation.

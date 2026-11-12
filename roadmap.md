@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Simplificar pantalla de alertas, separar detalles del análisis y filtros adicionales sin cambiar reglas ni servicios; 21 pruebas aprobadas y revisión visual en computador y teléfono con datos simulados, sin escrituras reales.
 - [x] Mover Alertas operativas a Operación con permisos y filtros independientes; retirada del Dashboard, 34 pruebas y revisión completa en escritorio/móvil con datos simulados, sin escrituras reales.
 - [x] Integrar pestaña Dashboard, corte común, permisos, filtros, evidencia e historial paginados.
 - [x] Incorporar revisión segura y configuración ADMIN sin activar reglas automáticamente.
