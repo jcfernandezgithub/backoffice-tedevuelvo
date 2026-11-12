@@ -3,7 +3,7 @@ import { actionSchemas, validateRuleUpdate } from '@/lib/operationalAlerts'
 import { authenticatedFetch } from './apiClient'
 import { configuredApiBaseUrl } from './apiConfig'
 
-export interface AlertMeta { schemaVersion: string; snapshotToken: string; evaluationStatus: 'READY'|'RUNNING'|'FAILED'|'NOT_CONFIGURED'; stale: boolean; dataAsOf?: string|null; lastSuccessfulEvaluationAt?: string|null; coverage?: Record<string, unknown>|null; dataQuality?: Record<string,number>|null; currentDataAsOf?: string; page: number; limit: number; total: number; totalPages: number }
+export interface AlertMeta { schemaVersion: string; snapshotToken: string; evaluationStatus: 'READY'|'RUNNING'|'FAILED'|'NOT_CONFIGURED'; stale: boolean; detectorEnabled?: boolean; dataAsOf?: string|null; lastSuccessfulEvaluationAt?: string|null; coverage?: Record<string, unknown>|null; dataQuality?: Record<string,number>|null; currentDataAsOf?: string; page: number; limit: number; total: number; totalPages: number }
 export interface Actor { id: string; name?: string|null }
 export type ConditionStatus = 'CONFIRMED_ACTIVE'|'CONFIRMED_INACTIVE'|'INCOMPLETE'|'PENDING_REEVALUATION'|'RULE_DISABLED'
 export interface AlertEvaluation {
@@ -16,7 +16,7 @@ export interface OperationalAlert {
   subjects: { rut: string; fullName: string|null }[]; subjectCount: number; relatedRequestCount: number; distinctAccountCount: number; missingAccountCount: number;
   knownTotalAmountCLP: number; missingAmountCount: number; isAmountTotalComplete: boolean; period?: { month?: string; from?: string; toExclusive?: string }|null;
   firstDetectedAt?: string; lastDetectedAt?: string; conditionActive: boolean; conditionEvaluation?: string; assignedTo?: Actor|null; assignedAt?: string|null; requiresFollowUp?: boolean; previousAlertId?: string|null; resolvedBy?: Actor|null; resolvedAt?: string|null; resolutionComment?: string;
-  conditionStatus?: ConditionStatus; currentRule?: AlertRule|null; lastEvaluation?: AlertEvaluation|null;
+  conditionStatus?: ConditionStatus; currentRule?: AlertRule|null; lastEvaluation?: AlertEvaluation|null; evaluationRunStatus?: EvaluationRun['status'];
   thresholds?: Record<string, number|null>; conditions?: Record<string,unknown>; limitations?: string[]; changeEvents?: Record<string,unknown>[]; changeEventCount?: number; changeEventsTruncated?: boolean; changeConditions?: Record<string,unknown>|null;
   actions?: { canClaim: boolean; canComment: boolean; canResolve: boolean; canReassign: boolean }; meta: AlertMeta;
 }
@@ -27,8 +27,23 @@ export interface HistoryItem {id:string;type:string;at:string;actor:Actor|null;d
 export interface AlertRule {ruleCode:RuleCode;version:number;enabled:boolean;priority:'HIGH'|'MEDIUM'|'LOW'|null;parameters:Record<string,number|null>;updatedAt?:string;updatedBy?:string}
 export interface AlertPage<T> {data:T[];meta:AlertMeta}
 export type AlertFilters = Partial<Record<'from'|'to'|'ruleCode'|'priority'|'search'|'assigneeId'|'conditionActive'|'conditionStatus'|'status'|'sort',string>>
+export interface EvaluationRun {
+  evaluationId: string; status: 'QUEUED'|'RUNNING'|'SUCCEEDED'|'FAILED'|'INTERRUPTED'|'DISCARDED';
+  origin: 'MANUAL'|'DAILY'|'CLI'|'INITIAL_LOAD'; requestedAt: string; requestedBy: {id:string}|null;
+  startedAt: string|null; finishedAt: string|null; resultsMayBePartial: boolean;
+  scope: {type:'ALL_ENABLED_RULES'; timezone:'America/Santiago'; coverageFrom:string};
+  appliedRules: {ruleCode:string;version:number;priority:string|null;parameters:Record<string,unknown>}[]|null;
+  progress: {stage?:string;scanned?:number;groupsProcessed?:number;elapsedMs?:number}|null;
+  error: {code:string;message:string}|null; pollAfterSeconds: number;
+}
+export interface EvaluationRecovery {active:EvaluationRun|null;latestRequestedByMe:EvaluationRun|null;pollAfterSeconds:number}
+function validEvaluation(value:unknown):value is EvaluationRun {
+  if(!value||typeof value!=='object')return false
+  const run=value as Partial<EvaluationRun>
+  return typeof run.evaluationId==='string' && Boolean(run.evaluationId) && ['QUEUED','RUNNING','SUCCEEDED','FAILED','INTERRUPTED','DISCARDED'].includes(run.status??'') && ['MANUAL','DAILY','CLI','INITIAL_LOAD'].includes(run.origin??'') && typeof run.resultsMayBePartial==='boolean' && typeof run.pollAfterSeconds==='number'
+}
 export class AlertsApiError extends Error {
-  constructor(public status:number, public code:string, message:string,public requestId?:string,public retryAfterMs=0) { super(message) }
+  constructor(public status:number, public code:string, message:string,public requestId?:string,public retryAfterMs=0,public evaluationId?:string) { super(message) }
 }
 export function alertsQuery(filters: Record<string,string|number|undefined>) { const q = new URLSearchParams(); Object.entries(filters).forEach(([k,v]) => { if (v !== undefined && v !== '') q.set(k,String(v)) }); return q.size ? `?${q}` : '' }
 export function createAlertsClient(fetcher: typeof authenticatedFetch, baseUrl?:string) {
@@ -39,12 +54,21 @@ export function createAlertsClient(fetcher: typeof authenticatedFetch, baseUrl?:
     if (!res.ok) {
       const retryAfter=res.headers.get('Retry-After')
       const retryAfterMs=retryAfter ? (/^\d+$/.test(retryAfter)?Number(retryAfter)*1000:Math.max(0,Date.parse(retryAfter)-Date.now())):0
-      throw new AlertsApiError(res.status,body?.error?.code ?? `HTTP_${res.status}`,body?.error?.message ?? 'No se pudo consultar el servicio de alertas.',body?.error?.requestId,retryAfterMs)
+      throw new AlertsApiError(res.status,body?.error?.code ?? `HTTP_${res.status}`,body?.error?.message ?? 'No se pudo consultar el servicio de alertas.',body?.error?.requestId,retryAfterMs || Number(body?.error?.retryAfterSeconds ?? 0)*1000,body?.error?.evaluationId)
     }
     if (!body || typeof body !== 'object') throw new AlertsApiError(500,'INVALID_RESPONSE','Respuesta de alertas no compatible.')
+    if (path.startsWith('/evaluations')) {
+      const valid = 'evaluationId' in body ? validEvaluation(body) : 'active' in body && 'latestRequestedByMe' in body && (body.active===null||validEvaluation(body.active)) && (body.latestRequestedByMe===null||validEvaluation(body.latestRequestedByMe)) && typeof body.pollAfterSeconds==='number'
+      if(!valid)throw new AlertsApiError(500,'INVALID_RESPONSE','Respuesta de evaluación incompleta. Consulta el estado antes de volver a iniciar.')
+      const retryAfter = res.headers.get('Retry-After')
+      if (retryAfter) body.pollAfterSeconds = Math.max(10,/^\d+$/.test(retryAfter) ? Number(retryAfter) : Math.ceil((Date.parse(retryAfter)-Date.now())/1000))
+    }
     return body as T
   }
   return {
+    recoverEvaluations: (signal?:AbortSignal) => request<EvaluationRecovery>('/evaluations',{signal}),
+    evaluation: (id:string,signal?:AbortSignal) => request<EvaluationRun>(`/evaluations/${encodeURIComponent(id)}`,{signal}),
+    startEvaluation: (key:string) => request<EvaluationRun>('/evaluations',{method:'POST',headers:{'Idempotency-Key':key,'Content-Type':'application/json'},body:'{}'}),
     async summary(filters:AlertFilters,signal?:AbortSignal) {
       const {status,sort,...common} = filters
       const body = await request<AlertSummary>(`/summary${alertsQuery(common)}`,{signal})

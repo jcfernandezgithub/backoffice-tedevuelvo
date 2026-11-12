@@ -11,6 +11,7 @@ import type { AlertFilters } from '@/services/operationalAlertsApi'
 import { alertConditionLabel, conditionLabels } from '@/lib/alertConditionPresentation'
 import { AlertReview } from './AlertReview'
 import { AlertRules } from './AlertRules'
+import { ManualAlertEvaluation } from './ManualAlertEvaluation'
 import { AlertDisclosure,AlertError,AlertMetadata,Pagination } from './AlertCommon'
 
 export function OperationalAlerts() {
@@ -27,6 +28,7 @@ export function OperationalAlerts() {
   const s=h.summary.data
   return <section className="space-y-5 min-w-0">
     <header className="flex flex-wrap gap-3 items-center"><div className="flex items-center gap-3 min-w-0"><ShieldAlert className="h-6 w-6 shrink-0 text-primary"/><div className="min-w-0"><h2 className="font-semibold text-xl">Alertas operativas</h2><p className="text-sm text-muted-foreground">Revisión de movimientos · Los pagos no se bloquean automáticamente</p></div></div><div className="sm:ml-auto flex flex-wrap gap-2">{h.admin&&<Button variant="outline" onClick={()=>setRules(v=>!v)}><Settings2 className="h-4 w-4 mr-2"/>{rules?'Volver a los casos':'Configurar alertas'}</Button>}<Button variant="outline" disabled={h.summary.isFetching||h.list.isFetching} onClick={h.refresh}><RefreshCw className="h-4 w-4 mr-2"/>Consultar novedades</Button></div></header>
+    {h.admin&&<ManualAlertEvaluation scope={h.scope} detectorEnabled={s?.meta.detectorEnabled} refresh={h.refresh} deny={h.deny}/>}
     {rules?<AlertRules scope={h.scope} refresh={h.refresh} deny={h.deny}/>:<>
       {s&&<>
         <AlertMetadata meta={s.meta}/>

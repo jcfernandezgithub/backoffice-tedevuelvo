@@ -1,4 +1,5 @@
 # Architecture rules
+- Manual alert evaluations use the existing authenticated backend without snapshots; persist only the pending empty request/key per API project and user, never retry POST automatically, recover jobs on entry and poll active jobs with server pacing; renew the alert snapshot only after global success.
 - Operational alert diagnostics and secondary filters use progressive disclosure; keep freshness and data-quality warnings visible and preserve server-owned detection and review contracts.
 - Alert situation labels use only conditionStatus, never conditionActive alone; display currentRule and lastEvaluation separately from positive-detection version/priority to avoid presenting historical evidence as a confirmed current result.
 - Alert reassignment resolves canonical roles from the authenticated catalog and queries active users by each permitted role before pagination; merge and paginate only eligible candidates, never scan customer pages. Guard fresh submissions with the tested status/role predicate while retaining uncertain retry bodies, because server authorization remains authoritative.

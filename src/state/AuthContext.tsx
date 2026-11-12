@@ -22,6 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
       void queryClient.cancelQueries({ queryKey: ['operational-alerts'] })
       queryClient.removeQueries({ queryKey: ['operational-alerts'] })
+      void queryClient.cancelQueries({ queryKey: ['operational-alert-evaluations'] })
+      queryClient.removeQueries({ queryKey: ['operational-alert-evaluations'] })
     }
   }, [queryClient, dashboardScope])
 
@@ -108,6 +110,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.removeQueries({ queryKey: ['backoffice-dashboard'] })
       await queryClient.cancelQueries({ queryKey: ['operational-alerts'] })
       queryClient.removeQueries({ queryKey: ['operational-alerts'] })
+      await queryClient.cancelQueries({ queryKey: ['operational-alert-evaluations'] })
+      queryClient.removeQueries({ queryKey: ['operational-alert-evaluations'] })
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
       }
