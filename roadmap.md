@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Ocultar datos actuales del detalle y conservar antecedentes de detección, banco, tipo y cuenta enmascarada; 21 pruebas y revisión en computador/teléfono con datos simulados aprobadas.
 - [x] Mejorar revisión de casos: banco, cuenta y tipo explícitos, estados de solicitudes en español y comparación alineada; 21 pruebas y revisión visual en computador/teléfono con datos simulados, sin cambiar detección ni pagos. Verificación real sigue pendiente de sesión autorizada.
 - [x] Simplificar pantalla de alertas, separar detalles del análisis y filtros adicionales sin cambiar reglas ni servicios; 21 pruebas aprobadas y revisión visual en computador y teléfono con datos simulados, sin escrituras reales.
 - [x] Mover Alertas operativas a Operación con permisos y filtros independientes; retirada del Dashboard, 34 pruebas y revisión completa en escritorio/móvil con datos simulados, sin escrituras reales.
