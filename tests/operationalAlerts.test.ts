@@ -1,10 +1,23 @@
 import {describe,expect,test} from 'bun:test'
-import {alertsAccess,alertsEntryAccess,actionSchemas,alertMoney,validateRuleUpdate} from '../src/lib/operationalAlerts'
+import {alertsAccess,alertsEntryAccess,actionSchemas,alertMoney,validateRuleUpdate,isAlertAssignee} from '../src/lib/operationalAlerts'
 import {firstAllowedRoute} from '../src/lib/pageAccess'
 import {createAlertsClient} from '../src/services/operationalAlertsApi'
 import type {Usuario} from '../src/types/domain'
 const user:Usuario={id:'admin',nombre:'Prueba',email:'test@example.test',rol:'ADMIN',roles:['ADMIN'],activo:true,pages:['DASHBOARD']}
 describe('Operational alerts permissions',()=>{
+  test('reassignment only lists active administrators and operations users with backend roles',()=>{
+    const candidate={id:'candidate',fullName:'Prueba',email:'test@example.test',status:'active' as const}
+    for(const name of ['ADMIN','administrador','Operaciones','OPERADOR']) expect(isAlertAssignee({...candidate,role:{name}})).toBe(true)
+    for(const name of ['CALLCENTER','CUSTOMER','ALIANZAS','READONLY','ALIANZA_OPERADOR','OTRO']) expect(isAlertAssignee({...candidate,role:{name,pages:['ALERTAS_OPERATIVAS']}})).toBe(false)
+    expect(isAlertAssignee({...candidate,role:{name:'CALLCENTER',normalizedName:'operador'}})).toBe(true)
+    expect(isAlertAssignee({...candidate,role:{name:'ADMIN',normalizedName:'CUSTOMER'}})).toBe(false)
+    expect(isAlertAssignee({...candidate,role:null})).toBe(false)
+    expect(isAlertAssignee({...candidate,role:{label:'Administrador'}})).toBe(false)
+    for(const status of ['inactive','invited','blocked'] as const) expect(isAlertAssignee({...candidate,status,role:{name:'ADMIN'}})).toBe(false)
+    expect(isAlertAssignee({...candidate,email:'admin@callcenter.cl',role:{name:'ADMIN'}})).toBe(false)
+    expect(isAlertAssignee({...candidate,id:undefined,role:{name:'ADMIN'}})).toBe(false)
+    expect(isAlertAssignee({...candidate,id:undefined,_id:'mongo-id',role:{name:'ADMIN'}})).toBe(true)
+  })
   test('alerts-only access opens Operación, never grants Dashboard',()=>{
     const operator:Usuario={...user,rol:'OPERACIONES',roles:['OPERADOR'],pages:['ALERTAS_OPERATIVAS']}
     expect(alertsEntryAccess(operator,'/operacion')).toBe(true)
