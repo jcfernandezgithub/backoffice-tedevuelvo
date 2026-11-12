@@ -17,8 +17,8 @@ export function useOperationalAlerts(filters:AlertFilters,page:number) {
   const token = summary.data?.meta.snapshotToken
   const list = useQuery({queryKey:['operational-alerts',scope,'list',filters,token,page],queryFn:({signal}) => api.page<OperationalAlert>('/alerts',token ?? '',page,filters,signal),enabled:allowed && Boolean(token),staleTime:Infinity,gcTime:0,retry:false,refetchOnWindowFocus:false})
   const error = summary.error ?? list.error
-  const refresh = () => {
-    void client.cancelQueries({queryKey:['operational-alerts',scope]})
+  const refresh = async () => {
+    await client.cancelQueries({queryKey:['operational-alerts',scope]})
     client.removeQueries({queryKey:['operational-alerts',scope]})
     setEpoch(v => v+1)
   }

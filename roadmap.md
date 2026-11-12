@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Adaptar situación y filtros a conditionStatus y separar configuración vigente/evaluación/detección; 32 pruebas y recarga de resumen/listado/detalle verificadas en computador/teléfono con datos simulados, sin escrituras reales. El registro del servicio confirma el caso indicado como CONFIRMED_INACTIVE y PENDING; comprobación autenticada real sigue pendiente de acceso autorizado.
 - [x] Corregir lista vacía de responsables: consultar usuarios por rol antes de paginar, sin contar ni recorrer clientes.
 - [x] Filtrar responsables de reasignación por rol y estado del servicio de usuarios, validar la selección antes de enviar y conservar autorización del servidor.
 - [x] Destacar el motivo de detección y qué datos revisar por tipo de alerta, sin inferir el campo causante cuando el servicio no lo identifica.

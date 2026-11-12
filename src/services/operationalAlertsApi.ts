@@ -5,11 +5,18 @@ import { configuredApiBaseUrl } from './apiConfig'
 
 export interface AlertMeta { schemaVersion: string; snapshotToken: string; evaluationStatus: 'READY'|'RUNNING'|'FAILED'|'NOT_CONFIGURED'; stale: boolean; dataAsOf?: string|null; lastSuccessfulEvaluationAt?: string|null; coverage?: Record<string, unknown>|null; dataQuality?: Record<string,number>|null; currentDataAsOf?: string; page: number; limit: number; total: number; totalPages: number }
 export interface Actor { id: string; name?: string|null }
+export type ConditionStatus = 'CONFIRMED_ACTIVE'|'CONFIRMED_INACTIVE'|'INCOMPLETE'|'PENDING_REEVALUATION'|'RULE_DISABLED'
+export interface AlertEvaluation {
+  ruleVersion?: string|number; evaluatedAt?: string; dataAsOf?: string; priority?: OperationalAlert['priority']|null;
+  parameters?: Record<string,number|null>; result?: string; reasons?: (string|{code?:string;message?:string;reason?:string})[];
+  metrics?: Record<string,unknown>; conditions?: Record<string,unknown>; scope?: Record<string,unknown>;
+}
 export interface OperationalAlert {
   id: string; ruleCode: RuleCode; ruleVersion: string; title?: string; reason?: string; priority: 'HIGH'|'MEDIUM'|'LOW'; status: 'PENDING'|'IN_REVIEW'|'RESOLVED'; version: number;
   subjects: { rut: string; fullName: string|null }[]; subjectCount: number; relatedRequestCount: number; distinctAccountCount: number; missingAccountCount: number;
   knownTotalAmountCLP: number; missingAmountCount: number; isAmountTotalComplete: boolean; period?: { month?: string; from?: string; toExclusive?: string }|null;
   firstDetectedAt?: string; lastDetectedAt?: string; conditionActive: boolean; conditionEvaluation?: string; assignedTo?: Actor|null; assignedAt?: string|null; requiresFollowUp?: boolean; previousAlertId?: string|null; resolvedBy?: Actor|null; resolvedAt?: string|null; resolutionComment?: string;
+  conditionStatus?: ConditionStatus; currentRule?: AlertRule|null; lastEvaluation?: AlertEvaluation|null;
   thresholds?: Record<string, number|null>; conditions?: Record<string,unknown>; limitations?: string[]; changeEvents?: Record<string,unknown>[]; changeEventCount?: number; changeEventsTruncated?: boolean; changeConditions?: Record<string,unknown>|null;
   actions?: { canClaim: boolean; canComment: boolean; canResolve: boolean; canReassign: boolean }; meta: AlertMeta;
 }
@@ -19,7 +26,7 @@ export interface EvidenceItem { publicId:string; evidenceAtDetection:Evidence; c
 export interface HistoryItem {id:string;type:string;at:string;actor:Actor|null;data:Record<string,unknown>}
 export interface AlertRule {ruleCode:RuleCode;version:number;enabled:boolean;priority:'HIGH'|'MEDIUM'|'LOW'|null;parameters:Record<string,number|null>;updatedAt?:string;updatedBy?:string}
 export interface AlertPage<T> {data:T[];meta:AlertMeta}
-export type AlertFilters = Partial<Record<'from'|'to'|'ruleCode'|'priority'|'search'|'assigneeId'|'conditionActive'|'status'|'sort',string>>
+export type AlertFilters = Partial<Record<'from'|'to'|'ruleCode'|'priority'|'search'|'assigneeId'|'conditionActive'|'conditionStatus'|'status'|'sort',string>>
 export class AlertsApiError extends Error {
   constructor(public status:number, public code:string, message:string,public requestId?:string,public retryAfterMs=0) { super(message) }
 }
