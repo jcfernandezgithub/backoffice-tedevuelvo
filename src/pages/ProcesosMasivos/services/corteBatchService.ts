@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import firmaImg from '@/assets/firma-cng.jpeg'
-import corteCedulaAsset from '@/assets/corte-cedula-legalizada-2026-11.jpg.asset.json'
+import { corteCedulaImg } from '@/lib/corteIdentityAttachment'
 import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
 import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -8,7 +8,6 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import type { RefundRequest, RefundDocument } from '@/types/refund'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-const corteCedulaImg = corteCedulaAsset.url
 
 const FIXED_ACCOUNT_DATA = {
   accountNumber: '992866721',
@@ -224,6 +223,7 @@ export function generateGenericCorteBlob(
 function loadImageElement(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => resolve(img)
     img.onerror = () => resolve(null)
     img.src = src

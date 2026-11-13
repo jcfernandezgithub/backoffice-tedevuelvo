@@ -2,6 +2,7 @@
 ## Versión 4.5.3
 - [x] Documentar Alertas operativas, evaluación manual, notificaciones, directorio financiero y nueva cédula de cartas de corte en el README; actualizar la versión del login.
 ## Adjunto de carta de corte
+- [x] Reproducir 404 de cédula en backoffice.info-tedevuelvo.cl; resolver el adjunto compartido con URL absoluta y carga CORS para PDF.
 - [x] Incorporar la cédula legalizada del PDF recibido en generación individual, Cierre Mensual y proceso masivo, conservando los otros anexos.
 - [x] Generar carta de prueba y revisar visualmente la página 2: cédula nueva completa, sello del 12 NOV 2026 y sin recortes; compilación correcta.
 - [ ] Verificar sustitución de la carta almacenada: requiere sesión autorizada para generar y subir la nueva versión; no se modificaron documentos de solicitudes reales.

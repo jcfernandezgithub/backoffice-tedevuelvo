@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { authService } from '@/services/authService'
 import jsPDF from 'jspdf'
 import firmaImg from '@/assets/firma-cng.jpeg'
-import corteCedulaAsset from '@/assets/corte-cedula-legalizada-2026-11.jpg.asset.json'
+import { corteCedulaImg } from '@/lib/corteIdentityAttachment'
 import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
 import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -22,7 +22,6 @@ import { refundAdminApi } from '@/services/refundAdminApi'
 import { getRefundDocumentsPublicId } from '@/lib/refundDocsId'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
-const corteCedulaImg = corteCedulaAsset.url
 
 interface GenerateCorteDialogProps {
   refund: RefundRequest
@@ -320,6 +319,7 @@ async function generateCortePdfBlob(
   const addImagePage = (imgSrc: string, altText: string): Promise<void> => {
     return new Promise((resolve) => {
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => {
         doc.addPage()
         const imgRatio = img.width / img.height
@@ -414,6 +414,7 @@ async function generateSantanderCortePdfBlob(
   const addImagePage = (imgSrc: string, altText: string): Promise<void> => {
     return new Promise((resolve) => {
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => {
         doc.addPage()
         const imgRatio = img.width / img.height
