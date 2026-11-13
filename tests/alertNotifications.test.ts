@@ -12,17 +12,17 @@ describe('Alert bell rules', () => {
     expect(alertNotificationCount(summary(3, 90, 8), summary(1, 2, 6))).toBe(5)
     expect(alertNotificationCount()).toBe(0)
   })
-  test('assigned summaries query only the current identity; pending summaries have no situation filter', async () => {
+  test('pending and identity-scoped assigned summaries include only confirmed active situations', async () => {
     const urls: string[] = []
     const api = createAlertsClient(async path => { urls.push(path); return Response.json(summary(3, 2)) }, 'https://example.test')
     await api.summary(pendingNotificationFilters)
     await api.summary(assignedNotificationFilters('current-user'))
-    expect(urls[0]).toBe('/backoffice-alerts/summary')
-    expect(urls[1]).toBe('/backoffice-alerts/summary?assigneeId=current-user')
+    expect(urls[0]).toBe('/backoffice-alerts/summary?conditionStatus=CONFIRMED_ACTIVE')
+    expect(urls[1]).toBe('/backoffice-alerts/summary?conditionStatus=CONFIRMED_ACTIVE&assigneeId=current-user')
   })
-  test('bell links open matching review state without hiding inactive or uncertain assigned cases', () => {
-    expect(notificationViewFilters('pending')).toEqual({ status: 'PENDING', sort: 'PRIORITY_DESC' })
-    expect(notificationViewFilters('assigned', 'me')).toEqual({ assigneeId: 'me', status: 'IN_REVIEW', sort: 'PRIORITY_DESC' })
+  test('both bell views preselect confirmed active situations with matching review state', () => {
+    expect(notificationViewFilters('pending')).toEqual({ conditionStatus: 'CONFIRMED_ACTIVE', status: 'PENDING', sort: 'PRIORITY_DESC' })
+    expect(notificationViewFilters('assigned', 'me')).toEqual({ conditionStatus: 'CONFIRMED_ACTIVE', assigneeId: 'me', status: 'IN_REVIEW', sort: 'PRIORITY_DESC' })
     expect(notificationViewFilters('assigned')).toBeNull()
     expect(alertNotificationLink('assigned')).toBe('/operacion?tab=alertas&alertView=assigned')
   })

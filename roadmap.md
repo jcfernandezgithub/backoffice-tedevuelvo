@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Limitar los avisos de la campana a Sigue presente y preseleccionarlo en ambos enlaces; 26 pruebas y navegación en computador/teléfono verificadas con respuestas simuladas.
 - [x] Incorporar campana con pendientes y casos propios en revisión, conservar avisos bancarios; 34 pruebas y navegación al listado/detalle verificadas con respuestas simuladas en computador/teléfono, incluidos permisos y fallo de consulta. Consulta cada minuto; validación real incluida en el pendiente de acceso autorizado existente.
 - [x] Simplificar bandeja y mostrar panorama con porcentajes por tipo de casos sin cerrar; filtros de estado/tipo y detalle verificados en 1468 y 390 px con respuestas simuladas, 41 pruebas aprobadas sin cambiar detección; validación real sigue pendiente de sesión autorizada.
 - [x] Evitar pantalla en blanco por estado incompatible durante actualizaciones en vivo: reinicio seguro del control de evaluación; cambio de hooks con sesión simulada, flujo completo y 39 pruebas verificados sin errores.
