@@ -1,5 +1,6 @@
 # Envío de Datos al Banco desde CSV
 ## Alertas operativas
+- [x] Simplificar bandeja y mostrar panorama con porcentajes por tipo de casos sin cerrar; filtros de estado/tipo y detalle verificados en 1468 y 390 px con respuestas simuladas, 41 pruebas aprobadas sin cambiar detección; validación real sigue pendiente de sesión autorizada.
 - [x] Evitar pantalla en blanco por estado incompatible durante actualizaciones en vivo: reinicio seguro del control de evaluación; cambio de hooks con sesión simulada, flujo completo y 39 pruebas verificados sin errores.
 - [x] Integrar evaluación manual ADMIN con confirmación, recuperación, clave conservada, seguimiento y renovación del corte únicamente tras éxito; 39 pruebas y pantalla en computador/teléfono verificadas con respuestas simuladas, sin iniciar evaluaciones reales.
 - [ ] Verificar evaluación manual con el servicio real: requiere sesión ADMIN autorizada y una ejecución acordada fuera del horario operativo; no hay sesión disponible en este entorno.
