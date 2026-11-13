@@ -1,8 +1,51 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.2
+## Versión 4.5.3
 
 ## Changelog
+
+### Versión 4.5.3 - 2026-11-13
+
+#### Sistema de Alertas operativas
+- Nueva pestaña **Alertas operativas** dentro de **Operación**, independiente del Dashboard y sus reportes. El acceso respeta los roles y permisos del usuario; la configuración está reservada a Administración.
+- Integración con los servicios `backoffice-alerts` para resumen, listado paginado, detalle, evidencia, historial, configuración y acciones de revisión. La detección y las autorizaciones permanecen a cargo del backend; las consultas comparten un corte de datos aislado por sesión y permisos, renovado cuando corresponde.
+- Se incorporan cuatro tipos de alerta: **Un RUT con cuentas distintas**, **Volumen mensual de pagos por RUT**, **Una cuenta con distintos RUT** y **Cambios de cuenta cercanos al pago**. Administración puede configurar su activación, prioridad y parámetros; no se activan reglas automáticamente desde el frontend.
+- La regla de volumen mensual puede detectar un caso por cantidad de solicitudes pagadas o por monto mensual, sin exigir ambas condiciones. Los umbrales y ventanas utilizados son los configurados en el servicio, no valores fijos del navegador.
+
+#### Análisis y revisión de casos
+- Nuevo **Panorama de alertas**, con conteos por estado de revisión, distribución porcentual por tipo y prioridades de detección. Los porcentajes usan el total de casos sin cerrar del resumen filtrado, no los registros de la página; no representan por sí solos condiciones activas confirmadas.
+- Bandeja simplificada con filtros y diagnósticos secundarios desplegables; las advertencias de actualización y calidad de datos permanecen visibles.
+- **Sigue presente** queda preseleccionado en **Situación detectada** al entrar y al restablecer los filtros. Se distinguen también los casos que ya no cumplen y los resultados no confirmados que informa el servicio.
+- La situación se presenta mediante `conditionStatus`, sin interpretar `conditionActive` por sí solo. El detalle separa la versión y prioridad de la detección histórica de la regla vigente y la última evaluación aplicada.
+- **Ver caso** abre los antecedentes sin asignar la alerta. **Tomar caso** inicia la revisión; se incorporan reasignación, comentarios, resolución e historial según los permisos del servicio.
+- La reasignación muestra únicamente usuarios activos de **Administración** y **Operaciones**, consultados por rol antes de paginar para evitar listas vacías o la inclusión de clientes.
+- El detalle destaca **¿Qué originó esta alerta?**, mostrando el motivo entregado por el servidor y orientación según la regla, sin inventar qué campo produjo la detección.
+- Estados, bancos y tipos de cuenta se presentan con etiquetas en español y cuentas enmascaradas. No se infiere igualdad de cuentas por sus terminaciones ni se muestran datos actuales que el servicio no entrega; se conserva la evidencia histórica disponible.
+- Una alerta que deja de cumplir los criterios no se elimina ni se resuelve automáticamente: su situación detectada y su estado de revisión son independientes.
+
+#### Evaluación manual de alertas
+- Botón **Evaluar ahora**, exclusivo de Administración, con confirmación que advierte que el proceso puede ser lento y recomienda ejecutarlo fuera del horario operativo.
+- Inicio asíncrono con clave de idempotencia, recuperación de ejecuciones al volver a la pantalla y seguimiento del avance y resultado según el ritmo indicado por el servidor. No se reintenta automáticamente la petición de inicio.
+- Solo se conserva la solicitud pendiente y su clave por proyecto y usuario para recuperar un inicio incierto; el corte de alertas se renueva después del éxito global. El servicio controla las ejecuciones simultáneas y el resultado definitivo.
+- Se corrigió la estabilidad de la vista durante actualizaciones en caliente para evitar estados incompatibles en el seguimiento de la evaluación.
+
+#### Campana de notificaciones
+- La campana informa las alertas **Pendientes** a usuarios con acceso y, por separado, las alertas **En revisión asignadas al usuario conectado**, conservando los avisos de cambios bancarios para Administración.
+- Ambos conteos incluyen únicamente la situación **Sigue presente** y se consultan cada minuto. Los enlaces abren la pestaña de Alertas operativas con los mismos filtros; las alertas asignadas a otros usuarios no se incluyen en el aviso personal.
+
+#### Directorio de entidades financieras
+- Directorio administrativo de entidades financieras y correos en **Ajustes → Entidades financieras**, con consulta, creación, edición y eliminación, independiente de la calculadora y los envíos bancarios.
+- Acceso condicionado al rol ADMIN entregado por el backend, incluyendo respuestas con un objeto `role` en lugar de un arreglo `roles`. La antigua dirección independiente redirige a la pestaña de Ajustes para conservar los enlaces existentes.
+
+#### Carta de corte: cédula legalizada actualizada
+- Se incorporó la cédula legalizada del archivo **Documento_escaneado.pdf**, con certificación notarial del **12 de noviembre de 2026**, reemplazando el adjunto antiguo en la vista previa y generación de cartas de corte de **Solicitudes**, **Cierre Mensual** y **Procesos Masivos**.
+- Todos los generadores referencian la misma copia versionada del documento, alojada como recurso CDN. Se conservan las dos caras de la cédula, la certificación y los otros anexos de la carta.
+- El cambio aplica a cartas nuevas; una carta previamente almacenada debe generarse y subirse nuevamente a la carpeta del cliente, confirmando el reemplazo.
+
+#### Verificación y versión visible
+- Se ejecutaron pruebas de contratos, filtros, porcentajes, permisos, responsables, evaluación manual y notificaciones; las comprobaciones de las pantallas protegidas usaron respuestas simuladas, sin ejecutar evaluaciones ni modificar solicitudes reales.
+- Se generó una carta de prueba y se revisó visualmente su página 2: cédula actualizada completa, sello del 12 NOV 2026 y sin recortes. La verificación autenticada de sustitución de cartas y de los flujos de alertas con el servicio real sigue pendiente de acceso autorizado.
+- Se actualizó la versión visible del login a **4.5.3**.
 
 ### Versión 4.5.2 - 2026-10-31
 

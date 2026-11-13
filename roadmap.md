@@ -1,4 +1,6 @@
 # Envío de Datos al Banco desde CSV
+## Versión 4.5.3
+- [x] Documentar Alertas operativas, evaluación manual, notificaciones, directorio financiero y nueva cédula de cartas de corte en el README; actualizar la versión del login.
 ## Adjunto de carta de corte
 - [x] Incorporar la cédula legalizada del PDF recibido en generación individual, Cierre Mensual y proceso masivo, conservando los otros anexos.
 - [x] Generar carta de prueba y revisar visualmente la página 2: cédula nueva completa, sello del 12 NOV 2026 y sin recortes; compilación correcta.
