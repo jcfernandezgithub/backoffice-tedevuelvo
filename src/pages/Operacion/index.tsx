@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -32,11 +33,17 @@ const tabs = [
 ];
 
 export default function Operacion() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const canSeeAlerts = alertsAccess(user).allowed;
   const canSeeReports = hasPageAccess(user?.pages, 'OPERACION', user?.rol) || !user?.pages?.length;
   const [selectedTab, setTabActivo] = useState(() => canSeeReports ? 'resumen' : 'alertas');
-  const tabActivo = selectedTab === 'alertas' ? (canSeeAlerts ? 'alertas' : 'resumen') : (canSeeReports ? selectedTab : 'alertas');
+  const requestedTab = searchParams.get('tab') === 'alertas' ? 'alertas' : selectedTab;
+  const tabActivo = requestedTab === 'alertas' ? (canSeeAlerts ? 'alertas' : 'resumen') : (canSeeReports ? requestedTab : 'alertas');
+  const changeTab = (value: string) => {
+    setTabActivo(value);
+    setSearchParams(current => { const next = new URLSearchParams(current); next.delete('tab'); next.delete('alertView'); return next; });
+  };
   const visibleTabs = [
     ...(canSeeReports ? tabs : []),
     ...(canSeeAlerts ? [{ value: 'alertas', label: 'Alertas operativas', disabled: false }] : []),
@@ -102,7 +109,7 @@ export default function Operacion() {
 
       {/* Tabs principales */}
       <TooltipProvider delayDuration={100}>
-        <Tabs value={tabActivo} onValueChange={setTabActivo} className="space-y-6">
+        <Tabs value={tabActivo} onValueChange={changeTab} className="space-y-6">
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
             <div className="overflow-x-auto -mx-1 px-1 scrollbar-none">
               <TabsList className="inline-flex w-max h-auto">

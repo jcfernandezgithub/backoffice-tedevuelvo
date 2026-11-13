@@ -1,4 +1,5 @@
 # Architecture rules
+- Notification bell reads server summaries for general pending and identity-filtered assigned in-review alerts every minute; queries share the session-scoped alerts prefix for mutation/auth cleanup, and notification links select the matching Operación view without applying condition filters or exposing other assignees.
 - Manual evaluation hook and view reset on Vite refresh so hook-slot edits remount query observers instead of reusing incompatible React state; pending requests remain recoverable from identity-scoped storage.
 - Manual alert evaluations use the existing authenticated backend without snapshots; persist only the pending empty request/key per API project and user, never retry POST automatically, recover jobs on entry and poll active jobs with server pacing; renew the alert snapshot only after global success.
 - Operational alert diagnostics and secondary filters use progressive disclosure; keep freshness and data-quality warnings visible and preserve server-owned detection and review contracts.
