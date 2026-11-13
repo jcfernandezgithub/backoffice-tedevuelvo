@@ -1143,14 +1143,20 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 : 'border-border bg-muted hover:bg-muted/80'}`}
             >
               <FileUp className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Documentos subidos</span>
+              <span className="flex flex-col items-start text-left leading-tight gap-0.5">
+                <span>Documentos subidos</span>
+                <span className="text-xs font-normal">Esta semana</span>
+              </span>
               {uploads.weekly.isError ? <span className="text-sm">Error</span> : uploads.weekly.isPending ? <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-label="Consultando solicitudes" /> :
                 <Badge variant={uploads.weekly.data?.pagination.total ? 'default' : 'secondary'} className="min-w-10 justify-center px-2 py-1 text-sm tabular-nums group-data-[state=active]:bg-background group-data-[state=active]:text-foreground">{uploads.weekly.data?.pagination.total}</Badge>}
               {!documentsActive && !uploads.weekly.isError && (uploads.weekly.data?.pagination.total ?? 0) > 0 && <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />}
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <p className="text-xs text-muted-foreground">Contador de solicitudes · Semana actual · Santiago</p>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p><span className="font-medium text-foreground">Solicitudes con documentos cargados esta semana</span>{uploads.weekly.data?.meta && !uploads.weekly.isError ? ` · ${uploads.weekly.data.meta.uploadedFrom.split('-').reverse().join('/')} al ${uploads.weekly.data.meta.uploadedTo.split('-').reverse().join('/')}` : ''} · Lunes a domingo · Santiago</p>
+          <p>El contador semanal no cambia al buscar otro período.</p>
+        </div>
         {uploads.weekly.isError && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive"><span>{uploads.weekly.error.message}</span><Button variant="outline" size="sm" onClick={() => uploads.weekly.refetch()}>Reintentar contador</Button></div>}
       </div>}
       {documentsActive ? <DocumentUploadFilters key={JSON.stringify(uploadFilters)} filters={uploadFilters} meta={uploads.weekly.data?.meta} partners={partnersData?.items ?? []} busy={uploads.results.isFetching} onSearch={applyUploads} /> : <Card>
