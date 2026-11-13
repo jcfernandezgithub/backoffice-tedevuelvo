@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
-import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft, Loader2 } from 'lucide-react'
+import { Search, Filter, RotateCw, X, Copy, Check, ArrowUpDown, ArrowUp, ArrowDown, CheckCircle, AlertCircle, Flag, Clock, Info, ArrowRightLeft, Loader2, FileUp, ArrowRight } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { GenerateExcelDialog } from './components/GenerateExcelDialog'
 import { ExportToExcelDialog } from './components/ExportToExcelDialog'
@@ -1133,7 +1133,23 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           params.set('ccTab', value)
           setSearchParams(params)
           handleClearAllPagesSelection()
-        }}><TabsList className="max-w-full h-auto flex-wrap"><TabsTrigger value="general">Búsqueda general</TabsTrigger><TabsTrigger value="documents" className="gap-2">Documentos subidos · {uploads.weekly.isError ? 'Error' : uploads.weekly.isPending ? '…' : <Badge variant={uploads.weekly.data?.pagination.total ? 'default' : 'secondary'}>{uploads.weekly.data?.pagination.total}</Badge>}</TabsTrigger></TabsList></Tabs>
+        }}>
+          <TabsList className="max-w-full h-auto flex-wrap gap-2 bg-transparent p-0 justify-start">
+            <TabsTrigger value="general" className="min-h-11 px-4">Búsqueda general</TabsTrigger>
+            <TabsTrigger
+              value="documents"
+              className={`group min-h-11 gap-2 border px-3 sm:px-4 motion-reduce:transition-none ${!uploads.weekly.isError && (uploads.weekly.data?.pagination.total ?? 0) > 0
+                ? 'border-primary/35 bg-primary/10 text-primary hover:bg-primary/15 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground'
+                : 'border-border bg-muted hover:bg-muted/80'}`}
+            >
+              <FileUp className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Documentos subidos</span>
+              {uploads.weekly.isError ? <span className="text-sm">Error</span> : uploads.weekly.isPending ? <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-label="Consultando solicitudes" /> :
+                <Badge variant={uploads.weekly.data?.pagination.total ? 'default' : 'secondary'} className="min-w-10 justify-center px-2 py-1 text-sm tabular-nums group-data-[state=active]:bg-background group-data-[state=active]:text-foreground">{uploads.weekly.data?.pagination.total}</Badge>}
+              {!documentsActive && !uploads.weekly.isError && (uploads.weekly.data?.pagination.total ?? 0) > 0 && <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         <p className="text-xs text-muted-foreground">Contador de solicitudes · Semana actual · Santiago</p>
         {uploads.weekly.isError && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive"><span>{uploads.weekly.error.message}</span><Button variant="outline" size="sm" onClick={() => uploads.weekly.refetch()}>Reintentar contador</Button></div>}
       </div>}
