@@ -148,6 +148,15 @@ All colors MUST be HSL.
   75%, 100% { transform: scale(2.4); opacity: 0; }
 }
 
+@keyframes document-review-emphasis {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  45% { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .document-review-count { animation: document-review-emphasis 1.8s ease-in-out 3; }
+}
+
 /* Optimizaciones adicionales para móvil */
 @layer components {
   .table-horizontal-scroll {
