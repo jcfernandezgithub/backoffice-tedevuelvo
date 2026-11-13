@@ -1,5 +1,5 @@
 import {describe,expect,test} from 'bun:test'
-import {alertsAccess,alertsEntryAccess,actionSchemas,alertMoney,validateRuleUpdate,isAlertAssignee} from '../src/lib/operationalAlerts'
+import {alertsAccess,alertsEntryAccess,actionSchemas,alertMoney,validateRuleUpdate,isAlertAssignee,defaultAlertFilters} from '../src/lib/operationalAlerts'
 import {firstAllowedRoute} from '../src/lib/pageAccess'
 import {createAlertsClient} from '../src/services/operationalAlertsApi'
 import type {Usuario} from '../src/types/domain'
@@ -64,6 +64,20 @@ describe('Operational review rules',()=>{
 })
 describe('Operational alerts transport',()=>{
   const meta={schemaVersion:'1.0',snapshotToken:'cut-1',evaluationStatus:'READY',stale:false,page:1,limit:25,total:0,totalPages:0}
+  test('initial and reset filters select confirmed active pending cases in summary and list',async()=>{
+    expect(defaultAlertFilters).toEqual({status:'PENDING',conditionStatus:'CONFIRMED_ACTIVE',sort:'PRIORITY_DESC'})
+    const urls:string[]=[]
+    const api=createAlertsClient(async(path)=>{
+      urls.push(path)
+      return Response.json(path.startsWith('/backoffice-alerts/summary')
+        ? {totals:{pending:0,inReview:0,resolved:0,open:0},globalOpenCount:0,byPriority:{HIGH:0,MEDIUM:0,LOW:0},byRule:[],meta}
+        : {data:[],meta})
+    },'https://example.test/api/v1')
+    await api.summary({...defaultAlertFilters})
+    await api.page('/alerts','cut-1',1,{...defaultAlertFilters})
+    for(const url of urls) expect(new URL(url,'https://example.test').searchParams.get('conditionStatus')).toBe('CONFIRMED_ACTIVE')
+    expect(new URL(urls[1],'https://example.test').searchParams.get('status')).toBe('PENDING')
+  })
   test('summary omits status, preserves civil dates; global count is server-provided',async()=>{
     let url='';const api=createAlertsClient(async(path)=>{url=path;return Response.json({totals:{pending:0,inReview:0,resolved:0,open:0},globalOpenCount:12,byPriority:{HIGH:0,MEDIUM:0,LOW:0},byRule:[],meta})},'https://example.test/api/v1')
     expect((await api.summary({from:'2026-11-01',status:'PENDING',sort:'PRIORITY_DESC'})).globalOpenCount).toBe(12)

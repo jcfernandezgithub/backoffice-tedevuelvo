@@ -6,7 +6,7 @@ import { Select,SelectTrigger,SelectValue,SelectContent,SelectItem } from '@/com
 import { Table,TableHeader,TableBody,TableRow,TableHead,TableCell } from '@/components/ui/table'
 import { RefreshCw,ShieldAlert,Settings2,Loader2,Search,SlidersHorizontal } from 'lucide-react'
 import { useOperationalAlerts } from '@/hooks/useOperationalAlerts'
-import { alertDate,alertMoney,priorityLabels,ruleLabels,statusLabels } from '@/lib/operationalAlerts'
+import { alertDate,alertMoney,defaultAlertFilters,priorityLabels,ruleLabels,statusLabels } from '@/lib/operationalAlerts'
 import type { AlertFilters } from '@/services/operationalAlertsApi'
 import { alertConditionLabel, conditionLabels } from '@/lib/alertConditionPresentation'
 import { AlertReview } from './AlertReview'
@@ -16,7 +16,7 @@ import { AlertError,AlertMetadata,Pagination } from './AlertCommon'
 import { AlertOverview } from './AlertOverview'
 
 export function OperationalAlerts() {
-  const [filters,setFilters]=useState<AlertFilters>({status:'PENDING',sort:'PRIORITY_DESC'})
+  const [filters,setFilters]=useState<AlertFilters>(()=>({...defaultAlertFilters}))
   const [page,setPage]=useState(1)
   const [search,setSearch]=useState('')
   const [selected,setSelected]=useState<string|null>(null)
@@ -36,7 +36,7 @@ export function OperationalAlerts() {
         <AlertOverview summary={s} filters={filters} onStatus={v=>update('status',v)} onRule={v=>update('ruleCode',v)}/>
       </>}
       <form className="space-y-4 border-t pt-4" onSubmit={e=>{e.preventDefault();update('search',search.trim())}}>
-        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">Casos para revisar</h3><Button type="button" variant="ghost" size="sm" onClick={()=>{setFilters({status:'PENDING',sort:'PRIORITY_DESC'});setSearch('');setPage(1)}}>Restablecer filtros</Button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold">Casos para revisar</h3><Button type="button" variant="ghost" size="sm" onClick={()=>{setFilters({...defaultAlertFilters});setSearch('');setPage(1)}}>Restablecer filtros</Button></div>
         <div className="flex gap-2"><Input className="flex-1 min-w-0" aria-label="Buscar alertas" maxLength={120} placeholder="Buscar por nombre, RUT o número de solicitud" value={search} onChange={e=>setSearch(e.target.value)}/><Button type="submit" variant="outline"><Search className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Buscar</span><span className="sr-only sm:hidden">Buscar</span></Button></div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"><Filter label="Estado de revisión" value={filters.status} change={v=>update('status',v)} options={statusLabels}/><Filter label="Tipo de alerta" value={filters.ruleCode} change={v=>update('ruleCode',v)} options={ruleLabels}/><Filter label="Prioridad" value={filters.priority} change={v=>update('priority',v)} options={priorityLabels}/><Filter label="Situación detectada" value={filters.conditionStatus} change={v=>update('conditionStatus',v)} options={conditionLabels}/></div>
         <Button type="button" variant="ghost" size="sm" className="gap-2 px-0" aria-expanded={advanced} aria-controls="alert-extra-filters" onClick={()=>setAdvanced(v=>!v)}><SlidersHorizontal className="h-4 w-4"/>{advanced?'Ocultar filtros adicionales':'Más filtros'}{[filters.from,filters.to,filters.assigneeId].filter(Boolean).length>0&&<Badge variant="secondary">{[filters.from,filters.to,filters.assigneeId].filter(Boolean).length}</Badge>}</Button>

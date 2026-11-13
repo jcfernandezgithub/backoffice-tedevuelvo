@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import type { Usuario } from '@/types/domain'
 import type { BackendUser } from '@/pages/Usuarios/services/usersApi'
+import type { AlertFilters } from '@/services/operationalAlertsApi'
+
+export const defaultAlertFilters: AlertFilters = {
+  status: 'PENDING',
+  conditionStatus: 'CONFIRMED_ACTIVE',
+  sort: 'PRIORITY_DESC',
+}
 
 export const ruleLabels = {
   SAME_RUT_MULTIPLE_ACCOUNTS: 'Un RUT con cuentas distintas',
