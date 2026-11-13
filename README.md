@@ -1,8 +1,18 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.3
+## Versión 4.5.4
 
 ## Changelog
+
+### Versión 4.5.4 - 2026-11-13
+
+#### Corrección de cédula legalizada en cartas de corte
+- Se corrigió la carga del adjunto en el dominio de producción **backoffice.info-tedevuelvo.cl**, donde la ruta relativa del recurso devolvía 404 y la cédula no aparecía en la vista previa ni en el PDF.
+- **Solicitudes**, **Cierre Mensual** y **Procesos Masivos** utilizan el mismo resolutor versionado del adjunto, con una URL absoluta al origen de publicación de Lovable y carga anónima CORS para incorporar la imagen en el PDF.
+- Se verificó la carga de la cédula en la vista previa y su inclusión en una carta de prueba. La corrección requiere desplegar esta versión en el dominio de producción; las cartas ya almacenadas deben generarse y subirse nuevamente.
+
+#### Versión visible
+- Se actualizó la versión visible del login a **4.5.4**.
 
 ### Versión 4.5.3 - 2026-11-13
 

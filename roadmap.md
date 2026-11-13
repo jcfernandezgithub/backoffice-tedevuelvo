@@ -1,4 +1,6 @@
 # Envío de Datos al Banco desde CSV
+## Versión 4.5.4
+- [x] Documentar la corrección de carga de la cédula en producción en el README y actualizar la versión del login.
 ## Versión 4.5.3
 - [x] Documentar Alertas operativas, evaluación manual, notificaciones, directorio financiero y nueva cédula de cartas de corte en el README; actualizar la versión del login.
 ## Adjunto de carta de corte
