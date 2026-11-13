@@ -1,4 +1,5 @@
 # Architecture rules
+- Call Center document uploads use the dedicated authenticated read endpoint and the shared refund grid without local business filtering; keep the weekly total query independent of URL-persisted searches, isolate caches by session and persisted scope, and clear them on auth changes because totals, minimums and document availability are server-owned.
 - All corte-letter generators and previews use the shared versioned identity attachment resolver with an absolute Lovable serving origin and anonymous CORS for PDF image loading, because the external production host does not serve the CDN proxy path.
 - Notification bell reads condition-filtered server summaries for pending and identity-filtered assigned in-review alerts every minute; queries share the session-scoped alerts prefix for mutation/auth cleanup, and notification links reuse the summary condition filters in the matching Operación view without exposing other assignees.
 - Manual evaluation hook and view reset on Vite refresh so hook-slot edits remount query observers instead of reusing incompatible React state; pending requests remain recoverable from identity-scoped storage.

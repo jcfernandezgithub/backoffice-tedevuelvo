@@ -60,6 +60,9 @@
 - [ ] Confirmar prima total calculada en backend desplegado: PDF mantiene fórmula anterior; se entregó directiva, pendiente respuesta del equipo backend.
 
 ## Call Center
+- [x] Incorporar Documentos subidos con consulta dedicada, contador semanal independiente, filtros y grilla compartida.
+- [x] Probar fechas, contratos, errores y navegación: 27 pruebas aprobadas y flujo con respuestas simuladas verificado en computador/teléfono, incluido regreso del detalle y contador independiente.
+- [ ] Verificar Documentos subidos con solicitudes reales: servicio reconoce la consulta y responde 401 sin sesión; requiere sesión autorizada del sistema externo, no disponible en este entorno.
 - [x] Presentar el desglose por seguro con calugas alineadas a los indicadores actuales, sin modificar los cálculos.
 - [x] Mantener totales y añadir desglose por seguro de gestionadas, primas y ticket; siete pruebas aprobadas y sumas verificadas con el último cruce real.
 - [ ] Verificación visual autenticada del desglose: la sesión de prueba no pudo abrir Dashboard; pendiente acceso de prueba válido.

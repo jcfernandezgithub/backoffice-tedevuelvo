@@ -44,6 +44,11 @@ import { computeBreakdown, computePureCesantiaTotalTDV } from '@/lib/insuranceBr
 import { derivePremiumsFromSnapshot } from '@/lib/snapshotPremiums'
 import { EstimatedAmountCell } from '@/components/common/EstimatedAmountCell'
 import { resolveDisplayAmount } from '@/lib/refundDisplayAmount'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useCallCenterDocumentUploads } from '@/hooks/useCallCenterDocumentUploads'
+import { DocumentUploadFilters } from '@/pages/GestionCallCenter/DocumentUploadFilters'
+import { documentUploadsList } from '@/services/callCenterDocumentUploadsApi'
+import { readDocumentFilters, writeDocumentFilters, formatUploadDate, type DocumentUploadFilters as UploadFilters } from '@/lib/callCenterDocumentUploads'
 
 
 const statusLabels: Record<RefundStatus, string> = {
@@ -157,6 +162,15 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const documentsActive = isCallCenter && searchParams.get('ccTab') === 'documents'
+  const uploadFilters = useMemo(() => readDocumentFilters(searchParams), [searchParams])
+  const uploads = useCallCenterDocumentUploads(isCallCenter, documentsActive, uploadFilters)
+  const applyUploads = (next: UploadFilters) => {
+    setSearchParams(writeDocumentFilters(searchParams, next))
+    void uploads.refresh()
+  }
+  const openDetail = (publicId: string) => navigate(`${detailBasePath}/${publicId}`, documentsActive ? { state: { backUrl: `${detailBasePath}?${searchParams}` } } : undefined)
+
   // Filtros que se envían al servidor (solo se actualizan al hacer clic en "Buscar")
   const [filters, setFilters] = useState<AdminQueryParams>({
     search: searchParams.get('search') || '',
@@ -261,7 +275,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     queryFn: () => refundAdminApi.list(filters),
     retry: false,
     staleTime: 30 * 1000,
-    enabled: !useSearchEndpoint && !historicalStatusMode,
+    enabled: !documentsActive && !useSearchEndpoint && !historicalStatusMode,
   })
   
   // Query para búsqueda (search endpoint)
@@ -342,7 +356,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     },
     retry: false,
     staleTime: 30 * 1000,
-    enabled: useSearchEndpoint || historicalStatusMode,
+    enabled: !documentsActive && (useSearchEndpoint || historicalStatusMode),
   })
 
   const historicalData = useMemo(() => {
@@ -361,10 +375,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }, [searchData])
   
   // Unificar datos según el endpoint/modo usado
-  const data = historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
-  const isLoading = historicalStatusMode ? isSearchLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
-  const error = historicalStatusMode ? searchError : (useSearchEndpoint ? searchError : listError)
-  const refetch = historicalStatusMode ? refetchSearch : (useSearchEndpoint ? refetchSearch : refetchList)
+  const data = documentsActive ? documentUploadsList(uploads.denied ? undefined : uploads.results.data) : historicalStatusMode ? historicalData : (useSearchEndpoint ? searchData : listData)
+  const isLoading = documentsActive ? uploads.results.isLoading : historicalStatusMode ? isSearchLoading : (useSearchEndpoint ? isSearchLoading : isListLoading)
+  const error = documentsActive ? (uploads.results.error ?? (uploads.denied ? uploads.weekly.error : null)) : historicalStatusMode ? searchError : (useSearchEndpoint ? searchError : listError)
+  const refetch = documentsActive ? uploads.refresh : historicalStatusMode ? refetchSearch : (useSearchEndpoint ? refetchSearch : refetchList)
 
   // Fetch partners para mostrar nombres de alianzas
   const { data: partnersData } = useQuery({
@@ -546,11 +560,13 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     if (insuranceTypeFilter !== 'all') params.set('insuranceType', insuranceTypeFilter)
     if (allianceFilter !== 'all') params.set('alliance', allianceFilter)
     if (institutionFilter !== 'all') params.set('institution', institutionFilter)
+    searchParams.forEach((value, key) => { if (key.startsWith('cc_') || key === 'ccTab') params.set(key, value) })
     params.set('page', '1')
     setSearchParams(params)
   }
 
   const handlePageChange = (newPage: number) => {
+    if (documentsActive) { applyUploads({ ...uploadFilters, page: newPage }); return }
     if (historicalStatusMode || activeOverdueFilter) {
       // En modo histórico, paginación local
       setHistoricalPage(newPage)
@@ -611,7 +627,9 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       institution: 'all',
     })
     setActiveOverdueFilter(null)
-    setSearchParams(new URLSearchParams())
+    const retainedParams = new URLSearchParams()
+    searchParams.forEach((value, key) => { if (key.startsWith('cc_') || key === 'ccTab') retainedParams.set(key, value) })
+    setSearchParams(retainedParams)
   }
   
   const handleOriginFilterChange = (value: string) => {
@@ -719,6 +737,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     setAllPagesRefunds([])
   }
 
+  useEffect(() => {
+    if (documentsActive) handleClearAllPagesSelection()
+  }, [documentsActive, uploadFilters.page, uploads.results.dataUpdatedAt])
+
   const handleSelectRefund = (refundId: string, checked: boolean) => {
     const newSelected = new Set(selectedRefunds)
     if (checked) {
@@ -765,6 +787,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   }
 
   const handleSort = (field: string) => {
+    if (documentsActive) return
     const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc'
     setSortField(field)
     setSortDirection(newDirection)
@@ -809,7 +832,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     // Call Center: la primera carga siempre filtra por mínima devolución.
     // Disparamos la búsqueda automáticamente al montar la página.
-    if (isCallCenter) {
+    if (isCallCenter && !documentsActive) {
       const timer = setTimeout(() => {
         handleSearch()
       }, 100)
@@ -819,7 +842,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   // Mostrar error en useEffect para evitar llamar toast durante el render
   useEffect(() => {
-    if (error) {
+    if (error && !documentsActive) {
       const errorMessage = (error as Error).message
       const errorName = (error as Error).name
       // Ignorar errores de aborto (StrictMode/WebKit produce "Load failed" al cancelar fetches)
@@ -845,7 +868,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         })
       }
     }
-  }, [error])
+  }, [error, documentsActive])
 
   // Normalizar respuesta de la API - ahora viene del endpoint listV2 con paginación server-side
   const normalizedData = useMemo(() => {
@@ -882,6 +905,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   
   // Aplicar filtros locales que el servidor no soporta (usando valores aplicados al presionar Buscar)
   const locallyFilteredItems = useMemo(() => {
+    if (documentsActive) return preSortedItems
     let result = preSortedItems
 
     // Guardrail: si hay estado seleccionado, asegurar match por estado actual
@@ -953,18 +977,18 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
     }
     
     return result
-  }, [preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
+  }, [documentsActive, preSortedItems, appliedLocalFilters, historicalStatusMode, currentStatusOnly, localFilters.from, localFilters.to, localFilters.status])
   
   // Calcular solicitudes con tiempo excedido
   const { overdueStages, overdueRefundIds } = useOverdueData(locallyFilteredItems)
 
   // Filtrar por overdue si hay filtro activo
   const overdueFilteredItems = useMemo(() => {
-    if (!activeOverdueFilter) return locallyFilteredItems
+    if (documentsActive || !activeOverdueFilter) return locallyFilteredItems
     const stage = overdueStages.find(s => s.stageKey === activeOverdueFilter)
     if (!stage) return locallyFilteredItems
     return locallyFilteredItems.filter((r: any) => stage.overdueIds.has(r.id || r.publicId))
-  }, [locallyFilteredItems, activeOverdueFilter, overdueStages])
+  }, [documentsActive, locallyFilteredItems, activeOverdueFilter, overdueStages])
 
   // Estado para paginación local en modo histórico
   const [historicalPage, setHistoricalPage] = useState(1)
@@ -980,16 +1004,16 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   // En modo histórico/multi-status, paginar localmente; en modo normal, usar datos del servidor
   const paginatedItems = useMemo(() => {
-    if (historicalStatusMode || activeOverdueFilter || multiStatusMode) {
+    if (!documentsActive && (historicalStatusMode || activeOverdueFilter || multiStatusMode)) {
       const start = (historicalPage - 1) * historicalPageSize
       return overdueFilteredItems.slice(start, start + historicalPageSize)
     }
     return overdueFilteredItems
-  }, [overdueFilteredItems, historicalStatusMode, activeOverdueFilter, multiStatusMode, historicalPage, historicalPageSize])
+  }, [documentsActive, overdueFilteredItems, historicalStatusMode, activeOverdueFilter, multiStatusMode, historicalPage, historicalPageSize])
 
   // Ordenamiento client-side aplicado sobre la página/lista visible
   const sortedPaginatedItems = useMemo(() => {
-    if (!sortField) return paginatedItems
+    if (documentsActive || !sortField) return paginatedItems
     const getValue = (r: any): any => {
       switch (sortField) {
         case 'publicId': return r.publicId || ''
@@ -1011,7 +1035,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       if (av > bv) return 1 * dir
       return 0
     })
-  }, [paginatedItems, sortField, sortDirection])
+  }, [documentsActive, paginatedItems, sortField, sortDirection])
 
 
   // IDs para consultar mandatos - solo los items VISIBLES en la página actual
@@ -1052,7 +1076,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
   const sortedItems = historicalStatusMode ? locallyFilteredItems : locallyFilteredItems
 
   // Usar paginación del servidor, pero en modo histórico/overdue/multi-status el total es local
-  const localPaginationMode = historicalStatusMode || activeOverdueFilter || multiStatusMode
+  const localPaginationMode = !documentsActive && (historicalStatusMode || activeOverdueFilter || multiStatusMode)
   const totalFiltered = localPaginationMode ? overdueFilteredItems.length : normalizedData.total
   const totalPages = localPaginationMode
     ? Math.max(1, Math.ceil(overdueFilteredItems.length / historicalPageSize))
@@ -1065,17 +1089,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
 
   // Helper: obtener el estado a mostrar según el modo (actual o histórico)
   const getDisplayStatus = useCallback((refund: any): RefundStatus => {
-    if (!historicalStatusMode || !localFilters.to) return refund.status
+    if (documentsActive || !historicalStatusMode || !localFilters.to) return refund.status
     const historical = getStatusAtDate(refund, localFilters.to)
     return historical || refund.status
-  }, [historicalStatusMode, localFilters.to])
+  }, [documentsActive, historicalStatusMode, localFilters.to])
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-2xl md:text-3xl font-bold">{title}</h1>
         <div className="flex flex-wrap gap-2">
-          {!isMobile && (
+          {!isMobile && !documentsActive && (
             <>
               <ExportToExcelDialog 
                 refunds={sortedItems as RefundRequest[]} 
@@ -1103,7 +1127,17 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
         </div>
       </div>
 
-      <Card>
+      {isCallCenter && <div className="space-y-2 min-w-0">
+        <Tabs value={documentsActive ? 'documents' : 'general'} onValueChange={value => {
+          const params = new URLSearchParams(searchParams)
+          params.set('ccTab', value)
+          setSearchParams(params)
+          handleClearAllPagesSelection()
+        }}><TabsList className="max-w-full h-auto flex-wrap"><TabsTrigger value="general">Búsqueda general</TabsTrigger><TabsTrigger value="documents" className="gap-2">Documentos subidos · {uploads.weekly.isError ? 'Error' : uploads.weekly.isPending ? '…' : <Badge variant={uploads.weekly.data?.pagination.total ? 'default' : 'secondary'}>{uploads.weekly.data?.pagination.total}</Badge>}</TabsTrigger></TabsList></Tabs>
+        <p className="text-xs text-muted-foreground">Contador de solicitudes · Semana actual · Santiago</p>
+        {uploads.weekly.isError && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive"><span>{uploads.weekly.error.message}</span><Button variant="outline" size="sm" onClick={() => uploads.weekly.refetch()}>Reintentar contador</Button></div>}
+      </div>}
+      {documentsActive ? <DocumentUploadFilters key={JSON.stringify(uploadFilters)} filters={uploadFilters} meta={uploads.weekly.data?.meta} partners={partnersData?.items ?? []} busy={uploads.results.isFetching} onSearch={applyUploads} /> : <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -1366,10 +1400,10 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Banner modo histórico */}
-      {historicalStatusMode && (
+      {!documentsActive && historicalStatusMode && (
         <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 px-4 py-3 animate-fade-in">
           <div className="flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900 p-1.5">
             <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -1395,26 +1429,30 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
       )}
 
       {/* Banner de alertas de tiempo excedido */}
-      <OverdueAlertsBanner
+      {!documentsActive && <OverdueAlertsBanner
         refunds={locallyFilteredItems}
         activeOverdueFilter={activeOverdueFilter}
         onFilterByOverdue={(stageKey) => {
           setActiveOverdueFilter(stageKey)
           setHistoricalPage(1)
         }}
-      />
+      />}
 
       <Card>
         <CardHeader>
           <CardTitle>
-            {listTitle}
+            {documentsActive ? "Documentos subidos por revisar" : listTitle}
             {totalFiltered > 0 && (
               <span className="text-muted-foreground ml-2">({totalFiltered} total)</span>
             )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {documentsActive && uploads.results.data && !error && <div className="flex flex-wrap items-center justify-between gap-3 mb-4 text-sm">
+            <div><p>Cargas del {uploads.results.data.meta.uploadedFrom.split('-').reverse().join('/')} al {uploads.results.data.meta.uploadedTo.split('-').reverse().join('/')} · Santiago</p><p className="text-muted-foreground">Devolución estimada mayor a ${formatCLPNumber(uploads.results.data.meta.minimumRefundValueCLP)} · {totalFiltered} solicitudes</p></div>
+            <Select value={uploadFilters.sort ?? 'document_uploaded_desc'} onValueChange={sort => applyUploads({ ...uploadFilters, sort: sort as UploadFilters['sort'], page: 1 })}><SelectTrigger className="w-full sm:w-56" aria-label="Orden de carga"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="document_uploaded_desc">Última carga más reciente</SelectItem><SelectItem value="document_uploaded_asc">Última carga más antigua</SelectItem></SelectContent></Select>
+          </div>}
+          {documentsActive && error ? <div role="alert" className="space-y-3 py-4"><p className="text-destructive">{error.message}</p><Button variant="outline" onClick={() => uploads.refresh()}>Reintentar</Button></div> : isLoading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -1427,7 +1465,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
           ) : (
             <>
               {/* Banner de selección multi-página (estilo Gmail) */}
-              {selectAll && totalFiltered > paginatedItems.length && !allPagesSelected && (
+              {!documentsActive && selectAll && totalFiltered > paginatedItems.length && !allPagesSelected && (
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md px-4 py-2 mb-3 flex items-center justify-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   <span>
@@ -1562,6 +1600,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       {isCallCenter && (
                         <TableHead>Fecha Docs Recibidos</TableHead>
                       )}
+                      {documentsActive && <><TableHead>Archivos en rango</TableHead><TableHead>Última carga en rango</TableHead></>}
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1648,7 +1687,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         <TableCell>
                           {(() => {
                             const snapshot = (refund as any).calculationSnapshot
-                            const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+                            const insuranceToEvaluate = typeof snapshot?.insuranceToEvaluate === 'string' ? snapshot.insuranceToEvaluate.toUpperCase() : ''
+                            if (documentsActive && !insuranceToEvaluate) return <span className="text-muted-foreground">—</span>
                             
                             // Detectar cesantía: por insuranceToEvaluate o campos específicos
                             const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
@@ -1808,7 +1848,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                           })()}
                         </TableCell>
                         <TableCell className="text-center">
-                          {(refund as any).bankInfo ? (
+                          {documentsActive ? <span className="text-muted-foreground">—</span> : (refund as any).bankInfo ? (
                             <div className="flex items-center justify-center">
                               <div className="relative group">
                                 <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
@@ -1898,11 +1938,12 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                             })()}
                           </TableCell>
                         )}
+                        {documentsActive && <><TableCell>{refund.documentUploads?.countInRange}</TableCell><TableCell className="whitespace-nowrap">{formatUploadDate(refund.documentUploads?.lastUploadedAtInRange)}</TableCell></>}
                         <TableCell>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
+                            onClick={() => openDetail(refund.publicId)}
                           >
                             Ver detalle
                           </Button>
@@ -1918,7 +1959,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                 {sortedPaginatedItems.map((refund) => (
                   <MobileCard
                     key={refund.publicId || refund.id}
-                    onClick={() => navigate(`${detailBasePath}/${refund.publicId}`)}
+                    onClick={() => openDetail(refund.publicId)}
                     header={
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-muted-foreground">
@@ -1933,6 +1974,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       </div>
                     }
                     fields={[
+                      ...(documentsActive ? [{ label: "Archivos en rango", value: refund.documentUploads?.countInRange }, { label: "Última carga en rango", value: formatUploadDate(refund.documentUploads?.lastUploadedAtInRange), fullWidth: true }] : []),
                       {
                         label: 'Nombre',
                         value: refund.fullName,
@@ -1962,7 +2004,8 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                         label: 'Tipo Seguro',
                         value: (() => {
                           const snapshot = (refund as any).calculationSnapshot
-                          const insuranceToEvaluate = snapshot?.insuranceToEvaluate?.toUpperCase() || ''
+                          const insuranceToEvaluate = typeof snapshot?.insuranceToEvaluate === 'string' ? snapshot.insuranceToEvaluate.toUpperCase() : ''
+                            if (documentsActive && !insuranceToEvaluate) return <span className="text-muted-foreground">—</span>
                           
                           const isCesantia = insuranceToEvaluate === 'CESANTIA' || 
                             insuranceToEvaluate.includes('CESANT') ||
@@ -2076,7 +2119,7 @@ export default function RefundsList({ title = 'Solicitudes', listTitle = 'Listad
                       },
                       {
                         label: 'Datos pago',
-                        value: (refund as any).bankInfo ? (
+                        value: documentsActive ? '—' : (refund as any).bankInfo ? (
                           <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 animate-pulse">
                             <Flag className="h-3 w-3 text-emerald-500 fill-emerald-500" />
                             <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Listo</span>

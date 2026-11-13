@@ -28,6 +28,7 @@ export interface BankInfo {
 }
 
 export interface RefundRequest {
+  documentUploads?: { countInRange: number; lastUploadedAtInRange: string; kindsInRange: string[] }
   id: string
   publicId: string
   status: RefundStatus

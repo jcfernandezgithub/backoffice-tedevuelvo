@@ -15,7 +15,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
   const failuresRef = useRef<number>(0)
-  const dashboardScope = user ? JSON.stringify([user.id, user.email, user.rol, user.roles, user.activo, [...(user.pages ?? [])].sort()]) : null
+  const dashboardScope = user ? JSON.stringify([user.id, user.email, user.rol, user.roles, user.activo, [...(user.pages ?? [])].sort(), user.partnerId, user.partnerUserId]) : null
   useEffect(() => {
     return () => {
       void queryClient.cancelQueries({ queryKey: ['backoffice-dashboard'] })
@@ -24,6 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.removeQueries({ queryKey: ['operational-alerts'] })
       void queryClient.cancelQueries({ queryKey: ['operational-alert-evaluations'] })
       queryClient.removeQueries({ queryKey: ['operational-alert-evaluations'] })
+      void queryClient.cancelQueries({ queryKey: ['call-center-document-uploads'] })
+      queryClient.removeQueries({ queryKey: ['call-center-document-uploads'] })
     }
   }, [queryClient, dashboardScope])
 
@@ -112,6 +114,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.removeQueries({ queryKey: ['operational-alerts'] })
       await queryClient.cancelQueries({ queryKey: ['operational-alert-evaluations'] })
       queryClient.removeQueries({ queryKey: ['operational-alert-evaluations'] })
+      await queryClient.cancelQueries({ queryKey: ['call-center-document-uploads'] })
+      queryClient.removeQueries({ queryKey: ['call-center-document-uploads'] })
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
       }

@@ -23,6 +23,8 @@ interface LoginResponse {
       pages?: string[]
     } | string
     pages?: string[]
+    partnerId?: string | null
+    partnerUserId?: string | null
   }
   accessToken: string
   refreshToken: string
@@ -137,6 +139,8 @@ export const authService = {
       rolNombre: extractRoleName(data.user, mappedRole),
       activo: true,
       pages: extractPages(data),
+      partnerId: data.user.partnerId,
+      partnerUserId: data.user.partnerUserId,
     }
 
     save(AUTH_KEY, user)
@@ -197,6 +201,8 @@ export const authService = {
       // Si el backend informa pages (incluso vacío), esa es la verdad: así los
       // permisos revocados se reflejan sin necesidad de volver a iniciar sesión.
       pages: pagesFromResponse ?? (user.pages ?? []),
+      partnerId: data.user.partnerId === undefined ? user.partnerId : data.user.partnerId,
+      partnerUserId: data.user.partnerUserId === undefined ? user.partnerUserId : data.user.partnerUserId,
 
     }
 

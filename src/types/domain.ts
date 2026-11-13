@@ -9,6 +9,8 @@ export interface Usuario {
   roles?: string[]
   activo: boolean
   pages?: string[]
+  partnerId?: string | null
+  partnerUserId?: string | null
 }
 
 export type TipoAlianza = 'RRHH' | 'SINDICATO' | 'BROKER' | 'OTRO'
