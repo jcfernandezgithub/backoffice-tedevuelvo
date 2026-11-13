@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import firmaImg from '@/assets/firma-cng.jpeg'
-import corteCedulaImg from '@/assets/corte-cedula-legalizada.jpg'
+import corteCedulaAsset from '@/assets/corte-cedula-legalizada-2026-11.jpg.asset.json'
 import corteNotarialImg from '@/assets/corte-certificado-notarial.jpg'
 import corteConservadorImg from '@/assets/corte-certificado-conservador.jpg'
 import { refundAdminApi } from '@/services/refundAdminApi'
@@ -8,6 +8,7 @@ import { getInstitutionDisplayName } from '@/lib/institutionHomologation'
 import type { RefundRequest, RefundDocument } from '@/types/refund'
 
 const API_BASE_URL = 'https://tedevuelvo-app-be.onrender.com/api/v1'
+const corteCedulaImg = corteCedulaAsset.url
 
 const FIXED_ACCOUNT_DATA = {
   accountNumber: '992866721',

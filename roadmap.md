@@ -1,4 +1,8 @@
 # Envío de Datos al Banco desde CSV
+## Adjunto de carta de corte
+- [x] Incorporar la cédula legalizada del PDF recibido en generación individual, Cierre Mensual y proceso masivo, conservando los otros anexos.
+- [x] Generar carta de prueba y revisar visualmente la página 2: cédula nueva completa, sello del 12 NOV 2026 y sin recortes; compilación correcta.
+- [ ] Verificar sustitución de la carta almacenada: requiere sesión autorizada para generar y subir la nueva versión; no se modificaron documentos de solicitudes reales.
 ## Alertas operativas
 - [x] Limitar los avisos de la campana a Sigue presente y preseleccionarlo en ambos enlaces; 26 pruebas y navegación en computador/teléfono verificadas con respuestas simuladas.
 - [x] Incorporar campana con pendientes y casos propios en revisión, conservar avisos bancarios; 34 pruebas y navegación al listado/detalle verificadas con respuestas simuladas en computador/teléfono, incluidos permisos y fallo de consulta. Consulta cada minuto; validación real incluida en el pendiente de acceso autorizado existente.
