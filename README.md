@@ -1,8 +1,26 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.4
+## Versión 4.5.5
 
 ## Changelog
+
+### Versión 4.5.5 - 2026-11-15
+
+#### Call Center: Documentos subidos por revisar
+- Nueva pestaña **Documentos subidos**, junto a **Búsqueda general**, para encontrar solicitudes en **Documentos pendientes** con archivos cargados en un rango de fechas, reutilizando la grilla y el acceso al detalle existentes.
+- Integración autenticada con `GET /refund-requests/admin/call-center/document-uploads`: el servicio aplica los filtros antes de paginar, devuelve cada solicitud una sola vez y mantiene la **devolución mínima obligatoria** de Call Center. El frontend no aplica filtros de negocio adicionales sobre los resultados.
+- Búsqueda por **fecha de carga desde/hasta**, con accesos rápidos **Hoy**, **Ayer**, **Últimos 7 días** y **Semana actual**, y filtros por búsqueda, institución, tipo de documento, seguro y origen/alianza. Los filtros se conservan en la URL al navegar al detalle y regresar.
+- La grilla incorpora **Archivos en rango** y **Última carga en rango**, con orden por fecha de carga y paginación del servicio; las fechas se muestran en horario de Santiago.
+
+#### Contador semanal y aviso destacado
+- El contador de la pestaña informa **solicitudes**, no cantidad de archivos: solicitudes en Documentos pendientes con documentos cargados durante la **semana actual, de lunes a domingo, en horario de Santiago**, respetando la devolución mínima. Cada solicitud cuenta una sola vez.
+- El total semanal se consulta de forma independiente y **no cambia al buscar otro rango o aplicar otros filtros**; se muestra el período correspondiente para evitar confundirlo con el total de la búsqueda.
+- La pestaña destaca **Por revisar · Esta semana**, con icono de carga, contador visible y flecha de acceso. El contador utiliza un pulso sutil de hasta tres repeticiones cuando hay solicitudes y la pestaña no está activa, respetando la preferencia de movimiento reducido.
+- Se incorporan estados de carga, error y acceso denegado; las consultas están aisladas por sesión y filtros, y se limpian al cambiar la autenticación.
+
+#### Verificación y versión visible
+- La integración se comprobó con **27 pruebas** de fechas, filtros, contratos y errores, y navegación con respuestas simuladas en computador y teléfono; no se modificaron solicitudes reales. La validación con el servicio real sigue pendiente de una sesión autorizada.
+- Se actualizó la versión visible del login a **4.5.5**.
 
 ### Versión 4.5.4 - 2026-11-13
 

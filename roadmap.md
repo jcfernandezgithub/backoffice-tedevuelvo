@@ -1,4 +1,6 @@
 # Envío de Datos al Banco desde CSV
+## Versión 4.5.5
+- [x] Documentar Documentos subidos de Call Center, filtros, contador semanal y aviso destacado en el README; actualizar la versión del login.
 ## Edición de institución
 - [x] Reactivar la edición mediante catálogo en Solicitudes y Cierre Mensual, con validación y confirmación por nombre; probado con datos simulados sin modificar solicitudes reales.
 - [ ] Verificar guardado con el servicio real: requiere sesión autorizada del sistema externo, no disponible en este entorno.
