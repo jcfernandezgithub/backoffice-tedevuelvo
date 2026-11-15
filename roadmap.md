@@ -1,4 +1,7 @@
 # Envío de Datos al Banco desde CSV
+## Edición de institución
+- [x] Reactivar la edición mediante catálogo en Solicitudes y Cierre Mensual, con validación y confirmación por nombre; probado con datos simulados sin modificar solicitudes reales.
+- [ ] Verificar guardado con el servicio real: requiere sesión autorizada del sistema externo, no disponible en este entorno.
 ## Versión 4.5.4
 - [x] Documentar la corrección de carga de la cédula en producción en el README y actualizar la versión del login.
 ## Versión 4.5.3

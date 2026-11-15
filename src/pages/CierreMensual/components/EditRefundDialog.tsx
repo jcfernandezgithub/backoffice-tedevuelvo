@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { usePublicInstitutions } from '@/hooks/useInstitutions'
-import { selectedInstitution } from '@/lib/institutionSelection'
+import { selectedInstitution, validInstitutionChange } from '@/lib/institutionSelection'
+import { InstitutionSelect } from '@/components/refunds/InstitutionSelect'
 import { Button } from '@/components/ui/button'
 import { Pencil } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
@@ -36,6 +37,7 @@ const editSchema = z.object({
     .regex(/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/, 'Formato de RUT inválido'),
   email: z.string().trim().email('Email inválido').max(255),
   phone: z.string().trim().max(20).optional().or(z.literal('')),
+  institutionId: z.string(),
   estimatedAmountCLP: z.coerce.number().min(0, 'Monto debe ser >= 0').optional(),
   realAmount: z.coerce.number().min(0).optional(),
   birthDate: z.string().trim().optional().or(z.literal('')),
@@ -62,6 +64,7 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
     rut: refund.rut || '',
     email: refund.email || '',
     phone: refund.phone || '',
+    institutionId: refund.institutionId || '',
     estimatedAmountCLP: refund.estimatedAmountCLP ?? undefined,
     realAmount: (refund as any).realAmount ?? undefined,
     birthDate: refund.calculationSnapshot?.birthDate
@@ -79,6 +82,9 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
 
   const mutation = useMutation({
     mutationFn: (data: EditFormValues) => {
+      if (!validInstitutionChange(data.institutionId, defaults.institutionId, institutions, institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData)) {
+        return Promise.reject(new Error('Selecciona una institución activa del catálogo.'))
+      }
       const payload: Record<string, any> = {}
       const bankFields = { bankName: 'bank', bankAccountType: 'accountType', bankAccountNumber: 'accountNumber' }
       const bankInfo: Record<string, any> = {}
@@ -122,6 +128,10 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
   })
 
   const onSubmit = (data: EditFormValues) => {
+    if (!validInstitutionChange(data.institutionId, defaults.institutionId, institutions, institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData)) {
+      form.setError('institutionId', { message: 'Selecciona una institución activa del catálogo.' })
+      return
+    }
     mutation.mutate(data)
   }
 
@@ -210,15 +220,26 @@ export function EditRefundDialog({ refund }: EditRefundDialogProps) {
                   </FormItem>
                 )}
               />
-              <FormItem>
-                <FormLabel>Institución</FormLabel>
-                <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground">
-                  {institutionsQuery.isLoading
-                    ? 'Cargando…'
-                    : selectedInstitution(refund.institutionId, institutions)?.label || refund.institutionId || 'Sin institución'}
-                </div>
-                <p className="text-xs text-muted-foreground">Este dato no es editable desde aquí.</p>
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="institutionId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Institución</FormLabel>
+                    <InstitutionSelect
+                      value={field.value}
+                      original={defaults.institutionId}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      institutions={institutions}
+                      available={institutionsQuery.isSuccess && !institutionsQuery.isPlaceholderData}
+                      loading={institutionsQuery.isLoading}
+                    />
+                    {institutionsQuery.isError && <p className="text-xs text-destructive">No se pudo cargar el catálogo de instituciones.</p>}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="estimatedAmountCLP"

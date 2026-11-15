@@ -20,3 +20,8 @@ test('un catálogo no disponible bloquea cambios sin alterar datos antiguos', ()
   expect(validInstitutionChange('scotiabank', 'otro', catalog, false)).toBe(false)
   expect(validInstitutionChange('Banco antiguo', 'Banco antiguo', [], false)).toBe(true)
 })
+test('editar institución permite reemplazar un valor heredado y no borrar la selección', () => {
+  expect(validInstitutionChange('scotiabank', 'Banco antiguo', catalog, true)).toBe(true)
+  expect(validInstitutionChange('', 'Banco antiguo', catalog, true)).toBe(false)
+  expect(validInstitutionChange('Banco antiguo', 'Banco antiguo', catalog, true)).toBe(true)
+})
