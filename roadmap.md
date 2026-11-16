@@ -1,4 +1,6 @@
 # Envío de Datos al Banco desde CSV
+## Versión 4.5.6
+- [x] Registrar compatibilidad y alcance de las comprobaciones del backend en README y actualizar el login a 4.5.6.
 ## Versión 4.5.5
 - [x] Documentar Documentos subidos de Call Center, filtros, contador semanal y aviso destacado en el README; actualizar la versión del login.
 ## Edición de institución

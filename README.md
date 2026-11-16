@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.5
+## Versión 4.5.6
 
 ## Changelog
+
+### Versión 4.5.6 - 2026-11-16
+
+#### Compatibilidad y comprobaciones tras la actualización del backend
+- Los listados generales modificados por el backend (`/refund-requests` y `/refund-requests/admin`) no requieren ajustes en el frontend: Solicitudes conserva los servicios `listV2` y `search`, y Documentos subidos conserva su endpoint dedicado.
+- Las consultas capturadas después de iniciar sesión confirmaron respuestas HTTP **200** de `listV2`, indicadores del Dashboard, alianzas, usuarios de alianzas y contador de cambios bancarios. Esta comprobación no certifica todas las páginas ni todos los filtros.
+- Se ejecutaron **25 pruebas automáticas sin fallos** para contratos del Dashboard, filtros y paginación de Documentos subidos y avisos de la campana; estas pruebas no sustituyen la validación del backend desplegado.
+- Quedan pendientes las búsquedas y la paginación completa con sesión autorizada, incluida Documentos subidos de Call Center. El resumen de Alertas respondió HTTP 200, pero informó evaluación fallida y datos desactualizados, con última evaluación exitosa el **14/11/2026**; requiere revisión del backend.
+
+#### Versión visible
+- Se actualizó la versión visible del login a **4.5.6**, sin modificar solicitudes, pagos ni reglas de negocio.
 
 ### Versión 4.5.5 - 2026-11-15
 
