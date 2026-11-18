@@ -1,7 +1,7 @@
 # Envío de Datos al Banco desde CSV
 ## Autores del historial
 - [x] Adaptar Solicitudes y Cierre Mensual al contrato aditivo de autores, sin cambiar escrituras, pagos ni datos bancarios.
-- [x] Ocho pruebas de identidad aprobadas y presentación compartida comprobada en navegador en computador/teléfono con datos sintéticos; nombres, aclaraciones, referencias y respuesta antigua sin errores.
+- [x] Ocho pruebas de identidad aprobadas; las siete variantes del contrato revisadas en Solicitudes y Cierre Mensual, computador/teléfono y ambos temas con datos sintéticos, conservando observaciones y regreso a Información; mejorado el salto de línea de autores en teléfono.
 - [ ] Verificar LOOKUP y SNAPSHOT desplegados con detalle autorizado: requiere sesión de prueba del sistema externo y confirmación de despliegue; no fabricar cambios en solicitudes reales.
 ## Versión 4.5.6
 - [x] Registrar compatibilidad y alcance de las comprobaciones del backend en README y actualizar el login a 4.5.6.

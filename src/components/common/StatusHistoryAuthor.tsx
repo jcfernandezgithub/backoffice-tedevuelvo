@@ -11,7 +11,7 @@ export function StatusHistoryAuthor({ entry }: { entry: StatusHistoryEntry }) {
       ? 'Nombre registrado al realizar la acción'
       : undefined
   const reference = 'reference' in author ? author.reference : undefined
-  const label = <span className="break-all">{author.label}</span>
+  const label = <span className="break-words [overflow-wrap:anywhere]">{author.label}</span>
   return (
     <>
       {' • por '}
