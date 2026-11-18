@@ -44,6 +44,7 @@ import { GenerateCertificateDialog } from './components/GenerateCertificateDialo
 import { GenerateCesantiaCertificateDialog } from './components/GenerateCesantiaCertificateDialog'
 import { CedulaValidationDialog } from './components/CedulaValidationDialog'
 import { Money } from '@/components/common/Money'
+import { StatusHistoryAuthor } from '@/components/common/StatusHistoryAuthor'
 import { formatCLPNumber } from '@/lib/formatters'
 import { InsuranceBreakdown } from './components/InsuranceBreakdown'
 import { derivePremiumsFromSnapshot, getRatesForSnapshot } from '@/lib/snapshotPremiums'
@@ -1625,7 +1626,7 @@ export default function RefundDetail({ backUrl: propBackUrl = '/refunds', showDo
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           {entry.at ? new Date(entry.at).toLocaleString('es-CL') : 'Fecha no disponible'}
-                          {entry.by && ` • por ${entry.by}`}
+                          <StatusHistoryAuthor entry={entry} />
                         </p>
                         {entry.note && <p className="text-sm mt-2">{entry.note}</p>}
                         {entry.realAmount && (entry.to === 'payment_scheduled' || entry.to === 'paid') && (

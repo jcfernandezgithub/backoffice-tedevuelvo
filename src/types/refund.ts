@@ -18,6 +18,9 @@ export interface StatusHistoryEntry {
   to: RefundStatus
   note?: string
   by?: string
+  byName?: string | null
+  byType?: 'USER' | 'SYSTEM' | 'UNKNOWN'
+  byResolution?: 'SNAPSHOT' | 'LOOKUP' | 'UNAVAILABLE' | 'NOT_RECORDED' | 'SYSTEM'
   realAmount?: number
 }
 
