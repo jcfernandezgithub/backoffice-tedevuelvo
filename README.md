@@ -1,8 +1,19 @@
 # Welcome to your Lovable project
 
-## Versión 4.5.6
+## Versión 4.5.7
 
 ## Changelog
+
+### Versión 4.5.7 - 2026-11-19
+
+#### Autores del historial de solicitudes
+- El historial de estados en Solicitudes y Cierre Mensual muestra el **nombre del usuario** que realizó cada cambio cuando el backend lo informa (`byName`), en lugar del identificador interno.
+- Presentación según el contrato del backend: **nombre actual** (LOOKUP), **nombre guardado al actuar** (SNAPSHOT), **Sistema** solo con marcador confirmado, **Autor no registrado** y **Usuario no disponible** con el ID como referencia secundaria.
+- Los registros antiguos sin nombre conservan la presentación previa del identificador; el frontend no consulta el directorio de usuarios ni infiere identidades.
+- Verificado con datos simulados en computador y teléfono, temas claro y oscuro; pendiente comprobación con sesión real y backend desplegado.
+
+#### Versión visible
+- Se actualizó la versión visible del login a **4.5.7**, sin modificar solicitudes, pagos ni reglas de negocio.
 
 ### Versión 4.5.6 - 2026-11-16
 
